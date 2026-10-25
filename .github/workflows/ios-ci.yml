@@ -1,0 +1,26 @@
+name: iOS CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Report toolchain
+        run: |
+          xcodebuild -version
+          xcode-select -p
+          xcrun --sdk iphonesimulator --show-sdk-version
+      - name: Validate package manifest
+        run: swift package dump-package
+      - name: Build iOS app when project exists
+        run: |
+          if compgen -G "*.xcodeproj" > /dev/null || compgen -G "*.xcworkspace" > /dev/null; then
+            echo "Xcode project detected; add scheme-specific build here."
+          else
+            echo "M0 SwiftUI source is present; Xcode project generation is tracked for the next M0 slice."
+          fi
