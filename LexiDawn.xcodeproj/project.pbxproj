@@ -12,7 +12,7 @@
   A00000000000000000000007 /* Frameworks */ = { isa = PBXGroup; children = (); name = Frameworks; sourceTree = "<group>"; };
   A00000000000000000000011 /* LexiDawnApp.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LexiDawnApp.swift; sourceTree = "<group>"; };
   A00000000000000000000012 /* RootTabView.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
-  A00000000000000000000015 /* DesignTokens.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
+  A00000000000000000000015 /* DesignTokens.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem/DesignTokens.swift; sourceTree = "<group>"; };
   A00000000000000000000013 /* LexiDawnTests.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LexiDawnTests.swift; sourceTree = "<group>"; };
   A00000000000000000000014 /* LexiDawnUITests.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LexiDawnUITests.swift; sourceTree = "<group>"; };
   A00000000000000000000050 /* LexiDawn.app */ = { isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LexiDawn.app; sourceTree = BUILT_PRODUCTS_DIR; };
