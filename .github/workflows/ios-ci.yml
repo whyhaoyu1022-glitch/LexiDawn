@@ -10,7 +10,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Report toolchain and choose explicit CI compatibility target
+      - name: Report toolchain and select approved CI target
         shell: bash
         run: |
           set -euo pipefail
@@ -20,19 +20,26 @@ jobs:
           SDK_VERSION="$(xcrun --sdk iphonesimulator --show-sdk-version)"
           echo "Detected Xcode: ${XCODE_VERSION}"
           echo "Detected iOS Simulator SDK: ${SDK_VERSION}"
-          if [[ "${XCODE_VERSION}" == 27.* && "${SDK_VERSION}" == 27.* ]]; then
-            echo "LEXIDAWN_CI_DEPLOYMENT_TARGET=27.0" >> "$GITHUB_ENV"
-            echo "LEXIDAWN_CI_TOOLCHAIN_STATUS=spec-target" >> "$GITHUB_ENV"
-          else
-            echo "::warning::Xcode 27 / iOS 27 SDK is unavailable; using explicit CI compatibility target 26.5 for build/test only. The project remains configured for iOS 27.0 and M0 acceptance remains blocked."
-            echo "LEXIDAWN_CI_DEPLOYMENT_TARGET=26.5" >> "$GITHUB_ENV"
-            echo "LEXIDAWN_CI_TOOLCHAIN_STATUS=compatibility-fallback" >> "$GITHUB_ENV"
-          fi
+          echo "LEXIDAWN_CI_DEPLOYMENT_TARGET=26.5" >> "$GITHUB_ENV"
+          echo "LEXIDAWN_CI_TOOLCHAIN_STATUS=approved-compatibility-26.5" >> "$GITHUB_ENV"
+          echo "CI deployment target: 26.5 (explicitly approved compatibility target)"
       - name: Build unsigned simulator app
         run: |
-          echo "CI toolchain mode: ${LEXIDAWN_CI_TOOLCHAIN_STATUS}"
-          echo "Effective CI deployment target: ${LEXIDAWN_CI_DEPLOYMENT_TARGET}"
           xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO build
-      - name: Run tests
+      - name: Select and boot concrete simulator
+        shell: bash
         run: |
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO test
+          set -euo pipefail
+          SIMULATOR_ID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next((x["udid"] for ds in d.get("devices",{}).values() for x in ds if x.get("isAvailable") and x.get("name","").startswith("iPhone")), next((x["udid"] for ds in d.get("devices",{}).values() for x in ds if x.get("isAvailable")), "")) )')"
+          if [[ -z "${SIMULATOR_ID}" ]]; then
+            echo "::error::No available iOS Simulator device was found."
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "Using simulator id: ${SIMULATOR_ID}"
+          echo "LEXIDAWN_SIMULATOR_ID=${SIMULATOR_ID}" >> "$GITHUB_ENV"
+          xcrun simctl boot "${SIMULATOR_ID}" 2>/dev/null || true
+          xcrun simctl bootstatus "${SIMULATOR_ID}" -b
+      - name: Run unit and UI tests on concrete simulator
+        run: |
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -destination "id=${LEXIDAWN_SIMULATOR_ID}" -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO test
