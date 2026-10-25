@@ -1,10 +1,19 @@
 # 词光 LexiDawn
 
-个人使用的原生 iOS 英语阅读、词典与间隔复习应用。产品行为以 [SPEC.md](SPEC.md) 为准，当前处于 M0 初始化。
+个人使用的原生 iOS 英语阅读、词典与间隔复习应用。产品行为以 [SPEC.md](SPEC.md) 为准，当前仍处于 M0 验收阶段。
 
-## 开发与验证
+## 开发环境
 
-M0 使用 SwiftUI；GitHub Actions 在 `macos-latest` 检测 Xcode/SDK 并执行包清单检查。当前开发容器没有 Xcode，因此不能声称本地完成 iOS 构建、模拟器或真机测试。详见 [docs/test-plan.md](docs/test-plan.md)。
+工程使用 SwiftUI 和原生 Xcode 项目，不引入第三方 UI 框架。应用 target 的 bundle identifier 是 `com.lexidawn.app`，版本为 `0.1.0 (1)`，最低系统版本配置为 iOS 27.0；CI 会输出实际 Xcode、SDK 和 Swift 版本，若工具链不满足规格基线，M0 保持阻塞。
+
+## 构建与测试
+
+```sh
+xcodebuild -list -project LexiDawn.xcodeproj
+xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO test
+```
+
+GitHub Actions 在 macOS runner 上执行相同的未签名模拟器构建和测试。当前开发容器没有 Xcode，不能把本地命令结果写成 iOS 验收证据。
 
 ## 交付边界
 
