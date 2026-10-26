@@ -16,6 +16,7 @@ enum TodayLoadState: Equatable {
     case saveFailed(String)
 }
 
+@MainActor
 final class TodayViewModel: ObservableObject {
     @Published private(set) var state: TodayLoadState = .idle
 
