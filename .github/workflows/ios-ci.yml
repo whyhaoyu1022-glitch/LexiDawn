@@ -80,6 +80,23 @@ jobs:
           cat "${DESTINATIONS_FILE}"
           echo "Using the concrete simulator created and booted above: ${CREATED_SIMULATOR_ID}"
           echo "LEXIDAWN_SIMULATOR_ID=${CREATED_SIMULATOR_ID}" >> "$GITHUB_ENV"
-      - name: Run unit and UI tests on concrete simulator
+      - name: Run unit tests on concrete simulator
+        shell: bash
         run: |
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO test
+          set -euo pipefail
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" \
+            -destination-timeout 120 -configuration Debug \
+            IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" \
+            CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO \
+            -only-testing:LexiDawnTests test
+      - name: Run UI tests on concrete simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" \
+            -destination-timeout 120 -configuration Debug \
+            IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" \
+            CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO \
+            -only-testing:LexiDawnUITests test
