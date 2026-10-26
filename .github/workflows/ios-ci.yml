@@ -1,9 +1,9 @@
 name: iOS CI
 on:
   push:
-    branches: [main, round1-daily-cycle]
+    branches: [main]
   pull_request:
-    branches: [main, round1-daily-cycle]
+    branches: [main]
 
 jobs:
   build-and-test:
@@ -23,15 +23,29 @@ jobs:
           echo "LEXIDAWN_CI_DEPLOYMENT_TARGET=26.5" >> "$GITHUB_ENV"
           echo "LEXIDAWN_CI_TOOLCHAIN_STATUS=approved-compatibility-26.5" >> "$GITHUB_ENV"
           echo "CI deployment target: 26.5 (explicitly approved compatibility target)"
+      - name: Install and verify approved iOS 26.5 Simulator runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! xcrun simctl list runtimes | grep -E "iOS 26\.5"; then
+            echo "iOS 26.5 Simulator runtime is missing; requesting the runner-supported iOS platform download."
+            xcodebuild -downloadPlatform iOS
+          fi
+          echo "Installed simulator runtimes:"
+          xcrun simctl list runtimes
+          if ! xcrun simctl list runtimes | grep -E "iOS 26\.5"; then
+            echo "::error::Approved iOS 26.5 Simulator runtime is unavailable on this runner."
+            exit 1
+          fi
       - name: Build unsigned simulator app
         run: |
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration CI IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO build
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO build
       - name: Select and boot scheme-accepted iOS Simulator
         shell: bash
         run: |
           set -euo pipefail
           DESTINATIONS_FILE="${RUNNER_TEMP}/lexidawn-destinations.txt"
-          if ! xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration CI IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" -showdestinations >"${DESTINATIONS_FILE}" 2>&1; then
+          if ! xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" -showdestinations >"${DESTINATIONS_FILE}" 2>&1; then
             echo "::error::xcodebuild could not enumerate destinations for the LexiDawn scheme."
             cat "${DESTINATIONS_FILE}"
             exit 1
@@ -76,6 +90,4 @@ jobs:
           xcrun simctl bootstatus "${SIMULATOR_ID}" -b
       - name: Run unit and UI tests on concrete simulator
         run: |
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -destination "id=${LEXIDAWN_SIMULATOR_ID}" -configuration CI IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO test
-
-# CI configuration targets iOS 26.5 for compatibility; Debug/Release remain at iOS 27.0.
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -destination "id=${LEXIDAWN_SIMULATOR_ID}" -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO test
