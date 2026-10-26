@@ -65,6 +65,8 @@ jobs:
             exit 1
           fi
           echo "Created iOS 26.5 simulator: ${CREATED_SIMULATOR_ID}"
+          xcrun simctl boot "${CREATED_SIMULATOR_ID}"
+          xcrun simctl bootstatus "${CREATED_SIMULATOR_ID}" -b
           if ! xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" -showdestinations >"${DESTINATIONS_FILE}" 2>&1; then
             cat "${DESTINATIONS_FILE}"
             exit 1
