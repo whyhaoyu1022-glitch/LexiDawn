@@ -51,6 +51,25 @@ jobs:
             exit 1
           fi
           cat "${DESTINATIONS_FILE}"
+          RUNTIME_ID="com.apple.CoreSimulator.SimRuntime.iOS-26-5"
+          DEVICE_TYPE_ID="$(xcrun simctl list devicetypes | awk -F '[()]' '/iPhone/ { print $2; exit }')"
+          if [[ -z "${DEVICE_TYPE_ID}" ]]; then
+            echo "::error::No iPhone Simulator device type is installed on the runner."
+            xcrun simctl list devicetypes
+            exit 1
+          fi
+          CREATED_SIMULATOR_ID="$(xcrun simctl create "LexiDawn CI iPhone" "${DEVICE_TYPE_ID}" "${RUNTIME_ID}")"
+          if [[ -z "${CREATED_SIMULATOR_ID}" ]]; then
+            echo "::error::Unable to create an iOS 26.5 Simulator device."
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "Created iOS 26.5 simulator: ${CREATED_SIMULATOR_ID}"
+          if ! xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" -showdestinations >"${DESTINATIONS_FILE}" 2>&1; then
+            cat "${DESTINATIONS_FILE}"
+            exit 1
+          fi
+          cat "${DESTINATIONS_FILE}"
           SIMULATOR_ID="$(python3 - "${DESTINATIONS_FILE}" <<'PY'
           import re
           import sys
