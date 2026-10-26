@@ -3,6 +3,7 @@ import SwiftData
 import XCTest
 @testable import LexiDawn
 
+@MainActor
 final class LexiDawnTests: XCTestCase {
     func testDesignTokensUseFourPointGrid() {
         XCTAssertEqual(LexiDawnSpacing.xs, 4)
