@@ -2,6 +2,7 @@ import Foundation
 import SwiftData
 import Combine
 
+@MainActor
 final class AppDependencies: ObservableObject {
     let modelContainer: ModelContainer
     let cycleRepository: StudyCycleRepository
