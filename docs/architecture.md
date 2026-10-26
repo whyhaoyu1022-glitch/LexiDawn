@@ -11,4 +11,4 @@ Round 1 按 SPEC §15.1–15.5 保留原生 SwiftUI 与 SwiftData，并把每日
 
 周期完成条件是文章、复习、连线和拼写四个状态均为 `completed` 或合法 `deferred`。`blocked`、`failed`、`ready` 和 `inProgress` 不会被误认为完成。候选文章必须由 provider 返回，不能用 UI 或生产 fixture 生成伪文章。
 
-SwiftData 当前采用默认本地容器；新增模型字段通过有默认值的属性兼容后续迁移。iOS 27.0 产品 Deployment Target 未下调，CI 仍按已批准的 26.5 兼容参数构建与测试。
+SwiftData 当前采用默认本地容器；新增模型字段通过有默认值的属性兼容后续迁移。常规 Debug/Release 产品 Deployment Target 仍为 iOS 27.0；CI 使用单独的 `CI` build configuration（已批准的 iOS 26.5 兼容目标）构建与测试。

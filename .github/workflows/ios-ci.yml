@@ -1,9 +1,9 @@
 name: iOS CI
 on:
   push:
-    branches: [main]
+    branches: [main, round1-daily-cycle]
   pull_request:
-    branches: [main]
+    branches: [main, round1-daily-cycle]
 
 jobs:
   build-and-test:
@@ -25,13 +25,13 @@ jobs:
           echo "CI deployment target: 26.5 (explicitly approved compatibility target)"
       - name: Build unsigned simulator app
         run: |
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO build
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration CI IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO build
       - name: Select and boot scheme-accepted iOS Simulator
         shell: bash
         run: |
           set -euo pipefail
           DESTINATIONS_FILE="${RUNNER_TEMP}/lexidawn-destinations.txt"
-          if ! xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" -showdestinations >"${DESTINATIONS_FILE}" 2>&1; then
+          if ! xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration CI IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" -showdestinations >"${DESTINATIONS_FILE}" 2>&1; then
             echo "::error::xcodebuild could not enumerate destinations for the LexiDawn scheme."
             cat "${DESTINATIONS_FILE}"
             exit 1
@@ -76,6 +76,6 @@ jobs:
           xcrun simctl bootstatus "${SIMULATOR_ID}" -b
       - name: Run unit and UI tests on concrete simulator
         run: |
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -destination "id=${LEXIDAWN_SIMULATOR_ID}" -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO test
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -destination "id=${LEXIDAWN_SIMULATOR_ID}" -configuration CI IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO test
 
-# Round 1 CI rerun after SwiftData main-actor isolation fix
+# CI configuration targets iOS 26.5 for compatibility; Debug/Release remain at iOS 27.0.

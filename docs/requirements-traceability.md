@@ -7,7 +7,7 @@
 | GOV-001 | 0.1 | “SPEC.md 是产品行为和架构的权威来源。” | 架构 | P0 | SPEC.md, AGENTS.md | 规格与实现审查 | 本矩阵 | 已实现待验收 |
 | M0-001 | 15.1、15.2；26 M0 | “使用 SwiftUI 与必要的原生 UIKit 桥接” | 架构/UI | P0 | LexiDawn/*.swift, project.pbxproj | xcodebuild -list/build | 旧 Actions 构建通过；新 Actions 未确认 | 进行中 |
 | M0-002 | 3.1 | “主导航固定为五项” | UI | P0 | RootTabView.swift | XCUITest 五入口切换 | `testFivePrimaryTabsAreVisibleAndSelectable` | 已实现待 CI |
-| M0-003 | 22.3、22.5 | “在 macOS runner 上使用指定 Xcode 构建。” | CI | P0 | .github/workflows/ios-ci.yml | showdestinations、concrete simulator、build/test | 旧 run 40184339319 失败日志已确认；修复待新 run | 进行中 |
+| M0-003 | 22.3、22.5 | “在 macOS runner 上使用指定 Xcode 构建。” | CI | P0 | .github/workflows/ios-ci.yml、CI build configuration | CI 配置、showdestinations、concrete simulator、build/test | run 40337877307 构建通过但目的地选择失败；专用 CI configuration 已加入，后续 Actions 待确认 | 进行中 |
 | M1-001 | 2.1–2.6、19.3、26 M1 | “未完成任务必须保存在本地数据库” | 领域/数据 | P0 | Domain/DailyTasks/DailyTasks.swift, Data/PersistenceModels.swift | 状态迁移、完成判断、恢复查询 | 状态机与周期测试 | 已实现待 CI |
 | M1-002 | 19.1、19.9、19.10 | “本地优先，保存 UTC 时间戳和明确的本地日期/时区字段” | 持久化 | P0 | Data/PersistenceModels.swift, Data/Repositories.swift | SwiftData 创建、更新、重建 Repository | `testSwiftDataCycleAndPreferencesSurviveRepositoryRebuild` | 已实现待 CI |
 | M1-003 | 2.2、2.3、24.2 | “旧任务优先，未完成不覆盖” | 业务规则 | P0 | DailyCycleService | 同日幂等、跨日保留、carry-over 幂等 | 周期与时区测试 | 已实现待 CI |
