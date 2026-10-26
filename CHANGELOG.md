@@ -1,12 +1,13 @@
-# 变更记录
+# Changelog
 
-## 未发布 · 2026-10-25
+## Round 1 — 2026-10-26
 
-- 修复 Xcode 工程中的 DesignTokens 源文件路径，恢复应用 target 构建。
-- 修复 CI 测试没有具体模拟器 destination 的问题，动态选择并启动可用 iOS Simulator。
-- 按用户批准将 CI 兼容目标固定为 iOS 26.5；产品工程目标仍记录为 iOS 27.0。
-- 修复 Xcode 工程的源码、框架和资源构建阶段，加入应用、单元测试和 UI 测试 target 及共享 scheme。
-- 配置自动生成 Info.plist、bundle identifier、版本号和最低系统版本。
-- 将主导航修正为“今日、探索、词汇、复习、我的”。
-- 建立第一版 SwiftUI DesignSystem token 与实际 UI 引用。
-- 加入间距 token 单元测试和五入口导航 UI 测试。
+- 新增每日学习周期领域模型和 `TaskStatus` 状态迁移，区分 locked、ready、inProgress、completed、deferred、blocked、failed。
+- 新增跨日任务保留、最早未完成周期优先、同日幂等、文章去重和无候选结果规则。
+- 新增 SwiftData 的文章、每日周期和用户偏好模型，以及周期、文章和偏好 Repository。
+- 应用启动时创建共享持久化容器；偏好默认值符合 06:20/21:20 和自动加入生词本规则。
+- 今日首页改为读取 Repository 的真实周期，显示状态、原始分配日期、逾期、空状态和重试操作。
+- 新增领域、状态迁移、跨日/时区、SwiftData 恢复与首页 ViewModel 测试；保留原有导航测试。
+- CI 目的地选择改为以 `xcodebuild -showdestinations` 为准，找不到 scheme 接受的 concrete iOS Simulator 时明确失败。
+
+已知限制：本地容器没有 Xcode；真实文章 provider、阅读器、复习题目、通知和真实设备验收属于后续轮次。新 Actions 结果尚未确认。
