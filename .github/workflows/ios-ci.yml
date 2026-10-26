@@ -58,6 +58,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          echo "GITHUB_REF=${GITHUB_REF} GITHUB_HEAD_REF=${GITHUB_HEAD_REF:-} GITHUB_SHA=${GITHUB_SHA}"
+          echo "Checked out commit: $(git rev-parse HEAD)"
           DESTINATIONS_FILE="${RUNNER_TEMP}/lexidawn-destinations.txt"
           RUNTIME_ID="com.apple.CoreSimulator.SimRuntime.iOS-26-5"
           DEVICE_TYPE_ID="$(xcrun simctl list devicetypes | awk -F '[()]' '/iPhone/ { print $2; exit }')"
@@ -75,10 +77,18 @@ jobs:
           echo "Created iOS 26.5 simulator: ${CREATED_SIMULATOR_ID}"
           xcrun simctl boot "${CREATED_SIMULATOR_ID}"
           xcrun simctl bootstatus "${CREATED_SIMULATOR_ID}" -b
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" -showdestinations >"${DESTINATIONS_FILE}" 2>&1 || true
+          if ! xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" -showdestinations >"${DESTINATIONS_FILE}" 2>&1; then
+            echo "::error::xcodebuild could not enumerate destinations after CI target override."
+            cat "${DESTINATIONS_FILE}"
+            exit 1
+          fi
           echo "xcodebuild destination diagnostics:"
           cat "${DESTINATIONS_FILE}"
-          echo "Using the concrete simulator created and booted above: ${CREATED_SIMULATOR_ID}"
+          if ! grep -F "id:${CREATED_SIMULATOR_ID}" "${DESTINATIONS_FILE}" >/dev/null; then
+            echo "::error::Created simulator is not accepted by the LexiDawn scheme."
+            exit 1
+          fi
+          echo "Using the concrete simulator created and accepted above: ${CREATED_SIMULATOR_ID}"
           echo "LEXIDAWN_SIMULATOR_ID=${CREATED_SIMULATOR_ID}" >> "$GITHUB_ENV"
       - name: Run unit tests on concrete simulator
         shell: bash
