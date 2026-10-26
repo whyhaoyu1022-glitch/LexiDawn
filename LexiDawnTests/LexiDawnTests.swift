@@ -181,12 +181,12 @@ final class LexiDawnTests: XCTestCase {
 
     func testTodayViewModelShowsNoCandidateAndFixtureCycleState() throws {
         let emptyDependencies = try AppDependencies.makeInMemory()
-        let emptyViewModel = TodayViewModel(dependencies: emptyDependencies, now: { date("2026-10-26T01:00:00Z") })
+        let emptyViewModel = TodayViewModel(dependencies: emptyDependencies, now: { self.date("2026-10-26T01:00:00Z") })
         emptyViewModel.load()
         XCTAssertEqual(emptyViewModel.state, .noCandidate)
 
         let fixtureDependencies = try AppDependencies.makeInMemory(candidateProvider: FixtureArticleCandidateProvider(fixtures: [fixture(id: "article-1", title: "A real fixture article")] ))
-        let fixtureViewModel = TodayViewModel(dependencies: fixtureDependencies, now: { date("2026-10-26T01:00:00Z") })
+        let fixtureViewModel = TodayViewModel(dependencies: fixtureDependencies, now: { self.date("2026-10-26T01:00:00Z") })
         fixtureViewModel.load()
         guard case let .loaded(snapshot) = fixtureViewModel.state else { return XCTFail("Expected loaded state") }
         XCTAssertEqual(snapshot.cycle.articleID, "article-1")
