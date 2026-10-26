@@ -77,3 +77,5 @@ jobs:
       - name: Run unit and UI tests on concrete simulator
         run: |
           xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -destination "id=${LEXIDAWN_SIMULATOR_ID}" -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO test
+
+# Round 1 CI rerun after SwiftData main-actor isolation fix
