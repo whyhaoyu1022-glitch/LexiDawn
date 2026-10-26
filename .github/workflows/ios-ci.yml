@@ -37,6 +37,20 @@ jobs:
             echo "::error::Approved iOS 26.5 Simulator runtime is unavailable on this runner."
             exit 1
           fi
+      - name: Apply approved CI deployment target in checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("LexiDawn.xcodeproj/project.pbxproj")
+          text = path.read_text()
+          updated = text.replace("IPHONEOS_DEPLOYMENT_TARGET = 27.0;", "IPHONEOS_DEPLOYMENT_TARGET = 26.5;")
+          if updated == text:
+              raise SystemExit("No iOS 27.0 deployment target found to override for CI")
+          path.write_text(updated)
+          PY
+          echo "CI checkout target: iOS 26.5 (product source remains iOS 27.0)"
       - name: Build unsigned simulator app
         run: |
           xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO build
