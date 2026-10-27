@@ -23,23 +23,103 @@ jobs:
           echo "LEXIDAWN_CI_DEPLOYMENT_TARGET=26.5" >> "$GITHUB_ENV"
           echo "LEXIDAWN_CI_TOOLCHAIN_STATUS=approved-compatibility-26.5" >> "$GITHUB_ENV"
           echo "CI deployment target: 26.5 (explicitly approved compatibility target)"
-      - name: Build unsigned simulator app
-        run: |
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO build
-      - name: Select and boot concrete simulator
+      - name: Install and verify approved iOS 26.5 Simulator runtime
         shell: bash
         run: |
           set -euo pipefail
-          SIMULATOR_ID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next((x["udid"] for ds in d.get("devices",{}).values() for x in ds if x.get("isAvailable") and x.get("name","").startswith("iPhone")), next((x["udid"] for ds in d.get("devices",{}).values() for x in ds if x.get("isAvailable")), "")) )')"
-          if [[ -z "${SIMULATOR_ID}" ]]; then
-            echo "::error::No available iOS Simulator device was found."
+          if ! xcrun simctl list runtimes | grep -E "iOS 26\.5"; then
+            echo "iOS 26.5 Simulator runtime is missing; requesting the runner-supported iOS platform download."
+            xcodebuild -downloadPlatform iOS
+          fi
+          echo "Installed simulator runtimes:"
+          xcrun simctl list runtimes
+          if ! xcrun simctl list runtimes | grep -E "iOS 26\.5"; then
+            echo "::error::Approved iOS 26.5 Simulator runtime is unavailable on this runner."
+            exit 1
+          fi
+      - name: Apply approved CI deployment target in checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("LexiDawn.xcodeproj/project.pbxproj")
+          text = path.read_text()
+          updated = text.replace("IPHONEOS_DEPLOYMENT_TARGET = 27.0;", "IPHONEOS_DEPLOYMENT_TARGET = 26.5;")
+          if updated == text:
+              raise SystemExit("No iOS 27.0 deployment target found to override for CI")
+          path.write_text(updated)
+          PY
+          echo "CI checkout target: iOS 26.5 (product source remains iOS 27.0)"
+      - name: Build unsigned simulator app
+        run: |
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone build
+      - name: Select and boot scheme-accepted iOS Simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "GITHUB_REF=${GITHUB_REF} GITHUB_HEAD_REF=${GITHUB_HEAD_REF:-} GITHUB_SHA=${GITHUB_SHA}"
+          echo "Checked out commit: $(git rev-parse HEAD)"
+          DESTINATIONS_FILE="${RUNNER_TEMP}/lexidawn-destinations.txt"
+          RUNTIME_ID="com.apple.CoreSimulator.SimRuntime.iOS-26-5"
+          DEVICE_TYPE_ID="$(xcrun simctl list devicetypes | awk -F '[()]' '/iPhone/ { print $2; exit }')"
+          if [[ -z "${DEVICE_TYPE_ID}" ]]; then
+            echo "::error::No iPhone Simulator device type is installed on the runner."
+            xcrun simctl list devicetypes
+            exit 1
+          fi
+          CREATED_SIMULATOR_ID="$(xcrun simctl create "LexiDawn CI iPhone" "${DEVICE_TYPE_ID}" "${RUNTIME_ID}")"
+          if [[ -z "${CREATED_SIMULATOR_ID}" ]]; then
+            echo "::error::Unable to create an iOS 26.5 Simulator device."
             xcrun simctl list devices available
             exit 1
           fi
-          echo "Using simulator id: ${SIMULATOR_ID}"
-          echo "LEXIDAWN_SIMULATOR_ID=${SIMULATOR_ID}" >> "$GITHUB_ENV"
-          xcrun simctl boot "${SIMULATOR_ID}" 2>/dev/null || true
-          xcrun simctl bootstatus "${SIMULATOR_ID}" -b
-      - name: Run unit and UI tests on concrete simulator
+          echo "Created iOS 26.5 simulator: ${CREATED_SIMULATOR_ID}"
+          xcrun simctl boot "${CREATED_SIMULATOR_ID}"
+          xcrun simctl bootstatus "${CREATED_SIMULATOR_ID}" -b
+          if ! xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" -showdestinations >"${DESTINATIONS_FILE}" 2>&1; then
+            echo "::error::xcodebuild could not enumerate destinations after CI target override."
+            cat "${DESTINATIONS_FILE}"
+            exit 1
+          fi
+          echo "xcodebuild destination diagnostics:"
+          cat "${DESTINATIONS_FILE}"
+          if ! grep -F "id:${CREATED_SIMULATOR_ID}" "${DESTINATIONS_FILE}" >/dev/null; then
+            echo "::error::Created simulator is not accepted by the LexiDawn scheme."
+            exit 1
+          fi
+          echo "Using the concrete simulator created and accepted above: ${CREATED_SIMULATOR_ID}"
+          echo "LEXIDAWN_SIMULATOR_ID=${CREATED_SIMULATOR_ID}" >> "$GITHUB_ENV"
+      - name: Run unit tests on concrete simulator
+        shell: bash
         run: |
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -destination "id=${LEXIDAWN_SIMULATOR_ID}" -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO test
+          set -euo pipefail
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" \
+            -destination-timeout 120 -configuration Debug \
+            IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" \
+            CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone \
+            -parallel-testing-enabled NO \
+            -resultBundlePath "${RUNNER_TEMP}/LexiDawn-unit.xcresult" \
+            -only-testing:LexiDawnTests test
+      - name: Run UI tests on concrete simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" \
+            -destination-timeout 120 -configuration Debug \
+            IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" \
+            CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone \
+            -parallel-testing-enabled NO \
+            -resultBundlePath "${RUNNER_TEMP}/LexiDawn-ui.xcresult" \
+            -only-testing:LexiDawnUITests test
+      - name: Upload test result bundles
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LexiDawn-xcresults-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/LexiDawn-unit.xcresult
+            ${{ runner.temp }}/LexiDawn-ui.xcresult
+          if-no-files-found: warn

@@ -11,4 +11,11 @@ final class LexiDawnUITests: XCTestCase {
             XCTAssertTrue(app.navigationBars[label].waitForExistence(timeout: 5), "Missing navigation title: \(label)")
         }
     }
+
+    func testTodayShowsHonestEmptyStateWhenNoArticleProviderIsConnected() {
+        let app = XCUIApplication()
+        app.launch()
+        XCTAssertTrue(app.staticTexts["暂时没有可分配文章"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["重试"].exists)
+    }
 }

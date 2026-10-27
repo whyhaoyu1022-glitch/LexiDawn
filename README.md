@@ -4,7 +4,7 @@
 
 ## 开发环境
 
-工程使用 SwiftUI 和原生 Xcode 项目，不引入第三方 UI 框架。应用 target 的 bundle identifier 是 `com.lexidawn.app`，版本为 `0.1.0 (1)`，最低系统版本配置为 iOS 27.0。CI 按用户批准使用 iOS 26.5 兼容目标，并输出实际 Xcode、SDK 和 Swift 版本；兼容构建不替代 iOS 27.0 规格验收。
+工程使用 SwiftUI 和原生 Xcode 项目，不引入第三方 UI 框架。应用 target 的 bundle identifier 是 `com.lexidawn.app`，版本为 `0.1.0 (1)`，常规 Debug/Release 产品配置的最低系统版本为 iOS 27.0。CI 在 runner checkout 中临时把该目标替换为已批准的 iOS 26.5 兼容目标，再使用 Debug 配置构建和测试；工程中没有独立的 `CI` build configuration。兼容构建不替代 iOS 27.0 规格验收。
 
 ## 构建与测试
 
@@ -13,7 +13,7 @@ xcodebuild -list -project LexiDawn.xcodeproj
 xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
 ```
 
-GitHub Actions 会自动选择可用的具体 iOS Simulator，使用 `-destination id=<具体设备>` 执行单元测试和 UI 测试。当前开发容器没有 Xcode，不能把本地命令结果写成 iOS 验收证据。
+GitHub Actions 会自动选择可用的具体 iOS Simulator，使用 `-destination id=<具体设备>` 执行单元测试和 UI 测试，并上传 `.xcresult` 结果包。workflow 只在 `main` push 和面向 `main` 的 pull request 上触发。当前开发容器没有 Xcode，不能把本地命令结果写成 iOS 验收证据。
 
 ## 交付边界
 
