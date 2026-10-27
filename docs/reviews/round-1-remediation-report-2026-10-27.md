@@ -5,6 +5,7 @@
 - 起始 commit：`ab70b5a`（本地 main 保留审查报告并整合 `round1-daily-cycle`）
 - 整改代码最终 commit：`874b3626c00a745767e9d95fbd2cf4c09abf3ca0`
 - 最终 main Actions：run [40597791954](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40597791954)，`success`，对应 SHA `874b3626c00a745767e9d95fbd2cf4c09abf3ca0`
+- 文档同步 main commit：`668bc09ab36ee2a252873835ad1dbf15d324a377`；其 Actions run [40598844627](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40598844627) 已 success。
 - 仓库：`whyhaoyu1022-glitch/LexiDawn`
 
 ## 整合范围与分支状态
@@ -56,7 +57,7 @@ PR #1 在整改开始时仍为 open，整改完成后已关闭且未合并；整
 - main 旧失败 run：`https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40184339319`
 - 第一轮分支旧绿色 run：`https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40416668214`（对应旧分支代码，不是本整改提交）
 
-最终 main run 已结束：run 40597791954，success，SHA `874b3626c00a745767e9d95fbd2cf4c09abf3ca0`；xcresult artifact ID `12776278533`。run 期间曾出现并修复的失败包括 simulator placeholder、测试编译参数错误和无操作恢复写入；这些旧 run 不作为最终证据。
+最终代码 run 40597791954 和文档同步后的 main run 40598844627 均已结束并 success；xcresult artifact ID `12776278533` 对应代码验证 run。run 期间曾出现并修复的失败包括 simulator placeholder、测试编译参数错误和无操作恢复写入；这些旧 run 不作为最终证据。
 
 ## 未实施的后续里程碑
 

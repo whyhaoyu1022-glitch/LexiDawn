@@ -7,6 +7,6 @@
 - CI 触发：只在 `main` push 和面向 `main` 的 pull request 上运行；`round1-daily-cycle` push 不属于独立触发条件。
 - 产品 Deployment Target：常规 Debug/Release 为 iOS 27.0；兼容 CI 结果只代表 26.5 simulator 验证。
 - 本地验证：已运行 `git diff --check`；当前容器没有 Swift/Xcode，未运行 xcodebuild、XCTest 或 XCUITest。
-- 最新 main Actions：run [40597791954](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40597791954) success，对应 SHA `874b3626c00a745767e9d95fbd2cf4c09abf3ca0`；app build、测试 target preflight、unit/UI test steps 均 success，xcresult artifact [12776278533](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40597791954/artifacts/12776278533)。UI 2 tests/0 failures；unit target source has 25 XCTest methods and its step completed success。
+- 最新 main Actions：代码 run [40597791954](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40597791954) 和文档同步 run [40598844627](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40598844627) 均 success；代码 SHA `874b3626c00a745767e9d95fbd2cf4c09abf3ca0`，最终文档同步 SHA `668bc09ab36ee2a252873835ad1dbf15d324a377`。app build、测试 target preflight、unit/UI test steps 均 success，xcresult artifact [12776278533](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40597791954/artifacts/12776278533)。UI 2 tests/0 failures；unit target source has 25 XCTest methods and its step completed success。
 - PR #1 已关闭且未合并；`round1-daily-cycle` 仍保留，当前连接没有 branch-ref 删除工具，未伪造删除结果。
 - 未实施的后续里程碑：真实文章来源、阅读器、词典、生词本、连线/拼写题、通知和真实设备验收；本轮保持诚实空状态，入口不改变持久化任务状态。
