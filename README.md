@@ -13,7 +13,7 @@ xcodebuild -list -project LexiDawn.xcodeproj
 xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
 ```
 
-GitHub Actions 会自动选择可用的具体 iOS Simulator，使用 `-destination id=<具体设备>` 执行单元测试和 UI 测试，并上传 `.xcresult` 结果包。workflow 只在 `main` push 和面向 `main` 的 pull request 上触发。当前开发容器没有 Xcode，不能把本地命令结果写成 iOS 验收证据。
+GitHub Actions 会创建并校验具体 iOS Simulator，保留 `xcodebuild -showdestinations` 诊断后使用该设备 ID 执行单元测试和 UI 测试，并上传 `.xcresult` 结果包。workflow 只在 `main` push 和面向 `main` 的 pull request 上触发。当前开发容器没有 Xcode，不能把本地命令结果写成 iOS 验收证据。
 
 ## 交付边界
 

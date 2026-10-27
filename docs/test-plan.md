@@ -9,6 +9,6 @@
 | UI/无障碍 | iOS Simulator/真机 | SPEC §24.6 | 未运行 |
 | 设备/安装 | AltServer/AltStore 真机 | M9 | 未运行 |
 
-CI 在 runner checkout 中临时把工程内 27.0 deployment target 替换为已批准的 26.5 兼容目标；工程没有独立 `CI` build configuration。workflow 先用 `xcodebuild -showdestinations` 枚举 LexiDawn scheme 实际接受的 concrete `platform:iOS Simulator` 目的地，再从中创建并校验具体设备后调用 `xcodebuild test`。如果 scheme 没有 concrete iOS Simulator，workflow 输出完整诊断并失败；不会把 `simctl list` 随机返回的设备 ID 当作测试证据，也不会跳过测试。单元和 UI 测试分别写入并上传 `.xcresult`。
+CI 在 runner checkout 中临时把工程内 27.0 deployment target 替换为已批准的 26.5 兼容目标；工程没有独立 `CI` build configuration。workflow 保留 `xcodebuild -showdestinations` 诊断，但 Xcode 26.6 可能只返回 placeholder，因此以刚创建并由 `simctl` 再次确认存在的具体设备 ID 执行 build/test；失败会使 job 失败，不会跳过测试。单元和 UI 测试分别写入并上传 `.xcresult`。
 
 CI 固定使用用户批准的 iOS 26.5 兼容目标。工程产品配置仍为 iOS 27.0，兼容构建和测试结果不替代规格目标验收。本地容器没有 Swift/Xcode，因此本轮没有声称本地 iOS 构建、XCTest 或 UI 测试通过。
