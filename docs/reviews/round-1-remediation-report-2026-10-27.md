@@ -24,7 +24,7 @@ PR #1 在整改开始时仍为 open，尚未将有阻断缺陷的旧 PR 直接�
 | R1-006 | 已实现，待 CI | 使用临时磁盘 `ModelConfiguration(url:)`，释放容器后重开并验证周期、文章、偏好。 | §2.2、§20.1、§25.3 | `testDiskContainerReopenRestoresCycleArticleAndPreferences` |
 | R1-007 | 已实现，待 CI | `ArticleCandidate`/`ArticleRecord` 增加展示标题、难度、图片、许可和内容状态；分配前验证 ID、标题、来源、HTTP(S) URL、许可和可用正文；canonicalURL 规范化去重。 | §19.1、§21.3、§30.13 | `testInvalidCandidateCannotCreateCycleOrArticle`；重复 URL 由 Repository 拒绝 |
 | R1-008 | 已补齐主要场景，待 CI | 增加文章 deferred、复习空队列、日期回拨、磁盘恢复、唯一 current、失败重试、未接入入口等分层测试；保持无候选生产空状态。 | §25、§30 | `LexiDawnTests.swift` 新增回归矩阵；UI/CI 结果待最终 run |
-| R1-009 | 已实现，待 CI | 保留 Debug/Release iOS 27.0；workflow 在 runner checkout 临时使用 26.5，不声称存在 CI configuration；保留 `-showdestinations` 诊断，兼容 Xcode 26.6 placeholder 行为并用 `simctl` 验证的具体设备 ID 运行测试；上传 unit/UI `.xcresult`。 | §15.2、§22.3、§25.6 | `.github/workflows/ios-ci.yml`；最终 run 待记录 |
+| R1-009 | 已实现，待 CI | 保留 Debug/Release iOS 27.0；workflow 在 runner checkout 临时使用 26.5，不声称存在 CI configuration；先用 generic simulator destination `build-for-testing` 编译应用和测试 target，失败时不启动 simulator；通过后保留 `-showdestinations` 诊断，兼容 Xcode 26.6 placeholder 行为并用 `simctl` 验证的具体设备 ID 运行测试；上传 unit/UI `.xcresult`。 | §15.2、§22.3、§25.6 | `.github/workflows/ios-ci.yml`；最终 run 待记录 |
 | R1-010 | 已更新 | 更新 `STATUS.md`、`CHANGELOG.md`、`docs/architecture.md`、`docs/test-plan.md`、`docs/requirements-traceability.md` 和开发日志，区分本地未运行、CI 待确认和后续未实现。 | §0.3、§25.9 | 文档审查；最终 run URL/SHA 待填写 |
 | R1-011 | 已实现，待 CI | carry-over 只在当前本地学习日期晚于分配日期时增加，日期回拨不增加。 | §2.3、§18.5、§30.2 | `testDateRollbackDoesNotIncreaseCarryOverCount` |
 | R1-012 | 已实现，待 CI | 规范化 canonicalURL、校验候选字段和许可/正文状态；删除未变更的 `usedArticleIDs` 可变声明。 | §12.5、§19.1、§19.10 | 候选门禁和 Repository 测试 |

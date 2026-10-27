@@ -348,7 +348,7 @@ final class LexiDawnTests: XCTestCase {
         let cycle = DailyStudyCycle(assignedLocalDate: "2026-10-26", assignedTimeZoneID: "UTC", articleID: "a1", createdAtUTC: timestamp, updatedAtUTC: timestamp, assignmentReason: "test")
         store.cycles = [cycle]
         let service = DailyCycleService(cycleStore: store, candidateProvider: EmptyArticleCandidateProvider())
-        let dependencies = AppDependencies(modelContainer: container, cycleService: service, calendar: utcCalendar, timeZone: utc)
+        let dependencies = AppDependencies(modelContainer: container, calendar: utcCalendar, timeZone: utc, cycleService: service)
         let viewModel = TodayViewModel(dependencies: dependencies, now: { timestamp })
 
         viewModel.load()
