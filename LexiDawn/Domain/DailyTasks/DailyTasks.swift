@@ -23,10 +23,19 @@ enum TaskStatus: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// A generic task is satisfied when it is completed or explicitly deferred.
-    /// Article completion uses `DailyStudyCycle.isComplete` because an article
-    /// can never be deferred.
-    var isSatisfied: Bool { self == .completed || self == .deferred }
+    /// The conservative default is used when the task kind is unknown.
+    /// Call `isSatisfied(for:)` for a cycle task so article and review rules
+    /// cannot be accidentally conflated.
+    var isSatisfied: Bool { self == .completed }
+
+    func isSatisfied(for task: DailyTask) -> Bool {
+        switch task {
+        case .article:
+            return self == .completed
+        case .review, .matching, .cloze:
+            return self == .completed || self == .deferred
+        }
+    }
     var canContinue: Bool { self == .ready || self == .inProgress || self == .blocked || self == .failed }
 
     func canTransition(to target: TaskStatus) -> Bool {
@@ -235,8 +244,10 @@ struct DailyStudyCycle: Equatable, Sendable {
     }
 
     var isComplete: Bool {
-        articleTaskStatus == .completed && reviewTaskStatus.isSatisfied &&
-            matchingStageStatus.isSatisfied && clozeStageStatus.isSatisfied
+        articleTaskStatus.isSatisfied(for: .article) &&
+            reviewTaskStatus.isSatisfied(for: .review) &&
+            matchingStageStatus.isSatisfied(for: .matching) &&
+            clozeStageStatus.isSatisfied(for: .cloze)
     }
 
     var hasOutstandingWork: Bool { !isComplete }

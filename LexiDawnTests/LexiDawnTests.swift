@@ -181,6 +181,9 @@ final class LexiDawnTests: XCTestCase {
     }
 
     func testBlockedAndFailedNeverCountAsCompleted() {
+        XCTAssertFalse(TaskStatus.deferred.isSatisfied)
+        XCTAssertFalse(TaskStatus.deferred.isSatisfied(for: .article))
+        XCTAssertTrue(TaskStatus.deferred.isSatisfied(for: .review))
         XCTAssertFalse(TaskStatus.blocked.isSatisfied)
         XCTAssertFalse(TaskStatus.failed.isSatisfied)
     }
@@ -334,6 +337,26 @@ final class LexiDawnTests: XCTestCase {
         XCTAssertThrowsError(try service.updateTask(cycleID: cycle.cycleID, task: .article, to: .inProgress, at: .now))
         let retried = try service.updateTask(cycleID: cycle.cycleID, task: .article, to: .inProgress, at: .now)
         XCTAssertEqual(retried.articleTaskStatus, .inProgress)
+        XCTAssertEqual(store.cycles.count, 1)
+    }
+
+    func testTodayViewModelRetryRepeatsFailedWrite() throws {
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: ArticleRecord.self, DailyStudyCycleRecord.self, UserPreferencesRecord.self, configurations: configuration)
+        let store = FailingCycleStore(failuresRemaining: 1)
+        let timestamp = date("2026-10-26T01:00:00Z")
+        let cycle = DailyStudyCycle(assignedLocalDate: "2026-10-26", assignedTimeZoneID: "UTC", articleID: "a1", createdAtUTC: timestamp, updatedAtUTC: timestamp, assignmentReason: "test")
+        store.cycles = [cycle]
+        let service = DailyCycleService(cycleStore: store, candidateProvider: EmptyArticleCandidateProvider())
+        let dependencies = AppDependencies(modelContainer: container, cycleService: service, calendar: utcCalendar, timeZone: utc)
+        let viewModel = TodayViewModel(dependencies: dependencies, now: { timestamp })
+
+        viewModel.load()
+        viewModel.update(task: .article, to: .completed)
+        guard case .saveFailed = viewModel.state else { return XCTFail("Expected the failed write state") }
+        viewModel.retry()
+        guard case let .loaded(snapshot) = viewModel.state else { return XCTFail("Expected retry to reload the saved cycle") }
+        XCTAssertEqual(snapshot.cycle.articleTaskStatus, .completed)
         XCTAssertEqual(store.cycles.count, 1)
     }
 

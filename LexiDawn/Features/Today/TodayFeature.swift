@@ -78,6 +78,19 @@ final class TodayViewModel: ObservableObject {
         _ = task
     }
 
+    /// Internal write seam for a real reader/review flow. Keeping the pending
+    /// operation here makes the retry action repeat the failed write itself;
+    /// the unavailable Round 1 buttons never call this seam.
+    func update(task: DailyTask, to status: TaskStatus, reason: String? = nil) {
+        guard case let .loaded(snapshot) = state else { return }
+        perform(PendingTaskUpdate(
+            cycleID: snapshot.cycle.cycleID,
+            task: task,
+            status: status,
+            reason: reason
+        ))
+    }
+
     private func perform(_ operation: PendingTaskUpdate) {
         do {
             _ = try dependencies.cycleService.updateTask(
