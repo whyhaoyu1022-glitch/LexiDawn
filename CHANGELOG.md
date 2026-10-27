@@ -8,9 +8,9 @@
 - 首页未接入的阅读/复习入口改为禁用并明确说明，不再写入无法完成的 `inProgress`；遗留进行中状态启动时转为可恢复的 blocked。
 - 保存失败重试保留写操作上下文；新增时区回拨、非法候选、磁盘重开、唯一当前周期和失败重试回归测试。
 - ModelContainer 初始化失败显示存储不可用页面，不清空或覆盖本地数据。
-- CI 保持 Debug/Release 工程配置和 iOS 27.0 产品目标，workflow 只在 main push/PR 触发，runner checkout 临时使用 iOS 26.5 兼容目标并上传 xcresult。
+- CI 保持 Debug/Release 工程配置和 iOS 27.0 产品目标，workflow 只在 main push/PR 触发；runner checkout 临时使用 iOS 26.5 兼容目标，先在 simulator 启动前执行 `build-for-testing`，再运行 unit/UI tests 并上传 xcresult。
 
-验证状态：当前容器没有 Xcode/Swift；本地只完成静态 diff 检查。最终 Actions run、commit SHA 和测试数量在推送后补记。
+验证状态：当前容器没有 Xcode/Swift；本地只完成静态 diff 检查。最终 main run 40597791954 success，对应 SHA `874b3626c00a745767e9d95fbd2cf4c09abf3ca0`；UI 2 tests/0 failures，unit step success，xcresult artifact 已保存。
 
 ## Round 1 — 2026-10-26
 
@@ -23,4 +23,4 @@
 - CI 目的地选择改为以 `xcodebuild -showdestinations` 为准，找不到 scheme 接受的 concrete iOS Simulator 时明确失败。
 - CI 在 runner checkout 中临时应用 iOS 26.5 兼容目标；常规 Debug/Release 产品配置仍为 iOS 27.0。
 
-已知限制：本地容器没有 Xcode；真实文章 provider、阅读器、复习题目、通知和真实设备验收属于后续轮次。新 Actions 结果尚未确认。
+已知限制：本地容器没有 Xcode；真实文章 provider、阅读器、复习题目、通知和真实设备验收属于后续轮次。run 40597791954 已通过；真实设备和 iOS 27 产品目标仍未验证。
