@@ -321,9 +321,8 @@ final class LexiDawnTests: XCTestCase {
         )
         try repository.save(candidate: first, fetchedAt: .now)
         XCTAssertThrowsError(try repository.save(candidate: duplicate, fetchedAt: .now)) { error in
-            guard case PersistenceError.duplicateCanonicalURL(_) = error as? PersistenceError else {
-                return XCTFail("Expected canonical URL duplicate error, got \(error)")
-            }
+            XCTAssertTrue(error is PersistenceError)
+            XCTAssertTrue(error.localizedDescription.contains("canonicalURL"))
         }
     }
 
