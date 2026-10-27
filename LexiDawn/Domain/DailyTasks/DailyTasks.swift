@@ -420,6 +420,7 @@ final class DailyCycleService {
 
     func recoverUnavailableInProgressTasks(at timestamp: Date) throws -> DailyStudyCycle? {
         guard var cycle = try cycleStore.fetchEarliestIncomplete() else { return nil }
+        var changed = false
         let tasks: [(DailyTask, TaskStatus)] = [
             (.article, cycle.articleTaskStatus),
             (.review, cycle.reviewTaskStatus),
@@ -428,7 +429,9 @@ final class DailyCycleService {
         ]
         for (task, status) in tasks where status == .inProgress {
             try cycle.update(task: task, to: .blocked, reason: "功能尚未接入，未执行任何学习操作", at: timestamp)
+            changed = true
         }
+        guard changed else { return cycle }
         try cycleStore.save(cycle)
         return cycle
     }
