@@ -40,9 +40,9 @@
 
 注意：代码文件的内容进入 main，不等于 PR #1 已被 GitHub 正式合并。后续开发应以 main 的代码为准，不能把旧分支 SHA 当作当前交付代码。
 
-### 2.2 最新 CI 实际结果
+### 2.2 被审查代码基线的 CI 实际结果
 
-最新 main 运行：[Actions run 40600352579](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40600352579)，对应 SHA `ee8eee95526d91623ed40803a550b8dfeab55c07`，结论为 **success**。
+本次审查的应用代码基线是 `ee8eee95526d91623ed40803a550b8dfeab55c07`。该代码基线对应的最新验证为 [Actions run 40600352579](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40600352579)，结论为 **success**。本报告本身是 docs-only 变更；创建报告的 commit `24375d7b991f3660b5ec91531859620112537e85` 另外触发了 [run 40705493392](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40705493392)。该报告提交的运行状态以 Actions 页面为准，不应与应用代码基线的测试结果混为一谈。
 
 job 中以下步骤全部成功：
 
@@ -130,7 +130,7 @@ CI 通过的是 Xcode runner 上的 iOS 26.5 兼容模拟器构建/测试。工�
 - article deferred 在 `isComplete` 中不算满足条件，但 `TaskStatus.deferred` 是终态，无法再迁移到 ready、blocked 或 completed。因而一条历史/非法记录一旦被加载，就可能永远成为未完成且不可恢复的周期。
 - 同样，review/matching/cloze 可以在没有对应 reason 的情况下通过初始化器或持久化解码进入 deferred；`isComplete` 不检查原因是否存在。
 
-这不仅是测试遗漏，而是“合法状态迁移”只保护了一个更新函数，没有保护模型构造和数据恢复入口。
+这不仅是测试遗漏，而是“合法状态迁移”只保护了一个更新函数，没有保护模型构造和数据恢复入口。此外，初始化器也允许构造“所有任务状态看起来已满足、但 completedAtUTC/completionReason 仍为空”或“周期已完成但 isCurrent 仍为 true”的组合；`StudyCycleRepository.save(_:)` 不会在保存前统一拒绝/规范化这些矛盾状态。持久化解码同样没有根据任务状态校验 completedAtUTC、completionReason 与 isCurrent 的一致性。
 
 **必须整改：**
 
@@ -368,6 +368,23 @@ SPEC 把 `carryOverCount` 定义为跨日次数，但没有进一步明确它是
 | R1-012 URL/候选校验与警告 | 有基础 URL 规范化、重复 URL 检查和候选门禁；候选字段不完整，许可/图片元数据验证不充分 | **部分修复** |
 | R1-013 ModelContainer 初始化失败 | 有存储不可用错误页，不 fatalError、不清空数据；无重试按钮，失败注入路径未测试 | **部分修复** |
 | R1-014 提交追踪和未验证范围 | 未声称真实设备通过，旧分支保留也符合用户允许的处理方式；但整合 SHA 与 CI 文档记录不准确 | **部分修复** |
+| R2-012 schema 迁移 | 有 schemaVersion 字段和可选新增字段，但没有旧 schema 数据库升级测试或实际迁移流程 | **未验证** |
+
+---
+
+### R2-012 — P1：模型版本字段存在，但没有验证从旧 schema 升级的迁移路径
+
+规格依据：[SPEC §19.10 数据迁移与一致性](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/SPEC.md#L2122-L2133)。
+
+当前 `UserPreferencesRecord` 有 `schemaVersion` 字段，但仓库中没有读取该版本并执行迁移的逻辑，也没有 `VersionedSchema` / `SchemaMigrationPlan` 或使用旧版本数据库文件的迁移回归测试。整改报告称新增字段可进行轻量迁移，但当前磁盘重开测试是“用当前模型创建数据库，再用当前模型打开”，并没有用上一版本模型建立旧数据库再升级。
+
+本轮新增到 ArticleRecord 的展示标题、难度、图片 URL/署名等字段是可选字段，SwiftData 可能支持相应轻量迁移；但**没有真实旧 schema 升级测试，就不能把迁移安全性标记为已验证**。如果用户曾经运行过旧分支版本，应用升级时仍需证明旧周期和文章记录不会丢失或导致 ModelContainer 初始化失败。
+
+**必须整改：**
+
+- 明确当前版本支持的旧 schema 范围及迁移策略。
+- 至少构造一个由上一版 schema 创建的临时磁盘数据库，再用当前 schema 打开并验证文章、周期、偏好及任务状态。
+- 如果当前尚无可支持的历史 schema，文档应明确记录这一产品阶段假设，并说明后续每次模型变更必须增加迁移测试；不能把“当前版本自己创建后能重开”当作迁移测试。
 
 ---
 
