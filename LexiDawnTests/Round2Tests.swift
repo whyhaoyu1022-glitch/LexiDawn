@@ -1,5 +1,6 @@
 import XCTest
 import SwiftData
+import UIKit
 @testable import LexiDawn
 
 @MainActor final class Round2Tests: XCTestCase {
@@ -398,3 +399,34 @@ extension Round2Tests {
         XCTAssertEqual(try app.cycleRepository.fetchAll().count, 2)
     }
 }
+
+extension Round2Tests {
+    func testNativeTextContainerExposesWordsAndPhysicalGlyphHitRejectsPunctuation() throws {
+        let text = "Book, science. Don’t stop. Long-term goals."
+        var tapped: [EnglishToken] = []
+        let component = InteractiveEnglishText(text: text, fontSize: 28, lineSpacing: 1.5, theme: "system", restore: ReaderPosition(), onPosition: { _ in }, onWord: { tapped.append($0) })
+        let container = EnglishTextContainer(frame: CGRect(x: 0, y: 0, width: 220, height: 400))
+        let view = container.textView
+        view.isEditable = false; view.isSelectable = false; view.accessibilityElementsHidden = true
+        view.textContainerInset = UIEdgeInsets(top: 20, left: 20, bottom: 20, right: 20)
+        view.attributedText = NSAttributedString(string: text, attributes: [.font: UIFont.systemFont(ofSize: 28)])
+        container.layoutIfNeeded()
+        let coordinator = InteractiveEnglishText.Coordinator(component)
+        coordinator.view = view; coordinator.accessibilityContainer = container; coordinator.tokens = EnglishTokenizer.tokens(in: text)
+        coordinator.restorePosition(); coordinator.updateAccessibility()
+        let words = try XCTUnwrap(container.accessibilityElements as? [UIAccessibilityElement])
+        XCTAssertTrue(words.contains { $0.accessibilityIdentifier == "word-Book" })
+        XCTAssertTrue(words.allSatisfy { $0.accessibilityTraits.contains(.button) })
+        func touch(_ offset: Int) {
+            let glyph = view.layoutManager.glyphIndexForCharacter(at: offset)
+            let rect = view.layoutManager.boundingRect(forGlyphRange: NSRange(location: glyph, length: 1), in: view.textContainer)
+            if let token = coordinator.token(at: CGPoint(x: rect.midX + view.textContainerInset.left, y: rect.midY + view.textContainerInset.top)) { tapped.append(token) }
+        }
+        touch(4) // comma must never select the adjacent word
+        XCTAssertTrue(tapped.isEmpty)
+        touch(7) // physical touch on science, after punctuation and wrapping
+        XCTAssertEqual(tapped.last?.surface, "science")
+        XCTAssertEqual(tapped.last?.sentence, "Book, science.")
+    }
+}
+

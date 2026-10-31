@@ -78,15 +78,18 @@ struct InteractiveEnglishText: UIViewRepresentable {
             restored = true
         }
         @objc func tap(_ recognizer: UITapGestureRecognizer) {
-            guard let view, restored else { return }
-            let local = recognizer.location(in: view)
+            guard let view, let token = token(at: recognizer.location(in: view)) else { return }
+            parent.onWord(token)
+        }
+        func token(at local: CGPoint) -> EnglishToken? {
+            guard let view, restored else { return nil }
             let point = CGPoint(x: local.x - view.textContainerInset.left, y: local.y - view.textContainerInset.top)
             let manager = view.layoutManager
             let glyph = manager.glyphIndex(for: point, in: view.textContainer)
-            guard glyph < manager.numberOfGlyphs else { return }
+            guard glyph < manager.numberOfGlyphs else { return nil }
             let rect = manager.boundingRect(forGlyphRange: NSRange(location: glyph, length: 1), in: view.textContainer)
-            guard rect.contains(point), let token = EnglishTokenizer.token(at: manager.characterIndexForGlyph(at: glyph), tokens: tokens) else { return }
-            parent.onWord(token)
+            guard rect.contains(point) else { return nil }
+            return EnglishTokenizer.token(at: manager.characterIndexForGlyph(at: glyph), tokens: tokens)
         }
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
             guard restored, let view else { return }
