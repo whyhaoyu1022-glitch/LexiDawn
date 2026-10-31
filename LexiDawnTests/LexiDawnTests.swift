@@ -541,6 +541,15 @@ extension LexiDawnTests {
 
     func testReadingEvidenceRequiresProgressAndExplicitConfirmationOrManualConfirmation() throws {
         let now = date("2026-10-26T01:00:00Z")
+        let original = try freshCycle()
+        // Even plausible system strings cannot replace reading or saved-answer evidence.
+        for task in DailyTask.allCases {
+            for reason in [nil, "explicit-reading-confirmation", "saved-review-session"] as [String?] {
+                var unproven = original
+                XCTAssertThrowsError(try unproven.update(task: task, to: .completed, reason: reason, at: now))
+                XCTAssertEqual(unproven, original)
+            }
+        }
         let hash = try XCTUnwrap(fixture(id: "a1").bodyHash)
         for progress in [-0.1, 0, 0.899, 1.1, Double.nan, Double.infinity] {
             XCTAssertThrowsError(try ReadingCompletionEvidence(articleID: "a1", bodyHash: hash, progress: progress, confirmation: .finishButton, confirmedAt: now))
