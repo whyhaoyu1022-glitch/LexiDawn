@@ -27,7 +27,8 @@ final class LexiDawnUITests: XCTestCase {
             XCTAssertTrue(button.exists)
             XCTAssertFalse(button.isEnabled)
             // A coordinate tap verifies the disabled control does not issue a domain write.
-            if button.isHittable { button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap() }
+            XCTAssertTrue(isVisible(button, in: app))
+            button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         }
         reload(app)
         assertTaskState(app, expected: "待开始")
@@ -46,6 +47,13 @@ final class LexiDawnUITests: XCTestCase {
             let explanation = app.staticTexts["unavailable-explanation"]
             reveal(explanation, in: app)
             XCTAssertTrue(explanation.label.contains("尚不能恢复学习"))
+            for task in ["article", "review", "matching", "cloze"] {
+                let button = app.buttons["unavailable-\(task)"]
+                reveal(button, in: app)
+                XCTAssertFalse(button.isEnabled)
+                XCTAssertTrue(isVisible(button, in: app))
+                button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            }
             reload(app)
             assertTaskState(app, expected: scenario == "blocked" ? "被阻塞" : "执行失败")
             app.terminate()
@@ -81,9 +89,15 @@ final class LexiDawnUITests: XCTestCase {
     }
     private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
         for _ in 0..<8 {
-            if element.isHittable { return }
+            if isVisible(element, in: app) { return }
             app.swipeUp()
         }
+    }
+    private func isVisible(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
+        guard element.exists else { return false }
+        let viewport = app.scrollViews.firstMatch.frame
+        let frame = element.frame
+        return !frame.isEmpty && viewport.contains(CGPoint(x: frame.midX, y: frame.midY))
     }
     private func reload(_ app: XCUIApplication) {
         let button = app.buttons["reload-cycle"]
