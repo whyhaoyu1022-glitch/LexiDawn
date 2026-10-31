@@ -255,13 +255,13 @@ struct DictionaryDetailView: View {
     }
     @ViewBuilder private func english(_ text: String) -> some View {
         if let articleID, !text.isEmpty, depth < 3 {
-            InteractiveEnglishText(text: text, fontSize: 19, lineSpacing: 1.45, theme: "system", restore: ReaderPosition(), onPosition: { _ in }, onWord: { token in
+            InlineEnglishText(text: text, onWord: { token in
                 do {
                     let auto = try dependencies.preferencesRepository.load().autoAddOnWordTap
                     let model = WordLookupModel(token: token, articleID: articleID, autoAdd: auto, learning: learning, depth: depth + 1)
                     model.startAddition(); selection = model
                 } catch { self.error = error.localizedDescription }
-            }, scrollable: false)
+            })
         } else {
             Text(text)
             if depth >= 3 { Text("已达本次查词深度上限；返回上一层后可继续查词。").font(.caption).foregroundStyle(.secondary) }

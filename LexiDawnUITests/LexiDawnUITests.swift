@@ -220,7 +220,12 @@ extension LexiDawnUITests {
         app.tabBars.buttons["词汇"].tap()
         let search = app.searchFields.firstMatch; XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("book")
         XCTAssertTrue(app.staticTexts["book"].waitForExistence(timeout: 5))
+        let cancelSearch = app.buttons["Cancel"].firstMatch
+        if cancelSearch.exists { cancelSearch.tap() }
+        else if app.buttons["取消"].firstMatch.exists { app.buttons["取消"].firstMatch.tap() }
+        XCTAssertTrue(app.tabBars.buttons["复习"].isHittable)
         app.tabBars.buttons["复习"].tap()
+        XCTAssertTrue(app.navigationBars["复习"].waitForExistence(timeout: 5))
         let word = app.buttons["match-word-book"]
         XCTAssertTrue(word.waitForExistence(timeout: 15)); word.tap()
         let meaning = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "match-meaning-")).firstMatch
@@ -312,6 +317,7 @@ extension LexiDawnUITests {
             app.swipeUp()
         }
         capture("round2-unreachable-control", in: app)
+        let hierarchy = XCTAttachment(string: app.debugDescription); hierarchy.name = "round2-unreachable-hierarchy"; hierarchy.lifetime = .keepAlways; add(hierarchy)
         XCTFail("Control not reachable: \(element)")
         throw NSError(domain: "Round2UI", code: 1)
     }
@@ -325,7 +331,7 @@ extension LexiDawnUITests {
         let details = app.buttons["查看详细释义"]
         try revealLearning(details, in: app); details.tap()
         XCTAssertTrue(app.navigationBars["详细释义"].waitForExistence(timeout: 5))
-        let science = app.buttons["word-science"].firstMatch
+        let science = app.links["science"].firstMatch
         try revealLearning(science, in: app); science.tap()
         XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10)); app.buttons["close-word"].tap()
         XCTAssertTrue(app.navigationBars["详细释义"].waitForExistence(timeout: 5))

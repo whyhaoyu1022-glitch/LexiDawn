@@ -141,3 +141,30 @@ final class EnglishTextContainer: UIView {
     required init?(coder: NSCoder) { super.init(coder: coder); addSubview(textView) }
     override func layoutSubviews() { super.layoutSubviews(); textView.frame = bounds; onLayout?() }
 }
+
+/// Short dictionary passages use native attributed links so List row accessibility does not
+/// flatten a UIKit container. Tokenisation and lookup actions are shared with the long reader.
+struct InlineEnglishText: View {
+    let text: String
+    let onWord: (EnglishToken) -> Void
+    private var tokens: [EnglishToken] { EnglishTokenizer.tokens(in: text) }
+    private var linkedText: AttributedString {
+        var value = AttributedString(text)
+        for token in tokens {
+            guard let range = Range(token.range, in: text),
+                  let start = AttributedString.Index(range.lowerBound, within: value),
+                  let end = AttributedString.Index(range.upperBound, within: value) else { continue }
+            value[start..<end].link = URL(string: "lexidawn-word://token/\(token.range.location)")
+        }
+        return value
+    }
+    var body: some View {
+        Text(linkedText).font(.system(.body, design: .serif)).lineSpacing(7)
+            .fixedSize(horizontal: false, vertical: true)
+            .environment(\.openURL, OpenURLAction { url in
+                guard url.scheme == "lexidawn-word", let offset = Int(url.lastPathComponent),
+                      let token = EnglishTokenizer.token(at: offset, tokens: tokens) else { return .discarded }
+                onWord(token); return .handled
+            })
+    }
+}

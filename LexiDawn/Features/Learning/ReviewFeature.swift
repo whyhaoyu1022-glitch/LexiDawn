@@ -51,8 +51,7 @@ struct ReviewPracticeContent: View {
                     ForEach(session.matching.sorted { fingerprint(session.id + $0.senseID) < fingerprint(session.id + $1.senseID) }) { option in
                         Button {
                             guard let selected else { feedback = "请先选择英文词条"; return }
-                            submit(questionID: selected, answer: option.senseID)
-                            self.selected = nil
+                            if submit(questionID: selected, answer: option.senseID) { self.selected = nil }
                         } label: { Text(option.answer).frame(maxWidth: .infinity, minHeight: 44) }
                         .buttonStyle(.bordered).accessibilityIdentifier("match-meaning-\(option.answer)")
                     }
@@ -68,10 +67,10 @@ struct ReviewPracticeContent: View {
                 if let meaning = session.matching.first(where: { $0.entryID == question.entryID })?.answer { Text(meaning).font(.headline) }
                 Text("输入完整英文词条，大小写不影响判定。")
                 TextField("完整拼写", text: $spelling).textInputAutocapitalization(.never).autocorrectionDisabled().textFieldStyle(.roundedBorder).accessibilityIdentifier("cloze-answer")
-                Button("提交答案") { submit(questionID: question.id, answer: spelling); spelling = "" }.buttonStyle(.borderedProminent).accessibilityIdentifier("submit-spelling")
+                Button("提交答案") { if submit(questionID: question.id, answer: spelling) { spelling = "" } }.buttonStyle(.borderedProminent).accessibilityIdentifier("submit-spelling")
                 HStack {
-                    Button("使用提示") { submit(questionID: question.id, answer: "", hint: true); feedback = "首字母：\(question.answer.first.map(String.init) ?? "")；本题将记为使用提示" }
-                    Button("忘记了，显示答案") { submit(questionID: question.id, answer: "", reveal: true); feedback = "答案：\(question.answer)。本题记录为 Again。" }
+                    Button("使用提示") { if submit(questionID: question.id, answer: "", hint: true) { feedback = "首字母：\(question.answer.first.map(String.init) ?? "")；提示使用已保存" } }
+                    Button("忘记了，显示答案") { if submit(questionID: question.id, answer: "", reveal: true) { feedback = "答案：\(question.answer)。本题记录为 Again。" } }
                 }.font(.footnote)
             }
         }
@@ -91,13 +90,14 @@ struct ReviewPracticeContent: View {
         } catch { self.message = error.localizedDescription }
         loading = false
     }
-    private func submit(questionID: String, answer: String, reveal: Bool = false, hint: Bool = false) {
-        guard let cycleID else { return }
+    @discardableResult private func submit(questionID: String, answer: String, reveal: Bool = false, hint: Bool = false) -> Bool {
+        guard let cycleID else { return false }
         do {
             let correct = try learning.review.submit(cycleID: cycleID, questionID: questionID, answer: answer, reveal: reveal, hint: hint, at: Date())
             session = try learning.review.session(cycleID: cycleID)
             feedback = correct ? "正确，已保存" : hint ? "提示使用已记录" : "还不正确，请再试一次（尝试次数已保存）"
             learning.changed(); message = nil
-        } catch { message = error.localizedDescription }
+            return true
+        } catch { message = error.localizedDescription; return false }
     }
 }
