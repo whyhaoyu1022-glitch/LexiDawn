@@ -1,6 +1,19 @@
 import XCTest
 
 final class LexiDawnUITests: XCTestCase {
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+    }
+
+    func testAppUsesFullSizeWindowOnModernCISimulator() {
+        let app = launch("empty")
+        XCTAssertTrue(app.tabBars.buttons["今日"].waitForExistence(timeout: 5))
+        let window = app.windows.firstMatch.frame
+        XCTAssertGreaterThanOrEqual(window.width, 375, "Modern simulator must not use a legacy 320x480 window: \(window)")
+        XCTAssertGreaterThanOrEqual(window.height, 667, "Modern simulator must not use a legacy 320x480 window: \(window)")
+    }
+
     func testFivePrimaryTabsAreVisibleAndSelectable() {
         let app = launch("empty")
         for label in ["今日", "探索", "词汇", "复习", "我的"] {
@@ -18,59 +31,59 @@ final class LexiDawnUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["暂时没有可分配文章"].exists)
     }
 
-    func testUnavailableButtonsAreDisabledAndReloadDoesNotChangeReadyStates() {
+    func testUnavailableButtonsAreDisabledAndReloadDoesNotChangeReadyStates() throws {
         let app = launch("ready")
-        assertTaskState(app, expected: "待开始")
+        try assertTaskState(app, expected: "待开始")
         for task in ["article", "review", "matching", "cloze"] {
             let button = app.buttons["unavailable-\(task)"]
-            reveal(button, in: app)
+            try reveal(button, in: app)
             XCTAssertTrue(button.exists)
             XCTAssertFalse(button.isEnabled)
             // A coordinate tap verifies the disabled control does not issue a domain write.
             XCTAssertTrue(isVisible(button, in: app))
             button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         }
-        reload(app)
-        assertTaskState(app, expected: "待开始")
+        try reload(app)
+        try assertTaskState(app, expected: "待开始")
         XCTAssertFalse(app.staticTexts["本周期已完成"].exists)
     }
 
-    func testBlockedAndFailedReasonsExplainUnavailableRecoveryAndRemainUnchanged() {
+    func testBlockedAndFailedReasonsExplainUnavailableRecoveryAndRemainUnchanged() throws {
         for scenario in ["blocked", "failed"] {
             let app = launch(scenario)
-            assertTaskState(app, expected: scenario == "blocked" ? "被阻塞" : "执行失败")
+            try assertTaskState(app, expected: scenario == "blocked" ? "被阻塞" : "执行失败")
             for task in ["article", "review", "matching", "cloze"] {
                 let reason = app.staticTexts["reason-\(task)"]
-                reveal(reason, in: app)
+                try reveal(reason, in: app)
                 XCTAssertTrue(reason.label.contains("真实失败原因"))
             }
             let explanation = app.staticTexts["unavailable-explanation"]
-            reveal(explanation, in: app)
+            try reveal(explanation, in: app)
             XCTAssertTrue(explanation.label.contains("尚不能恢复学习"))
             for task in ["article", "review", "matching", "cloze"] {
                 let button = app.buttons["unavailable-\(task)"]
-                reveal(button, in: app)
+                try reveal(button, in: app)
                 XCTAssertFalse(button.isEnabled)
                 XCTAssertTrue(isVisible(button, in: app))
                 button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
             }
-            reload(app)
-            assertTaskState(app, expected: scenario == "blocked" ? "被阻塞" : "执行失败")
+            try reload(app)
+            try assertTaskState(app, expected: scenario == "blocked" ? "被阻塞" : "执行失败")
             app.terminate()
         }
     }
 
-    func testHistoricalInProgressBecomesExplainedBlockedWithoutChangingArticle() {
+    func testHistoricalInProgressBecomesExplainedBlockedWithoutChangingArticle() throws {
         let app = launch("inProgress")
         XCTAssertTrue(app.staticTexts["UI 测试文章（非真实内容）"].waitForExistence(timeout: 5))
-        assertTaskState(app, expected: "被阻塞")
+        try assertTaskState(app, expected: "被阻塞")
         for task in ["article", "review", "matching", "cloze"] {
             let reason = app.staticTexts["reason-\(task)"]
-            reveal(reason, in: app)
+            try reveal(reason, in: app)
             XCTAssertTrue(reason.label.contains("功能尚未接入"))
         }
-        reload(app)
-        assertTaskState(app, expected: "被阻塞")
+        try reload(app)
+        try assertTaskState(app, expected: "被阻塞")
     }
 
     func testStartupFailureHasRealRetryAndNeverPretendsDataLoaded() {
@@ -96,29 +109,79 @@ final class LexiDawnUITests: XCTestCase {
         app.launch()
         return app
     }
-    private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
-        for _ in 0..<8 {
-            if isVisible(element, in: app) { return }
-            app.swipeUp()
+    /// Scroll only the intended view, in the direction of the target. No fixed up/down cycles.
+    private func reveal(_ element: XCUIElement, in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) throws {
+        let scroll = app.scrollViews["today-scroll"]
+        guard scroll.waitForExistence(timeout: 5), element.waitForExistence(timeout: 5) else {
+            try positioningFailure("Missing scroll view or target \(element.identifier)", app: app, file: file, line: line)
+            return
         }
+        for attempt in 0..<8 {
+            let viewport = usableViewport(in: app)
+            let before = element.frame
+            guard !viewport.isEmpty, !viewport.isNull, !before.isEmpty else {
+                try positioningFailure("Empty geometry: target=\(before), viewport=\(viewport)", app: app, file: file, line: line)
+                return
+            }
+            if viewport.contains(CGPoint(x: before.midX, y: before.midY)) { return }
+            if before.midX < viewport.minX || before.midX > viewport.maxX {
+                try positioningFailure("Target is horizontally clipped: \(before), viewport=\(viewport)", app: app, file: file, line: line)
+                return
+            }
+            if before.midY < viewport.minY { scroll.swipeDown() } else { scroll.swipeUp() }
+            let after = element.frame
+            if abs(after.midY - before.midY) < 1 && !isVisible(element, in: app) {
+                try positioningFailure("Scroll made no progress on attempt \(attempt + 1): target=\(after), viewport=\(viewport)", app: app, file: file, line: line)
+                return
+            }
+        }
+        try positioningFailure("Target remains outside viewport after 8 directed gestures: \(element.identifier)", app: app, file: file, line: line)
     }
+
+    private func usableViewport(in app: XCUIApplication) -> CGRect {
+        let window = app.windows.firstMatch.frame
+        let scroll = app.scrollViews["today-scroll"].frame
+        let intersection = window.intersection(scroll)
+        guard !intersection.isNull, !intersection.isEmpty else { return .zero }
+        let navigation = app.navigationBars.firstMatch
+        let tabs = app.tabBars.firstMatch
+        let top = navigation.exists ? max(intersection.minY, navigation.frame.maxY) : intersection.minY
+        let bottom = tabs.exists ? min(intersection.maxY, tabs.frame.minY) : intersection.maxY
+        guard bottom > top else { return .zero }
+        return CGRect(x: intersection.minX + 2, y: top + 2, width: max(0, intersection.width - 4), height: max(0, bottom - top - 4))
+    }
+
     private func isVisible(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
         guard element.exists else { return false }
-        let viewport = app.scrollViews.firstMatch.frame
         let frame = element.frame
-        return !frame.isEmpty && viewport.contains(CGPoint(x: frame.midX, y: frame.midY))
+        return !frame.isEmpty && usableViewport(in: app).contains(CGPoint(x: frame.midX, y: frame.midY))
     }
-    private func reload(_ app: XCUIApplication) {
+
+    private func positioningFailure(_ message: String, app: XCUIApplication, file: StaticString, line: UInt) throws {
+        XCTContext.runActivity(named: "UI positioning failure: \(message)") { activity in
+            let screenshot = XCTAttachment(screenshot: app.screenshot())
+            screenshot.lifetime = .keepAlways
+            activity.add(screenshot)
+            let hierarchy = XCTAttachment(string: app.debugDescription)
+            hierarchy.name = "Accessibility hierarchy and geometry"
+            hierarchy.lifetime = .keepAlways
+            activity.add(hierarchy)
+        }
+        XCTFail(message, file: file, line: line)
+        throw NSError(domain: "LexiDawnUIPositioning", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
+    }
+
+    private func reload(_ app: XCUIApplication) throws {
         let button = app.buttons["reload-cycle"]
-        reveal(button, in: app)
+        try reveal(button, in: app)
         button.tap()
-        for _ in 0..<6 { app.swipeDown() }
+        XCTAssertTrue(app.staticTexts["status-article"].waitForExistence(timeout: 5))
     }
-    private func assertTaskState(_ app: XCUIApplication, expected: String) {
-        for _ in 0..<6 { app.swipeDown() }
+
+    private func assertTaskState(_ app: XCUIApplication, expected: String) throws {
         for task in ["article", "review", "matching", "cloze"] {
             let status = app.staticTexts["status-\(task)"]
-            reveal(status, in: app)
+            try reveal(status, in: app)
             XCTAssertTrue(status.waitForExistence(timeout: 5))
             XCTAssertEqual(status.label, expected)
         }

@@ -45,3 +45,7 @@
 - 真实证据：run41164982359中只读磁盘save抛NSCocoaErrorDomain513；rollback之后hasChanges=false，但同context仍查到未落盘Article。新容器查询为空。这说明不能把“hasChanges=false”扩大为“此context可安全复用”。
 - 决策：每个Repository写操作建立专属ModelContext；文章/周期仍同一save；失败rollback并永久丢弃context。每次公开读取使用新context，避免失败或其他context的缓存残留。Preferences编辑跨边界为完整detached快照，原编辑context回滚；不能把托管对象直接跨context保存。
 - 保留原失败测试的同context查询空断言，另增强同Repository重读、恢复可写后的真实重试及已有周期update失败回归。不是把数据库失败测试改成Fake或删掉assert。
+
+## ADR-010 原生窗口与有界UI定位
+- 实测artifact13029591495的ActionDeviceRecord为iPhone17Pro/iOS26.5，AX窗口320x480、按钮在Y604.67，滚动无进展。手工工程缺少标准Launch Screen/Scene Manifest生成，按[Apple Build Settings Reference](https://developer.apple.com/documentation/xcode/build-settings-reference)配置两项生成开关，并在CI验证产物Info.plist；是否恢复现代全屏以新增真实UI窗口断言为准。
+- UI测试只在指定ScrollView向目标方向滚动，检查窗口/导航/标签栏裁剪后的实际viewport。到边界/无进展立即红灯并附诊断，绝不删除visible或disabled断言。固定重复滑动不是有效证明，取消这些动作不会减少业务验收要求。

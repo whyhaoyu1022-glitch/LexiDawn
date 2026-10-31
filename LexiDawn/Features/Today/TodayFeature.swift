@@ -137,6 +137,7 @@ struct TodayView: View {
                 }
                 .padding(LexiDawnSpacing.md)
             }
+            .accessibilityIdentifier("today-scroll")
             .navigationTitle("今日")
             .task { viewModel.load() }
             .refreshable { viewModel.load() }

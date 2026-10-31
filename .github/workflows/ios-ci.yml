@@ -55,12 +55,27 @@ jobs:
           echo "CI checkout target: iOS 26.5 (product source remains iOS 27.0)"
       - name: Build unsigned simulator app
         run: |
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone build
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/LexiDawn-derived" -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone build
+      - name: Verify generated native launch configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PYINFO'
+          import os, pathlib, plistlib
+          path = pathlib.Path(os.environ["RUNNER_TEMP"]) / "LexiDawn-derived/Build/Products/Debug-iphonesimulator/LexiDawn.app/Info.plist"
+          with path.open("rb") as stream:
+              info = plistlib.load(stream)
+          assert isinstance(info.get("UILaunchScreen"), dict), "Missing native UILaunchScreen"
+          assert isinstance(info.get("UIApplicationSceneManifest"), dict), "Missing native scene manifest"
+          print("Bundle:", info.get("CFBundleIdentifier"))
+          print("MinimumOSVersion:", info.get("MinimumOSVersion"))
+          print("Native launch screen and scene manifest present")
+          PYINFO
       - name: Compile test targets before booting a simulator
         shell: bash
         run: |
           set -euo pipefail
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator \
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/LexiDawn-derived" -sdk iphonesimulator \
             -destination "generic/platform=iOS Simulator" \
             -destination-timeout 120 -configuration Debug \
             IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" \
@@ -74,9 +89,9 @@ jobs:
           echo "Checked out commit: $(git rev-parse HEAD)"
           DESTINATIONS_FILE="${RUNNER_TEMP}/lexidawn-destinations.txt"
           RUNTIME_ID="com.apple.CoreSimulator.SimRuntime.iOS-26-5"
-          DEVICE_TYPE_ID="$(xcrun simctl list devicetypes | awk -F '[()]' '/iPhone/ && !found { print $2; found=1 }')"
-          if [[ -z "${DEVICE_TYPE_ID}" ]]; then
-            echo "::error::No iPhone Simulator device type is installed on the runner."
+          DEVICE_TYPE_ID="com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro"
+          if ! xcrun simctl list devicetypes | grep -F "(${DEVICE_TYPE_ID})" >/dev/null; then
+            echo "::error::Required iPhone 17 Pro Simulator device type is unavailable on the runner."
             xcrun simctl list devicetypes
             exit 1
           fi
@@ -86,6 +101,7 @@ jobs:
             xcrun simctl list devices available
             exit 1
           fi
+          echo "Selected device type: ${DEVICE_TYPE_ID}"
           echo "Created iOS 26.5 simulator: ${CREATED_SIMULATOR_ID}"
           xcrun simctl boot "${CREATED_SIMULATOR_ID}"
           xcrun simctl bootstatus "${CREATED_SIMULATOR_ID}" -b
@@ -93,7 +109,7 @@ jobs:
           # -showdestinations even while the same project build lists and
           # accepts concrete iOS simulators. Keep the diagnostics for review,
           # but use the simulator created above after an explicit simctl check.
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" -showdestinations >"${DESTINATIONS_FILE}" 2>&1 || true
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/LexiDawn-derived" -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" -showdestinations >"${DESTINATIONS_FILE}" 2>&1 || true
           echo "xcodebuild destination diagnostics:"
           cat "${DESTINATIONS_FILE}"
           if ! xcrun simctl list devices available | grep -F "(${CREATED_SIMULATOR_ID})" >/dev/null; then
@@ -106,7 +122,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator \
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/LexiDawn-derived" -sdk iphonesimulator \
             -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" \
             -destination-timeout 120 -configuration Debug \
             IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" \
@@ -115,10 +131,11 @@ jobs:
             -resultBundlePath "${RUNNER_TEMP}/LexiDawn-unit.xcresult" \
             -only-testing:LexiDawnTests test 2>&1 | tee "${RUNNER_TEMP}/LexiDawn-unit.log"
       - name: Run UI tests on concrete simulator
+        timeout-minutes: 20
         shell: bash
         run: |
           set -euo pipefail
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator \
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/LexiDawn-derived" -sdk iphonesimulator \
             -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" \
             -destination-timeout 120 -configuration Debug \
             IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" \
