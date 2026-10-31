@@ -12,22 +12,27 @@ struct InteractiveEnglishText: UIViewRepresentable {
     let onWord: (EnglishToken) -> Void
     var scrollable: Bool = true
     func makeCoordinator() -> Coordinator { Coordinator(self) }
-    func makeUIView(context: Context) -> UITextView {
-        let view = UITextView(usingTextLayoutManager: false)
+    func makeUIView(context: Context) -> EnglishTextContainer {
+        let container = EnglishTextContainer()
+        let view = container.textView
         view.isEditable = false; view.isSelectable = false; view.delegate = context.coordinator
         view.alwaysBounceVertical = true; view.adjustsFontForContentSizeCategory = true
         view.isScrollEnabled = scrollable
-        view.accessibilityIdentifier = "reader-body"; view.isAccessibilityElement = false
+        container.accessibilityIdentifier = "reader-body"
+        container.isAccessibilityElement = false; container.accessibilityContainerType = .semanticGroup
+        view.accessibilityElementsHidden = true
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.tap(_:)))
         tap.cancelsTouchesInView = false; view.addGestureRecognizer(tap)
-        context.coordinator.view = view
-        return view
+        context.coordinator.view = view; context.coordinator.accessibilityContainer = container
+        container.onLayout = { [weak coordinator = context.coordinator] in coordinator?.restorePosition(); coordinator?.updateAccessibility() }
+        return container
     }
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: EnglishTextContainer, context: Context) -> CGSize? {
         guard !scrollable, let width = proposal.width else { return nil }
-        return CGSize(width: width, height: uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude)).height)
+        return CGSize(width: width, height: uiView.textView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude)).height)
     }
-    func updateUIView(_ view: UITextView, context: Context) {
+    func updateUIView(_ container: EnglishTextContainer, context: Context) {
+        let view = container.textView
         let coordinator = context.coordinator; coordinator.parent = self
         let key = "\(fontSize)|\(lineSpacing)|\(theme)|\(view.traitCollection.preferredContentSizeCategory.rawValue)|\(view.traitCollection.userInterfaceStyle.rawValue)"
         let width = max(20, (view.bounds.width - 720) / 2)
@@ -43,31 +48,35 @@ struct InteractiveEnglishText: UIViewRepresentable {
             view.attributedText = NSAttributedString(string: text, attributes: [.font: font, .paragraphStyle: paragraph, .foregroundColor: foreground])
             view.setContentOffset(oldOffset, animated: false)
         }
-        if !coordinator.restored {
-            DispatchQueue.main.async { [weak view, weak coordinator] in
-                guard let view, let coordinator, view.bounds.height > 0, !coordinator.restored else { return }
-                view.layoutManager.ensureLayout(for: view.textContainer)
-                let length = (text as NSString).length
-                var offset = min(max(0, restore.offset), max(0, length - 1))
-                if restore.contentChanged { offset = ReadingAnchors.offset(for: restore.anchor, in: text) ?? 0 }
-                if offset > 0 {
-                    let glyph = view.layoutManager.glyphIndexForCharacter(at: offset)
-                    let rect = view.layoutManager.boundingRect(forGlyphRange: NSRange(location: glyph, length: 1), in: view.textContainer)
-                    view.setContentOffset(CGPoint(x: 0, y: max(0, min(rect.minY, view.contentSize.height - view.bounds.height))), animated: false)
-                }
-                coordinator.restored = true; coordinator.updateAccessibility()
-            }
-        }
+        DispatchQueue.main.async { [weak coordinator] in coordinator?.restorePosition(); coordinator?.updateAccessibility() }
     }
+
     final class Coordinator: NSObject, UITextViewDelegate {
         var parent: InteractiveEnglishText
         weak var view: UITextView?
+        weak var accessibilityContainer: EnglishTextContainer?
+        private var restoring = false
         var tokens: [EnglishToken] = []
         var renderKey = ""
         var renderedText = ""
         var restored = false
         var lastAccessibilityUpdate = Date.distantPast
         init(_ parent: InteractiveEnglishText) { self.parent = parent }
+        func restorePosition() {
+            guard !restored, !restoring, let view, view.bounds.height > 0, view.bounds.width > 0, !parent.text.isEmpty else { return }
+            restoring = true
+            defer { restoring = false }
+            view.layoutManager.ensureLayout(for: view.textContainer)
+            let length = (parent.text as NSString).length
+            var offset = min(max(0, parent.restore.offset), max(0, length - 1))
+            if parent.restore.contentChanged { offset = ReadingAnchors.offset(for: parent.restore.anchor, in: parent.text) ?? 0 }
+            if offset > 0 {
+                let glyph = view.layoutManager.glyphIndexForCharacter(at: offset)
+                let rect = view.layoutManager.boundingRect(forGlyphRange: NSRange(location: glyph, length: 1), in: view.textContainer)
+                view.setContentOffset(CGPoint(x: 0, y: max(0, min(rect.minY, view.contentSize.height - view.bounds.height))), animated: false)
+            }
+            restored = true
+        }
         @objc func tap(_ recognizer: UITapGestureRecognizer) {
             guard let view, restored else { return }
             let local = recognizer.location(in: view)
@@ -91,25 +100,25 @@ struct InteractiveEnglishText: UIViewRepresentable {
             if Date().timeIntervalSince(lastAccessibilityUpdate) > 0.3 { updateAccessibility() }
         }
         func updateAccessibility() {
-            guard let view else { return }
+            guard restored, let view, let accessibilityContainer else { return }
             lastAccessibilityUpdate = Date()
             let visible = CGRect(origin: CGPoint(x: 0, y: max(0, view.contentOffset.y - view.textContainerInset.top)), size: view.bounds.size)
             let glyphs = view.layoutManager.glyphRange(forBoundingRect: visible, in: view.textContainer)
             let chars = view.layoutManager.characterRange(forGlyphRange: glyphs, actualGlyphRange: nil)
             var elements: [UIAccessibilityElement] = []
             for token in tokens where NSIntersectionRange(token.range, chars).length > 0 {
-                let element = WordAccessibilityElement(accessibilityContainer: view)
+                let element = WordAccessibilityElement(accessibilityContainer: accessibilityContainer)
                 element.accessibilityLabel = token.surface; element.accessibilityTraits = .button
                 element.accessibilityIdentifier = "word-\(token.surface)"
                 element.accessibilityValue = "\(token.range.location)"
                 element.accessibilityHint = "查看词义；根据偏好加入生词本"
                 var rect = view.layoutManager.boundingRect(forGlyphRange: view.layoutManager.glyphRange(forCharacterRange: token.range, actualCharacterRange: nil), in: view.textContainer)
                 rect.origin.x += view.textContainerInset.left; rect.origin.y += view.textContainerInset.top
-                element.accessibilityFrameInContainerSpace = rect
+                element.accessibilityFrameInContainerSpace = view.convert(rect, to: accessibilityContainer)
                 element.action = { [weak self] in self?.parent.onWord(token) }
                 elements.append(element)
             }
-            view.accessibilityElements = elements
+            accessibilityContainer.accessibilityElements = elements
         }
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) { updateAccessibility() }
         func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) { if !decelerate { updateAccessibility() } }
@@ -118,4 +127,14 @@ struct InteractiveEnglishText: UIViewRepresentable {
 private final class WordAccessibilityElement: UIAccessibilityElement {
     var action: (() -> Void)?
     override func accessibilityActivate() -> Bool { action?(); return action != nil }
+}
+
+/// UIView owns the word-level AX container. UITextView's built-in paragraph AX implementation
+/// otherwise ignores a custom accessibilityElements array on the text view itself.
+final class EnglishTextContainer: UIView {
+    let textView = UITextView(usingTextLayoutManager: false)
+    var onLayout: (() -> Void)?
+    override init(frame: CGRect) { super.init(frame: frame); addSubview(textView) }
+    required init?(coder: NSCoder) { super.init(coder: coder); addSubview(textView) }
+    override func layoutSubviews() { super.layoutSubviews(); textView.frame = bounds; onLayout?() }
 }

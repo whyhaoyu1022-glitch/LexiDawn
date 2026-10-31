@@ -267,9 +267,11 @@ extension LexiDawnUITests {
         let app = launchLearningDisk()
         app.tabBars.buttons["我的"].tap()
         let toggle = app.switches["auto-add"]
-        try revealLearning(toggle, in: app); toggle.tap()
+        try revealLearning(toggle, in: app); tapNativeSwitch(toggle)
+        XCTAssertEqual(toggle.value as? String, "0")
         let save = app.buttons["save-settings"]; try revealLearning(save, in: app); save.tap()
         XCTAssertTrue(app.staticTexts["settings-message"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["settings-message"].label, "设置已保存")
         app.terminate(); app.launch(); app.tabBars.buttons["我的"].tap()
         let restored = app.switches["auto-add"]; try revealLearning(restored, in: app)
         XCTAssertEqual(restored.value as? String, "0")
@@ -284,7 +286,8 @@ extension LexiDawnUITests {
         let importButton = app.buttons["import-article-toolbar"]; XCTAssertTrue(importButton.waitForExistence(timeout: 10)); importButton.tap()
         app.textFields["import-title"].tap(); app.textFields["import-title"].typeText("My owned article")
         let editor = app.textViews["import-body"]; editor.tap(); editor.typeText("A book can help us learn. This text was written for this isolated UI test.")
-        let rights = app.switches["import-rights"]; try revealLearning(rights, in: app); rights.tap()
+        let rights = app.switches["import-rights"]; try revealLearning(rights, in: app); tapNativeSwitch(rights)
+        XCTAssertEqual(rights.value as? String, "1")
         let save = app.buttons["save-import"]; try revealLearning(save, in: app); save.tap()
         XCTAssertTrue(app.staticTexts["My owned article"].waitForExistence(timeout: 10))
         app.buttons["open-reader"].tap()
@@ -298,6 +301,10 @@ extension LexiDawnUITests {
         app.launch()
         XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 10))
         return app
+    }
+    private func tapNativeSwitch(_ row: XCUIElement) {
+        let control = row.switches.firstMatch
+        if control.exists { control.tap() } else { row.tap() }
     }
     private func revealLearning(_ element: XCUIElement, in app: XCUIApplication) throws {
         for _ in 0..<6 {
