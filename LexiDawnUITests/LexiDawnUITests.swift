@@ -81,6 +81,15 @@ final class LexiDawnUITests: XCTestCase {
         XCTAssertFalse(app.tabBars.buttons["今日"].exists)
     }
 
+    func testStartupRetryRepeatsInitializationAndLoadsApp() {
+        let app = launch("startupRetry")
+        XCTAssertTrue(app.staticTexts["本地学习数据暂时不可用"].waitForExistence(timeout: 5))
+        app.buttons["retry-storage"].tap()
+        XCTAssertTrue(app.tabBars.buttons["今日"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["暂时没有可分配文章"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["本地学习数据暂时不可用"].exists)
+    }
+
     private func launch(_ scenario: String) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["LEXIDAWN_UI_SCENARIO"] = scenario

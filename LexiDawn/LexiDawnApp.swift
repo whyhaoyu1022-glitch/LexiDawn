@@ -21,7 +21,24 @@ final class AppStartup: ObservableObject {
     @Published private(set) var errorMessage = ""
     private let factory: () throws -> AppDependencies
     init(factory: (() throws -> AppDependencies)? = nil) {
-        self.factory = factory ?? { try AppStartup.makeDependencies() }
+        if let factory {
+            self.factory = factory
+        } else {
+            #if DEBUG && targetEnvironment(simulator)
+            if ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"] == "startupRetry" {
+                var attempts = 0
+                self.factory = {
+                    attempts += 1
+                    if attempts == 1 { throw PersistenceError.integrity("UI 测试注入的一次启动失败") }
+                    return try AppDependencies.makeInMemory()
+                }
+            } else {
+                self.factory = { try AppStartup.makeDependencies() }
+            }
+            #else
+            self.factory = { try AppStartup.makeDependencies() }
+            #endif
+        }
         retry()
     }
     func retry() {
