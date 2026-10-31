@@ -28,3 +28,11 @@
 排程为 `lexidawn-basic-1`，不是 FSRS。M4 的语境消歧、丰富短语、可靠英语词性/IPA，M5 的额外复习、M6 的高级词汇推荐和 M7/M9 尚未交付。没有通知/AI/账号/上传/付费服务或签名 IPA。iOS 27 产品目标保留；CI 仅验证已批准 iOS 26.5 模拟器。
 
 本批功能及验证状态以 [Round 2 开发交付自述](reviews/round-2-development-delivery.md) 为准；独立验收尚未执行。
+
+### Round 2 实际层级
+
+`LearningRootView → ViewModel/意图 → Content/Reader/Vocabulary/Review 服务 → RepositoryWriter → SwiftData`。Today 仍通过原 DailyCycleService 获取最早周期；复习和阅读在同一 context 内调用原 StudyCycleRepository.applyInTransaction，不建立第二套任务状态。UI 仅保存页面选择与输入草稿，持久化真值在 Repository。
+
+正文入口与元数据分开：ContentRepository.read 返回 ReadableArticle，library 仅返回不含正文的 ArticleLibraryItem；授权失效时保留 hash/关联，阻止展示并提供原文入口。探索路由与 ReaderProgressService 写入口均有门禁；已指派文章只能沿原周期继续。统计从完成证据/进度/会话结果重建，不维护多个页面计数器。
+
+词典数据加载在 actor 内，主线程只提交必要缓存实体；TextKit 按正文版本解析token，点击二分命中；不在每帧重新hash/分词。进度2秒节流，离开/后台刷写。短英文详情复用同一命中组件；动态高度与嵌套深度受控。

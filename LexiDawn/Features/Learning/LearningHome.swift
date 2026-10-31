@@ -49,7 +49,7 @@ struct LiveTodayView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("你的积累").font(.title3.bold())
                             HStack { metric("完成文章", statistics.articles); metric("学习日期", statistics.studyDays); metric("连续日期", statistics.streak) }
-                            HStack { metric("生词本", statistics.vocabulary); metric("待复习", statistics.pending) }
+                            HStack { metric("生词本", statistics.vocabulary); metric("待复习", statistics.pending); metric("近7日学习", statistics.recentDays) }
                             Text("完成阅读或整次复习的实际日期计为学习日，使用周期记录的时区；同一日期只计一次。文章按完成证据去重。").font(.caption).foregroundStyle(.secondary)
                         }.padding().background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20))
                     }
@@ -157,7 +157,7 @@ struct ArticleImportView: View {
                         learning.changed(); dismiss()
                     } catch { self.error = error.localizedDescription }
                 }.disabled(!rights).accessibilityIdentifier("save-import")
-            }.navigationTitle("合法导入文章").toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } } }
+            }.scrollDismissesKeyboard(.interactively).navigationTitle("合法导入文章").toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } } }
         }
     }
 }

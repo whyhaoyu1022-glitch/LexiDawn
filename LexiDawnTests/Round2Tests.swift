@@ -64,6 +64,9 @@ import SwiftData
         for token in tokens { XCTAssertEqual(EnglishTokenizer.token(at: token.range.location, tokens: tokens), token) }
         XCTAssertNil(EnglishTokenizer.token(at: 5, tokens: tokens)) // comma
         XCTAssertEqual(EnglishTokenizer.lemma("running"), "run"); XCTAssertEqual(EnglishTokenizer.lemma("ran"), "run")
+        XCTAssertEqual(EnglishTokenizer.lemma("DON’T"), "don't")
+        XCTAssertEqual(EnglishTokenizer.lemma("it’s"), "it's")
+        XCTAssertEqual(EnglishTokenizer.lemma("researchers’"), EnglishTokenizer.lemma("researchers"))
     }
     func testVocabularyIdempotenceSafeUndoAndAutoAddDisabled() throws {
         let (app, id, _) = try setup(); let learning = try XCTUnwrap(app.learning)
@@ -157,6 +160,7 @@ extension Round2Tests {
         try learning.reader.complete(articleID: assigned, cycleID: cycle.cycleID, manualConfirmation: true, at: now)
         XCTAssertEqual(try learning.content.allReadableIDs(), [extra])
         XCTAssertThrowsError(try learning.openExplore(articleID: assigned, at: now))
+        XCTAssertThrowsError(try learning.reader.save(articleID: assigned, cycleID: nil, position: ReaderPosition(), at: now))
         _ = try learning.openExplore(articleID: extra, at: now)
         try learning.reader.save(articleID: extra, cycleID: nil, position: ReaderPosition(percent: 0.3, offset: 5), at: now)
         XCTAssertTrue(try learning.content.allReadableIDs().isEmpty)
@@ -257,6 +261,8 @@ extension Round2Tests {
         try learning.reader.complete(articleID: id, cycleID: cycle.cycleID, manualConfirmation: true, at: completion)
         let stats = try learning.statistics(timeZone: .current, at: completion)
         XCTAssertEqual(stats.articles, 1); XCTAssertEqual(stats.studyDays, 1); XCTAssertEqual(stats.streak, 1)
+        XCTAssertEqual(stats.recentDays, 1)
+        XCTAssertEqual(try learning.statistics(timeZone: .current, at: completion.addingTimeInterval(8 * 86400)).recentDays, 0)
     }
     func testProductionNetworkAdapterHTTP429PersistsBackoffAndDoesNotInstallBody() async throws {
         let app = try AppDependencies.makeLearningInMemory(); let learning = try XCTUnwrap(app.learning)

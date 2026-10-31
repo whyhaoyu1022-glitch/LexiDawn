@@ -47,8 +47,10 @@ import Combine
             while dates.contains(cursor), let date = DailyStudyCycle.civilDate(cursor), let previous = DailyStudyCycle.civilCalendar.date(byAdding: .day, value: -1, to: date) {
                 streak += 1; cursor = DailyCycleService.studyDate(for: previous, calendar: DailyStudyCycle.civilCalendar)
             }
+            let start = calendar.date(byAdding: .day, value: -6, to: now).map { DailyCycleService.studyDate(for: $0, calendar: calendar) } ?? today
+            let recent = dates.filter { $0 >= start && $0 <= today }.count
             return LearningStatistics(articles: Set(progresses.map(\.articleID) + cycles.filter { $0.readingEvidence != nil }.map(\.articleID)).count,
-                studyDays: dates.count, streak: streak, vocabulary: vocabularyCount, pending: pending)
+                studyDays: dates.count, streak: streak, vocabulary: vocabularyCount, pending: pending, recentDays: recent)
         }
     }
     func explorationAllowed() throws -> Bool {
@@ -61,4 +63,4 @@ import Combine
         return try content.read(articleID: articleID, at: now)
     }
 }
-struct LearningStatistics { let articles: Int, studyDays: Int, streak: Int, vocabulary: Int, pending: Int }
+struct LearningStatistics { let articles: Int, studyDays: Int, streak: Int, vocabulary: Int, pending: Int, recentDays: Int }

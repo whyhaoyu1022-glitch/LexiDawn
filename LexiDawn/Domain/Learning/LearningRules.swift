@@ -43,7 +43,12 @@ struct EnglishTokenizer {
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
     static func lemma(_ surface: String) -> String {
-        let key = normalized(surface)
+        var key = normalized(surface)
+        // A contraction is a complete lookup entity; NLTagger may otherwise return only its first component.
+        let contractions: Set<String> = ["don't", "doesn't", "didn't", "can't", "cannot", "won't", "wouldn't", "shouldn't", "couldn't", "isn't", "aren't", "wasn't", "weren't", "it's", "that's", "there's", "here's", "he's", "she's", "who's", "what's", "let's", "i'm", "we're", "they're", "you're", "i've", "we've", "they've", "you've", "i'll", "you'll", "we'll", "they'll", "i'd", "you'd", "we'd", "they'd"]
+        if contractions.contains(key) { return key }
+        if key.hasSuffix("'s") { key = String(key.dropLast(2)) }
+        else if key.hasSuffix("'") { key = String(key.dropLast()) }
         // Explicit English irregular forms; avoid destructive generic suffix stripping.
         let irregular = ["ran": "run", "running": "run", "runs": "run", "went": "go", "gone": "go", "children": "child", "mice": "mouse"]
         if let lemma = irregular[key] { return lemma }

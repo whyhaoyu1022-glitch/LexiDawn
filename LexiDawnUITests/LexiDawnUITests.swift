@@ -309,3 +309,23 @@ extension LexiDawnUITests {
         throw NSError(domain: "Round2UI", code: 1)
     }
 }
+
+extension LexiDawnUITests {
+    func testRound2DictionaryDetailsAndNestedEnglishLookupReturnToReader() throws {
+        let app = launchLearningDisk(); app.buttons["open-reader"].tap()
+        let book = app.buttons["word-Book"].firstMatch; XCTAssertTrue(book.waitForExistence(timeout: 10)); book.tap()
+        XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10))
+        let details = app.buttons["查看详细释义"]
+        try revealLearning(details, in: app); details.tap()
+        XCTAssertTrue(app.navigationBars["详细释义"].waitForExistence(timeout: 5))
+        let science = app.buttons["word-science"].firstMatch
+        try revealLearning(science, in: app); science.tap()
+        XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10)); app.buttons["close-word"].tap()
+        XCTAssertTrue(app.navigationBars["详细释义"].waitForExistence(timeout: 5))
+        app.navigationBars.buttons["查词"].tap()
+        app.buttons["close-word"].tap()
+        XCTAssertTrue(app.buttons["finish-reading"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["reading-completed"].exists)
+        capture("round2-dictionary-navigation-returned", in: app)
+    }
+}

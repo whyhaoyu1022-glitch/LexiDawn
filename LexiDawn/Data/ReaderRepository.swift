@@ -30,7 +30,7 @@ struct ReaderPosition: Equatable {
         }
     }
     func save(articleID: String, cycleID: UUID?, position: ReaderPosition, at now: Date) throws {
-        try validateMode(cycleID: cycleID)
+        try validateMode(articleID: articleID, cycleID: cycleID)
         let article = try content.read(articleID: articleID, at: now)
         try writer.write {
             let context = writer.context
@@ -46,7 +46,7 @@ struct ReaderPosition: Equatable {
         }
     }
     func complete(articleID: String, cycleID: UUID?, manualConfirmation: Bool, at now: Date) throws {
-        try validateMode(cycleID: cycleID)
+        try validateMode(articleID: articleID, cycleID: cycleID)
         let article = try content.read(articleID: articleID, at: now)
         try writer.write {
             let context = writer.context
@@ -92,9 +92,12 @@ struct ReaderPosition: Equatable {
               (record.status == "completed") == (record.completedAt != nil),
               record.completedAt.map({ $0 >= record.startedAt && $0 <= record.lastReadAt }) ?? true else { throw PersistenceError.integrity("已存阅读进度无效") }
     }
-    private func validateMode(cycleID: UUID?) throws {
-        if cycleID == nil, try cycles.fetchAll().contains(where: \.hasOutstandingWork) {
-            throw LearningError.invalid("请先完成原周期，再开始探索阅读。")
+    private func validateMode(articleID: String, cycleID: UUID?) throws {
+        if cycleID == nil {
+            let all = try cycles.fetchAll()
+            guard !all.contains(where: \.hasOutstandingWork), !all.contains(where: { $0.articleID == articleID }) else {
+                throw LearningError.invalid("请先完成原周期；每日文章需通过原周期继续，不能改为探索模式。")
+            }
         }
     }
 }

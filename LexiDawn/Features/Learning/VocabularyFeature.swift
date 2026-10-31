@@ -43,6 +43,7 @@ struct VocabularyDetailView: View {
     @State private var error: String?
     @State private var saved = false
     @State private var removeConfirmation = false
+    @State private var source: ArticleLibraryItem?
     @Environment(\.dismiss) private var dismiss
     var body: some View {
         Form {
@@ -58,11 +59,21 @@ struct VocabularyDetailView: View {
                 Text("来源没有可用中文对应词时，可填写自己的释义用于复习。个人内容与开放词典数据明确区分。").font(.caption).foregroundStyle(.secondary)
             }
             if let result { DictionaryResultContent(result: result); NavigationLink("详细词典") { DictionaryDetailView(result: result, context: item.contexts.first ?? "", learning: learning, articleID: item.sourceArticleID) } }
-            Section("来源上下文") { ForEach(Array(item.contexts.enumerated()), id: \.offset) { _, sentence in Text(sentence) } }
+            Section("来源上下文") {
+                if let source {
+                    Text(source.title).font(.headline); Text(source.source).font(.caption).foregroundStyle(.secondary)
+                    if let url = source.originalURL.flatMap(URL.init(string:)) { Link("原文与署名", destination: url) }
+                }
+                ForEach(Array(item.contexts.enumerated()), id: \.offset) { _, sentence in Text(sentence) }
+            }
             Section { Button("手动移除词条", role: .destructive) { removeConfirmation = true } }
             if let error { Text(error).foregroundStyle(.red); Button("重试词典") { Task { await lookup() } } }
         }.navigationTitle(item.lemma)
-            .task { meaning = item.meaning ?? ""; notes = item.notes ?? ""; await lookup() }
+            .task {
+                meaning = item.meaning ?? ""; notes = item.notes ?? ""
+                do { source = try learning.content.library().first { $0.id == item.sourceArticleID } } catch { self.error = error.localizedDescription }
+                await lookup()
+            }
             .alert("确认移除词条", isPresented: $removeConfirmation) {
                 Button("取消", role: .cancel) { }
                 Button("确认移除", role: .destructive) { do { try learning.vocabulary.remove(entryID: item.id, at: Date()); learning.changed(); dismiss() } catch { self.error = error.localizedDescription } }
