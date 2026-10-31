@@ -430,3 +430,18 @@ extension Round2Tests {
     }
 }
 
+
+extension Round2Tests {
+    func testEveryVocabularyContextRetainsItsOwnArticleAndAttribution() throws {
+        let (app, firstID, _) = try setup(); let learning = try XCTUnwrap(app.learning)
+        let secondID = try learning.content.importArticle(ArticleImportDraft(title: "Second owned article", body: "Another book tells a different story.", source: "Second author", rightsConfirmed: true), at: now)
+        for (id, sentence) in [(firstID, "A book can open a new world."), (secondID, "Another book tells a different story.")] {
+            _ = try learning.vocabulary.add(token: EnglishToken(surface: "book", range: NSRange(location: 0, length: 4), sentence: sentence), articleID: id, autoAdd: true, at: now)
+        }
+        let item = try XCTUnwrap(learning.vocabulary.entries().first)
+        XCTAssertEqual(item.sourceContexts.count, 2)
+        XCTAssertEqual(Set(item.sourceContexts.map(\.articleID)), Set([firstID, secondID]))
+        XCTAssertEqual(item.sourceContexts.first { $0.articleID == secondID }?.attribution, "Second author")
+        XCTAssertEqual(item.sourceContexts.first { $0.articleID == secondID }?.title, "Second owned article")
+    }
+}

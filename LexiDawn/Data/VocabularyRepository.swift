@@ -1,6 +1,10 @@
 import Foundation
 import SwiftData
 
+struct VocabularyContextItem: Identifiable, Equatable {
+    let id: String, articleID: String, sentence: String, title: String, attribution: String
+    let originalURL: String?
+}
 struct VocabularyItem: Identifiable, Equatable {
     let id: String, lemma: String, type: String
     let surfaces: [String]
@@ -10,6 +14,7 @@ struct VocabularyItem: Identifiable, Equatable {
     let contexts: [String]
     let sourceArticleID: String?
     let dictionaryMeanings: [String]
+    let sourceContexts: [VocabularyContextItem]
 }
 struct VocabularyAddition {
     let entryID: String
@@ -26,11 +31,21 @@ struct VocabularyAddition {
             guard Set(all.map(\.normalizedKey)).count == all.count else { throw PersistenceError.integrity("重复生词身份") }
             let contexts = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>())
             let senses = try context.fetch(FetchDescriptor<DictionarySenseRecord>())
+            let articles = try context.fetch(FetchDescriptor<ArticleRecord>())
+            let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
             return all.filter { $0.deletedAt == nil && (type == nil || $0.entryType == type) }.map { record in
-                VocabularyItem(id: record.entryID, lemma: record.lemma, type: record.entryType, surfaces: record.surfaceForms,
+                let attached = contexts.filter { $0.entryID == record.entryID }
+                let definitions = senses.filter { $0.entryID == "cedict-reverse-v1|\(record.lemma)" }.sorted { $0.senseID < $1.senseID }.map(\.chinese)
+                let sourceItems: [VocabularyContextItem] = attached.map { source in
+                    let article = articles.first { $0.articleID == source.articleID }
+                    return VocabularyContextItem(id: source.contextID, articleID: source.articleID, sentence: source.sentence,
+                        title: article?.originalTitle ?? source.articleID, attribution: article?.sourceAttribution ?? article?.sourceID ?? "来源元数据不可用",
+                        originalURL: grants.first { $0.articleID == source.articleID }?.originalURL)
+                }
+                return VocabularyItem(id: record.entryID, lemma: record.lemma, type: record.entryType, surfaces: record.surfaceForms,
                     addedAt: record.addedAt, meaning: record.userMeaning, notes: record.notes,
-                    contexts: contexts.filter { $0.entryID == record.entryID }.map(\.sentence), sourceArticleID: contexts.first { $0.entryID == record.entryID }?.articleID,
-                    dictionaryMeanings: senses.filter { $0.entryID == "cedict-reverse-v1|\(record.lemma)" }.sorted { $0.senseID < $1.senseID }.map(\.chinese))
+                    contexts: attached.map(\.sentence), sourceArticleID: attached.first?.articleID,
+                    dictionaryMeanings: definitions, sourceContexts: sourceItems)
             }.filter { search.isBlank || ([$0.lemma, $0.meaning ?? ""] + $0.surfaces + $0.dictionaryMeanings).contains { $0.localizedCaseInsensitiveContains(search) } }
                 .sorted { $0.addedAt > $1.addedAt }
         }

@@ -64,7 +64,14 @@ struct VocabularyDetailView: View {
                     Text(source.title).font(.headline); Text(source.source).font(.caption).foregroundStyle(.secondary)
                     if let url = source.originalURL.flatMap(URL.init(string:)) { Link("原文与署名", destination: url) }
                 }
-                ForEach(Array(item.contexts.enumerated()), id: \.offset) { _, sentence in Text(sentence) }
+                ForEach(item.sourceContexts) { context in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(context.title).font(.headline)
+                        Text(context.attribution).font(.caption).foregroundStyle(.secondary)
+                        Text(context.sentence)
+                        if let url = context.originalURL.flatMap(URL.init(string:)) { Link("原文来源", destination: url) }
+                    }
+                }
             }
             Section { Button("手动移除词条", role: .destructive) { removeConfirmation = true } }
             if let error { Text(error).foregroundStyle(.red); Button("重试词典") { Task { await lookup() } } }
