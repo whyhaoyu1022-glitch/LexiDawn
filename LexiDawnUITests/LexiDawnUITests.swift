@@ -397,6 +397,8 @@ extension LexiDawnUITests {
         app.navigationBars.buttons["查词"].tap(); app.buttons["close-word"].tap()
         let body = app.descendants(matching: .any)["reader-body"].firstMatch
         for index in 1...3 { body.swipeUp(); capture("P\(String(format: "%02d", index + 8))-production-rfc-scroll-\(index)", in: app) }
+        for _ in 0..<8 { body.swipeUp() }
+        capture("P17-production-real-rfc-main-discussion", in: app)
         XCTAssertGreaterThan(Int(app.staticTexts["reader-progress"].label.replacingOccurrences(of: "%", with: "")) ?? 0, 0)
         app.buttons["finish-reading"].tap()
         XCTAssertTrue(app.alerts["明确确认已读完"].waitForExistence(timeout: 5))
@@ -451,10 +453,16 @@ extension LexiDawnUITests {
         capture("F04-import-blank-form", in: app)
         let rights = app.switches["import-rights"]
         try revealLearning(rights, in: app)
-        XCTAssertFalse(app.buttons["save-import"].isEnabled)
+        let save = app.buttons["save-import"]
+        for _ in 0..<6 {
+            if save.exists && save.frame.midY < app.windows.firstMatch.frame.maxY - 80 { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(save.exists); XCTAssertFalse(save.isEnabled)
         capture("F05-import-without-rights-save-disabled", in: app)
-        tapNativeSwitch(rights)
-        let save = app.buttons["save-import"]; try revealLearning(save, in: app); save.tap()
+        try revealLearning(rights, in: app); tapNativeSwitch(rights)
+        try revealLearning(save, in: app); save.tap()
+        XCTAssertTrue(app.staticTexts["请填写有效标题、来源和主题。"].waitForExistence(timeout: 5))
         capture("X01-import-empty-title-validation", in: app)
         app.swipeDown(); app.swipeDown()
         app.textFields["import-title"].tap(); app.textFields["import-title"].typeText("My screenshot article (test-owned)")
@@ -467,6 +475,7 @@ extension LexiDawnUITests {
         app.buttons["open-reader"].tap()
         XCTAssertTrue(app.buttons["word-book"].firstMatch.waitForExistence(timeout: 10))
         capture("F08-owned-import-native-reader", in: app)
+        app.descendants(matching: .any)["reader-body"].firstMatch.swipeUp()
         let unknown = app.buttons["word-Lexidawngalleryword"].firstMatch
         XCTAssertTrue(unknown.waitForExistence(timeout: 10)); unknown.tap()
         let noResult = app.staticTexts["暂无可验证的释义。可以继续阅读，或在生词本添加明确标记的个人释义。"]
@@ -587,8 +596,8 @@ extension LexiDawnUITests {
         app.tabBars.buttons["我的"].tap()
         XCTAssertTrue(app.textFields["settings-name"].waitForExistence(timeout: 5))
         capture("P30-settings-profile-and-reader-controls", in: app)
-        app.textFields["settings-name"].tap(); app.textFields["settings-name"].typeText("Lexi Reader")
-        let theme = app.buttons["reader-theme"]; try revealLearning(theme, in: app); theme.tap()
+        app.textFields["settings-name"].tap(); app.textFields["settings-name"].typeText("Lexi Reader\n")
+        let theme = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "阅读主题")).firstMatch; try revealLearning(theme, in: app); theme.tap()
         capture("P31-settings-theme-choices", in: app)
         app.buttons["暖纸色"].tap()
         let auto = app.switches["auto-add"]; try revealLearning(auto, in: app); tapNativeSwitch(auto)
@@ -614,7 +623,7 @@ extension LexiDawnUITests {
         for label in ["Cancel", "取消", "Close"] where app.buttons[label].firstMatch.exists { app.buttons[label].firstMatch.tap(); return }
     }
     private func openReaderAppearance(_ app: XCUIApplication) throws {
-        let menu = app.buttons["reader-appearance"]
+        let menu = app.buttons["阅读外观"]
         if !menu.exists || !menu.isHittable {
             for label in ["More", "更多", "More Options", "更多选项"] where app.navigationBars.buttons[label].exists { app.navigationBars.buttons[label].tap(); break }
         }
