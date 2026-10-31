@@ -344,3 +344,51 @@ extension Round2Tests {
         XCTAssertEqual(try context.fetchCount(FetchDescriptor<ReviewStateRecord>()), 1)
     }
 }
+
+extension Round2Tests {
+    func testPinnedOfficialRefetchRestoresOnlySameExpiredBodyAndPreservesAssignment() throws {
+        let app = try AppDependencies.makeLearningInMemory(); let learning = try XCTUnwrap(app.learning)
+        try learning.content.installBundledRFC(at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail() }
+        let context = ModelContext(app.modelContainer)
+        let record = try XCTUnwrap(context.fetch(FetchDescriptor<ArticleRecord>()).first)
+        record.cachePermissionData = try JSONEncoder().encode(ArticleCachePermission.until(now.addingTimeInterval(1))); try context.save()
+        XCTAssertThrowsError(try learning.content.read(articleID: cycle.articleID, at: now.addingTimeInterval(2)))
+        try learning.content.installBundledRFC(at: now.addingTimeInterval(3))
+        XCTAssertFalse(try learning.content.read(articleID: cycle.articleID, at: now.addingTimeInterval(3)).body.isEmpty)
+        XCTAssertEqual(try app.cycleRepository.fetch(by: cycle.cycleID)?.articleID, cycle.articleID)
+        XCTAssertEqual(try app.cycleRepository.fetch(by: cycle.cycleID)?.articleTaskStatus, .ready)
+        XCTAssertThrowsError(try learning.content.acceptRFC("Fake RFC text", at: now.addingTimeInterval(4)))
+    }
+}
+
+extension Round2Tests {
+    func testRealDueQueueHonorsLimitAndSavedSessionIgnoresLaterLimitChanges() async throws {
+        let (app, id, cycle) = try setup(); let learning = try XCTUnwrap(app.learning)
+        for (index, word) in ["book", "science", "world"].enumerated() {
+            let added = try XCTUnwrap(learning.vocabulary.add(token: EnglishToken(surface: word, range: NSRange(location: index * 10, length: word.count), sentence: "A test sentence."), articleID: id, autoAdd: true, at: now))
+            try learning.vocabulary.annotate(entryID: added.entryID, meaning: "个人释义\(index)", notes: "Explicit test-owned meaning", at: now)
+        }
+        let context = ModelContext(app.modelContainer)
+        let world = try XCTUnwrap(context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first { $0.lemma == "world" })
+        let state = try XCTUnwrap(context.fetch(FetchDescriptor<ReviewStateRecord>()).first { $0.entryID == world.entryID })
+        state.repetitions = 1; state.dueAt = now.addingTimeInterval(86400); try context.save()
+        XCTAssertEqual(try learning.review.pendingCount(at: now), 2)
+        let first = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 6, clozeCount: 4, at: now)
+        XCTAssertEqual(first?.matching.count, 1)
+        let restored = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 24, pairCount: 6, clozeCount: 4, at: now.addingTimeInterval(2 * 86400))
+        XCTAssertEqual(first, restored)
+        XCTAssertEqual(try learning.review.pendingCount(at: now.addingTimeInterval(2 * 86400)), 3)
+    }
+    func testCompletedRealCycleAllowsNextLocalDateWithoutReassigningUsedArticle() async throws {
+        let (app, id, cycle) = try setup(); let learning = try XCTUnwrap(app.learning)
+        let nextID = try learning.content.importArticle(ArticleImportDraft(title: "Next owned article", body: "A distinct piece of original writing for tomorrow.", source: "Author", rightsConfirmed: true), at: now)
+        _ = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 12, pairCount: 6, clozeCount: 4, at: now)
+        try learning.reader.complete(articleID: id, cycleID: cycle.cycleID, manualConfirmation: true, at: now)
+        guard case let .cycle(same, createdToday) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail() }
+        XCTAssertFalse(createdToday); XCTAssertEqual(same.cycleID, cycle.cycleID)
+        guard case let .cycle(next, created) = try app.cycleService.ensureCurrentCycle(now: now.addingTimeInterval(86400), timeZone: .current, calendar: .current) else { return XCTFail() }
+        XCTAssertTrue(created); XCTAssertEqual(next.articleID, nextID); XCTAssertNotEqual(next.articleID, id)
+        XCTAssertEqual(try app.cycleRepository.fetchAll().count, 2)
+    }
+}

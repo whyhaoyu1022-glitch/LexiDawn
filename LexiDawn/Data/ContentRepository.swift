@@ -58,7 +58,20 @@ struct ArticleAccessError: LocalizedError {
                     throw PersistenceError.duplicateCanonicalURL(canonical)
                 }
             }
-            try ArticleRepository.insertOrValidate(candidate, fetchedAt: now, context: context, records: context.fetch(FetchDescriptor<ArticleRecord>()))
+            let records = try context.fetch(FetchDescriptor<ArticleRecord>())
+            if candidate.sourceID == SourceRegistry.rfc.id,
+               let old = records.first(where: { $0.articleID == candidate.id }), old.bodyText == nil,
+               old.bodyHash == candidate.bodyHash, old.canonicalURL == candidate.canonicalURL,
+               old.originalTitle == candidate.title, old.sourceID == candidate.sourceID {
+                // A fresh, pinned, full unmodified RFC can legally restore only the same content version.
+                // Identity/hash and every learning relation remain intact; no generic overwrite/import path.
+                old.bodyText = candidate.bodyText; old.contentStatus = candidate.contentStatus.rawValue
+                old.licenseID = candidate.licenseID; old.licenseVerified = true; old.fullTextDisplayAllowed = true
+                old.cachePermissionData = try JSONEncoder().encode(ArticleCachePermission.persistent)
+                old.sourceAttribution = candidate.sourceAttribution; old.fetchedAt = now; old.updatedAt = max(now, old.updatedAt)
+            } else {
+                try ArticleRepository.insertOrValidate(candidate, fetchedAt: now, context: context, records: records)
+            }
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>()).filter { $0.articleID == candidate.id }
             guard grants.count <= 1 else { throw PersistenceError.integrity("重复内容授权记录") }
             if let old = grants.first {
@@ -173,7 +186,7 @@ struct ArticleAccessError: LocalizedError {
     }
     func finishFetch(error: String?, retryAfter: Date?, at now: Date) throws {
         try writer.write {
-            guard let state = try writer.context.fetch(FetchDescriptor<SourceAcquisitionRecord>()).first else { throw PersistenceError.integrity("缺少来源请求记录") }
+            guard let state = try writer.context.fetch(FetchDescriptor<SourceAcquisitionRecord>()).first(where: { $0.sourceID == SourceRegistry.rfc.id }) else { throw PersistenceError.integrity("缺少来源请求记录") }
             state.lastError = error; if error == nil { state.lastSuccess = now }
             state.retryAfter = max(state.retryAfter ?? now, retryAfter ?? now)
         }

@@ -101,6 +101,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
                 let element = WordAccessibilityElement(accessibilityContainer: view)
                 element.accessibilityLabel = token.surface; element.accessibilityTraits = .button
                 element.accessibilityIdentifier = "word-\(token.surface)"
+                element.accessibilityValue = "\(token.range.location)"
                 element.accessibilityHint = "查看词义；根据偏好加入生词本"
                 var rect = view.layoutManager.boundingRect(forGlyphRange: view.layoutManager.glyphRange(forCharacterRange: token.range, actualCharacterRange: nil), in: view.textContainer)
                 rect.origin.x += view.textContainerInset.left; rect.origin.y += view.textContainerInset.top
@@ -110,6 +111,8 @@ struct InteractiveEnglishText: UIViewRepresentable {
             }
             view.accessibilityElements = elements
         }
+        func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) { updateAccessibility() }
+        func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) { if !decelerate { updateAccessibility() } }
     }
 }
 private final class WordAccessibilityElement: UIAccessibilityElement {
