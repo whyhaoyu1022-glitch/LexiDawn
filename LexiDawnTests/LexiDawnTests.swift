@@ -471,13 +471,19 @@ private final class FakeCycleStore: StudyCycleStore, AtomicCycleCreationStore {
 private final class FailingCycleStore: StudyCycleStore {
     var cycles: [DailyStudyCycle] = []
     var failuresRemaining: Int
+    var fetchFailuresRemaining = 0
+    private(set) var saveAttempts = 0
 
     init(failuresRemaining: Int) { self.failuresRemaining = failuresRemaining }
     func fetchAll() throws -> [DailyStudyCycle] { cycles }
-    func fetchEarliestIncomplete() throws -> DailyStudyCycle? { cycles.first(where: { $0.hasOutstandingWork }) }
+    func fetchEarliestIncomplete() throws -> DailyStudyCycle? {
+        if fetchFailuresRemaining > 0 { fetchFailuresRemaining -= 1; throw TestFailure.injectedBeforeSave }
+        return cycles.first(where: { $0.hasOutstandingWork })
+    }
     func fetch(by cycleID: UUID) throws -> DailyStudyCycle? { cycles.first(where: { $0.cycleID == cycleID }) }
     func fetchByAssignedLocalDate(_ localDate: String) throws -> DailyStudyCycle? { cycles.first(where: { $0.assignedLocalDate == localDate }) }
     func save(_ cycle: DailyStudyCycle) throws {
+        saveAttempts += 1
         if failuresRemaining > 0 {
             failuresRemaining -= 1
             throw NSError(domain: "FailingCycleStore", code: 1)
@@ -1165,5 +1171,29 @@ extension LexiDawnTests {
         XCTAssertEqual(recovered.cycleID, cycle.cycleID)
         XCTAssertEqual(recovered.assignedLocalDate, cycle.assignedLocalDate)
         XCTAssertNil(recovered.completedAtUTC)
+    }
+}
+
+extension LexiDawnTests {
+    func testViewModelReadRetryDoesNotReplayPendingFakeStoreWrite() throws {
+        let dependencies = try AppDependencies.makeInMemory()
+        let store = FailingCycleStore(failuresRemaining: 1)
+        let original = try freshCycle()
+        store.cycles = [original]
+        let service = DailyCycleService(cycleStore: store, candidateProvider: EmptyArticleCandidateProvider())
+        let injected = AppDependencies(modelContainer: dependencies.modelContainer, calendar: utcCalendar, timeZone: utc, cycleService: service)
+        let viewModel = TodayViewModel(dependencies: injected, now: { original.createdAtUTC })
+        viewModel.load()
+        viewModel.update(task: .article, to: .blocked, reason: "failed-write-fixture")
+        guard case .saveFailed = viewModel.state else { return XCTFail() }
+        XCTAssertEqual(store.saveAttempts, 1)
+        store.fetchFailuresRemaining = 1
+        viewModel.load()
+        guard case .failed = viewModel.state else { return XCTFail() }
+        viewModel.retry()
+        guard case let .loaded(snapshot) = viewModel.state else { return XCTFail() }
+        XCTAssertEqual(store.saveAttempts, 1)
+        XCTAssertEqual(snapshot.cycle.articleTaskStatus, .ready)
+        XCTAssertEqual(store.cycles, [original])
     }
 }

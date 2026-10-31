@@ -70,7 +70,7 @@ final class TodayViewModel: ObservableObject {
     }
 
     func retry() {
-        if let pendingSave {
+        if case .saveFailed = state, let pendingSave {
             perform(pendingSave)
         } else {
             load()
