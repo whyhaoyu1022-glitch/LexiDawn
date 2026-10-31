@@ -1148,3 +1148,22 @@ extension LexiDawnTests {
         XCTAssertEqual(try repository.fetchAll().count, 1)
     }
 }
+
+extension LexiDawnTests {
+    func testClockRollbackDoesNotPreventSafeInProgressRecoveryOrLoseAssignment() throws {
+        let dependencies = try AppDependencies.makeInMemory()
+        var cycle = try freshCycle()
+        let earlier = cycle.createdAtUTC
+        let highWater = earlier.addingTimeInterval(3600)
+        try dependencies.cycleRepository.save(cycle: cycle, candidate: fixture(id: "a1"), fetchedAt: earlier)
+        try cycle.update(task: .article, to: .inProgress, at: highWater)
+        try dependencies.cycleRepository.save(cycle)
+        let recovered = try XCTUnwrap(dependencies.cycleService.recoverUnavailableInProgressTasks(at: earlier))
+        XCTAssertEqual(recovered.articleTaskStatus, .blocked)
+        XCTAssertEqual(recovered.updatedAtUTC, highWater)
+        XCTAssertEqual(recovered.articleID, cycle.articleID)
+        XCTAssertEqual(recovered.cycleID, cycle.cycleID)
+        XCTAssertEqual(recovered.assignedLocalDate, cycle.assignedLocalDate)
+        XCTAssertNil(recovered.completedAtUTC)
+    }
+}

@@ -639,7 +639,7 @@ final class DailyCycleService {
             (.cloze, cycle.clozeStageStatus)
         ]
         for (task, status) in tasks where status == .inProgress {
-            try cycle.update(task: task, to: .blocked, reason: "功能尚未接入，未执行任何学习操作", at: timestamp)
+            try cycle.update(task: task, to: .blocked, reason: "功能尚未接入；已保存进度保留，当前尚不能恢复学习", at: max(timestamp, cycle.updatedAtUTC))
             changed = true
         }
         guard changed else { return cycle }
