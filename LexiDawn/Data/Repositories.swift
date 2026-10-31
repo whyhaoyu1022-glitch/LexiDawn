@@ -172,6 +172,13 @@ final class ArticleRepository: ArticleStore {
         if records.contains(where: { ArticleCandidate.normalizeCanonicalURL($0.canonicalURL) == candidate.canonicalURL && $0.articleID != candidate.id }) {
             throw PersistenceError.duplicateCanonicalURL(candidate.canonicalURL)
         }
+        if try records.contains(where: { record in
+            guard record.articleID != candidate.id else { return false }
+            let existingHash = try record.candidate().bodyHash
+            return existingHash != nil && existingHash == candidate.bodyHash
+        }) {
+            throw PersistenceError.integrity("相同正文已使用其他文章 ID 保存，不能重复分配")
+        }
         if let existing = records.first(where: { $0.articleID == candidate.id }) {
             // Idempotent retry can reuse the exact snapshot; never overwrite a user's assigned text.
             guard try existing.candidate() == candidate else { throw PersistenceError.integrity("相同文章 ID 的内容或来源发生冲突") }

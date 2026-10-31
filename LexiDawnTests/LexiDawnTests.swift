@@ -292,9 +292,9 @@ final class LexiDawnTests: XCTestCase {
                 let record = try XCTUnwrap(articles.fetch(articleID: cycle.articleID))
                 XCTAssertEqual(record.articleID, cycle.articleID)
                 XCTAssertEqual(try record.candidate(), fixture(id: cycle.articleID))
-                XCTAssertEqual(record.bodyText, "Fixture body")
+                XCTAssertEqual(record.bodyText, "Fixture body \(cycle.articleID)")
                 XCTAssertEqual(record.bodyHash, fixture(id: cycle.articleID).bodyHash)
-                XCTAssertEqual(record.wordCount, 2)
+                XCTAssertEqual(record.wordCount, 3)
                 XCTAssertEqual(record.estimatedReadMinutes, 1)
                 XCTAssertEqual(record.licenseID, "fixture-license")
                 XCTAssertTrue(record.licenseVerified)
@@ -415,15 +415,15 @@ final class LexiDawnTests: XCTestCase {
         return calendar
     }
 
-    private func fixture(id: String, title: String = "Explicit fixture article") -> ArticleCandidate {
+    private func fixture(id: String, title: String? = nil, body: String? = nil) -> ArticleCandidate {
         ArticleCandidate(
             id: id,
             canonicalURL: "https://example.invalid/\(id)",
-            title: title,
+            title: title ?? "Explicit fixture article \(id)",
             sourceID: "test-fixture",
             licenseID: "fixture-license",
             licenseVerified: true,
-            bodyText: "Fixture body",
+            bodyText: body ?? "Fixture body \(id)",
             contentStatus: .available,
             topicTags: ["test"], cachePermission: .persistent, sourceAttribution: "Explicit test fixture", fullTextDisplayAllowed: true
         )
@@ -592,7 +592,7 @@ extension LexiDawnTests {
         XCTAssertEqual(archive.reasons.prefix(2), ["test", "test"])
         try dependencies.cycleRepository.recoverLegacyRecords(at: cycle.createdAtUTC)
         XCTAssertEqual(record.recoveryArchiveData, data)
-        XCTAssertEqual(try dependencies.articleRepository.fetch(articleID: "a1")?.bodyText, "Fixture body")
+        XCTAssertEqual(try dependencies.articleRepository.fetch(articleID: "a1")?.bodyText, "Fixture body a1")
     }
 
     func testUnknownPersistedStateRecoveryFailsAndRetainsOriginalRecord() throws {
@@ -1064,6 +1064,25 @@ extension LexiDawnTests {
         record.contentStatus = "invented-status"
         try context.save()
         XCTAssertThrowsError(try dependencies.articleRepository.fetch(articleID: "a1"))
-        XCTAssertEqual(try context.fetch(FetchDescriptor<ArticleRecord>()).first?.bodyText, "Fixture body")
+        XCTAssertEqual(try context.fetch(FetchDescriptor<ArticleRecord>()).first?.bodyText, "Fixture body a1")
+    }
+}
+
+extension LexiDawnTests {
+    func testArticleRepositoryRejectsIdenticalBodyAcrossDifferentIDsAndURLs() throws {
+        let dependencies = try AppDependencies.makeInMemory()
+        let first = fixture(id: "a1")
+        try dependencies.articleRepository.save(candidate: first, fetchedAt: .now)
+        let duplicate = fixture(id: "another-id", body: first.bodyText)
+        XCTAssertNotEqual(first.canonicalURL, duplicate.canonicalURL)
+        XCTAssertEqual(first.bodyHash, duplicate.bodyHash)
+        XCTAssertThrowsError(try dependencies.articleRepository.save(candidate: duplicate, fetchedAt: .now))
+        XCTAssertEqual(try dependencies.articleRepository.allArticleIDs(), ["a1"])
+        // Also cover old records whose original writer left bodyHash at nil.
+        let record = try XCTUnwrap(dependencies.articleRepository.fetch(articleID: "a1"))
+        record.bodyHash = nil
+        try dependencies.modelContainer.mainContext.save()
+        XCTAssertThrowsError(try dependencies.articleRepository.save(candidate: duplicate, fetchedAt: .now))
+        XCTAssertEqual(try dependencies.articleRepository.allArticleIDs(), ["a1"])
     }
 }
