@@ -379,3 +379,69 @@ extension DailyStudyCycleRecord {
         return true
     }
 }
+
+// Preference edits cross the transaction boundary as a detached snapshot, not a managed object.
+extension UserPreferencesRecord {
+    func detachedCopy() -> UserPreferencesRecord {
+        UserPreferencesRecord(
+            preferencesID: preferencesID,
+            schemaVersion: schemaVersion,
+            displayName: displayName,
+            ageRange: ageRange,
+            learningGoal: learningGoal,
+            interestTopics: interestTopics,
+            dailyReadingReminderEnabled: dailyReadingReminderEnabled,
+            dailyReadingReminderHour: dailyReadingReminderHour,
+            dailyReadingReminderMinute: dailyReadingReminderMinute,
+            dailyReviewReminderEnabled: dailyReviewReminderEnabled,
+            dailyReviewReminderHour: dailyReviewReminderHour,
+            dailyReviewReminderMinute: dailyReviewReminderMinute,
+            timeZonePolicy: timeZonePolicy,
+            fixedTimeZoneID: fixedTimeZoneID,
+            autoAddOnWordTap: autoAddOnWordTap,
+            defaultPronunciation: defaultPronunciation,
+            readerFontSize: readerFontSize,
+            readerLineSpacing: readerLineSpacing,
+            readerTheme: readerTheme,
+            showChineseSummary: showChineseSummary,
+            dailyReviewLimit: dailyReviewLimit,
+            matchingPairCount: matchingPairCount,
+            clozeQuestionCount: clozeQuestionCount,
+            clozeDifficulty: clozeDifficulty,
+            aiEnabled: aiEnabled,
+            aiResponseLanguage: aiResponseLanguage,
+            aiResponseLength: aiResponseLength,
+            lastUpdatedAt: lastUpdatedAt
+        )
+    }
+    func applyValues(from other: UserPreferencesRecord) {
+        preferencesID = other.preferencesID
+        schemaVersion = other.schemaVersion
+        ageRange = other.ageRange
+        displayName = other.displayName
+        learningGoal = other.learningGoal
+        interestTopics = other.interestTopics
+        dailyReadingReminderEnabled = other.dailyReadingReminderEnabled
+        dailyReadingReminderHour = other.dailyReadingReminderHour
+        dailyReadingReminderMinute = other.dailyReadingReminderMinute
+        dailyReviewReminderEnabled = other.dailyReviewReminderEnabled
+        dailyReviewReminderHour = other.dailyReviewReminderHour
+        dailyReviewReminderMinute = other.dailyReviewReminderMinute
+        timeZonePolicy = other.timeZonePolicy
+        fixedTimeZoneID = other.fixedTimeZoneID
+        autoAddOnWordTap = other.autoAddOnWordTap
+        defaultPronunciation = other.defaultPronunciation
+        readerFontSize = other.readerFontSize
+        readerLineSpacing = other.readerLineSpacing
+        readerTheme = other.readerTheme
+        showChineseSummary = other.showChineseSummary
+        dailyReviewLimit = other.dailyReviewLimit
+        matchingPairCount = other.matchingPairCount
+        clozeQuestionCount = other.clozeQuestionCount
+        clozeDifficulty = other.clozeDifficulty
+        aiEnabled = other.aiEnabled
+        aiResponseLanguage = other.aiResponseLanguage
+        aiResponseLength = other.aiResponseLength
+        lastUpdatedAt = other.lastUpdatedAt
+    }
+}

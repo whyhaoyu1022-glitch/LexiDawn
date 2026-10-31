@@ -586,12 +586,13 @@ extension LexiDawnTests {
         XCTAssertEqual(repaired.articleTaskStatus, .blocked); XCTAssertEqual(repaired.reviewTaskStatus, .blocked)
         XCTAssertEqual(repaired.articleID, cycle.articleID); XCTAssertEqual(repaired.assignedLocalDate, cycle.assignedLocalDate)
         XCTAssertEqual(repaired.assignedTimeZoneID, cycle.assignedTimeZoneID); XCTAssertEqual(repaired.createdAtUTC, cycle.createdAtUTC)
-        let data = try XCTUnwrap(record.recoveryArchiveData)
+        let repairedRecord = try XCTUnwrap(ModelContext(dependencies.modelContainer).fetch(FetchDescriptor<DailyStudyCycleRecord>()).first)
+        let data = try XCTUnwrap(repairedRecord.recoveryArchiveData)
         let archive = try JSONDecoder().decode(CycleRecoveryArchive.self, from: data)
         XCTAssertEqual(archive.statuses.prefix(2), ["deferred", "deferred"])
         XCTAssertEqual(archive.reasons.prefix(2), ["test", "test"])
         try dependencies.cycleRepository.recoverLegacyRecords(at: cycle.createdAtUTC)
-        XCTAssertEqual(record.recoveryArchiveData, data)
+        XCTAssertEqual(try ModelContext(dependencies.modelContainer).fetch(FetchDescriptor<DailyStudyCycleRecord>()).first?.recoveryArchiveData, data)
         XCTAssertEqual(try dependencies.articleRepository.fetch(articleID: "a1")?.bodyText, "Fixture body a1")
     }
 
@@ -682,6 +683,7 @@ extension LexiDawnTests {
             XCTAssertThrowsError(try repository.save(cycle: cycle, candidate: fixture(id: "a1"), fetchedAt: cycle.createdAtUTC))
             XCTAssertFalse(context.hasChanges)
             XCTAssertTrue(try context.fetch(FetchDescriptor<ArticleRecord>()).isEmpty)
+            XCTAssertTrue(try repository.fetchAll().isEmpty)
             let preferencesRepository = PreferencesRepository(context: context)
             let preferences = try preferencesRepository.load()
             preferences.displayName = "must fail"
@@ -691,6 +693,11 @@ extension LexiDawnTests {
         let reopened = try diskContainer(url)
         XCTAssertTrue(try ModelContext(reopened).fetch(FetchDescriptor<ArticleRecord>()).isEmpty)
         XCTAssertEqual(try PreferencesRepository(context: ModelContext(reopened)).load().displayName, "")
+        let retried = StudyCycleRepository(context: ModelContext(reopened))
+        let cycle = try freshCycle()
+        try retried.save(cycle: cycle, candidate: fixture(id: "a1"), fetchedAt: cycle.createdAtUTC)
+        XCTAssertEqual(try retried.fetchAll().count, 1)
+        XCTAssertEqual(try ModelContext(reopened).fetch(FetchDescriptor<ArticleRecord>()).count, 1)
     }
 
     func testSwiftDataRepositoryRejectsMissingArticleMismatchedIDDuplicateDateAndReassignment() throws {
@@ -1081,7 +1088,7 @@ extension LexiDawnTests {
         // Also cover old records whose original writer left bodyHash at nil.
         let record = try XCTUnwrap(dependencies.articleRepository.fetch(articleID: "a1"))
         record.bodyHash = nil
-        try dependencies.modelContainer.mainContext.save()
+        try XCTUnwrap(record.modelContext).save()
         XCTAssertThrowsError(try dependencies.articleRepository.save(candidate: duplicate, fetchedAt: .now))
         XCTAssertEqual(try dependencies.articleRepository.allArticleIDs(), ["a1"])
     }
@@ -1102,10 +1109,42 @@ extension LexiDawnTests {
         XCTAssertTrue(try repository.load().readerLineSpacing.isFinite)
         let future = try repository.load()
         future.schemaVersion = 999
-        try dependencies.modelContainer.mainContext.save() // simulate an unsupported historical/future record
+        try XCTUnwrap(future.modelContext).save() // simulate an unsupported historical/future record
         XCTAssertThrowsError(try repository.load())
         let records = try dependencies.modelContainer.mainContext.fetch(FetchDescriptor<UserPreferencesRecord>())
         XCTAssertEqual(records.count, 1)
         XCTAssertEqual(records.first?.schemaVersion, 999)
+    }
+}
+
+extension LexiDawnTests {
+    func testReadOnlyExistingCycleUpdateFailureDoesNotLeakAndWritableRetrySucceeds() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("readonly-update.store")
+        let original = try freshCycle()
+        var changed = original
+        try changed.update(task: .article, to: .blocked, reason: "保存失败后需重试的真实状态", at: original.createdAtUTC)
+        do {
+            let container = try diskContainer(url)
+            try StudyCycleRepository(context: ModelContext(container)).save(cycle: original, candidate: fixture(id: "a1"), fetchedAt: original.createdAtUTC)
+        }
+        do {
+            let container = try ModelContainer(for: ArticleRecord.self, DailyStudyCycleRecord.self, UserPreferencesRecord.self,
+                configurations: ModelConfiguration(url: url, allowsSave: false))
+            let context = ModelContext(container)
+            let repository = StudyCycleRepository(context: context)
+            XCTAssertThrowsError(try repository.save(changed))
+            XCTAssertFalse(context.hasChanges)
+            XCTAssertEqual(try repository.fetch(by: original.cycleID), original)
+            XCTAssertEqual(try ModelContext(container).fetch(FetchDescriptor<DailyStudyCycleRecord>()).first?.articleTaskStatusRaw, "ready")
+        }
+        let reopened = try diskContainer(url)
+        let repository = StudyCycleRepository(context: ModelContext(reopened))
+        XCTAssertEqual(try repository.fetch(by: original.cycleID), original)
+        try repository.save(changed)
+        XCTAssertEqual(try repository.fetch(by: original.cycleID), changed)
+        XCTAssertEqual(try repository.fetchAll().count, 1)
     }
 }

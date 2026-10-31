@@ -1,25 +1,47 @@
 import Foundation
 import SwiftData
 
-/// One synchronous main-actor unit of work. Autosave must never commit a failed operation later.
+/// A failed SwiftData save can leave registered phantom objects even after rollback.
+/// Each write owns a disposable context; failed contexts are NEVER used for later reads or writes.
 @MainActor
 final class RepositoryWriter {
-    let context: ModelContext
+    private let container: ModelContainer
+    private var readContext: ModelContext
+    private var transactionContext: ModelContext?
+    var context: ModelContext { transactionContext ?? readContext }
     private let saveContext: (ModelContext) throws -> Void
 
     init(context: ModelContext, saveContext: @escaping (ModelContext) throws -> Void = { try $0.save() }) {
-        self.context = context
+        container = context.container
+        readContext = context
         self.saveContext = saveContext
         context.autosaveEnabled = false
     }
 
+    func read<T>(_ query: (ModelContext) throws -> T) rethrows -> T {
+        if let transactionContext { return try query(transactionContext) }
+        let fresh = ModelContext(container)
+        fresh.autosaveEnabled = false
+        readContext = fresh
+        return try query(fresh)
+    }
+
     func write<T>(_ changes: () throws -> T) throws -> T {
+        let transaction = ModelContext(container)
+        transaction.autosaveEnabled = false
+        transactionContext = transaction
+        defer { transactionContext = nil }
         do {
             let result = try changes()
-            try saveContext(context)
+            try saveContext(transaction)
+            readContext = transaction
             return result
         } catch {
-            context.rollback()
+            transaction.rollback()
+            // Do not assume rollback evicts save-failure phantoms in this context.
+            let clean = ModelContext(container)
+            clean.autosaveEnabled = false
+            readContext = clean
             throw error
         }
     }
@@ -35,12 +57,14 @@ final class StudyCycleRepository: StudyCycleStore, AtomicCycleCreationStore {
     }
 
     func fetchAll() throws -> [DailyStudyCycle] {
-        let cycles = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>())
-            .sorted { ($0.assignedLocalDate, $0.createdAtUTC, $0.cycleID) < ($1.assignedLocalDate, $1.createdAtUTC, $1.cycleID) }
-            .map { try $0.domain() }
-        let articles = try context.fetch(FetchDescriptor<ArticleRecord>())
-        try validateCollection(cycles, articles: articles)
-        return cycles
+        try writer.read { context in
+            let cycles = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>())
+                .sorted { ($0.assignedLocalDate, $0.createdAtUTC, $0.cycleID) < ($1.assignedLocalDate, $1.createdAtUTC, $1.cycleID) }
+                .map { try $0.domain() }
+            let articles = try context.fetch(FetchDescriptor<ArticleRecord>())
+            try validateCollection(cycles, articles: articles)
+            return cycles
+        }
     }
 
     func fetchEarliestIncomplete() throws -> DailyStudyCycle? { try fetchAll().first(where: \.hasOutstandingWork) }
@@ -114,10 +138,11 @@ final class StudyCycleRepository: StudyCycleStore, AtomicCycleCreationStore {
 
     /// Explicit legacy recovery step, before normal domain reads. All repairs commit together or roll back.
     func recoverLegacyRecords(at timestamp: Date) throws {
-        let records = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>())
-        guard !records.isEmpty else { return }
+        let count = try writer.read { try $0.fetchCount(FetchDescriptor<DailyStudyCycleRecord>()) }
+        guard count > 0 else { return }
         if (try? fetchAll()) != nil { return }
         try writer.write {
+            let records = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>())
             for record in records { _ = try record.repairKnownLegacyState(at: timestamp) }
             try normalizeCurrent(records)
             try validateCollection(records.map { try $0.domain() }, articles: context.fetch(FetchDescriptor<ArticleRecord>()))
@@ -154,7 +179,9 @@ final class ArticleRepository: ArticleStore {
     init(context: ModelContext, saveContext: @escaping (ModelContext) throws -> Void = { try $0.save() }) {
         writer = RepositoryWriter(context: context, saveContext: saveContext)
     }
-    func allArticleIDs() throws -> Set<String> { Set(try context.fetch(FetchDescriptor<ArticleRecord>()).map(\.articleID)) }
+    func allArticleIDs() throws -> Set<String> {
+        try writer.read { Set(try $0.fetch(FetchDescriptor<ArticleRecord>()).map(\.articleID)) }
+    }
     func save(candidate: ArticleCandidate, fetchedAt: Date) throws {
         try writer.write {
             try candidate.validate(at: fetchedAt)
@@ -162,10 +189,11 @@ final class ArticleRepository: ArticleStore {
         }
     }
     func fetch(articleID: String) throws -> ArticleRecord? {
-        let record = try context.fetch(FetchDescriptor<ArticleRecord>()).first { $0.articleID == articleID }
-        // Unknown content status is an error, never an invented available body.
-        if let record, ArticleContentStatus(rawValue: record.contentStatus) == nil { throw PersistenceError.integrity("文章内容状态无效") }
-        return record
+        try writer.read { context in
+            let record = try context.fetch(FetchDescriptor<ArticleRecord>()).first { $0.articleID == articleID }
+            if let record, ArticleContentStatus(rawValue: record.contentStatus) == nil { throw PersistenceError.integrity("文章内容状态无效") }
+            return record
+        }
     }
 
     fileprivate static func insertOrValidate(_ candidate: ArticleCandidate, fetchedAt: Date, context: ModelContext, records: [ArticleRecord]) throws {
@@ -225,7 +253,7 @@ final class PreferencesRepository {
         writer = RepositoryWriter(context: context, saveContext: saveContext)
     }
     func load() throws -> UserPreferencesRecord {
-        let records = try context.fetch(FetchDescriptor<UserPreferencesRecord>())
+        let records = try writer.read { try $0.fetch(FetchDescriptor<UserPreferencesRecord>()) }
         guard records.count <= 1 else { throw PersistenceError.integrity("偏好存在多条记录，需核对原数据") }
         if let existing = records.first { try validate(existing); return existing }
         return try writer.write {
@@ -235,10 +263,21 @@ final class PreferencesRepository {
         }
     }
     func save(_ preferences: UserPreferencesRecord) throws {
+        let sourceContext = preferences.modelContext
+        defer { sourceContext?.rollback() }
+        guard let sourceContext, sourceContext.container === context.container else {
+            throw PersistenceError.integrity("偏好未附属于当前容器")
+        }
+        try validate(preferences)
+        let draft = preferences.detachedCopy()
+        // The caller's editing context must not commit this draft outside the transaction.
+        sourceContext.rollback()
         try writer.write {
-            guard preferences.modelContext === context else { throw PersistenceError.integrity("偏好来自其他上下文") }
-            try validate(preferences)
-            preferences.lastUpdatedAt = Date()
+            guard let stored = try context.fetch(FetchDescriptor<UserPreferencesRecord>()).first(where: { $0.preferencesID == draft.preferencesID }) else {
+                throw PersistenceError.missingPreferences
+            }
+            stored.applyValues(from: draft)
+            stored.lastUpdatedAt = Date()
         }
     }
     private func validate(_ preferences: UserPreferencesRecord) throws {

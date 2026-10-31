@@ -40,3 +40,8 @@
 - 已保存结果使用源事件时间，允许在较晚的跨日/恢复处理之后应用；updatedAtUTC取高水位，completedAtUTC取最后一项有效结果时间，不把请求重试时间当完成时间。普通状态命令仍拒绝时间回退。
 - 正文展示许可与缓存permission分开，图片展示核验与imageLicenseID/署名分开；新增布尔权利字段为可选，历史nil按未授权处理。不能把非空许可ID自动理解为所有权利。
 - SwiftData事务恢复依据：[Apple ModelContext](https://developer.apple.com/documentation/swiftdata/modelcontext) 对 save、hasChanges、rollback、autosave 的定义；结构升级依据：[Apple Schema](https://developer.apple.com/documentation/swiftdata/schema)。文档能力仍以本次实际编译/运行验证为准。
+
+## ADR-009 失败写上下文必须隔离并弃用
+- 真实证据：run41164982359中只读磁盘save抛NSCocoaErrorDomain513；rollback之后hasChanges=false，但同context仍查到未落盘Article。新容器查询为空。这说明不能把“hasChanges=false”扩大为“此context可安全复用”。
+- 决策：每个Repository写操作建立专属ModelContext；文章/周期仍同一save；失败rollback并永久丢弃context。每次公开读取使用新context，避免失败或其他context的缓存残留。Preferences编辑跨边界为完整detached快照，原编辑context回滚；不能把托管对象直接跨context保存。
+- 保留原失败测试的同context查询空断言，另增强同Repository重读、恢复可写后的真实重试及已有周期update失败回归。不是把数据库失败测试改成Fake或删掉assert。
