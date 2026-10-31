@@ -2,7 +2,7 @@
 
 依据 SPEC §15.3：“数据修改通过 Repository / Use Case 统一执行。”保留 SwiftUI / Domain / Repository / SwiftData 分层，所有服务和 Repository 在 MainActor 同步调用。
 
-- Domain：`DailyStudyCycle` 可抛错初始化、只读对外状态和统一 `validate()`。通用更新不能 completed/deferred。阅读完成需文章 ID、内容哈希、有效进度及明确确认；手动确认允许低进度，不增加查词要求。复习空队列只由完整可复习集合的 reader 生成绑定 cycleID/版本/时间的证据，三个复习状态一次性解析；不可用 reader 抛错。正常/部分复习结果由固定会话题目与已答 ID 的结构化结果约束。生产未实现这些模块，不产生伪结果。
+- Domain：`DailyStudyCycle` 可抛错初始化、只读对外状态和统一 `validate()`。通用更新不能 completed/deferred。阅读完成需文章 ID、内容哈希、有效进度及明确确认；手动确认允许低进度，不增加查词要求。复习空队列只由完整可复习集合的 reader 生成绑定 cycleID/版本/时间的证据，三个复习状态一次性解析；不可用 reader 抛错。正常/部分复习结果由 reader 读取固定已保存会话、题目与已答 ID 的结构化结果约束，源事件时间保持不变。生产未实现这些模块，不产生伪结果。
 - Data：新增字段均可选，保留原有字段/实体。Record.domain() 走同一领域验证。已知旧 deferred/无证据完成状态在显式恢复事务中存档全部原标量与证据后变成说明清楚的 blocked；无法辨认的状态或关联异常终止恢复，不删除或合并数据。
 - Repository：`RepositoryWriter` 关闭 autosave，每次同步写入统一 save/catch/rollback。创建必须同一上下文写文章和周期；移除非原子 fallback。普通保存验证文章存在、身份不变、日期/文章指派唯一、状态不回退、完成证据和内容版本匹配。current 总是最早未完成周期；历史多个未完成记录保留。文章相同 ID 仅接受完全相同快照重试，不覆盖已分配正文。
 - Article：Candidate 负责许可/缓存期限、来源与图片署名、HTTP(S) URL、正文/主题门禁；正文 SHA-256、英文词数和按 200 词/分钟估算阅读时间由正文计算。所有 Repository 文章入口复用门禁。历史缺少缓存权利的文章不推断获得许可，后续阅读器必须重新核验。

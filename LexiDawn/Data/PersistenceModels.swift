@@ -17,6 +17,8 @@ final class ArticleRecord {
     var cachePermissionData: Data?
     var imageLicenseID: String?
     var sourceAttribution: String?
+    var fullTextDisplayAllowed: Bool?
+    var imageLicenseVerified: Bool?
     var wordCount: Int
     var estimatedReadMinutes: Int
     var topicTags: [String]
@@ -63,6 +65,8 @@ final class ArticleRecord {
         self.cachePermissionData = nil
         self.imageLicenseID = nil
         self.sourceAttribution = nil
+        self.fullTextDisplayAllowed = nil
+        self.imageLicenseVerified = nil
         self.wordCount = wordCount
         self.estimatedReadMinutes = estimatedReadMinutes
         self.topicTags = topicTags

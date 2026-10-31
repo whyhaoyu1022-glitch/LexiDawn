@@ -191,6 +191,8 @@ final class ArticleRepository: ArticleStore {
         record.cachePermissionData = try candidate.cachePermission.map { try JSONEncoder().encode($0) }
         record.imageLicenseID = candidate.imageLicenseID
         record.sourceAttribution = candidate.sourceAttribution
+        record.fullTextDisplayAllowed = candidate.fullTextDisplayAllowed
+        record.imageLicenseVerified = candidate.imageLicenseVerified
         return record
     }
 }
@@ -203,7 +205,8 @@ extension ArticleRecord {
             publishedAt: publishedAt, licenseID: licenseID, licenseVerified: licenseVerified, bodyText: bodyText,
             contentStatus: status, topicTags: topicTags,
             cachePermission: try cachePermissionData.map { try JSONDecoder().decode(ArticleCachePermission.self, from: $0) },
-            imageLicenseID: imageLicenseID, sourceAttribution: sourceAttribution)
+            imageLicenseID: imageLicenseID, sourceAttribution: sourceAttribution,
+            fullTextDisplayAllowed: fullTextDisplayAllowed == true, imageLicenseVerified: imageLicenseVerified == true)
     }
 }
 

@@ -353,7 +353,7 @@ final class LexiDawnTests: XCTestCase {
             licenseVerified: true,
             bodyText: "Fixture body",
             contentStatus: .available,
-            topicTags: ["test"], cachePermission: .persistent, sourceAttribution: "Explicit test fixture"
+            topicTags: ["test"], cachePermission: .persistent, sourceAttribution: "Explicit test fixture", fullTextDisplayAllowed: true
         )
         try repository.save(candidate: first, fetchedAt: .now)
         XCTAssertThrowsError(try repository.save(candidate: duplicate, fetchedAt: .now)) { error in
@@ -425,7 +425,7 @@ final class LexiDawnTests: XCTestCase {
             licenseVerified: true,
             bodyText: "Fixture body",
             contentStatus: .available,
-            topicTags: ["test"], cachePermission: .persistent, sourceAttribution: "Explicit test fixture"
+            topicTags: ["test"], cachePermission: .persistent, sourceAttribution: "Explicit test fixture", fullTextDisplayAllowed: true
         )
     }
 
@@ -714,15 +714,15 @@ extension LexiDawnTests {
         let now = date("2026-10-26T01:00:00Z")
         func candidate(tags: [String] = ["test"], cache: ArticleCachePermission? = .persistent,
                        image: String? = nil, attribution: String? = nil, imageLicense: String? = nil,
-                       verified: Bool = true, body: String? = "Fixture body", status: ArticleContentStatus = .available) -> ArticleCandidate {
+                       verified: Bool = true, displayAllowed: Bool = true, body: String? = "Fixture body", status: ArticleContentStatus = .available) -> ArticleCandidate {
             ArticleCandidate(id: "a1", canonicalURL: "https://example.invalid/a1", title: "fixture", sourceID: "test",
                 imageURL: image, imageAttribution: attribution, licenseID: "fixture-license", licenseVerified: verified,
                 bodyText: body, contentStatus: status, topicTags: tags, cachePermission: cache,
-                imageLicenseID: imageLicense, sourceAttribution: "test")
+                imageLicenseID: imageLicense, sourceAttribution: "test", fullTextDisplayAllowed: displayAllowed, imageLicenseVerified: imageLicense != nil)
         }
         let invalid = [candidate(tags: []), candidate(cache: nil), candidate(cache: .until(now)),
             candidate(image: "file:///private/test", attribution: "test", imageLicense: "test"),
-            candidate(image: "https://example.invalid/image"), candidate(verified: false), candidate(body: nil), candidate(status: .partial)]
+            candidate(image: "https://example.invalid/image"), candidate(verified: false), candidate(displayAllowed: false), candidate(body: nil), candidate(status: .partial)]
         for candidate in invalid { XCTAssertThrowsError(try dependencies.articleRepository.save(candidate: candidate, fetchedAt: now)) }
         XCTAssertTrue(try dependencies.articleRepository.allArticleIDs().isEmpty)
         let valid = candidate(image: "https://example.invalid/image", attribution: "test attribution", imageLicense: "fixture-image-license")
@@ -1038,5 +1038,32 @@ extension LexiDawnTests {
         record.completedAtUTC = cycle.createdAtUTC; record.completionReason = "invented-complete"
         try context.save()
         XCTAssertThrowsError(try record.domain())
+    }
+}
+
+extension LexiDawnTests {
+    func testDelayedEvidenceAfterCarryOverPreservesEventTimeAndUpdateHighWater() throws {
+        var cycle = try freshCycle()
+        let eventTime = cycle.createdAtUTC
+        let refreshedAt = eventTime.addingTimeInterval(86400 * 2)
+        _ = cycle.markCarryOverIfNeeded(for: "2026-10-28", calendar: utcCalendar, at: refreshedAt)
+        let proof = try ReviewQueueEvidence.evaluate(cycleID: cycle.cycleID, reader: FixtureReviewQueue(), at: eventTime)
+        try cycle.resolveEmptyReview(proof)
+        try cycle.completeReading(readingProof(articleID: cycle.articleID, at: eventTime))
+        XCTAssertTrue(cycle.isComplete)
+        XCTAssertEqual(cycle.completedAtUTC, eventTime)
+        XCTAssertEqual(cycle.updatedAtUTC, refreshedAt)
+        XCTAssertEqual(cycle.carryOverCount, 2)
+    }
+
+    func testPersistedUnknownArticleContentStatusIsAnErrorWithoutDeletingBody() throws {
+        let dependencies = try AppDependencies.makeInMemory()
+        try dependencies.articleRepository.save(candidate: fixture(id: "a1"), fetchedAt: .now)
+        let context = dependencies.modelContainer.mainContext
+        let record = try XCTUnwrap(context.fetch(FetchDescriptor<ArticleRecord>()).first)
+        record.contentStatus = "invented-status"
+        try context.save()
+        XCTAssertThrowsError(try dependencies.articleRepository.fetch(articleID: "a1"))
+        XCTAssertEqual(try context.fetch(FetchDescriptor<ArticleRecord>()).first?.bodyText, "Fixture body")
     }
 }

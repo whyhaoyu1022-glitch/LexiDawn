@@ -35,3 +35,8 @@
 - 支持 `c13906ae66515c29cb9a602da061caf810a62ade` 初版和 `b894bdacadbee3a52073f6c300ab043c7e43caa8` 整改版的磁盘模型。测试冻结旧字段，先由旧模型建库，再由新模型打开，验证数据和升级前备份。
 - 本次仅加可选字段，不新增会删除/合并旧记录的唯一约束；使用 SwiftData 自动轻量迁移，并在 domain 恢复阶段单独处理语义约束。`UserPreferences.schemaVersion` 仍是偏好格式版本 1，不伪装为 SwiftData store schema 版本。
 - 冷启动、尚未打开容器时备份原 store/WAL/SHM，一次成功备份不会覆盖。失败传播到启动页；没有清库 fallback。当前不支持多个进程同时写入。测试是否通过以本次 Actions 日志为准，不能仅凭“可选列”宣称验证通过。
+
+## ADR-008 结果事件时间与展示权利
+- 已保存结果使用源事件时间，允许在较晚的跨日/恢复处理之后应用；updatedAtUTC取高水位，completedAtUTC取最后一项有效结果时间，不把请求重试时间当完成时间。普通状态命令仍拒绝时间回退。
+- 正文展示许可与缓存permission分开，图片展示核验与imageLicenseID/署名分开；新增布尔权利字段为可选，历史nil按未授权处理。不能把非空许可ID自动理解为所有权利。
+- SwiftData事务恢复依据：[Apple ModelContext](https://developer.apple.com/documentation/swiftdata/modelcontext) 对 save、hasChanges、rollback、autosave 的定义；结构升级依据：[Apple Schema](https://developer.apple.com/documentation/swiftdata/schema)。文档能力仍以本次实际编译/运行验证为准。

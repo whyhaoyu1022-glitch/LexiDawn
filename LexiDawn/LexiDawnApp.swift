@@ -39,7 +39,7 @@ final class AppStartup: ObservableObject {
             let candidate = ArticleCandidate(id: "ui-fixture", canonicalURL: "https://example.invalid/ui-fixture",
                 title: "UI 测试文章（非真实内容）", sourceID: "ui-test-only", licenseID: "fixture-not-a-real-license",
                 licenseVerified: true, bodyText: "Explicit isolated UI test fixture.", contentStatus: .available,
-                topicTags: ["test"], cachePermission: .persistent, sourceAttribution: "UI test fixture")
+                topicTags: ["test"], cachePermission: .persistent, sourceAttribution: "UI test fixture", fullTextDisplayAllowed: true)
             let cycle = try DailyStudyCycle(assignedLocalDate: DailyCycleService.studyDate(for: now, calendar: .current),
                 assignedTimeZoneID: TimeZone.current.identifier, articleID: candidate.id,
                 createdAtUTC: now, updatedAtUTC: now, assignmentReason: "ui-test-only")

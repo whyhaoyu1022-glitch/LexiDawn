@@ -114,6 +114,8 @@ struct ArticleCandidate: Equatable, Sendable {
     let cachePermission: ArticleCachePermission?
     let imageLicenseID: String?
     let sourceAttribution: String?
+    let fullTextDisplayAllowed: Bool
+    let imageLicenseVerified: Bool
 
     init(
         id: String,
@@ -132,7 +134,9 @@ struct ArticleCandidate: Equatable, Sendable {
         topicTags: [String] = [],
         cachePermission: ArticleCachePermission? = nil,
         imageLicenseID: String? = nil,
-        sourceAttribution: String? = nil
+        sourceAttribution: String? = nil,
+        fullTextDisplayAllowed: Bool = false,
+        imageLicenseVerified: Bool = false
     ) {
         self.id = id
         self.canonicalURL = Self.normalizeCanonicalURL(canonicalURL)
@@ -151,6 +155,8 @@ struct ArticleCandidate: Equatable, Sendable {
         self.cachePermission = cachePermission
         self.imageLicenseID = imageLicenseID
         self.sourceAttribution = sourceAttribution
+        self.fullTextDisplayAllowed = fullTextDisplayAllowed
+        self.imageLicenseVerified = imageLicenseVerified
     }
 
     var bodyHash: String? {
@@ -171,12 +177,14 @@ struct ArticleCandidate: Equatable, Sendable {
         try require(!id.isBlank && !title.isBlank && !sourceID.isBlank, "缺少 ID、标题或来源")
         try require(Self.isWebURL(canonicalURL), "canonicalURL 无效")
         try require(licenseVerified && !(licenseID?.isBlank ?? true), "许可尚未核验或缺少依据")
+        try require(fullTextDisplayAllowed, "许可不允许全文展示")
         try require(!(sourceAttribution?.isBlank ?? true), "缺少文章来源署名")
         try require(contentStatus == .available && wordCount > 0, "正文不可用或不含英文词")
         try require(!topicTags.isEmpty && topicTags.allSatisfy { !$0.isBlank }, "缺少主题标签")
         try require(cachePermission?.permits(at: timestamp) == true, "全文缓存许可缺失或已到期")
         if let imageURL {
             try require(Self.isWebURL(imageURL), "图片 URL 无效")
+            try require(imageLicenseVerified, "图片展示许可未核验")
             try require(!(imageAttribution?.isBlank ?? true) && !(imageLicenseID?.isBlank ?? true), "图片缺少署名或许可依据")
         }
     }
@@ -386,13 +394,13 @@ struct DailyStudyCycle: Equatable, Sendable {
         }
         var next = self
         next.reviewProgress = result
-        next.matchingStageStatus = result.matchingComplete ? .completed : .inProgress
-        next.clozeStageStatus = result.clozeComplete ? .completed : .inProgress
-        next.reviewTaskStatus = result.isComplete ? .completed : .inProgress
+        next.matchingStageStatus = result.matchingComplete ? .completed : (result.matchingAnsweredIDs.isEmpty ? .ready : .inProgress)
+        next.clozeStageStatus = result.clozeComplete ? .completed : (result.clozeAnsweredIDs.isEmpty ? .ready : .inProgress)
+        next.reviewTaskStatus = result.isComplete ? .completed : (result.matchingAnsweredIDs.isEmpty ? .ready : .inProgress)
         next.reviewTaskReason = result.isComplete ? "saved-review-session" : nil
         next.matchingStageReason = result.matchingComplete ? "saved-review-session" : nil
         next.clozeStageReason = result.clozeComplete ? "saved-review-session" : nil
-        try next.finishMutation(at: result.recordedAt)
+        try next.finishEvidenceMutation(at: result.recordedAt)
         self = next
     }
 
@@ -407,7 +415,7 @@ struct DailyStudyCycle: Equatable, Sendable {
         next.articleTaskStatus = .completed
         next.articleTaskReason = "explicit-reading-confirmation"
         next.readingEvidence = evidence
-        try next.finishMutation(at: evidence.confirmedAt)
+        try next.finishEvidenceMutation(at: evidence.confirmedAt)
         self = next
     }
 
@@ -432,8 +440,19 @@ struct DailyStudyCycle: Equatable, Sendable {
         next.matchingStageReason = "no-review-items"
         next.clozeStageReason = "no-review-items"
         next.reviewEvidence = evidence
-        try next.finishMutation(at: evidence.evaluatedAt)
+        try next.finishEvidenceMutation(at: evidence.evaluatedAt)
         self = next
+    }
+
+    private mutating func finishEvidenceMutation(at timestamp: Date) throws {
+        updatedAtUTC = max(updatedAtUTC, timestamp)
+        if isComplete, let readingEvidence {
+            let reviewTime = reviewEvidence?.evaluatedAt ?? reviewProgress?.recordedAt ?? timestamp
+            completedAtUTC = max(readingEvidence.confirmedAt, reviewTime)
+            completionReason = expectedCompletionReason
+            isCurrent = false
+        }
+        try validate()
     }
 
     private mutating func finishMutation(at timestamp: Date) throws {
@@ -778,6 +797,7 @@ struct ReviewSessionResult: Equatable, Sendable, Codable {
     func validate(cycleID: UUID, createdAt: Date, updatedAt: Date) throws {
         guard self.cycleID == cycleID, !sourceRevision.isBlank,
               recordedAt >= createdAt, recordedAt <= updatedAt else { throw TaskStatusError.verifiedEvidenceRequired }
+        guard clozeAnsweredIDs.isEmpty || matchingComplete else { throw TaskStatusError.verifiedEvidenceRequired }
         for (questions, answers) in [(matchingQuestionIDs, matchingAnsweredIDs), (clozeQuestionIDs, clozeAnsweredIDs)] {
             guard !questions.isEmpty, questions.allSatisfy({ !$0.isBlank }), Set(questions).count == questions.count,
                   Set(answers).count == answers.count, Set(answers).isSubset(of: Set(questions)) else { throw TaskStatusError.verifiedEvidenceRequired }
