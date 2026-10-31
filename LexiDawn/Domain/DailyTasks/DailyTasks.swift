@@ -768,8 +768,8 @@ struct ReviewSessionResult: Equatable, Sendable, Codable {
     static func read(cycleID: UUID, reader: ReviewSessionReading, at timestamp: Date) throws -> Self {
         let snapshot = try reader.savedSession(for: cycleID, at: timestamp)
         guard snapshot.cycleID == cycleID else { throw TaskStatusError.verifiedEvidenceRequired }
-        let result = Self(cycleID: cycleID, snapshot: snapshot, recordedAt: timestamp)
-        try result.validate(cycleID: cycleID, createdAt: timestamp, updatedAt: timestamp)
+        let result = Self(cycleID: cycleID, snapshot: snapshot, recordedAt: snapshot.recordedAt)
+        try result.validate(cycleID: cycleID, createdAt: snapshot.recordedAt, updatedAt: timestamp)
         return result
     }
     var matchingComplete: Bool { Set(matchingQuestionIDs) == Set(matchingAnsweredIDs) }
@@ -798,4 +798,5 @@ struct SavedReviewSessionSnapshot {
     let clozeQuestionIDs: [String]
     let matchingAnsweredIDs: [String]
     let clozeAnsweredIDs: [String]
+    let recordedAt: Date
 }

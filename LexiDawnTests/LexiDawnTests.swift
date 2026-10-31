@@ -908,7 +908,7 @@ extension LexiDawnTests {
             } else {
                 let reader = FixtureSavedReviewSession(snapshot: SavedReviewSessionSnapshot(cycleID: original.cycleID, sessionID: UUID(), sourceRevision: "explicit-saved-session-fixture",
                     matchingQuestionIDs: ["match-1"], clozeQuestionIDs: ["cloze-1"], matchingAnsweredIDs: ["match-1"],
-                    clozeAnsweredIDs: scenario == "review-only" ? ["cloze-1"] : []))
+                    clozeAnsweredIDs: scenario == "review-only" ? ["cloze-1"] : [], recordedAt: now))
                 let result = try ReviewSessionResult.read(cycleID: original.cycleID, reader: reader, at: now)
                 try partial.recordReviewProgress(result)
                 if scenario == "review-only" { XCTAssertEqual(partial.reviewTaskStatus, .completed) }
@@ -931,7 +931,7 @@ extension LexiDawnTests {
         func result(_ answers: [String], matching: [String] = ["m1"]) throws -> ReviewSessionResult {
             let reader = FixtureSavedReviewSession(snapshot: SavedReviewSessionSnapshot(cycleID: cycle.cycleID, sessionID: sessionID,
                 sourceRevision: "test-saved-session", matchingQuestionIDs: matching, clozeQuestionIDs: ["c1"],
-                matchingAnsweredIDs: answers, clozeAnsweredIDs: []))
+                matchingAnsweredIDs: answers, clozeAnsweredIDs: [], recordedAt: cycle.createdAtUTC))
             return try ReviewSessionResult.read(cycleID: cycle.cycleID, reader: reader, at: cycle.createdAtUTC)
         }
         XCTAssertThrowsError(try cycle.recordReviewProgress(result(["unknown"])))
@@ -979,4 +979,64 @@ extension LexiDawnTests {
 private struct FixtureSavedReviewSession: ReviewSessionReading {
     let snapshot: SavedReviewSessionSnapshot
     func savedSession(for cycleID: UUID, at timestamp: Date) throws -> SavedReviewSessionSnapshot { snapshot }
+}
+
+extension LexiDawnTests {
+    func testSavedReviewSessionRepeatedServiceReadPreservesCompletionTimestamp() throws {
+        let dependencies = try AppDependencies.makeInMemory()
+        let now = date("2026-10-26T01:00:00Z")
+        let cycle = try freshCycle()
+        try dependencies.cycleRepository.save(cycle: cycle, candidate: fixture(id: "a1"), fetchedAt: now)
+        let reader = FixtureSavedReviewSession(snapshot: SavedReviewSessionSnapshot(cycleID: cycle.cycleID, sessionID: UUID(), sourceRevision: "saved-fixture",
+            matchingQuestionIDs: ["m1"], clozeQuestionIDs: ["c1"], matchingAnsweredIDs: ["m1"], clozeAnsweredIDs: ["c1"], recordedAt: now))
+        let service = DailyCycleService(cycleStore: dependencies.cycleRepository, candidateProvider: EmptyArticleCandidateProvider(), readerAvailable: true, reviewSessions: reader)
+        _ = try service.completeReading(cycleID: cycle.cycleID, evidence: readingProof(articleID: "a1", at: now))
+        let completed = try service.recordReviewSession(cycleID: cycle.cycleID, at: now)
+        let repeated = try service.recordReviewSession(cycleID: cycle.cycleID, at: now.addingTimeInterval(120))
+        XCTAssertEqual(completed, repeated)
+        XCTAssertEqual(repeated.completedAtUTC, now)
+        XCTAssertEqual(repeated.completionReason, "all-required-tasks-completed")
+        XCTAssertFalse(repeated.isCurrent)
+    }
+
+    func testSwiftDataHistoryMultipleCurrentFlagsResolveToEarliestWithoutDeletingCycles() throws {
+        let dependencies = try AppDependencies.makeInMemory()
+        let context = dependencies.modelContainer.mainContext
+        let earlier = try freshCycle()
+        let later = try freshCycle(localDate: "2026-10-27", articleID: "a2")
+        try dependencies.articleRepository.save(candidate: fixture(id: "a1"), fetchedAt: earlier.createdAtUTC)
+        try dependencies.articleRepository.save(candidate: fixture(id: "a2"), fetchedAt: later.createdAtUTC)
+        context.insert(try DailyStudyCycleRecord(cycle: earlier))
+        context.insert(try DailyStudyCycleRecord(cycle: later))
+        try context.save()
+        XCTAssertThrowsError(try dependencies.cycleRepository.fetchAll())
+        try dependencies.cycleRepository.recoverLegacyRecords(at: earlier.createdAtUTC)
+        let restored = try dependencies.cycleRepository.fetchAll()
+        XCTAssertEqual(restored.count, 2)
+        XCTAssertEqual(restored.filter(\.isCurrent).map(\.cycleID), [earlier.cycleID])
+        XCTAssertEqual(Set(restored.map(\.articleID)), ["a1", "a2"])
+    }
+
+    func testPersistedMalformedQueueProofAndCompletionMetadataCannotBypassValidation() throws {
+        let dependencies = try AppDependencies.makeInMemory()
+        let cycle = try freshCycle()
+        try dependencies.cycleRepository.save(cycle: cycle, candidate: fixture(id: "a1"), fetchedAt: cycle.createdAtUTC)
+        let context = dependencies.modelContainer.mainContext
+        let record = try XCTUnwrap(context.fetch(FetchDescriptor<DailyStudyCycleRecord>()).first)
+        let evidence = try ReviewQueueEvidence.evaluate(cycleID: cycle.cycleID, reader: FixtureReviewQueue(), at: cycle.createdAtUTC)
+        var dictionary = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(evidence)) as? [String: Any])
+        dictionary["eligibleCount"] = 1
+        record.reviewEvidenceData = try JSONSerialization.data(withJSONObject: dictionary)
+        record.reviewTaskStatusRaw = "deferred"; record.matchingStageStatusRaw = "deferred"; record.clozeStageStatusRaw = "deferred"
+        record.reviewTaskReason = "no-review-items"; record.matchingStageReason = "no-review-items"; record.clozeStageReason = "no-review-items"
+        try context.save()
+        XCTAssertThrowsError(try record.domain())
+        XCTAssertThrowsError(try dependencies.cycleRepository.recoverLegacyRecords(at: cycle.createdAtUTC))
+        XCTAssertNotNil(record.reviewEvidenceData)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<DailyStudyCycleRecord>()).count, 1)
+        try record.apply(cycle)
+        record.completedAtUTC = cycle.createdAtUTC; record.completionReason = "invented-complete"
+        try context.save()
+        XCTAssertThrowsError(try record.domain())
+    }
 }

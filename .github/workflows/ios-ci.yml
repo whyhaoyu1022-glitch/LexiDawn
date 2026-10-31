@@ -16,7 +16,9 @@ jobs:
           set -euo pipefail
           xcodebuild -version
           xcode-select -p
-          XCODE_VERSION="$(xcodebuild -version | awk '/^Xcode / { print $2; exit }')"
+          swift --version
+          xcodebuild -showsdks
+          XCODE_VERSION="$(xcodebuild -version | awk '/^Xcode / && !found { print $2; found=1 }')"
           SDK_VERSION="$(xcrun --sdk iphonesimulator --show-sdk-version)"
           echo "Detected Xcode: ${XCODE_VERSION}"
           echo "Detected iOS Simulator SDK: ${SDK_VERSION}"
@@ -72,7 +74,7 @@ jobs:
           echo "Checked out commit: $(git rev-parse HEAD)"
           DESTINATIONS_FILE="${RUNNER_TEMP}/lexidawn-destinations.txt"
           RUNTIME_ID="com.apple.CoreSimulator.SimRuntime.iOS-26-5"
-          DEVICE_TYPE_ID="$(xcrun simctl list devicetypes | awk -F '[()]' '/iPhone/ { print $2; exit }')"
+          DEVICE_TYPE_ID="$(xcrun simctl list devicetypes | awk -F '[()]' '/iPhone/ && !found { print $2; found=1 }')"
           if [[ -z "${DEVICE_TYPE_ID}" ]]; then
             echo "::error::No iPhone Simulator device type is installed on the runner."
             xcrun simctl list devicetypes
