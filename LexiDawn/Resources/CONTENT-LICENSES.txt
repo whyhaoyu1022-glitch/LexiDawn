@@ -1,0 +1,15 @@
+RFC 8890: M. Nottingham, August 2020. Copyright (c) 2020 IETF Trust and the persons identified as document authors. All rights reserved.
+Full unmodified original document retained, including all notices. Source: https://www.rfc-editor.org/rfc/rfc8890.txt
+IETF TLP 5 section 3(c)(i) permits full unmodified copying, publication, display and distribution.
+https://trustee.ietf.org/documents/trust-legal-provisions/tlp-5/
+No image permissions or general derivative-work rights claimed. Reader formatting does not modify original stored text.
+
+CC-CEDICT reverse English index: derived from MDBG CC-CEDICT release 2026-10-30T01:44:55Z (125325 entries).
+Credit: CC-CEDICT editors and contributors, MDBG; based on CEDICT, Copyright (C) 1997, 1998 Paul Andrew Denisowski.
+Source: https://www.mdbg.net/chinese/dictionary?page=cc-cedict
+License: Creative Commons Attribution-ShareAlike 4.0 International, https://creativecommons.org/licenses/by-sa/4.0/
+This derived JSON index is distributed under the same CC BY-SA 4.0 license. The application code is separate.
+Changes: index exact English glosses, split semicolon gloss groups, remove leading "to " for lookup keys, limit to three entries per key. No invented translations.
+This is reverse lookup of a Chinese-English dictionary, not context disambiguation or an authoritative English-Chinese dictionary. Chinese forms are possible counterparts.
+Reproduce with scripts/build-cedict-index.py using the official downloadable gzip (no website scraping).
+Original gzip SHA-256: 216f40bc26d65cb074f89d243fe2ec379ac29ad6fccb93f57ee1c9414892902f

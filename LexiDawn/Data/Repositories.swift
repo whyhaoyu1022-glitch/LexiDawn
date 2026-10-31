@@ -76,7 +76,7 @@ final class StudyCycleRepository: StudyCycleStore, AtomicCycleCreationStore {
             try cycle.validate()
             let records = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>())
             let articles = try context.fetch(FetchDescriptor<ArticleRecord>())
-            try upsert(cycle, records: records, articles: articles)
+            try upsert(cycle, records: records, articles: articles, in: context)
         }
     }
 
@@ -89,11 +89,17 @@ final class StudyCycleRepository: StudyCycleStore, AtomicCycleCreationStore {
             let articles = try context.fetch(FetchDescriptor<ArticleRecord>())
             try ArticleRepository.insertOrValidate(candidate, fetchedAt: fetchedAt, context: context, records: articles)
             let allArticles = try context.fetch(FetchDescriptor<ArticleRecord>())
-            try upsert(cycle, records: cycles, articles: allArticles)
+            try upsert(cycle, records: cycles, articles: allArticles, in: context)
         }
     }
 
-    private func upsert(_ cycle: DailyStudyCycle, records: [DailyStudyCycleRecord], articles: [ArticleRecord]) throws {
+    func applyInTransaction(_ cycle: DailyStudyCycle, context: ModelContext) throws {
+        try cycle.validate()
+        try upsert(cycle, records: context.fetch(FetchDescriptor<DailyStudyCycleRecord>()),
+                   articles: context.fetch(FetchDescriptor<ArticleRecord>()), in: context)
+    }
+
+    private func upsert(_ cycle: DailyStudyCycle, records: [DailyStudyCycleRecord], articles: [ArticleRecord], in context: ModelContext) throws {
         guard let article = articles.first(where: { $0.articleID == cycle.articleID }) else { throw PersistenceError.integrity("周期缺少对应文章") }
         try article.validateStoredMetadata()
         if let proof = cycle.readingEvidence {
@@ -199,7 +205,7 @@ final class ArticleRepository: ArticleStore {
         }
     }
 
-    fileprivate static func insertOrValidate(_ candidate: ArticleCandidate, fetchedAt: Date, context: ModelContext, records: [ArticleRecord]) throws {
+    static func insertOrValidate(_ candidate: ArticleCandidate, fetchedAt: Date, context: ModelContext, records: [ArticleRecord]) throws {
         for record in records { try record.validateStoredMetadata() }
         if records.contains(where: { ArticleCandidate.normalizeCanonicalURL($0.canonicalURL) == candidate.canonicalURL && $0.articleID != candidate.id }) {
             throw PersistenceError.duplicateCanonicalURL(candidate.canonicalURL)
@@ -219,7 +225,7 @@ final class ArticleRepository: ArticleStore {
         }
     }
 
-    fileprivate static func makeArticleRecord(candidate: ArticleCandidate, fetchedAt: Date) throws -> ArticleRecord {
+    static func makeArticleRecord(candidate: ArticleCandidate, fetchedAt: Date) throws -> ArticleRecord {
         try candidate.validate(at: fetchedAt)
         let record = ArticleRecord(articleID: candidate.id, canonicalURL: candidate.canonicalURL, originalTitle: candidate.title,
             displayTitle: candidate.displayTitle, sourceID: candidate.sourceID, publishedAt: candidate.publishedAt, fetchedAt: fetchedAt,
@@ -240,7 +246,7 @@ extension ArticleRecord {
     /// Validate stored metadata separately from current display/cache rights. Old unknown rights stay unknown.
     func validateStoredMetadata() throws {
         guard !articleID.isBlank, !originalTitle.isBlank, !sourceID.isBlank,
-              ArticleCandidate.isWebURL(canonicalURL),
+              ArticleCandidate.isArticleURL(canonicalURL, sourceID: sourceID),
               fetchedAt.timeIntervalSince1970.isFinite, createdAt.timeIntervalSince1970.isFinite,
               updatedAt.timeIntervalSince1970.isFinite, createdAt <= updatedAt,
               publishedAt?.timeIntervalSince1970.isFinite ?? true,

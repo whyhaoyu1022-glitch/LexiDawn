@@ -18,3 +18,10 @@
 实际验证：代码 `309afe81aecfbfd84e5a9f52251c59f8e32c0575` 的 [run 41170754181](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41170754181) **success**：XCTest 61/0、XCUITest 8/0；UI用例合计 321.466 秒。artifact [13031277540](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41170754181/artifacts/13031277540)。
 
 复习源结果的recordedAt相对上一个已保存会话结果不可回退；复习已完成时，其完整结果凭据即保持不变，即使文章仍未完成。领域命令与直接Repository更新都执行该检查；初次延迟结果仍可早于周期updatedAt高水位，保留源事件时间。
+
+
+## Round 2 开发批次 1（2026-10-31，验证中）
+
+本批次新增合法用户导入、官方 RFC 8890 全文、许可访问策略、原生 TextKit 阅读与进度、CC-CEDICT 反向查词、生词本、固定两阶段复习、真实设置与统计的生产链路。保留 Round 1 的全部回归测试、原模型字段、完成证据与失败上下文隔离。新模型仅新增实体；完整验证与交付结果见后续 `docs/reviews/round-2-development-delivery.md`。当前尚未取得本批次编译、测试与 CI 结果，不标记完成。
+
+内容依据：IETF TLP 5 §3(c)(i)（完整、不改动、保留原版权声明）；MDBG 官方下载 CC-CEDICT 2026-10-30（CC BY-SA 4.0，派生数据索引同许可，应用代码独立）。原文及声明随安装包提供，数据并非测试 fixture。用户声明仅作为本地导入确认，不等于第三方公开版权授权。

@@ -54,3 +54,10 @@
 - 复习源事件recordedAt相对上一个结果单调；已完成的reviewProgress整体不可替换，即使文章尚未完成。Domain和Repository均校验，精确相同结果仍幂等。初次延迟恢复可早于周期updatedAt高水位，不能用“请求时间”改写学习事件。真实内存SwiftData回归为 `testSwiftDataReviewResultsRejectStaleSnapshotsAndTerminalEvidenceReplacement`，执行证据见本轮报告。
 
 - ADR-010实测结论：最终代码run41170754181的窗口尺寸回归通过，原始PNG为1206×2622；完整UI日志仅3次定向上滑/0次下滑，8个UI用例321.466秒。保留5个keepAlways截图作为用户审阅证据，不降低业务断言。
+
+
+## Round 2 开发批次 1（2026-10-31，验证中）
+
+本批次新增合法用户导入、官方 RFC 8890 全文、许可访问策略、原生 TextKit 阅读与进度、CC-CEDICT 反向查词、生词本、固定两阶段复习、真实设置与统计的生产链路。保留 Round 1 的全部回归测试、原模型字段、完成证据与失败上下文隔离。新模型仅新增实体；完整验证与交付结果见后续 `docs/reviews/round-2-development-delivery.md`。当前尚未取得本批次编译、测试与 CI 结果，不标记完成。
+
+内容依据：IETF TLP 5 §3(c)(i)（完整、不改动、保留原版权声明）；MDBG 官方下载 CC-CEDICT 2026-10-30（CC BY-SA 4.0，派生数据索引同许可，应用代码独立）。原文及声明随安装包提供，数据并非测试 fixture。用户声明仅作为本地导入确认，不等于第三方公开版权授权。

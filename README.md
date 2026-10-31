@@ -27,3 +27,10 @@ GitHub Actions 先使用 `build-for-testing` 和 `generic/platform=iOS Simulator
 已实施领域证据、严格状态恢复、隔离事务上下文、真实磁盘故障/重开、两版旧schema升级和UI禁用/错误/启动恢复回归。UI长循环已排查，补齐原生启动配置并改为有界定向定位；未减少业务断言。CI固定iPhone17Pro/iOS26.5，共享derivedData，保留完整日志与xcresult。
 
 生产候选与阅读/复习模块仍未接入，fixture不作为真实内容或授权来源；兼容模拟器结果不等于iOS27、真机、IPA或完整产品验收。准确边界见 [STATUS.md](STATUS.md)、[测试计划](docs/test-plan.md) 和 [本轮整改报告](docs/reviews/round-1-second-remediation-report-2026-10-31.md)。后续文档提交的Actions与上述代码运行分别记录。
+
+
+## Round 2 开发批次 1（2026-10-31，验证中）
+
+本批次新增合法用户导入、官方 RFC 8890 全文、许可访问策略、原生 TextKit 阅读与进度、CC-CEDICT 反向查词、生词本、固定两阶段复习、真实设置与统计的生产链路。保留 Round 1 的全部回归测试、原模型字段、完成证据与失败上下文隔离。新模型仅新增实体；完整验证与交付结果见后续 `docs/reviews/round-2-development-delivery.md`。当前尚未取得本批次编译、测试与 CI 结果，不标记完成。
+
+内容依据：IETF TLP 5 §3(c)(i)（完整、不改动、保留原版权声明）；MDBG 官方下载 CC-CEDICT 2026-10-30（CC BY-SA 4.0，派生数据索引同许可，应用代码独立）。原文及声明随安装包提供，数据并非测试 fixture。用户声明仅作为本地导入确认，不等于第三方公开版权授权。

@@ -4,6 +4,7 @@ struct RootTabView: View {
     @EnvironmentObject private var dependencies: AppDependencies
 
     var body: some View {
+        if let learning = dependencies.learning { LearningRootView(learning: learning) } else {
         TabView {
             TodayView(dependencies: dependencies)
                 .tabItem { Label("今日", systemImage: "sun.max") }
@@ -17,6 +18,7 @@ struct RootTabView: View {
                 .tabItem { Label("我的", systemImage: "person") }
         }
         .tint(LexiDawnColor.dawn500)
+        }
     }
 }
 

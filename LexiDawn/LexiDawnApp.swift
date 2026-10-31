@@ -49,6 +49,7 @@ final class AppStartup: ObservableObject {
         #if DEBUG && targetEnvironment(simulator)
         // Explicit opt-in UI fixture, isolated from the production disk store. Never used in Release.
         if let scenario = ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"] {
+            if scenario == "round2" { return try AppDependencies.makeLearningInMemory() }
             if scenario == "startupFailure" { throw PersistenceError.integrity("UI 测试注入的启动失败") }
             let dependencies = try AppDependencies.makeInMemory()
             if scenario == "empty" { return dependencies }

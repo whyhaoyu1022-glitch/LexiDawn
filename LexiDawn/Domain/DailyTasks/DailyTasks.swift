@@ -176,7 +176,7 @@ struct ArticleCandidate: Equatable, Sendable {
         }
         try require(timestamp.timeIntervalSince1970.isFinite && (publishedAt?.timeIntervalSince1970.isFinite ?? true), "文章时间戳无效")
         try require(!id.isBlank && !title.isBlank && !sourceID.isBlank, "缺少 ID、标题或来源")
-        try require(Self.isWebURL(canonicalURL), "canonicalURL 无效")
+        try require(Self.isArticleURL(canonicalURL, sourceID: sourceID), "canonicalURL 无效")
         try require(licenseVerified && !(licenseID?.isBlank ?? true), "许可尚未核验或缺少依据")
         try require(fullTextDisplayAllowed, "许可不允许全文展示")
         try require(!(sourceAttribution?.isBlank ?? true), "缺少文章来源署名")
@@ -188,6 +188,14 @@ struct ArticleCandidate: Equatable, Sendable {
             try require(imageLicenseVerified, "图片展示许可未核验")
             try require(!(imageAttribution?.isBlank ?? true) && !(imageLicenseID?.isBlank ?? true), "图片缺少署名或许可依据")
         }
+    }
+
+    static func isArticleURL(_ value: String, sourceID: String) -> Bool {
+        if isWebURL(value) { return true }
+        guard sourceID == "user-import", let url = URLComponents(string: value), url.scheme == "lexidawn-local",
+              url.host == "article", url.query == nil, url.fragment == nil, url.user == nil,
+              UUID(uuidString: String(url.path.dropFirst())) != nil else { return false }
+        return true
     }
 
     static func isWebURL(_ value: String) -> Bool {

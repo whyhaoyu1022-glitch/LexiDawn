@@ -49,7 +49,7 @@ final class TodayViewModel: ObservableObject {
             try dependencies.cycleRepository.recoverLegacyRecords(at: timestamp)
             // Round 1 has no reader or exercise screen yet. If an older build
             // left a task in progress, make the blocked state explicit instead of leaving a task permanently in progress.
-            _ = try dependencies.cycleService.recoverUnavailableInProgressTasks(at: timestamp)
+            if dependencies.learning == nil { _ = try dependencies.cycleService.recoverUnavailableInProgressTasks(at: timestamp) }
             let result = try dependencies.cycleService.ensureCurrentCycle(
                 now: timestamp,
                 timeZone: selectedTimeZone ?? dependencies.timeZone,
