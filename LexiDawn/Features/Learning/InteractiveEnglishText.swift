@@ -10,29 +10,36 @@ struct InteractiveEnglishText: UIViewRepresentable {
     let restore: ReaderPosition
     let onPosition: (ReaderPosition) -> Void
     let onWord: (EnglishToken) -> Void
+    var scrollable: Bool = true
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeUIView(context: Context) -> UITextView {
         let view = UITextView(usingTextLayoutManager: false)
         view.isEditable = false; view.isSelectable = false; view.delegate = context.coordinator
         view.alwaysBounceVertical = true; view.adjustsFontForContentSizeCategory = true
+        view.isScrollEnabled = scrollable
         view.accessibilityIdentifier = "reader-body"; view.isAccessibilityElement = false
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.tap(_:)))
         tap.cancelsTouchesInView = false; view.addGestureRecognizer(tap)
         context.coordinator.view = view
         return view
     }
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
+        guard !scrollable, let width = proposal.width else { return nil }
+        return CGSize(width: width, height: uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude)).height)
+    }
     func updateUIView(_ view: UITextView, context: Context) {
         let coordinator = context.coordinator; coordinator.parent = self
-        let key = "\(fingerprint(text))|\(fontSize)|\(lineSpacing)|\(theme)|\(view.traitCollection.preferredContentSizeCategory.rawValue)"
+        let key = "\(fontSize)|\(lineSpacing)|\(theme)|\(view.traitCollection.preferredContentSizeCategory.rawValue)|\(view.traitCollection.userInterfaceStyle.rawValue)"
         let width = max(20, (view.bounds.width - 720) / 2)
         view.textContainerInset = UIEdgeInsets(top: 20, left: width, bottom: 40, right: width)
-        if key != coordinator.renderKey {
+        if key != coordinator.renderKey || text != coordinator.renderedText {
             let oldOffset = view.contentOffset
-            coordinator.renderKey = key; coordinator.tokens = EnglishTokenizer.tokens(in: text)
+            if text != coordinator.renderedText { coordinator.tokens = EnglishTokenizer.tokens(in: text); coordinator.renderedText = text }
+            coordinator.renderKey = key
             let font = UIFontMetrics(forTextStyle: .body).scaledFont(for: UIFont(name: "Georgia", size: CGFloat(fontSize)) ?? .systemFont(ofSize: CGFloat(fontSize)))
             let paragraph = NSMutableParagraphStyle(); paragraph.lineHeightMultiple = CGFloat(lineSpacing); paragraph.paragraphSpacing = 10
-            let foreground: UIColor = theme == "dark" ? .init(white: 0.9, alpha: 1) : theme == "paper" ? .init(red: 0.19, green: 0.16, blue: 0.12, alpha: 1) : .label
-            view.backgroundColor = theme == "dark" ? .init(white: 0.08, alpha: 1) : theme == "paper" ? .init(red: 0.97, green: 0.94, blue: 0.87, alpha: 1) : .systemBackground
+            let foreground: UIColor = theme == "dark" ? .init(white: 0.9, alpha: 1) : theme == "paper" ? .init(red: 0.19, green: 0.16, blue: 0.12, alpha: 1) : theme == "light" ? .black : .label
+            view.backgroundColor = theme == "dark" ? .init(white: 0.08, alpha: 1) : theme == "paper" ? .init(red: 0.97, green: 0.94, blue: 0.87, alpha: 1) : theme == "light" ? .white : .systemBackground
             view.attributedText = NSAttributedString(string: text, attributes: [.font: font, .paragraphStyle: paragraph, .foregroundColor: foreground])
             view.setContentOffset(oldOffset, animated: false)
         }
@@ -42,15 +49,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
                 view.layoutManager.ensureLayout(for: view.textContainer)
                 let length = (text as NSString).length
                 var offset = min(max(0, restore.offset), max(0, length - 1))
-                if let anchor = restore.anchor {
-                    let ns = text as NSString
-                    var cursor = 0
-                    while cursor < ns.length {
-                        let range = ns.paragraphRange(for: NSRange(location: cursor, length: 0))
-                        if fingerprint(ns.substring(with: range)) == anchor { offset = range.location; break }
-                        cursor = NSMaxRange(range)
-                    }
-                }
+                if restore.contentChanged { offset = ReadingAnchors.offset(for: restore.anchor, in: text) ?? 0 }
                 if offset > 0 {
                     let glyph = view.layoutManager.glyphIndexForCharacter(at: offset)
                     let rect = view.layoutManager.boundingRect(forGlyphRange: NSRange(location: glyph, length: 1), in: view.textContainer)
@@ -65,6 +64,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
         weak var view: UITextView?
         var tokens: [EnglishToken] = []
         var renderKey = ""
+        var renderedText = ""
         var restored = false
         var lastAccessibilityUpdate = Date.distantPast
         init(_ parent: InteractiveEnglishText) { self.parent = parent }

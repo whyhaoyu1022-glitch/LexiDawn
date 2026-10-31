@@ -8,6 +8,7 @@ struct VocabularyItem: Identifiable, Equatable {
     let meaning: String?
     let notes: String?
     let contexts: [String]
+    let sourceArticleID: String?
 }
 struct VocabularyAddition {
     let entryID: String
@@ -26,7 +27,7 @@ struct VocabularyAddition {
             return all.filter { $0.deletedAt == nil && (type == nil || $0.entryType == type) }.map { record in
                 VocabularyItem(id: record.entryID, lemma: record.lemma, type: record.entryType, surfaces: record.surfaceForms,
                     addedAt: record.addedAt, meaning: record.userMeaning, notes: record.notes,
-                    contexts: contexts.filter { $0.entryID == record.entryID }.map(\.sentence))
+                    contexts: contexts.filter { $0.entryID == record.entryID }.map(\.sentence), sourceArticleID: contexts.first { $0.entryID == record.entryID }?.articleID)
             }.filter { search.isBlank || ([$0.lemma, $0.meaning ?? ""] + $0.surfaces).contains { $0.localizedCaseInsensitiveContains(search) } }
                 .sorted { $0.addedAt > $1.addedAt }
         }

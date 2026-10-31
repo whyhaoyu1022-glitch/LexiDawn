@@ -138,3 +138,185 @@ import SwiftData
         XCTAssertTrue(try learning.explorationAllowed())
     }
 }
+
+extension Round2Tests {
+    func testImportOriginalURLDeduplicatesTrackingVariants() throws {
+        let (app, _, _) = try setup(); let learning = try XCTUnwrap(app.learning)
+        _ = try learning.content.importArticle(ArticleImportDraft(title: "URL owned", body: "Owned writing with a distinct original text.", source: "Author", originalURL: "https://author.example/story?utm_source=reader", rightsConfirmed: true), at: now)
+        XCTAssertThrowsError(try learning.content.importArticle(ArticleImportDraft(title: "Duplicate link", body: "Another version of the same original article.", source: "Author", originalURL: "https://author.example/story", rightsConfirmed: true), at: now))
+        XCTAssertEqual(try app.articleRepository.allArticleIDs().count, 2)
+    }
+    func testLibraryIncludesOptOutImportAndExploreCannotReuseDailyAssignment() async throws {
+        let (app, assigned, cycle) = try setup(); let learning = try XCTUnwrap(app.learning)
+        let extra = try learning.content.importArticle(ArticleImportDraft(title: "Private library article", body: "A separately owned article for exploration.", source: "Author", rightsConfirmed: true, eligibleForDaily: false), at: now)
+        XCTAssertEqual(try learning.content.library().count, 2)
+        XCTAssertFalse(try learning.content.candidates(excluding: []).contains { $0.id == extra })
+        XCTAssertThrowsError(try learning.openExplore(articleID: extra, at: now))
+        XCTAssertThrowsError(try learning.reader.save(articleID: extra, cycleID: nil, position: ReaderPosition(), at: now))
+        _ = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 12, pairCount: 6, clozeCount: 4, at: now)
+        try learning.reader.complete(articleID: assigned, cycleID: cycle.cycleID, manualConfirmation: true, at: now)
+        XCTAssertEqual(try learning.content.allReadableIDs(), [extra])
+        XCTAssertThrowsError(try learning.openExplore(articleID: assigned, at: now))
+        _ = try learning.openExplore(articleID: extra, at: now)
+        try learning.reader.save(articleID: extra, cycleID: nil, position: ReaderPosition(percent: 0.3, offset: 5), at: now)
+        XCTAssertTrue(try learning.content.allReadableIDs().isEmpty)
+        XCTAssertEqual(try learning.content.library().first { $0.id == extra }?.percent, 0.3)
+    }
+    func testCacheExpiresAtBoundaryAndClockRollbackCannotResurrectBodyOrEraseLearning() throws {
+        let (app, id, cycle) = try setup(); let learning = try XCTUnwrap(app.learning)
+        try learning.reader.save(articleID: id, cycleID: cycle.cycleID, position: ReaderPosition(percent: 0.4, offset: 10), at: now)
+        _ = try learning.vocabulary.add(token: EnglishToken(surface: "book", range: NSRange(location: 0, length: 4), sentence: "A book."), articleID: id, autoAdd: true, at: now)
+        let expiry = now.addingTimeInterval(60)
+        let context = ModelContext(app.modelContainer)
+        let article = try XCTUnwrap(context.fetch(FetchDescriptor<ArticleRecord>()).first)
+        article.cachePermissionData = try JSONEncoder().encode(ArticleCachePermission.until(expiry)); try context.save()
+        XCTAssertNoThrow(try learning.content.read(articleID: id, at: expiry.addingTimeInterval(-0.001)))
+        XCTAssertThrowsError(try learning.content.read(articleID: id, at: expiry))
+        XCTAssertThrowsError(try learning.content.read(articleID: id, at: now))
+        XCTAssertFalse(try learning.content.library(at: now)[0].readable)
+        XCTAssertNil(try ModelContext(app.modelContainer).fetch(FetchDescriptor<ArticleRecord>()).first?.bodyText)
+        XCTAssertEqual(try learning.vocabulary.entries().count, 1)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetch(FetchDescriptor<ArticleProgressRecord>()).first?.readingPercent, 0.4)
+        XCTAssertEqual(try app.cycleRepository.fetch(by: cycle.cycleID)?.articleTaskStatus, .inProgress)
+    }
+    func testReaderViewModelRevokesDisplayedBodyWhenSaveFindsExpiredRights() throws {
+        let (app, id, cycle) = try setup(); let learning = try XCTUnwrap(app.learning)
+        let model = ReaderViewModel(articleID: id, cycleID: cycle.cycleID, learning: learning); model.open()
+        XCTAssertNotNil(model.article)
+        let context = ModelContext(app.modelContainer)
+        let record = try XCTUnwrap(context.fetch(FetchDescriptor<ArticleRecord>()).first)
+        record.cachePermissionData = try JSONEncoder().encode(ArticleCachePermission.until(Date().addingTimeInterval(-1))); try context.save()
+        model.flush()
+        XCTAssertNil(model.article); XCTAssertNotNil(model.error)
+        XCTAssertNotEqual(try app.cycleRepository.fetch(by: cycle.cycleID)?.articleTaskStatus, .completed)
+    }
+    func testParagraphAnchorsMatchOnlyUniqueExactParagraphAndSentenceContextIsSpecific() {
+        let body = "First sentence. Second sentence.\n\nA unique paragraph.\n"
+        let ns = body as NSString
+        let anchor = fingerprint(ns.substring(with: ns.paragraphRange(for: NSRange(location: 0, length: 0))))
+        XCTAssertEqual(ReadingAnchors.offset(for: anchor, in: body), 0)
+        XCTAssertNil(ReadingAnchors.offset(for: fingerprint("missing"), in: body))
+        XCTAssertNil(ReadingAnchors.offset(for: fingerprint("same\n"), in: "same\nsame\n"))
+        XCTAssertEqual(EnglishTokenizer.tokens(in: body).first { $0.surface == "Second" }?.sentence, "Second sentence.")
+    }
+    func testChangedVersionNeverUsesStaleOffsetAndPreservesUniqueAnchor() throws {
+        let (app, id, cycle) = try setup(body: "First paragraph.\n\nA stable paragraph.\n")
+        let learning = try XCTUnwrap(app.learning)
+        let body = "A stable paragraph.\n"
+        try learning.reader.save(articleID: id, cycleID: cycle.cycleID, position: ReaderPosition(percent: 0.7, anchor: fingerprint(body), offset: 22), at: now)
+        var article = try learning.content.read(articleID: id, at: now)
+        article = ReadableArticle(id: id, title: article.title, source: article.source, body: "New beginning.\n\n" + body, bodyHash: fingerprint("new version"), topics: article.topics, minutes: 1, publishedAt: nil, originalURL: nil)
+        let restored = try learning.reader.position(article: article, cycleID: cycle.cycleID)
+        XCTAssertTrue(restored.contentChanged); XCTAssertEqual(restored.percent, 0)
+        XCTAssertEqual(restored.offset, ("New beginning.\n\n" as NSString).length)
+    }
+    func testVocabularyFailureIsNotClearedBySuccessfulDictionaryLookup() async throws {
+        let (app, id, _) = try setup(); let learning = try XCTUnwrap(app.learning)
+        let model = WordLookupModel(token: EnglishToken(surface: "book", range: NSRange(location: 0, length: 4), sentence: "A book."), articleID: "missing-article", autoAdd: true, learning: learning)
+        await model.begin()
+        XCTAssertNotNil(model.vocabularyError); XCTAssertNotNil(model.result)
+        XCTAssertNil(model.addition); XCTAssertTrue(try learning.vocabulary.entries().isEmpty)
+        XCTAssertNotNil(try app.articleRepository.fetch(articleID: id))
+    }
+    func testVocabularyTransactionFailureLeavesNoEntryContextOrReviewState() throws {
+        let (app, id, _) = try setup()
+        let vocabulary = VocabularyRepository(context: ModelContext(app.modelContainer)) { _ in throw LearningError.invalid("injected") }
+        XCTAssertThrowsError(try vocabulary.add(token: EnglishToken(surface: "book", range: NSRange(location: 0, length: 4), sentence: "A book."), articleID: id, autoAdd: true, at: now))
+        let context = ModelContext(app.modelContainer)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<VocabularyEntryRecord>()), 0)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<VocabularySourceContextRecord>()), 0)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<ReviewStateRecord>()), 0)
+    }
+    func testCompleteReviewSaveFailureRollsBackAnswerLogScheduleAndCycle() async throws {
+        let (app, id, cycle) = try setup(); let learning = try XCTUnwrap(app.learning)
+        _ = try learning.vocabulary.add(token: EnglishToken(surface: "book", range: NSRange(location: 0, length: 4), sentence: "A book."), articleID: id, autoAdd: true, at: now)
+        let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        let session = try XCTUnwrap(prepared)
+        try learning.review.submit(cycleID: cycle.cycleID, questionID: session.matching[0].id, answer: session.matching[0].senseID, at: now)
+        let prior = try app.cycleRepository.fetch(by: cycle.cycleID)
+        let failing = ReviewQueueService(context: ModelContext(app.modelContainer), cycles: app.cycleRepository, dictionary: learning.dictionary) { _ in throw LearningError.invalid("injected last answer save failure") }
+        XCTAssertThrowsError(try failing.submit(cycleID: cycle.cycleID, questionID: session.cloze[0].id, answer: "book", at: now))
+        XCTAssertEqual(try app.cycleRepository.fetch(by: cycle.cycleID), prior)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ReviewLogRecord>()), 0)
+        XCTAssertFalse(try XCTUnwrap(learning.review.session(cycleID: cycle.cycleID)).cloze[0].completed)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetch(FetchDescriptor<ReviewStateRecord>()).first?.repetitions, 0)
+        try learning.review.submit(cycleID: cycle.cycleID, questionID: session.cloze[0].id, answer: "book", at: now)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ReviewLogRecord>()), 1)
+    }
+    func testQueueMissingStateBlocksInsteadOfProducingEmptyEvidence() throws {
+        let (app, id, cycle) = try setup(); let learning = try XCTUnwrap(app.learning)
+        _ = try learning.vocabulary.add(token: EnglishToken(surface: "book", range: NSRange(location: 0, length: 4), sentence: "A book."), articleID: id, autoAdd: true, at: now)
+        let context = ModelContext(app.modelContainer)
+        for state in try context.fetch(FetchDescriptor<ReviewStateRecord>()) { context.delete(state) }; try context.save()
+        XCTAssertThrowsError(try ReviewQueueEvidence.evaluate(cycleID: cycle.cycleID, reader: learning.review, at: now))
+        XCTAssertEqual(try app.cycleRepository.fetch(by: cycle.cycleID)?.reviewTaskStatus, .ready)
+    }
+    func testLearningDaysUseActualCompletionDateRatherThanAssignmentDate() throws {
+        let (app, id, cycle) = try setup(); let learning = try XCTUnwrap(app.learning)
+        let completion = now.addingTimeInterval(3 * 86400)
+        try learning.reader.complete(articleID: id, cycleID: cycle.cycleID, manualConfirmation: true, at: completion)
+        let stats = try learning.statistics(timeZone: .current, at: completion)
+        XCTAssertEqual(stats.articles, 1); XCTAssertEqual(stats.studyDays, 1); XCTAssertEqual(stats.streak, 1)
+    }
+    func testProductionNetworkAdapterHTTP429PersistsBackoffAndDoesNotInstallBody() async throws {
+        let app = try AppDependencies.makeLearningInMemory(); let learning = try XCTUnwrap(app.learning)
+        let service = ArticleAcquisitionService(content: learning.content, client: StubArticleHTTPClient(status: 429, failure: nil))
+        do { try await service.refresh(at: now); XCTFail("429 must fail") } catch { }
+        let state = try learning.content.acquisitionState()
+        XCTAssertNotNil(state.1); XCTAssertGreaterThan(try XCTUnwrap(state.2), now)
+        XCTAssertTrue(try app.articleRepository.allArticleIDs().isEmpty)
+        do { try await service.refresh(at: now); XCTFail("Backoff must reject") } catch { }
+    }
+    func testNetworkTimeoutPersistsRecoverableErrorAndExistingArticleRemains() async throws {
+        let (app, id, cycle) = try setup(); let learning = try XCTUnwrap(app.learning)
+        let service = ArticleAcquisitionService(content: learning.content, client: StubArticleHTTPClient(status: 200, failure: URLError(.timedOut)))
+        do { try await service.refresh(at: now); XCTFail("Timeout must fail") } catch { }
+        XCTAssertNotNil(try learning.content.acquisitionState().1)
+        XCTAssertEqual(try learning.content.read(articleID: id, at: now).id, id)
+        XCTAssertEqual(try app.cycleRepository.fetch(by: cycle.cycleID)?.articleID, id)
+    }
+    func test3500WordTokenHitPerformanceAndEveryBoundary() {
+        let body = Array(repeating: "Reading books helps people discover science.", count: 584).joined(separator: "\n\n")
+        measure { let tokens = EnglishTokenizer.tokens(in: body); XCTAssertGreaterThan(tokens.count, 3500); for token in tokens { XCTAssertEqual(EnglishTokenizer.token(at: token.range.location, tokens: tokens)?.surface, token.surface) } }
+    }
+    func testDiskReopenRestoresProgressVocabularySettingsAndFixedReviewExercises() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let configuration = ModelConfiguration(url: directory.appendingPathComponent("learning.store"))
+        var articleID = "", cycleID = UUID(), savedSession: ReviewSessionView?
+        do {
+            let app = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: configuration), learningEnabled: true)
+            let learning = try XCTUnwrap(app.learning)
+            articleID = try learning.content.importArticle(ArticleImportDraft(title: "Disk owned article", body: "Reading a book brings ideas.\n\nA second paragraph is here.", source: "Test author", rightsConfirmed: true), at: now)
+            guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail() }; cycleID = cycle.cycleID
+            try learning.reader.save(articleID: articleID, cycleID: cycleID, position: ReaderPosition(percent: 0.5, offset: 15), at: now)
+            _ = try learning.vocabulary.add(token: EnglishToken(surface: "book", range: NSRange(location: 10, length: 4), sentence: "A book."), articleID: articleID, autoAdd: true, at: now)
+            let prefs = try app.preferencesRepository.load(); prefs.displayName = "Disk reader"; prefs.readerTheme = "paper"; prefs.autoAddOnWordTap = false; try app.preferencesRepository.save(prefs)
+            savedSession = try await learning.review.prepare(cycleID: cycleID, dailyLimit: 6, pairCount: 6, clozeCount: 4, at: now)
+        }
+        do {
+            let app = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: configuration), learningEnabled: true)
+            let learning = try XCTUnwrap(app.learning)
+            let article = try learning.content.read(articleID: articleID, at: now)
+            XCTAssertEqual(try learning.reader.position(article: article, cycleID: cycleID).percent, 0.5)
+            XCTAssertEqual(try learning.reader.position(article: article, cycleID: cycleID).offset, 15)
+            XCTAssertEqual(try learning.vocabulary.entries().first?.lemma, "book")
+            XCTAssertEqual(try learning.review.session(cycleID: cycleID), savedSession)
+            XCTAssertEqual(try app.preferencesRepository.load().displayName, "Disk reader")
+            XCTAssertEqual(try app.preferencesRepository.load().readerTheme, "paper")
+            XCTAssertFalse(try app.preferencesRepository.load().autoAddOnWordTap)
+            XCTAssertEqual(try app.cycleRepository.fetch(by: cycleID)?.articleID, articleID)
+        }
+    }
+}
+
+private struct StubArticleHTTPClient: ArticleHTTPClient {
+    let status: Int
+    let failure: URLError?
+    func data(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        if let failure { throw failure }
+        guard let url = request.url, let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: ["Retry-After": "120"]) else { throw URLError(.badServerResponse) }
+        return (Data(), response)
+    }
+}

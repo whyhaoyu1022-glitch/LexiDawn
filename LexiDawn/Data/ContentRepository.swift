@@ -7,6 +7,23 @@ struct ReadableArticle: Identifiable {
     let minutes: Int
     let publishedAt: Date?
     let originalURL: String?
+    var accessExpiresAt: Date? = nil
+}
+
+struct ArticleLibraryItem: Identifiable {
+    let id: String, title: String, source: String, topics: [String]
+    let minutes: Int
+    let originalURL: String?
+    let cycleID: UUID?
+    let percent: Double
+    let completed: Bool
+    let started: Bool
+    let readable: Bool
+}
+
+struct ArticleAccessError: LocalizedError {
+    let originalURL: String?
+    var errorDescription: String? { "全文展示或缓存许可已失效，或缺少可验证的授权。学习记录已保留；请从原文入口核对许可。" }
 }
 
 @MainActor final class ContentRepository: ArticleCandidateProvider {
@@ -34,6 +51,13 @@ struct ReadableArticle: Identifiable {
         }
         try writer.write {
             let context = writer.context
+            if let originalURL {
+                let canonical = ArticleCandidate.normalizeCanonicalURL(originalURL)
+                let allGrants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
+                guard !allGrants.contains(where: { $0.articleID != candidate.id && $0.originalURL.map(ArticleCandidate.normalizeCanonicalURL) == canonical }) else {
+                    throw PersistenceError.duplicateCanonicalURL(canonical)
+                }
+            }
             try ArticleRepository.insertOrValidate(candidate, fetchedAt: now, context: context, records: context.fetch(FetchDescriptor<ArticleRecord>()))
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>()).filter { $0.articleID == candidate.id }
             guard grants.count <= 1 else { throw PersistenceError.integrity("重复内容授权记录") }
@@ -66,8 +90,9 @@ struct ReadableArticle: Identifiable {
     func candidates(excluding articleIDs: Set<String>) throws -> [ArticleCandidate] {
         try writer.read { context in
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
+            let started = Set(try context.fetch(FetchDescriptor<ArticleProgressRecord>()).filter { $0.mode == "explore" }.map(\.articleID))
             return try context.fetch(FetchDescriptor<ArticleRecord>()).sorted { $0.createdAt > $1.createdAt }.compactMap { record in
-                guard !articleIDs.contains(record.articleID) else { return nil }
+                guard !articleIDs.contains(record.articleID), !started.contains(record.articleID) else { return nil }
                 let matches = grants.filter { $0.articleID == record.articleID }
                 guard matches.count <= 1 else { throw PersistenceError.integrity("重复内容授权记录") }
                 guard let grant = matches.first, grant.eligibleForDaily else { return nil }
@@ -79,7 +104,27 @@ struct ReadableArticle: Identifiable {
         }
     }
     func allReadableIDs() throws -> [String] {
-        try candidates(excluding: []).map(\.id)
+        try library().filter { $0.readable && $0.cycleID == nil && !$0.started }.map(\.id)
+    }
+    /// Metadata remains available even when display rights lapse. No body leaves this method.
+    func library(at now: Date = Date()) throws -> [ArticleLibraryItem] {
+        try writer.read { context in
+            let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
+            let cycles = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>())
+            let progresses = try context.fetch(FetchDescriptor<ArticleProgressRecord>())
+            return try context.fetch(FetchDescriptor<ArticleRecord>()).sorted { $0.createdAt > $1.createdAt }.map { article in
+                try article.validateStoredMetadata()
+                let grant = grants.first { $0.articleID == article.articleID }
+                let cycle = cycles.first { $0.articleID == article.articleID }
+                let progress = progresses.first { $0.articleID == article.articleID && $0.cycleID == cycle?.cycleID }
+                let readable = ArticleAccessPolicy.permits(candidate: try article.candidate(), storedHash: article.bodyHash ?? "",
+                    grantSource: grant?.sourceID, grantHash: grant?.bodyHash, scope: grant?.scope, now: now, highWater: grant?.accessHighWater ?? now)
+                return ArticleLibraryItem(id: article.articleID, title: article.originalTitle, source: article.sourceAttribution ?? article.sourceID,
+                    topics: article.topicTags, minutes: article.estimatedReadMinutes, originalURL: grant?.originalURL,
+                    cycleID: cycle.flatMap { UUID(uuidString: $0.cycleID) }, percent: progress?.readingPercent ?? 0,
+                    completed: progress?.completedAt != nil || cycle?.articleTaskStatus == "completed", started: progress != nil, readable: readable)
+            }
+        }
     }
     func read(articleID: String, at now: Date) throws -> ReadableArticle {
         // Persist a monotone access clock before returning any body. Clock rollback cannot resurrect an expired grant.
@@ -88,7 +133,7 @@ struct ReadableArticle: Identifiable {
             guard let article = try context.fetch(FetchDescriptor<ArticleRecord>()).first(where: { $0.articleID == articleID }) else { throw LearningError.invalid("找不到文章，学习周期已保留。") }
             try article.validateStoredMetadata()
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>()).filter { $0.articleID == articleID }
-            guard grants.count == 1, let grant = grants.first else { throw LearningError.invalid("历史文章缺少当前全文授权凭据。学习记录保留，请核对原文许可后重新授权。") }
+            guard grants.count == 1, let grant = grants.first else { throw ArticleAccessError(originalURL: ArticleCandidate.isWebURL(article.canonicalURL) ? article.canonicalURL : nil) }
             grant.accessHighWater = max(now, grant.accessHighWater)
             let candidate = try article.candidate()
             let permitted = ArticleAccessPolicy.permits(candidate: candidate, storedHash: article.bodyHash ?? "", grantSource: grant.sourceID,
@@ -99,11 +144,16 @@ struct ReadableArticle: Identifiable {
                 }
                 return nil
             }
-            return ReadableArticle(id: articleID, title: article.originalTitle, source: article.sourceAttribution ?? article.sourceID,
+            var result = ReadableArticle(id: articleID, title: article.originalTitle, source: article.sourceAttribution ?? article.sourceID,
                 body: article.bodyText ?? "", bodyHash: article.bodyHash ?? "", topics: article.topicTags, minutes: article.estimatedReadMinutes,
                 publishedAt: article.publishedAt, originalURL: grant.originalURL)
+            if case let .until(expiry)? = candidate.cachePermission { result.accessExpiresAt = expiry }
+            return result
         }
-        guard let result else { throw LearningError.invalid("全文展示或缓存许可已经失效，离线时也不能继续展示。文章、阅读进度及生词记录仍保留；可从原文入口重新核验授权。") }
+        guard let result else {
+            let originalURL = try library(at: now).first { $0.id == articleID }?.originalURL
+            throw ArticleAccessError(originalURL: originalURL)
+        }
         return result
     }
     func acquisitionState() throws -> (Date?, String?, Date?) {

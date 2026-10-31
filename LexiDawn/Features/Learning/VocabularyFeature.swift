@@ -56,7 +56,7 @@ struct VocabularyDetailView: View {
                 if saved { Label("已保存", systemImage: "checkmark.circle") }
                 Text("来源没有可用中文对应词时，可填写自己的释义用于复习。个人内容与开放词典数据明确区分。").font(.caption).foregroundStyle(.secondary)
             }
-            if let result { DictionaryResultContent(result: result); NavigationLink("详细词典") { DictionaryDetailView(result: result, context: item.contexts.first ?? "") } }
+            if let result { DictionaryResultContent(result: result); NavigationLink("详细词典") { DictionaryDetailView(result: result, context: item.contexts.first ?? "", learning: learning, articleID: item.sourceArticleID) } }
             Section("来源上下文") { ForEach(Array(item.contexts.enumerated()), id: \.offset) { _, sentence in Text(sentence) } }
             Section { Button("手动移除词条", role: .destructive) { removeConfirmation = true } }
             if let error { Text(error).foregroundStyle(.red); Button("重试词典") { Task { await lookup() } } }

@@ -31,8 +31,16 @@ import Combine
         return try writer.read { context in
             let progresses = try context.fetch(FetchDescriptor<ArticleProgressRecord>()).filter { $0.completedAt != nil }
             var calendar = Calendar(identifier: .gregorian); calendar.timeZone = timeZone
-            // Completed cycle dates are original local study dates. Reader-only days use the chosen display timezone.
-            let dates = Set(cycles.filter { $0.readingEvidence != nil || $0.reviewProgress?.matchingAnsweredIDs.isEmpty == false }.map(\.assignedLocalDate))
+            var dates = Set<String>()
+            for cycle in cycles {
+                var eventCalendar = Calendar(identifier: .gregorian)
+                eventCalendar.timeZone = TimeZone(identifier: cycle.assignedTimeZoneID) ?? timeZone
+                if let at = cycle.readingEvidence?.confirmedAt { dates.insert(DailyCycleService.studyDate(for: at, calendar: eventCalendar)) }
+                if let result = cycle.reviewProgress, result.isComplete { dates.insert(DailyCycleService.studyDate(for: result.recordedAt, calendar: eventCalendar)) }
+            }
+            for progress in progresses where progress.cycleID == nil {
+                if let at = progress.completedAt { dates.insert(DailyCycleService.studyDate(for: at, calendar: calendar)) }
+            }
             let today = DailyCycleService.studyDate(for: now, calendar: calendar)
             let yesterday = calendar.date(byAdding: .day, value: -1, to: now).map { DailyCycleService.studyDate(for: $0, calendar: calendar) }
             var cursor = dates.contains(today) ? today : (yesterday ?? today), streak = 0
@@ -49,6 +57,7 @@ import Combine
     }
     func openExplore(articleID: String, at now: Date) throws -> ReadableArticle {
         guard try explorationAllowed() else { throw LearningError.invalid("必做任务尚未完成，请先继续原学习周期。") }
+        guard try !cycles.fetchAll().contains(where: { $0.articleID == articleID }) else { throw LearningError.invalid("此文章已属于每日任务，请从今日或阅读历史继续原任务。") }
         return try content.read(articleID: articleID, at: now)
     }
 }

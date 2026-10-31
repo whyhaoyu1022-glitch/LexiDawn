@@ -24,6 +24,7 @@ struct LiveTodayView: View {
     @State private var statistics: LearningStatistics?
     @State private var sourceMessage: String?
     @State private var fetching = false
+    @State private var articles: [ArticleLibraryItem] = []
     init(dependencies: AppDependencies, learning: LearningServices) {
         self.dependencies = dependencies; self.learning = learning
         _model = StateObject(wrappedValue: TodayViewModel(dependencies: dependencies))
@@ -49,11 +50,12 @@ struct LiveTodayView: View {
                             Text("你的积累").font(.title3.bold())
                             HStack { metric("完成文章", statistics.articles); metric("学习日期", statistics.studyDays); metric("连续日期", statistics.streak) }
                             HStack { metric("生词本", statistics.vocabulary); metric("待复习", statistics.pending) }
-                            Text("学习日期按周期原始本地日期统计；跨日续接不会伪造新日期。累计文章按完成证据和阅读记录去重。").font(.caption).foregroundStyle(.secondary)
+                            Text("完成阅读或整次复习的实际日期计为学习日，使用周期记录的时区；同一日期只计一次。文章按完成证据去重。").font(.caption).foregroundStyle(.secondary)
                         }.padding().background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20))
                     }
                     VStack(alignment: .leading, spacing: 12) {
                         Text("阅读内容").font(.title3.bold())
+                        NavigationLink("本地文章库与阅读历史") { ArticleLibraryView(learning: learning) }.accessibilityIdentifier("article-library")
                         Button("合法导入文章", systemImage: "square.and.arrow.down") { importSheet = true }.accessibilityIdentifier("import-article")
                         Button("使用官方 RFC 原文", systemImage: "doc.text") { perform { try learning.content.installBundledRFC(at: Date()); learning.changed() } }
                         Button(fetching ? "正在联系 RFC Editor…" : "从官方来源刷新", systemImage: "arrow.clockwise") {
@@ -70,6 +72,7 @@ struct LiveTodayView: View {
                 }.padding(20)
             }.accessibilityIdentifier("learning-today-scroll")
             .navigationTitle("词光").navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .primaryAction) { Button("导入") { importSheet = true }.accessibilityIdentifier("import-article-toolbar") } }
             .task { reload() }.refreshable { reload() }
             .onReceive(learning.$revision) { _ in reload() }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in reload() }
@@ -87,6 +90,12 @@ struct LiveTodayView: View {
         VStack(alignment: .leading, spacing: 16) {
             Label(snapshot.cycle.isComplete ? "今日必做已完成" : "今天，读一篇真实的英文", systemImage: snapshot.cycle.isComplete ? "checkmark.seal.fill" : "sunrise.fill").font(.subheadline.weight(.semibold))
             Text(snapshot.articleTitle ?? snapshot.cycle.articleID).font(.system(.title, design: .serif).bold()).fixedSize(horizontal: false, vertical: true)
+            if let article = articles.first(where: { $0.id == snapshot.cycle.articleID }) {
+                Text("\(article.topics.joined(separator: " · ")) · 预计 \(article.minutes) 分钟").font(.subheadline)
+                Text(article.source).font(.caption).foregroundStyle(.secondary)
+                ProgressView(value: article.percent) { Text("阅读进度 \(Int(article.percent * 100))%") }.font(.caption)
+                if let url = article.originalURL.flatMap(URL.init(string:)) { Link("查看原文来源", destination: url).font(.caption) }
+            }
             Text("原始分配日期 \(snapshot.cycle.assignedLocalDate) · \(snapshot.cycle.assignedTimeZoneID)").font(.caption)
             if snapshot.isOverdue { Label("已跨过 \(snapshot.cycle.carryOverCount) 个学习日期，继续原文章", systemImage: "clock").font(.footnote) }
             Button(snapshot.cycle.articleTaskStatus == .completed ? "重新阅读" : snapshot.cycle.articleTaskStatus == .inProgress ? "继续阅读" : "开始阅读") {
@@ -109,7 +118,7 @@ struct LiveTodayView: View {
     private func perform(_ operation: () throws -> Void) { do { try operation(); reload() } catch { sourceMessage = error.localizedDescription } }
     private func reload() {
         model.load()
-        do { let prefs = try dependencies.preferencesRepository.load(); let zone = prefs.timeZonePolicy == "fixed" ? TimeZone(identifier: prefs.fixedTimeZoneID ?? "") ?? .current : .current; statistics = try learning.statistics(timeZone: zone, at: Date()) }
+        do { articles = try learning.content.library(); let prefs = try dependencies.preferencesRepository.load(); let zone = prefs.timeZonePolicy == "fixed" ? TimeZone(identifier: prefs.fixedTimeZoneID ?? "") ?? .current : .current; statistics = try learning.statistics(timeZone: zone, at: Date()) }
         catch { sourceMessage = error.localizedDescription }
     }
 }
@@ -158,7 +167,7 @@ struct LiveExploreView: View {
     let continueToday: () -> Void
     @State private var allowed = false
     @State private var cycles: [DailyStudyCycle] = []
-    @State private var ids: [String] = []
+    @State private var articles: [ArticleLibraryItem] = []
     @State private var reader: ReaderRoute?
     @State private var error: String?
     var body: some View {
@@ -176,12 +185,12 @@ struct LiveExploreView: View {
                     }
                 } else {
                     Section("已解锁 · 本地合法文章") {
-                        if ids.isEmpty { Text("暂无合法探索内容，可先导入文章。") }
-                        ForEach(ids, id: \.self) { id in
-                            Button(id == SourceRegistry.rfc.id ? "The Internet is for End Users" : "本地文章 · \(id.prefix(8))") {
-                                do { _ = try learning.openExplore(articleID: id, at: Date()); reader = ReaderRoute(articleID: id, cycleID: nil) }
+                        if articles.isEmpty { Text("暂无合法探索内容，可先导入文章。") }
+                        ForEach(articles) { article in
+                            Button {
+                                do { _ = try learning.openExplore(articleID: article.id, at: Date()); reader = ReaderRoute(articleID: article.id, cycleID: nil) }
                                 catch { self.error = error.localizedDescription }
-                            }
+                            } label: { VStack(alignment: .leading, spacing: 6) { Text(article.title).font(.headline); Text("\(article.topics.joined(separator: " · ")) · \(article.minutes) 分钟").font(.caption); Text(article.source).font(.caption).foregroundStyle(.secondary) } }
                         }
                     }
                 }
@@ -190,5 +199,38 @@ struct LiveExploreView: View {
                 .sheet(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { reader = nil } } } } }
         }
     }
-    private func load() { do { cycles = try learning.cycles.fetchAll(); allowed = try learning.explorationAllowed(); ids = allowed ? try learning.content.allReadableIDs() : []; error = nil } catch { self.error = error.localizedDescription; allowed = false } }
+    private func load() { do { cycles = try learning.cycles.fetchAll(); allowed = try learning.explorationAllowed(); articles = allowed ? try learning.content.library().filter { $0.readable && $0.cycleID == nil && !$0.started } : []; error = nil } catch { self.error = error.localizedDescription; allowed = false } }
+}
+
+struct ArticleLibraryView: View {
+    @ObservedObject var learning: LearningServices
+    @State private var items: [ArticleLibraryItem] = []
+    @State private var query = ""
+    @State private var reader: ReaderRoute?
+    @State private var error: String?
+    var body: some View {
+        List {
+            Text("每日文章和历史始终保留。未分配的文章属于探索阅读，必做未完成时仍锁定。").font(.caption).foregroundStyle(.secondary)
+            ForEach(items.filter { query.isEmpty || $0.title.localizedCaseInsensitiveContains(query) || $0.source.localizedCaseInsensitiveContains(query) }) { item in
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(item.title).font(.headline)
+                    Text("\(item.topics.joined(separator: " · ")) · \(item.minutes) 分钟").font(.caption)
+                    Text(item.completed ? "已完成 · 可重读" : item.started ? "进行中 \(Int(item.percent * 100))%" : item.cycleID != nil ? "每日必做" : "探索候选").font(.subheadline)
+                    if !item.readable { Label("全文授权不可用，记录保留", systemImage: "exclamationmark.lock").font(.caption) }
+                    Button(item.started ? "继续阅读" : "打开文章") {
+                        do {
+                            if item.cycleID == nil { _ = try learning.openExplore(articleID: item.id, at: Date()) }
+                            reader = ReaderRoute(articleID: item.id, cycleID: item.cycleID)
+                        } catch { self.error = error.localizedDescription }
+                    }.accessibilityIdentifier("library-open-\(item.id)")
+                    if let url = item.originalURL.flatMap(URL.init(string:)) { Link("原文来源", destination: url) }
+                }.padding(.vertical, 6)
+            }
+            if items.isEmpty { Text("文章库为空，可从今日页合法导入正文。") }
+            if let error { Text(error).foregroundStyle(.red); Button("重新读取", action: load) }
+        }.searchable(text: $query, prompt: "搜索标题或来源").navigationTitle("文章库与历史")
+            .task { load() }.onReceive(learning.$revision) { _ in load() }
+            .sheet(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭文章") { reader = nil } } } } }
+    }
+    private func load() { do { items = try learning.content.library(); error = nil } catch { self.error = error.localizedDescription } }
 }

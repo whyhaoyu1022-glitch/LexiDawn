@@ -23,7 +23,7 @@ struct ReviewPracticeContent: View {
                 if loading { ProgressView("正在查询完整复习队列…") }
                 else if let session {
                     if session.completedAt != nil {
-                        ContentUnavailableView("本次复习已保存", systemImage: "checkmark.seal.fill", description: Text("作答、复习日志和下次时间已保存。生词本条目继续保留。"))
+                        ContentUnavailableView("本次复习已保存", systemImage: "checkmark.seal.fill", description: Text("作答、复习日志和下次时间已保存。生词本条目继续保留。")).accessibilityIdentifier("review-completed")
                     } else if !session.matchingComplete { matching(session) }
                     else { cloze(session) }
                 } else if emptyResolved { Label("完整队列中没有应复习词条，已记录合法空队列结果。", systemImage: "checkmark.circle") }
@@ -65,6 +65,7 @@ struct ReviewPracticeContent: View {
             VStack(alignment: .leading, spacing: 16) {
                 Text("2 · 拼写 \(session.cloze.filter(\.completed).count)/\(session.cloze.count)").font(.headline)
                 Text(question.prompt).font(.largeTitle.monospaced()).accessibilityIdentifier("cloze-prompt")
+                if let meaning = session.matching.first(where: { $0.entryID == question.entryID })?.answer { Text(meaning).font(.headline) }
                 Text("输入完整英文词条，大小写不影响判定。")
                 TextField("完整拼写", text: $spelling).textInputAutocapitalization(.never).autocorrectionDisabled().textFieldStyle(.roundedBorder).accessibilityIdentifier("cloze-answer")
                 Button("提交答案") { submit(questionID: question.id, answer: spelling); spelling = "" }.buttonStyle(.borderedProminent).accessibilityIdentifier("submit-spelling")

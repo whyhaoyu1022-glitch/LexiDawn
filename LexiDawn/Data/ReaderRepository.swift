@@ -23,14 +23,14 @@ struct ReaderPosition: Equatable {
             guard let record = matches.first else { return ReaderPosition() }
             try validate(record)
             if record.bodyHash != article.bodyHash {
-                let paragraphs = article.body.components(separatedBy: "\n\n")
-                let matching = paragraphs.filter { fingerprint($0) == record.anchor }
-                return ReaderPosition(percent: 0, anchor: matching.count == 1 ? record.anchor : nil, offset: 0, contentChanged: true)
+                let offset = ReadingAnchors.offset(for: record.anchor, in: article.body)
+                return ReaderPosition(percent: 0, anchor: offset == nil ? nil : record.anchor, offset: offset ?? 0, contentChanged: true)
             }
             return ReaderPosition(percent: record.readingPercent, anchor: record.anchor, offset: record.characterOffset, completedAt: record.completedAt)
         }
     }
     func save(articleID: String, cycleID: UUID?, position: ReaderPosition, at now: Date) throws {
+        try validateMode(cycleID: cycleID)
         let article = try content.read(articleID: articleID, at: now)
         try writer.write {
             let context = writer.context
@@ -46,6 +46,7 @@ struct ReaderPosition: Equatable {
         }
     }
     func complete(articleID: String, cycleID: UUID?, manualConfirmation: Bool, at now: Date) throws {
+        try validateMode(cycleID: cycleID)
         let article = try content.read(articleID: articleID, at: now)
         try writer.write {
             let context = writer.context
@@ -90,6 +91,11 @@ struct ReaderPosition: Equatable {
               ["daily", "explore"].contains(record.mode), ["inProgress", "completed"].contains(record.status),
               (record.status == "completed") == (record.completedAt != nil),
               record.completedAt.map({ $0 >= record.startedAt && $0 <= record.lastReadAt }) ?? true else { throw PersistenceError.integrity("已存阅读进度无效") }
+    }
+    private func validateMode(cycleID: UUID?) throws {
+        if cycleID == nil, try cycles.fetchAll().contains(where: \.hasOutstandingWork) {
+            throw LearningError.invalid("请先完成原周期，再开始探索阅读。")
+        }
     }
 }
 @MainActor func cycleInContext(_ cycleID: UUID, context: ModelContext) throws -> DailyStudyCycle {

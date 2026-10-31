@@ -18,11 +18,16 @@ struct EnglishTokenizer {
     static func tokens(in text: String) -> [EnglishToken] {
         let ns = text as NSString
         let whole = NSRange(location: 0, length: ns.length)
+        let sentenceTokenizer = NLTokenizer(unit: .sentence); sentenceTokenizer.string = text
+        var sentences: [NSRange] = []
+        sentenceTokenizer.enumerateTokens(in: text.startIndex..<text.endIndex) { range, _ in sentences.append(NSRange(range, in: text)); return true }
+        var sentenceIndex = 0
         let exclusions = (try? NSRegularExpression(pattern: #"(?s)```.*?```|`[^`\n]*`|https?://[^\s]+|www\.[^\s]+|[\w.+-]+@[\w.-]+\.[A-Za-z]+|\b\w*\d\w*\b"#))?.matches(in: text, range: whole).map(\.range) ?? []
         guard let regex = try? NSRegularExpression(pattern: #"[A-Za-z]+(?:['’][A-Za-z]+)*(?:[-‐][A-Za-z]+(?:['’][A-Za-z]+)*)*['’]?"#) else { return [] }
         return regex.matches(in: text, range: whole).compactMap { match in
             guard !exclusions.contains(where: { NSIntersectionRange($0, match.range).length > 0 }) else { return nil }
-            let sentenceRange = ns.paragraphRange(for: match.range)
+            while sentenceIndex + 1 < sentences.count && NSMaxRange(sentences[sentenceIndex]) <= match.range.location { sentenceIndex += 1 }
+            let sentenceRange = sentences.isEmpty ? ns.paragraphRange(for: match.range) : sentences[sentenceIndex]
             return EnglishToken(surface: ns.substring(with: match.range), range: match.range,
                                 sentence: ns.substring(with: sentenceRange).trimmingCharacters(in: .whitespacesAndNewlines))
         }
@@ -47,6 +52,20 @@ struct EnglishTokenizer {
         tagger.setLanguage(.english, range: key.startIndex..<key.endIndex)
         let (tag, _) = tagger.tag(at: key.startIndex, unit: .word, scheme: .lemma)
         return tag?.rawValue.lowercased() ?? key
+    }
+}
+
+enum ReadingAnchors {
+    static func offset(for anchor: String?, in text: String) -> Int? {
+        guard let anchor else { return nil }
+        let ns = text as NSString
+        var cursor = 0, matches: [Int] = []
+        while cursor < ns.length {
+            let range = ns.paragraphRange(for: NSRange(location: cursor, length: 0))
+            if fingerprint(ns.substring(with: range)) == anchor { matches.append(range.location) }
+            cursor = NSMaxRange(range)
+        }
+        return matches.count == 1 ? matches.first : nil
     }
 }
 

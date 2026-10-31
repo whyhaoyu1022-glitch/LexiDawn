@@ -49,6 +49,15 @@ final class AppStartup: ObservableObject {
         #if DEBUG && targetEnvironment(simulator)
         // Explicit opt-in UI fixture, isolated from the production disk store. Never used in Release.
         if let scenario = ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"] {
+            if scenario == "round2-disk", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
+                let url = FileManager.default.temporaryDirectory.appendingPathComponent("round2-ui-\(storeID.uuidString).store")
+                let dependencies = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
+                if try dependencies.articleRepository.allArticleIDs().isEmpty {
+                    let body = (0..<50).map { "Book and science. Reading this isolated paragraph number \($0) helps us learn about the world. Keep reading and save your progress." }.joined(separator: "\n\n")
+                    _ = try dependencies.learning?.content.importArticle(ArticleImportDraft(title: "隔离 UI 阅读测试（非生产内容）", body: body, source: "Explicit UI test fixture author", rightsConfirmed: true), at: Date())
+                }
+                return dependencies
+            }
             if scenario == "round2" { return try AppDependencies.makeLearningInMemory() }
             if scenario == "startupFailure" { throw PersistenceError.integrity("UI 测试注入的启动失败") }
             let dependencies = try AppDependencies.makeInMemory()

@@ -201,3 +201,106 @@ final class LexiDawnUITests: XCTestCase {
         }
     }
 }
+
+extension LexiDawnUITests {
+    func testRound2ReadingLookupVocabularyReviewAndExploreUnlock() throws {
+        let app = launchLearningDisk()
+        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 10)); app.buttons["open-reader"].tap()
+        let book = app.buttons["word-Book"].firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 10)); book.tap()
+        XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["刚刚加入"].waitForExistence(timeout: 10))
+        capture("round2-word-real-dictionary", in: app)
+        app.buttons["close-word"].tap()
+        app.buttons["finish-reading"].tap()
+        app.alerts.buttons["确认我已读完"].tap()
+        XCTAssertTrue(app.staticTexts["reading-completed"].waitForExistence(timeout: 5))
+        app.buttons["返回今日"].tap()
+        XCTAssertFalse(app.staticTexts["cycle-completed"].exists)
+        app.tabBars.buttons["词汇"].tap()
+        let search = app.searchFields.firstMatch; XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("book")
+        XCTAssertTrue(app.staticTexts["book"].waitForExistence(timeout: 5))
+        app.tabBars.buttons["复习"].tap()
+        let word = app.buttons["match-word-book"]
+        XCTAssertTrue(word.waitForExistence(timeout: 15)); word.tap()
+        let meaning = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "match-meaning-")).firstMatch
+        XCTAssertTrue(meaning.waitForExistence(timeout: 5)); meaning.tap()
+        let spelling = app.textFields["cloze-answer"]
+        XCTAssertTrue(spelling.waitForExistence(timeout: 5)); spelling.tap(); spelling.typeText("book")
+        app.buttons["submit-spelling"].tap()
+        XCTAssertTrue(app.staticTexts["本次复习已保存"].waitForExistence(timeout: 5))
+        capture("round2-two-stage-review-saved", in: app)
+        app.tabBars.buttons["今日"].tap()
+        XCTAssertTrue(app.staticTexts["cycle-completed"].waitForExistence(timeout: 5))
+        app.tabBars.buttons["探索"].tap()
+        XCTAssertTrue(app.staticTexts["暂无合法探索内容，可先导入文章。"].waitForExistence(timeout: 5))
+        app.tabBars.buttons["词汇"].tap()
+        XCTAssertTrue(app.staticTexts["book"].waitForExistence(timeout: 5))
+    }
+    func testRound2ScrollExitRelaunchRestoresProgressAndRepeatedLookupDoesNotDeleteWord() throws {
+        let app = launchLearningDisk()
+        app.buttons["open-reader"].tap()
+        let book = app.buttons["word-Book"].firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 10)); book.tap()
+        XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10)); app.buttons["close-word"].tap()
+        book.tap()
+        XCTAssertTrue(app.staticTexts["此前已加入"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["undo-word"].exists); app.buttons["close-word"].tap()
+        let body = app.descendants(matching: .any)["reader-body"].firstMatch
+        XCTAssertTrue(body.waitForExistence(timeout: 5)); body.swipeUp(); body.swipeUp(); body.swipeUp()
+        let before = try XCTUnwrap(Int(app.staticTexts["reader-progress"].label.replacingOccurrences(of: "%", with: "")))
+        XCTAssertGreaterThan(before, 0)
+        app.buttons["返回今日"].tap(); app.terminate(); app.launch()
+        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 10)); app.buttons["open-reader"].tap()
+        XCTAssertTrue(app.staticTexts["reader-progress"].waitForExistence(timeout: 10))
+        let restored = try XCTUnwrap(Int(app.staticTexts["reader-progress"].label.replacingOccurrences(of: "%", with: "")))
+        XCTAssertGreaterThanOrEqual(restored, before - 3)
+        capture("round2-reader-restored-after-relaunch", in: app)
+        XCTAssertFalse(app.staticTexts["reading-completed"].exists)
+    }
+    func testRound2SettingsPersistAndDisabledAutoAddRequiresManualAdd() throws {
+        let app = launchLearningDisk()
+        app.tabBars.buttons["我的"].tap()
+        let toggle = app.switches["auto-add"]
+        try revealLearning(toggle, in: app); toggle.tap()
+        let save = app.buttons["save-settings"]; try revealLearning(save, in: app); save.tap()
+        XCTAssertTrue(app.staticTexts["settings-message"].waitForExistence(timeout: 5))
+        app.terminate(); app.launch(); app.tabBars.buttons["我的"].tap()
+        let restored = app.switches["auto-add"]; try revealLearning(restored, in: app)
+        XCTAssertEqual(restored.value as? String, "0")
+        app.tabBars.buttons["今日"].tap(); app.buttons["open-reader"].tap()
+        let book = app.buttons["word-Book"].firstMatch; XCTAssertTrue(book.waitForExistence(timeout: 10)); book.tap()
+        let add = app.buttons["add-word"]; XCTAssertTrue(add.waitForExistence(timeout: 10)); XCTAssertFalse(app.staticTexts["刚刚加入"].exists)
+        add.tap(); XCTAssertTrue(app.staticTexts["刚刚加入"].waitForExistence(timeout: 5))
+        app.buttons["undo-word"].tap(); XCTAssertTrue(app.buttons["add-word"].waitForExistence(timeout: 5))
+    }
+    func testRound2UserImportsArticleThroughProductionForm() throws {
+        let app = launch("round2")
+        let importButton = app.buttons["import-article-toolbar"]; XCTAssertTrue(importButton.waitForExistence(timeout: 10)); importButton.tap()
+        app.textFields["import-title"].tap(); app.textFields["import-title"].typeText("My owned article")
+        let editor = app.textViews["import-body"]; editor.tap(); editor.typeText("A book can help us learn. This text was written for this isolated UI test.")
+        let rights = app.switches["import-rights"]; try revealLearning(rights, in: app); rights.tap()
+        let save = app.buttons["save-import"]; try revealLearning(save, in: app); save.tap()
+        XCTAssertTrue(app.staticTexts["My owned article"].waitForExistence(timeout: 10))
+        app.buttons["open-reader"].tap()
+        XCTAssertTrue(app.buttons["word-book"].firstMatch.waitForExistence(timeout: 10))
+        capture("round2-user-import-native-reader", in: app)
+    }
+    private func launchLearningDisk() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchEnvironment["LEXIDAWN_UI_SCENARIO"] = "round2-disk"
+        app.launchEnvironment["LEXIDAWN_UI_STORE_ID"] = UUID().uuidString
+        app.launch()
+        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 10))
+        return app
+    }
+    private func revealLearning(_ element: XCUIElement, in app: XCUIApplication) throws {
+        for _ in 0..<6 {
+            if element.exists && element.isHittable { return }
+            app.swipeUp()
+        }
+        capture("round2-unreachable-control", in: app)
+        XCTFail("Control not reachable: \(element)")
+        throw NSError(domain: "Round2UI", code: 1)
+    }
+}
