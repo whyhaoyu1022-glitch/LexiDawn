@@ -135,7 +135,11 @@ final class StudyCycleRepository: StudyCycleStore, AtomicCycleCreationStore {
               Set(cycles.map(\.assignedLocalDate)).count == cycles.count,
               Set(cycles.map(\.articleID)).count == cycles.count else { throw PersistenceError.integrity("历史周期存在重复身份、日期或文章指派，需人工核对") }
         for cycle in cycles {
-            guard articles.filter({ $0.articleID == cycle.articleID }).count == 1 else { throw PersistenceError.integrity("周期文章关联不完整") }
+            let matches = articles.filter { $0.articleID == cycle.articleID }
+            guard matches.count == 1 else { throw PersistenceError.integrity("周期文章关联不完整") }
+            if let proof = cycle.readingEvidence, matches.first?.bodyHash != proof.bodyHash {
+                throw PersistenceError.integrity("持久化完成证据与文章内容版本不一致")
+            }
         }
         let incomplete = cycles.filter(\.hasOutstandingWork).sorted { ($0.assignedLocalDate, $0.createdAtUTC, $0.cycleID.uuidString) < ($1.assignedLocalDate, $1.createdAtUTC, $1.cycleID.uuidString) }
         guard cycles.filter(\.isCurrent).count == (incomplete.isEmpty ? 0 : 1),

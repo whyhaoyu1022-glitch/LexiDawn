@@ -14,7 +14,7 @@ final class AppDependencies: ObservableObject {
 
     init(
         modelContainer: ModelContainer,
-        candidateProvider: ArticleCandidateProvider = EmptyArticleCandidateProvider(),
+        candidateProvider: ArticleCandidateProvider? = nil,
         calendar: Calendar = .autoupdatingCurrent,
         timeZone: TimeZone = .autoupdatingCurrent,
         cycleService: DailyCycleService? = nil
@@ -26,7 +26,7 @@ final class AppDependencies: ObservableObject {
         self.preferencesRepository = PreferencesRepository(context: context)
         self.cycleService = cycleService ?? DailyCycleService(
                 cycleStore: cycleRepository,
-                candidateProvider: candidateProvider
+                candidateProvider: candidateProvider ?? EmptyArticleCandidateProvider()
             )
         self.calendar = calendar
         self.timeZone = timeZone
@@ -62,7 +62,7 @@ final class AppDependencies: ObservableObject {
         try files.moveItem(at: staging, to: backup)
     }
 
-    static func makeInMemory(candidateProvider: ArticleCandidateProvider = EmptyArticleCandidateProvider()) throws -> AppDependencies {
+    static func makeInMemory(candidateProvider: ArticleCandidateProvider? = nil) throws -> AppDependencies {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(
             for: ArticleRecord.self, DailyStudyCycleRecord.self, UserPreferencesRecord.self,
