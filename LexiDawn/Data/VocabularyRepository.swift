@@ -9,6 +9,7 @@ struct VocabularyItem: Identifiable, Equatable {
     let notes: String?
     let contexts: [String]
     let sourceArticleID: String?
+    let dictionaryMeanings: [String]
 }
 struct VocabularyAddition {
     let entryID: String
@@ -24,11 +25,13 @@ struct VocabularyAddition {
             let all = try context.fetch(FetchDescriptor<VocabularyEntryRecord>())
             guard Set(all.map(\.normalizedKey)).count == all.count else { throw PersistenceError.integrity("重复生词身份") }
             let contexts = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>())
+            let senses = try context.fetch(FetchDescriptor<DictionarySenseRecord>())
             return all.filter { $0.deletedAt == nil && (type == nil || $0.entryType == type) }.map { record in
                 VocabularyItem(id: record.entryID, lemma: record.lemma, type: record.entryType, surfaces: record.surfaceForms,
                     addedAt: record.addedAt, meaning: record.userMeaning, notes: record.notes,
-                    contexts: contexts.filter { $0.entryID == record.entryID }.map(\.sentence), sourceArticleID: contexts.first { $0.entryID == record.entryID }?.articleID)
-            }.filter { search.isBlank || ([$0.lemma, $0.meaning ?? ""] + $0.surfaces).contains { $0.localizedCaseInsensitiveContains(search) } }
+                    contexts: contexts.filter { $0.entryID == record.entryID }.map(\.sentence), sourceArticleID: contexts.first { $0.entryID == record.entryID }?.articleID,
+                    dictionaryMeanings: senses.filter { $0.entryID == "cedict-reverse-v1|\(record.lemma)" }.sorted { $0.senseID < $1.senseID }.map(\.chinese))
+            }.filter { search.isBlank || ([$0.lemma, $0.meaning ?? ""] + $0.surfaces + $0.dictionaryMeanings).contains { $0.localizedCaseInsensitiveContains(search) } }
                 .sorted { $0.addedAt > $1.addedAt }
         }
     }
@@ -60,7 +63,9 @@ struct VocabularyAddition {
             }
             let states = try context.fetch(FetchDescriptor<ReviewStateRecord>()).filter { $0.entryID == record.entryID }
             guard states.count == 1 else { throw PersistenceError.integrity("生词复习状态缺失或重复，不能假定队列为空") }
+            if created, let state = states.first { state.dueAt = min(state.dueAt, now) }
             let source = VocabularySourceContextRecord(entryID: record.entryID, articleID: articleID, surface: token.surface, sentence: token.sentence, tokenLocation: token.range.location, at: now)
+            source.contextID += "|\(fingerprint(token.sentence))"
             if try !context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).contains(where: { $0.contextID == source.contextID }) { context.insert(source) }
             return VocabularyAddition(entryID: record.entryID, created: created, token: created ? nonce : nil, revision: record.revision)
         }

@@ -320,3 +320,27 @@ private struct StubArticleHTTPClient: ArticleHTTPClient {
         return (Data(), response)
     }
 }
+
+extension Round2Tests {
+    func testOfficialRFCNetworkRetrievalMatchesBundledLicensedSnapshot() async throws {
+        let app = try AppDependencies.makeLearningInMemory(); let learning = try XCTUnwrap(app.learning)
+        try await learning.acquisition.refresh(at: now)
+        let article = try learning.content.read(articleID: SourceRegistry.rfc.id, at: now)
+        XCTAssertEqual(article.bodyHash, ContentRepository.bundledRFCHash)
+        XCTAssertNotNil(try learning.content.acquisitionState().0)
+        XCTAssertTrue(article.body.contains("IETF Trust"))
+    }
+    func testCachedChineseSearchAndCacheDeletionKeepVocabularyEntity() async throws {
+        let (app, id, _) = try setup(); let learning = try XCTUnwrap(app.learning)
+        let result = try await learning.dictionary.lookup("book")
+        let chinese = try XCTUnwrap(result.senses.first?.zh)
+        _ = try learning.vocabulary.add(token: EnglishToken(surface: "book", range: NSRange(location: 0, length: 4), sentence: "A book."), articleID: id, autoAdd: true, at: now)
+        XCTAssertEqual(try learning.vocabulary.entries(search: chinese).count, 1)
+        let context = ModelContext(app.modelContainer)
+        for sense in try context.fetch(FetchDescriptor<DictionarySenseRecord>()) { context.delete(sense) }
+        for entry in try context.fetch(FetchDescriptor<DictionaryEntryRecord>()) { context.delete(entry) }
+        try context.save()
+        XCTAssertEqual(try learning.vocabulary.entries().count, 1)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<ReviewStateRecord>()), 1)
+    }
+}

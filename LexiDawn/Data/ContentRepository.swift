@@ -122,7 +122,7 @@ struct ArticleAccessError: LocalizedError {
                 return ArticleLibraryItem(id: article.articleID, title: article.originalTitle, source: article.sourceAttribution ?? article.sourceID,
                     topics: article.topicTags, minutes: article.estimatedReadMinutes, originalURL: grant?.originalURL,
                     cycleID: cycle.flatMap { UUID(uuidString: $0.cycleID) }, percent: progress?.readingPercent ?? 0,
-                    completed: progress?.completedAt != nil || cycle?.articleTaskStatus == "completed", started: progress != nil, readable: readable)
+                    completed: progress?.completedAt != nil || cycle?.articleTaskStatusRaw == "completed", started: progress != nil, readable: readable)
             }
         }
     }

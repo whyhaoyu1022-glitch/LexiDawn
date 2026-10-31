@@ -145,6 +145,12 @@ struct ReaderView: View {
         await lookup()
     }
     func startAddition() { if !started { started = true; add(explicit: false) } }
+    func refreshMembership() {
+        do {
+            if try learning.vocabulary.find(surface: token.surface) == nil { addition = nil; existing = false }
+            else if addition == nil { existing = true }
+        } catch { vocabularyError = error.localizedDescription }
+    }
     func lookup() async {
         loading = true
         do { result = try await learning.dictionary.lookup(token.surface); error = nil }
@@ -190,6 +196,7 @@ struct WordLookupSheet: View {
             }
             .navigationTitle("查词").toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() }.accessibilityIdentifier("close-word") } }
             .task { await model.begin() }
+            .onReceive(model.learning.$revision) { _ in model.refreshMembership() }
         }.presentationDetents([.medium, .large])
     }
 }
@@ -255,7 +262,10 @@ struct DictionaryDetailView: View {
                     model.startAddition(); selection = model
                 } catch { self.error = error.localizedDescription }
             }, scrollable: false)
-        } else { Text(text) }
+        } else {
+            Text(text)
+            if depth >= 3 { Text("已达本次查词深度上限；返回上一层后可继续查词。").font(.caption).foregroundStyle(.secondary) }
+        }
     }
     private func refresh() { do { entry = try learning.vocabulary.find(surface: result.headword) } catch { self.error = error.localizedDescription } }
     private func add() {

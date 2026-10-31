@@ -17,12 +17,13 @@ struct VocabularyListView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(item.lemma).font(.headline)
                             if let meaning = item.meaning { Text("个人释义：\(meaning)").font(.subheadline) }
+                            else if let meaning = item.dictionaryMeanings.first { Text("可能对应：\(meaning)").font(.subheadline) }
                             Text("\(item.type == "word" ? "单词" : "短语") · \(item.addedAt.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.secondary)
                         }
                     }.swipeActions { Button("移除", role: .destructive) { removing = item } }
                 }
                 if let error { Text(error).foregroundStyle(.red); Button("重新读取", action: load) }
-            }.searchable(text: $search, prompt: "搜索词形、lemma 或个人中文释义")
+            }.searchable(text: $search, prompt: "搜索词形、lemma 或已缓存中文释义")
                 .navigationTitle("生词本").task { load() }.onReceive(learning.$revision) { _ in load() }
                 .onChange(of: search) { _, _ in load() }.onChange(of: filter) { _, _ in load() }
                 .alert("确认移除生词？", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })) {
