@@ -259,7 +259,14 @@ extension LexiDawnUITests {
         let visibleBefore = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "word-")).allElementsBoundByIndex.first { $0.isHittable }
         let offsetBefore = try XCTUnwrap(Int(visibleBefore?.value as? String ?? ""))
         app.buttons["返回今日"].tap(); app.terminate(); app.launch()
-        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 10)); app.buttons["open-reader"].tap()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+        let continueReading = app.buttons["open-reader"]
+        XCTAssertTrue(continueReading.waitForExistence(timeout: 10))
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in continueReading.exists && continueReading.isHittable }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 5), .completed)
+        // Re-read current geometry after relaunch; send one real touch to the native control.
+        continueReading.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(app.navigationBars["英文阅读"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["reader-progress"].waitForExistence(timeout: 10))
         let restored = try XCTUnwrap(Int(app.staticTexts["reader-progress"].label.replacingOccurrences(of: "%", with: "")))
         XCTAssertGreaterThanOrEqual(restored, before - 3)
