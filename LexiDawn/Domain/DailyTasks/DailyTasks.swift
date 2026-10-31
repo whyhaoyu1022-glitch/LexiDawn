@@ -343,6 +343,9 @@ struct DailyStudyCycle: Equatable, Sendable {
             try require((matchingStageStatus == .completed) == reviewProgress.matchingComplete, "连线结果与状态不一致")
             try require((clozeStageStatus == .completed) == reviewProgress.clozeComplete, "拼写结果与状态不一致")
             try require((reviewTaskStatus == .completed) == reviewProgress.isComplete, "复习总状态与阶段不一致")
+            for (status, reason) in [(reviewTaskStatus, reviewTaskReason), (matchingStageStatus, matchingStageReason), (clozeStageStatus, clozeStageReason)] where status == .completed {
+                try require(reason == "saved-review-session", "复习完成原因与会话不一致")
+            }
         } else {
             try require(!reviewStatuses.contains(.completed), "复习完成缺少已保存会话结果")
         }
@@ -414,8 +417,12 @@ struct DailyStudyCycle: Equatable, Sendable {
             guard reviewEvidence == evidence else { throw TaskStatusError.verifiedEvidenceRequired }
             return
         }
-        guard [reviewTaskStatus, matchingStageStatus, clozeStageStatus].allSatisfy({ $0 == .ready || $0 == .blocked || $0 == .failed || $0 == .locked }) else {
-            throw TaskStatusError.verifiedEvidenceRequired
+        let statuses: [TaskStatus] = [reviewTaskStatus, matchingStageStatus, clozeStageStatus]
+        for status in statuses {
+            switch status {
+            case .ready, .blocked, .failed, .locked: break
+            default: throw TaskStatusError.verifiedEvidenceRequired
+            }
         }
         var next = self
         next.reviewTaskStatus = .deferred
@@ -532,12 +539,14 @@ final class DailyCycleService {
     private let candidateProvider: ArticleCandidateProvider
     private let reviewQueue: ReviewQueueReading
     private let readerAvailable: Bool
+    private let reviewSessions: ReviewSessionReading?
 
-    init(cycleStore: StudyCycleStore, candidateProvider: ArticleCandidateProvider, reviewQueue: ReviewQueueReading? = nil, readerAvailable: Bool = false) {
+    init(cycleStore: StudyCycleStore, candidateProvider: ArticleCandidateProvider, reviewQueue: ReviewQueueReading? = nil, readerAvailable: Bool = false, reviewSessions: ReviewSessionReading? = nil) {
         self.cycleStore = cycleStore
         self.candidateProvider = candidateProvider
         self.reviewQueue = reviewQueue ?? UnavailableReviewQueue()
         self.readerAvailable = readerAvailable
+        self.reviewSessions = reviewSessions
     }
 
     func ensureCurrentCycle(
@@ -634,6 +643,15 @@ final class DailyCycleService {
         guard readerAvailable else { throw TaskStatusError.capabilityUnavailable }
         guard var cycle = try cycleStore.fetch(by: cycleID) else { throw DailyCycleServiceError.missingCycle(cycleID) }
         try cycle.completeReading(evidence)
+        try cycleStore.save(cycle)
+        return cycle
+    }
+
+    func recordReviewSession(cycleID: UUID, at timestamp: Date) throws -> DailyStudyCycle {
+        guard let reviewSessions else { throw TaskStatusError.capabilityUnavailable }
+        guard var cycle = try cycleStore.fetch(by: cycleID) else { throw DailyCycleServiceError.missingCycle(cycleID) }
+        let result = try ReviewSessionResult.read(cycleID: cycleID, reader: reviewSessions, at: timestamp)
+        try cycle.recordReviewProgress(result)
         try cycleStore.save(cycle)
         return cycle
     }
@@ -740,6 +758,20 @@ struct ReviewSessionResult: Equatable, Sendable, Codable {
     let matchingAnsweredIDs: [String]
     let clozeAnsweredIDs: [String]
     let recordedAt: Date
+    private init(cycleID: UUID, snapshot: SavedReviewSessionSnapshot, recordedAt: Date) {
+        self.cycleID = cycleID; sessionID = snapshot.sessionID; sourceRevision = snapshot.sourceRevision
+        matchingQuestionIDs = snapshot.matchingQuestionIDs; clozeQuestionIDs = snapshot.clozeQuestionIDs
+        matchingAnsweredIDs = snapshot.matchingAnsweredIDs; clozeAnsweredIDs = snapshot.clozeAnsweredIDs
+        self.recordedAt = recordedAt
+    }
+    @MainActor
+    static func read(cycleID: UUID, reader: ReviewSessionReading, at timestamp: Date) throws -> Self {
+        let snapshot = try reader.savedSession(for: cycleID, at: timestamp)
+        guard snapshot.cycleID == cycleID else { throw TaskStatusError.verifiedEvidenceRequired }
+        let result = Self(cycleID: cycleID, snapshot: snapshot, recordedAt: timestamp)
+        try result.validate(cycleID: cycleID, createdAt: timestamp, updatedAt: timestamp)
+        return result
+    }
     var matchingComplete: Bool { Set(matchingQuestionIDs) == Set(matchingAnsweredIDs) }
     var clozeComplete: Bool { Set(clozeQuestionIDs) == Set(clozeAnsweredIDs) }
     var isComplete: Bool { matchingComplete && clozeComplete }
@@ -751,4 +783,19 @@ struct ReviewSessionResult: Equatable, Sendable, Codable {
                   Set(answers).count == answers.count, Set(answers).isSubset(of: Set(questions)) else { throw TaskStatusError.verifiedEvidenceRequired }
         }
     }
+}
+
+@MainActor
+protocol ReviewSessionReading {
+    func savedSession(for cycleID: UUID, at timestamp: Date) throws -> SavedReviewSessionSnapshot
+}
+
+struct SavedReviewSessionSnapshot {
+    let cycleID: UUID
+    let sessionID: UUID
+    let sourceRevision: String
+    let matchingQuestionIDs: [String]
+    let clozeQuestionIDs: [String]
+    let matchingAnsweredIDs: [String]
+    let clozeAnsweredIDs: [String]
 }

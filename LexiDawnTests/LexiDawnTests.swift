@@ -906,9 +906,10 @@ extension LexiDawnTests {
             if scenario == "reading-only" {
                 try partial.completeReading(readingProof(articleID: "a1", at: now))
             } else {
-                let result = ReviewSessionResult(cycleID: original.cycleID, sessionID: UUID(), sourceRevision: "explicit-saved-session-fixture",
+                let reader = FixtureSavedReviewSession(snapshot: SavedReviewSessionSnapshot(cycleID: original.cycleID, sessionID: UUID(), sourceRevision: "explicit-saved-session-fixture",
                     matchingQuestionIDs: ["match-1"], clozeQuestionIDs: ["cloze-1"], matchingAnsweredIDs: ["match-1"],
-                    clozeAnsweredIDs: scenario == "review-only" ? ["cloze-1"] : [], recordedAt: now)
+                    clozeAnsweredIDs: scenario == "review-only" ? ["cloze-1"] : []))
+                let result = try ReviewSessionResult.read(cycleID: original.cycleID, reader: reader, at: now)
                 try partial.recordReviewProgress(result)
                 if scenario == "review-only" { XCTAssertEqual(partial.reviewTaskStatus, .completed) }
                 else { XCTAssertEqual(partial.matchingStageStatus, .completed); XCTAssertNotEqual(partial.clozeStageStatus, .completed) }
@@ -927,9 +928,11 @@ extension LexiDawnTests {
     func testSavedReviewSessionResultRejectsInvalidAnswersAndCannotRegressOrMixEmptyQueue() throws {
         var cycle = try freshCycle()
         let sessionID = UUID()
-        func result(_ answers: [String], matching: [String] = ["m1"]) -> ReviewSessionResult {
-            ReviewSessionResult(cycleID: cycle.cycleID, sessionID: sessionID, sourceRevision: "test-saved-session", matchingQuestionIDs: matching,
-                clozeQuestionIDs: ["c1"], matchingAnsweredIDs: answers, clozeAnsweredIDs: [], recordedAt: cycle.createdAtUTC)
+        func result(_ answers: [String], matching: [String] = ["m1"]) throws -> ReviewSessionResult {
+            let reader = FixtureSavedReviewSession(snapshot: SavedReviewSessionSnapshot(cycleID: cycle.cycleID, sessionID: sessionID,
+                sourceRevision: "test-saved-session", matchingQuestionIDs: matching, clozeQuestionIDs: ["c1"],
+                matchingAnsweredIDs: answers, clozeAnsweredIDs: []))
+            return try ReviewSessionResult.read(cycleID: cycle.cycleID, reader: reader, at: cycle.createdAtUTC)
         }
         XCTAssertThrowsError(try cycle.recordReviewProgress(result(["unknown"])))
         XCTAssertThrowsError(try cycle.recordReviewProgress(result(["m1", "m1"])))
@@ -970,4 +973,10 @@ extension LexiDawnTests {
         buddhist.timeZone = utc
         XCTAssertEqual(DailyCycleService.studyDate(for: now, calendar: buddhist), "2026-10-26")
     }
+}
+
+@MainActor
+private struct FixtureSavedReviewSession: ReviewSessionReading {
+    let snapshot: SavedReviewSessionSnapshot
+    func savedSession(for cycleID: UUID, at timestamp: Date) throws -> SavedReviewSessionSnapshot { snapshot }
 }
