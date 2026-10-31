@@ -1,6 +1,6 @@
 # 架构
 
-依据 SPEC §15.3：“数据修改通过 Repository / Use Case 统一执行。”保留 SwiftUI / Domain / Repository / SwiftData 分层，所有服务和 Repository 在 MainActor 同步调用。
+依据 SPEC §15.3：“数据修改通过 Repository / Use Case 统一执行。”保留 SwiftUI / Domain / Repository / SwiftData 分层，领域与 Repository 写入在 MainActor；Round 2 词典资源由独立 actor 加载。
 
 - Domain：`DailyStudyCycle` 可抛错初始化、只读对外状态和统一 `validate()`。通用更新不能 completed/deferred。阅读完成需文章 ID、内容哈希、有效进度及明确确认；手动确认允许低进度，不增加查词要求。复习空队列只由完整可复习集合的 reader 生成绑定 cycleID/版本/时间的证据，三个复习状态一次性解析；不可用 reader 抛错。正常/部分复习结果由 reader 读取固定已保存会话、题目与已答 ID 的结构化结果约束，源事件时间保持不变。生产未实现这些模块，不产生伪结果。
 - Data：新增字段均可选，保留原有字段/实体。Record.domain() 走同一领域验证。已知旧 deferred/无证据完成状态在显式恢复事务中存档全部原标量与证据后变成说明清楚的 blocked；无法辨认的状态或关联异常终止恢复，不删除或合并数据。
@@ -36,3 +36,12 @@
 正文入口与元数据分开：ContentRepository.read 返回 ReadableArticle，library 仅返回不含正文的 ArticleLibraryItem；授权失效时保留 hash/关联，阻止展示并提供原文入口。探索路由与 ReaderProgressService 写入口均有门禁；已指派文章只能沿原周期继续。统计从完成证据/进度/会话结果重建，不维护多个页面计数器。
 
 词典数据加载在 actor 内，主线程只提交必要缓存实体；TextKit 按正文版本解析token，点击二分命中；不在每帧重新hash/分词。进度2秒节流，离开/后台刷写。短英文详情复用同一命中组件；动态高度与嵌套深度受控。
+
+
+## Round 2 已核验的应用代码结果
+
+应用代码 `fcac01b3d40b311b51c7a0fea4e6329d0300ca92` 的 [Actions 41194434948](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41194434948) 已结束 **success**：**93 XCTest/0失败、13 UI/0失败**，逐项匹配106个测试方法，无遗漏。artifact [13040631627](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41194434948/artifacts/13040631627) 包含unit/UI xcresult、完整日志及原生截图。最小“真实文章→阅读→查词→生词→连线→拼写→周期完成→探索解锁”场景已通过模拟器UI；磁盘重开与两版旧schema升级在同一套回归中通过。UI共615.006秒，3504词微基准平均0.024秒，波动较大，不能作为真机帧率承诺。
+
+后续测试定位增强提交 `1b2e26b39c33aff434298ab141eff426725caf24` 仅增加重启后foreground/hittable等待和一次真实坐标触摸，保留恢复百分比与可见词元位置断言。最终文档提交的SHA/Actions以GitHub History和交付答复为准；本节不冒用应用代码的绿色运行作为其他SHA的证明。
+
+这是 iOS26.5兼容模拟器/Xcode26.6 结果，不代表iOS27、真机、签名IPA、全量无障碍或独立验收通过。详细范围、全部失败及未完成项见 Round 2 开发交付自述。

@@ -35,11 +35,11 @@
 
 ## Round 2 批次 2 验证追踪
 
-以下新增行为以当前用户任务书为范围；历史 Round 1 行保持为当时证据。当前编译/测试未结束，不能从源码数量推断通过。
+以下新增行为以当前用户任务书为范围；历史 Round 1 行保持为当时证据。应用代码fcac01b的run41194434948已实际通过93 XCTest/13 UI，106个方法与日志逐项匹配。后续测试定位/文档提交的运行单独核对。
 
 | ID | SPEC 逐字依据 | 实现与依赖 | 验证及边界 |
 |---|---|---|---|
-| R2-CONTENT | §21.3“如果许可只允许展示标题、摘要和链接，就不能把全文复制进应用。” | SourceRegistry、ContentRepository、ArticleAcquisitionService；只接受用户本地声明或核验 RFC 指纹；原 URL/ID/正文去重 | Import/HTTP429/timeout/official RFC network tests；CC、IETF 官方条款复核；首次编译失败已修复，待新 CI |
+| R2-CONTENT | §21.3“如果许可只允许展示标题、摘要和链接，就不能把全文复制进应用。” | SourceRegistry、ContentRepository、ArticleAcquisitionService；只接受用户本地声明或核验 RFC 指纹；原 URL/ID/正文去重 | Import/HTTP429/timeout/official RFC network tests；CC、IETF 官方条款复核；相应测试在上述固定代码CI通过 |
 | R2-ACCESS | §12.7“正文缓存应记录来源许可和缓存期限。” | monotone accessHighWater，读取/保存均校验；到期清正文、保留元数据/进度/词汇；Reader 撤回显示 | expiry 精确边界、离线纯本地读取、时钟回拨、VM 失效撤回测试；无法识别设备从未观察到的历史时间，未宣称安全时钟 |
 | R2-READER | §6.3“找不到时回退到文章开头并提示，而不是跳到错误位置。” | 一致 paragraphRange 指纹，唯一锚点，UTF16 offset；2秒节流、退出/后台落盘；证据与周期原子更新 | 内存故障/磁盘重开/版本变化，UI滚动重启核对可见词元位置；未执行真机 Instruments |
 | R2-WORD | §6.2“任何可识别的英文单词都应可点” | TextKit glyph hit；标点边界排除；NLP句子；详细页复用英文组件；嵌套最多3层 | token contractions/hyphens/URL/email/code/3500词性能测量；真实 UI 点击、浮窗返回；复杂短语属后续 |
@@ -48,3 +48,12 @@
 | R2-HOME | §4.2“任务所属日期，逾期时明确标注。” | 真实hero来源/主题/进度/原日期、任务状态、统计；原生文章库与历史 | 阅读后即时更新；统计取实际阅读/复习完成事件时间，不把原分配日当完成日 |
 | R2-EXPLORE | §5.5“探索默认不再推荐已开始或已完成的文章。” | 排除每日指派和探索已开始；保存/完成与路由均门禁；保留历史入口 | opt-out导入在库可见、锁定写入口拒绝、解锁后继续、已分配拒绝重开为探索；UI完整周期解锁 |
 | R2-SETTINGS | §11.5“设置必须写入持久化存储，应用重启后仍生效。” | 昵称/年龄/目标/主题/阅读/自动添加/上限/学习时区；阅读器菜单即时保存 | 磁盘重开、UI切换自动添加后重启；通知/AI明确准备中，不假装系统能力启用 |
+
+
+## Round 2 已核验的应用代码结果
+
+应用代码 `fcac01b3d40b311b51c7a0fea4e6329d0300ca92` 的 [Actions 41194434948](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41194434948) 已结束 **success**：**93 XCTest/0失败、13 UI/0失败**，逐项匹配106个测试方法，无遗漏。artifact [13040631627](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41194434948/artifacts/13040631627) 包含unit/UI xcresult、完整日志及原生截图。最小“真实文章→阅读→查词→生词→连线→拼写→周期完成→探索解锁”场景已通过模拟器UI；磁盘重开与两版旧schema升级在同一套回归中通过。UI共615.006秒，3504词微基准平均0.024秒，波动较大，不能作为真机帧率承诺。
+
+后续测试定位增强提交 `1b2e26b39c33aff434298ab141eff426725caf24` 仅增加重启后foreground/hittable等待和一次真实坐标触摸，保留恢复百分比与可见词元位置断言。最终文档提交的SHA/Actions以GitHub History和交付答复为准；本节不冒用应用代码的绿色运行作为其他SHA的证明。
+
+这是 iOS26.5兼容模拟器/Xcode26.6 结果，不代表iOS27、真机、签名IPA、全量无障碍或独立验收通过。详细范围、全部失败及未完成项见 Round 2 开发交付自述。

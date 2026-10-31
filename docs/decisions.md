@@ -74,3 +74,10 @@
 - 统计有效学习日定义为明确阅读完成或整次非空复习完成；按事件时间及周期时区记日。复习空队列并非实际学习行为。探索完成按用户当前学习时区计算；后续事件表会固定探索事件时区，避免旅行后历史重算。
 - 当前 deterministic basic 排程：Again 1天，Hard max(2,前间隔+2)，Good max(4,前间隔×2)，上限3650天；是基础版而非FSRS。保留不可变日志、旧状态时间和版本，未来迁移不能改写历史日志或删除词条。
 - 详细页英文点击最多嵌套3层，之后明确提示返回；避免无限堆叠。当前无自动短语消歧、商业词典、AI解释或付费服务。
+
+
+## ADR-012 词级交互的两种原生呈现
+
+长阅读器使用UIView承载词元辅助功能容器，内部UITextView只负责TextKit排版/命中/滚动。iOS26.5实测UITextView自己的AX实现会忽略设置的词元数组，因此不可把源码赋值当作可访问性已生效。短词典段落采用原生Text+AttributedString链接，复用EnglishTokenizer和同一WordLookupModel，OpenURLAction消费私有词元URL，不打开外站。Apple Text/AttributedString及openURL官方文档与实际CI均核验；List中短段落不再依赖会被合并的UIKit AX容器。
+
+实际UI发现iOS26搜索展开时Tab命中为(-1,-1)，需要先使用实际系统Close结束搜索；Toggle有行/内层switch两个AX节点，测试明确操作真实switch并断言值变化。重启导航增加foreground与hittable检查后发送一次坐标触摸；不重复点击隐藏问题，不移除恢复或状态断言。

@@ -46,3 +46,12 @@ GitHub Actions 先使用 `build-for-testing` 和 `generic/platform=iOS Simulator
 4. 词汇页搜索、编辑个人释义、查词、确认移除；未知词没有可靠中文时可自行填写明确标为个人释义的内容供复习。
 5. 阅读后明确完成；复习页点击英文和对应中文配对，再输入完整拼写。作答、排程和周期更新同一事务提交。
 6. 必做全部完成才解锁探索；已分配/已开始文章从探索候选移除，历史可从今日页“文章库与历史”继续。
+
+
+## Round 2 已核验的应用代码结果
+
+应用代码 `fcac01b3d40b311b51c7a0fea4e6329d0300ca92` 的 [Actions 41194434948](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41194434948) 已结束 **success**：**93 XCTest/0失败、13 UI/0失败**，逐项匹配106个测试方法，无遗漏。artifact [13040631627](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41194434948/artifacts/13040631627) 包含unit/UI xcresult、完整日志及原生截图。最小“真实文章→阅读→查词→生词→连线→拼写→周期完成→探索解锁”场景已通过模拟器UI；磁盘重开与两版旧schema升级在同一套回归中通过。UI共615.006秒，3504词微基准平均0.024秒，波动较大，不能作为真机帧率承诺。
+
+后续测试定位增强提交 `1b2e26b39c33aff434298ab141eff426725caf24` 仅增加重启后foreground/hittable等待和一次真实坐标触摸，保留恢复百分比与可见词元位置断言。最终文档提交的SHA/Actions以GitHub History和交付答复为准；本节不冒用应用代码的绿色运行作为其他SHA的证明。
+
+这是 iOS26.5兼容模拟器/Xcode26.6 结果，不代表iOS27、真机、签名IPA、全量无障碍或独立验收通过。详细范围、全部失败及未完成项见 Round 2 开发交付自述。

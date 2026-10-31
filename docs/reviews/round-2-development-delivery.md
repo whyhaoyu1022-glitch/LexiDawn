@@ -51,7 +51,7 @@
 
 ## 5. 测试与 Actions
 
-源码现有 92 个 XCTest 方法、13 个 UI 方法；这只是清单，不是运行通过数。本地无 Swift/Xcode，因此 iOS 运行证据只来自实际 Actions。当前状态待最终 CI 填写。
+源码现有 93 个 XCTest 方法、13 个 UI 方法；这只是清单，不是运行通过数。本地无 Swift/Xcode，因此 iOS 运行证据只来自实际 Actions。应用代码93 XCTest/13 UI已实际通过，见下方最终代码证据；后续测试定位和文档提交仍单独核对。
 
 | 提交/运行 | 实际结果 |
 |---|---|
@@ -64,7 +64,7 @@
 
 五个新增 XCUITest 实际运行 App：完整阅读/查词/生词搜索/两阶段复习/探索解锁、滚动退出重启恢复、设置和自动添加/手动加入/撤销、空库填写生产导入表单、详情和嵌套英文查词返回。测试库由 DEBUG 模拟器显式开关及独立 UUID 隔离；另有生产真实源及数据库集成，fixture 不进入 Release。
 
-xcresult、完整 unit/UI 日志及 keepAlways 原生截图由现有 workflow 上传；artifact 与最终提交 SHA 待实际运行结束填写。产品27.0/兼容CI26.5严格区分，不代表iOS27/真机/签名IPA。编译警告和故障用例预期 CoreData 日志将在最终 job 完整日志核对。
+xcresult、完整 unit/UI 日志及 keepAlways 原生截图由现有 workflow 上传；应用代码 artifact 为13040631627；交付源代码基准（含测试定位增强）为1b2e26b39c33aff434298ab141eff426725caf24，后续文档提交不自引用未知SHA，精确main HEAD与其运行在最终交付答复列出。产品27.0/兼容CI26.5严格区分，不代表iOS27/真机/签名IPA。编译警告和故障用例预期 CoreData 日志将在最终 job 完整日志核对。
 
 ## 6. 尚未交付或未验证
 
@@ -74,9 +74,28 @@ xcresult、完整 unit/UI 日志及 keepAlways 原生截图由现有 workflow �
 - 探索完成日目前按所选时区展示；未来应保存独立事件时区以减少旅行后的历史重算。没有可信硬件时钟或跨进程并发保障。
 - 当前单来源耗尽后应合法导入更多内容，不伪造推荐；无可靠中文对应需用户个人释义才能出题，不会把未解决释义的队列假定为空。
 
-只有最终关键 UI 与对应提交的 CI 结束成功后，才能声称已验证最小学习闭环；不能据当前源码或本报告宣布整个 SPEC §25、M2–M5 全量或独立验收已通过。
+93 XCTest/13 UI的应用代码运行已验证最小学习闭环；这不代表整个 SPEC §25、M2–M5全量、iOS27/真机或独立验收通过。
 
 
 ### UI 故障追踪（继续修复中）
 
 67174fb / run41179938274：91 XCTest/0，13 UI/5失败。原8 UI均继续通过；新用例失败集中在词元不可见和Toggle外层行点击。实际下载17b9dd2的artifact13034590947并解码zstd/AX记录：UITextView仍暴露段落，导入授权为0且保存disabled。改用UIView词级AX容器，明确隐藏TextView系统段落AX，布局后生成词元；测试点击内层原生switch，并增加即时值和保存成功精确断言，没有删除原失败断言。新增UIKit真实布局/glyph物理点击及标点拒绝回归。当前修复提交0e8a0ba4caef789512ea5b2e93ac9138b8b0c005的run41192856507运行中，不能预填通过。
+
+
+## 7. 已结束的应用代码最终验证
+
+- 应用业务代码 SHA：`fcac01b3d40b311b51c7a0fea4e6329d0300ca92`。
+- [Actions run41194434948](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41194434948)：success。93 XCTest/0、13 XCUITest/0，106个精确方法名逐项比对，无遗漏。原61 XCTest和原8 UI全部保留并通过。UI用例合计615.006秒，微基准平均0.024秒且相对标准差23.705%，不承诺固定性能。
+- [artifact13040631627](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41194434948/artifacts/13040631627)：6,982,373字节，unit/UI xcresult及完整日志、keepAlways原生截图。
+- 完整真实操作场景（阅读/查词/搜索/连线/拼写/解锁）、滚动退出重启与可见词元位置恢复、设置持久化与手动加入撤销、表单导入、详情嵌套查词返回均通过。官方RFC真网络请求成功测试、429/timeout替身、真实SwiftData事务故障、旧schema和磁盘恢复同属93项，不把mock当真实联网。
+- 日志仍有AppIntents未依赖导致metadata skipped、已签名测试framework未strip、Node/punycode等runner弃用提示及multiple destination提示；故障测试预期CoreData259/SQLite26、只读save513。未发现新的Swift源代码编译警告，不声称日志没有任何系统错误/警告。
+- 8e59f0e的run41194173024曾有1个重启导航失败；其AX显示首页持久化27%正确但单次自动化tap没有进入阅读器，无存储错误页。1b2e26b增加foreground/hittable等待与一次坐标触摸，所有恢复断言保留，需其后续运行单独验证。
+- 本报告自身为后续docs提交；精确最终SHA无法预先写入自身。以最终答复和本文件GitHub History核对，不把fcac01b的run冒充后续SHA证明。
+
+### 可复核代码与文档
+
+- [阅读器/查词/首页/生词/复习/设置](https://github.com/whyhaoyu1022-glitch/LexiDawn/tree/main/LexiDawn/Features/Learning)
+- [数据模型及Repository](https://github.com/whyhaoyu1022-glitch/LexiDawn/tree/main/LexiDawn/Data)
+- [规则与排程](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Domain/Learning/LearningRules.swift)
+- [Round2 XCTest](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnTests/Round2Tests.swift)、[UI测试](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnUITests/LexiDawnUITests.swift)
+- [需求追踪](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/docs/requirements-traceability.md)、[测试计划](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/docs/test-plan.md)、[开发日志](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/docs/daily/2026-10-31-round-2.md)
