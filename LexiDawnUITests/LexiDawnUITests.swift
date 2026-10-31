@@ -479,7 +479,11 @@ extension LexiDawnUITests {
         let unknown = app.buttons["word-Lexidawngalleryword"].firstMatch
         XCTAssertTrue(unknown.waitForExistence(timeout: 10)); unknown.tap()
         let noResult = app.staticTexts["暂无可验证的释义。可以继续阅读，或在生词本添加明确标记的个人释义。"]
-        XCTAssertTrue(noResult.waitForExistence(timeout: 10)); try revealLearning(noResult, in: app)
+        XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 5))
+        // A long headword fills the medium sheet; List creates the no-result row
+        // only after the user expands/scrolls it. Reveal before asserting existence.
+        try revealLearning(noResult, in: app)
+        XCTAssertTrue(noResult.waitForExistence(timeout: 5))
         capture("F09-dictionary-honest-no-result", in: app)
     }
 
