@@ -225,7 +225,9 @@ final class PreferencesRepository {
         writer = RepositoryWriter(context: context, saveContext: saveContext)
     }
     func load() throws -> UserPreferencesRecord {
-        if let existing = try context.fetch(FetchDescriptor<UserPreferencesRecord>()).first { return existing }
+        let records = try context.fetch(FetchDescriptor<UserPreferencesRecord>())
+        guard records.count <= 1 else { throw PersistenceError.integrity("偏好存在多条记录，需核对原数据") }
+        if let existing = records.first { try validate(existing); return existing }
         return try writer.write {
             let defaults = UserPreferencesRecord()
             context.insert(defaults)
@@ -235,17 +237,23 @@ final class PreferencesRepository {
     func save(_ preferences: UserPreferencesRecord) throws {
         try writer.write {
             guard preferences.modelContext === context else { throw PersistenceError.integrity("偏好来自其他上下文") }
-            guard preferences.schemaVersion == 1,
+            try validate(preferences)
+            preferences.lastUpdatedAt = Date()
+        }
+    }
+    private func validate(_ preferences: UserPreferencesRecord) throws {
+        guard preferences.preferencesID == "default", preferences.schemaVersion == 1,
                   (0...23).contains(preferences.dailyReadingReminderHour), (0...59).contains(preferences.dailyReadingReminderMinute),
                   (0...23).contains(preferences.dailyReviewReminderHour), (0...59).contains(preferences.dailyReviewReminderMinute),
                   ["device", "fixed"].contains(preferences.timeZonePolicy),
                   preferences.timeZonePolicy != "fixed" || TimeZone(identifier: preferences.fixedTimeZoneID ?? "") != nil,
+                  preferences.readerFontSize.isFinite, preferences.readerFontSize > 0,
+                  preferences.readerLineSpacing.isFinite, preferences.readerLineSpacing > 0,
                   preferences.dailyReviewLimit > 0, preferences.matchingPairCount > 0, preferences.clozeQuestionCount > 0 else {
-                throw PersistenceError.integrity("偏好值无效或版本不受支持")
-            }
-            preferences.lastUpdatedAt = Date()
+            throw PersistenceError.integrity("偏好值无效或版本不受支持")
         }
     }
+
 }
 
 struct EmptyArticleCandidateProvider: ArticleCandidateProvider {

@@ -1086,3 +1086,26 @@ extension LexiDawnTests {
         XCTAssertEqual(try dependencies.articleRepository.allArticleIDs(), ["a1"])
     }
 }
+
+extension LexiDawnTests {
+    func testPreferenceSaveRejectsInvalidValuesAndLoadRejectsUnknownVersionWithoutReset() throws {
+        let dependencies = try AppDependencies.makeInMemory()
+        let repository = dependencies.preferencesRepository
+        let preferences = try repository.load()
+        let originalSize = preferences.readerFontSize
+        preferences.readerFontSize = -1
+        XCTAssertThrowsError(try repository.save(preferences))
+        XCTAssertEqual(try repository.load().readerFontSize, originalSize)
+        let restored = try repository.load()
+        restored.readerLineSpacing = Double.infinity
+        XCTAssertThrowsError(try repository.save(restored))
+        XCTAssertTrue(try repository.load().readerLineSpacing.isFinite)
+        let future = try repository.load()
+        future.schemaVersion = 999
+        try dependencies.modelContainer.mainContext.save() // simulate an unsupported historical/future record
+        XCTAssertThrowsError(try repository.load())
+        let records = try dependencies.modelContainer.mainContext.fetch(FetchDescriptor<UserPreferencesRecord>())
+        XCTAssertEqual(records.count, 1)
+        XCTAssertEqual(records.first?.schemaVersion, 999)
+    }
+}
