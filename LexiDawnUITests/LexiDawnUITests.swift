@@ -223,6 +223,7 @@ extension LexiDawnUITests {
         let cancelSearch = app.buttons["Cancel"].firstMatch
         if cancelSearch.exists { cancelSearch.tap() }
         else if app.buttons["取消"].firstMatch.exists { app.buttons["取消"].firstMatch.tap() }
+        else if app.buttons["Close"].firstMatch.exists { app.buttons["Close"].firstMatch.tap() }
         XCTAssertTrue(app.tabBars.buttons["复习"].isHittable)
         app.tabBars.buttons["复习"].tap()
         XCTAssertTrue(app.navigationBars["复习"].waitForExistence(timeout: 5))
