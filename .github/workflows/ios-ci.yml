@@ -131,7 +131,7 @@ jobs:
             -resultBundlePath "${RUNNER_TEMP}/LexiDawn-unit.xcresult" \
             -only-testing:LexiDawnTests test 2>&1 | tee "${RUNNER_TEMP}/LexiDawn-unit.log"
       - name: Run UI tests on concrete simulator
-        timeout-minutes: 20
+        timeout-minutes: 45
         shell: bash
         run: |
           set -euo pipefail
@@ -143,6 +143,24 @@ jobs:
             -parallel-testing-enabled NO \
             -resultBundlePath "${RUNNER_TEMP}/LexiDawn-ui.xcresult" \
             -only-testing:LexiDawnUITests test 2>&1 | tee "${RUNNER_TEMP}/LexiDawn-ui.log"
+      - name: Export original UI screenshots and attachment manifest
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -d "${RUNNER_TEMP}/LexiDawn-ui.xcresult" ]]; then
+            xcrun xcresulttool export attachments --path "${RUNNER_TEMP}/LexiDawn-ui.xcresult" --output-path "${RUNNER_TEMP}/LexiDawn-screenshots"
+          else
+            echo "::error::UI result bundle missing; screenshots cannot be exported."
+            exit 1
+          fi
+      - name: Upload original screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LexiDawn-screenshots-${{ github.run_id }}
+          path: ${{ runner.temp }}/LexiDawn-screenshots
+          if-no-files-found: error
       - name: Upload test result bundles
         if: always()
         uses: actions/upload-artifact@v4

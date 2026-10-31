@@ -94,7 +94,7 @@ struct ReaderView: View {
                     ForEach(["system", "light", "dark", "paper"], id: \.self) { value in
                         Button(["system": "跟随系统", "light": "浅色", "dark": "深色", "paper": "暖纸色"][value] ?? value) { saveAppearance(size: fontSize, theme: value) }
                     }
-                }
+                }.accessibilityIdentifier("reader-appearance")
             }
         }
         .task {

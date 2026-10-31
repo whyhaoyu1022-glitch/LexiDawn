@@ -49,6 +49,46 @@ final class AppStartup: ObservableObject {
         #if DEBUG && targetEnvironment(simulator)
         // Explicit opt-in UI fixture, isolated from the production disk store. Never used in Release.
         if let scenario = ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"] {
+            // Screenshot scenarios use the exact production RFC bytes and repositories, with a
+            // separate UUID store. Only learning state / faults are seeded, never article text.
+            if scenario.hasPrefix("gallery-"), let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
+                let url = FileManager.default.temporaryDirectory.appendingPathComponent("gallery-\(storeID.uuidString).store")
+                let dependencies = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
+                if scenario == "gallery-empty" { return dependencies }
+                if try dependencies.articleRepository.allArticleIDs().isEmpty, let learning = dependencies.learning {
+                    let now = Date()
+                    let start = scenario == "gallery-overdue" ? now.addingTimeInterval(-3 * 86400) : now
+                    try learning.content.installBundledRFC(at: start)
+                    _ = try dependencies.cycleService.ensureCurrentCycle(now: start, timeZone: .current, calendar: .current)
+                    if scenario == "gallery-expired" {
+                        let context = ModelContext(dependencies.modelContainer)
+                        if let article = try context.fetch(FetchDescriptor<ArticleRecord>()).first {
+                            article.cachePermissionData = try JSONEncoder().encode(ArticleCachePermission.until(now.addingTimeInterval(-1)))
+                            try context.save()
+                        }
+                    }
+                    if scenario == "gallery-backoff" {
+                        try learning.content.beginFetch(at: now)
+                        try learning.content.finishFetch(error: "Screenshot fault injection: HTTP 429", retryAfter: now.addingTimeInterval(3600), at: now)
+                    }
+                    if scenario == "gallery-review" || scenario == "gallery-missing-state" {
+                        let article = try learning.content.read(articleID: SourceRegistry.rfc.id, at: now)
+                        let pairs = scenario == "gallery-review" ? [("Internet", "互联网（个人释义）"), ("document", "文档（个人释义）")] : [("Internet", "互联网（个人释义）")]
+                        for (index, pair) in pairs.enumerated() {
+                            if let token = EnglishTokenizer.tokens(in: article.body).first(where: { $0.surface == pair.0 }),
+                               let added = try learning.vocabulary.add(token: token, articleID: article.id, autoAdd: true, at: now.addingTimeInterval(Double(index) * 0.001)) {
+                                try learning.vocabulary.annotate(entryID: added.entryID, meaning: pair.1, notes: "Screenshot test seed; actual RFC context", at: Date())
+                            }
+                        }
+                        if scenario == "gallery-missing-state" {
+                            let context = ModelContext(dependencies.modelContainer)
+                            for state in try context.fetch(FetchDescriptor<ReviewStateRecord>()) { context.delete(state) }
+                            try context.save()
+                        }
+                    }
+                }
+                return dependencies
+            }
             if scenario == "round2-disk", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
                 let url = FileManager.default.temporaryDirectory.appendingPathComponent("round2-ui-\(storeID.uuidString).store")
                 let dependencies = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
