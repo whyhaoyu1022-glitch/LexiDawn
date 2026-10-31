@@ -1220,3 +1220,62 @@ extension LexiDawnTests {
         XCTAssertEqual(store.cycles, [original])
     }
 }
+
+
+extension LexiDawnTests {
+    func testSwiftDataReviewResultsRejectStaleSnapshotsAndTerminalEvidenceReplacement() throws {
+        let dependencies = try AppDependencies.makeInMemory()
+        let original = try freshCycle()
+        let sessionID = UUID()
+        let now = original.createdAtUTC
+        try dependencies.cycleRepository.save(cycle: original, candidate: fixture(id: original.articleID), fetchedAt: now)
+        func result(seconds: TimeInterval, finished: Bool) throws -> ReviewSessionResult {
+            let timestamp = now.addingTimeInterval(seconds)
+            let reader = FixtureSavedReviewSession(snapshot: SavedReviewSessionSnapshot(cycleID: original.cycleID, sessionID: sessionID,
+                sourceRevision: "saved-fixture-\(seconds)", matchingQuestionIDs: ["m1"], clozeQuestionIDs: ["c1"],
+                matchingAnsweredIDs: ["m1"], clozeAnsweredIDs: finished ? ["c1"] : [], recordedAt: timestamp))
+            return try ReviewSessionResult.read(cycleID: original.cycleID, reader: reader, at: timestamp)
+        }
+        var partial = original
+        try partial.recordReviewProgress(result(seconds: 20, finished: false))
+        try dependencies.cycleRepository.save(partial)
+        let stale = try result(seconds: 10, finished: false)
+        var attempted = partial
+        XCTAssertThrowsError(try attempted.recordReviewProgress(stale))
+        XCTAssertEqual(attempted, partial)
+        // A structurally valid object cannot bypass the history checks by calling Repository directly.
+        let staleRecord = try DailyStudyCycleRecord(cycle: partial)
+        staleRecord.reviewProgressData = try JSONEncoder().encode(stale)
+        let staleDomain = try staleRecord.domain()
+        XCTAssertEqual(staleDomain.reviewProgress, stale)
+        XCTAssertThrowsError(try dependencies.cycleRepository.save(staleDomain)) { error in
+            XCTAssertTrue(error is PersistenceError)
+        }
+        XCTAssertEqual(try dependencies.cycleRepository.fetch(by: original.cycleID), partial)
+
+        var reviewFinished = partial
+        try reviewFinished.recordReviewProgress(result(seconds: 30, finished: true))
+        try dependencies.cycleRepository.save(reviewFinished)
+        XCTAssertEqual(reviewFinished.reviewTaskStatus, .completed)
+        XCTAssertEqual(reviewFinished.articleTaskStatus, .ready)
+        XCTAssertNil(reviewFinished.completedAtUTC)
+        let replacement = try result(seconds: 40, finished: true)
+        attempted = reviewFinished
+        XCTAssertThrowsError(try attempted.recordReviewProgress(replacement))
+        XCTAssertEqual(attempted, reviewFinished)
+        let replacementRecord = try DailyStudyCycleRecord(cycle: reviewFinished)
+        replacementRecord.reviewProgressData = try JSONEncoder().encode(replacement)
+        replacementRecord.updatedAtUTC = now.addingTimeInterval(40)
+        let replacementDomain = try replacementRecord.domain()
+        XCTAssertEqual(replacementDomain.reviewProgress, replacement)
+        XCTAssertThrowsError(try dependencies.cycleRepository.save(replacementDomain)) { error in
+            XCTAssertTrue(error is PersistenceError)
+        }
+        XCTAssertEqual(try dependencies.cycleRepository.fetch(by: original.cycleID), reviewFinished)
+        try dependencies.cycleRepository.save(reviewFinished) // exact same result remains idempotent
+        var completed = reviewFinished
+        try completed.completeReading(readingProof(articleID: original.articleID, at: now.addingTimeInterval(35)))
+        try dependencies.cycleRepository.save(completed)
+        XCTAssertEqual(try dependencies.cycleRepository.fetch(by: original.cycleID)?.completedAtUTC, now.addingTimeInterval(35))
+    }
+}

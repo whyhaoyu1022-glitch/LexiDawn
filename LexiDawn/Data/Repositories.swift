@@ -115,7 +115,8 @@ final class StudyCycleRepository: StudyCycleStore, AtomicCycleCreationStore {
             if let proof = previous.readingEvidence, cycle.readingEvidence != proof { throw PersistenceError.integrity("不能覆盖阅读完成证据") }
             if let proof = previous.reviewEvidence, cycle.reviewEvidence != proof { throw PersistenceError.integrity("不能覆盖空队列证据") }
             if let old = previous.reviewProgress {
-                guard let new = cycle.reviewProgress, old.sessionID == new.sessionID,
+                guard let new = cycle.reviewProgress, new.recordedAt >= old.recordedAt,
+                      !old.isComplete || new == old, old.sessionID == new.sessionID,
                       old.matchingQuestionIDs == new.matchingQuestionIDs, old.clozeQuestionIDs == new.clozeQuestionIDs,
                       Set(old.matchingAnsweredIDs).isSubset(of: Set(new.matchingAnsweredIDs)),
                       Set(old.clozeAnsweredIDs).isSubset(of: Set(new.clozeAnsweredIDs)) else { throw PersistenceError.integrity("不能覆盖或回退已保存复习会话") }

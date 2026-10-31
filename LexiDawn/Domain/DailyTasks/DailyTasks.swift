@@ -388,7 +388,8 @@ struct DailyStudyCycle: Equatable, Sendable {
         try result.validate(cycleID: cycleID, createdAt: createdAtUTC, updatedAt: result.recordedAt)
         guard reviewEvidence == nil else { throw TaskStatusError.verifiedEvidenceRequired }
         if let previous = reviewProgress {
-            guard previous.sessionID == result.sessionID, previous.matchingQuestionIDs == result.matchingQuestionIDs,
+            guard result.recordedAt >= previous.recordedAt,
+                  previous.sessionID == result.sessionID, previous.matchingQuestionIDs == result.matchingQuestionIDs,
                   previous.clozeQuestionIDs == result.clozeQuestionIDs,
                   Set(previous.matchingAnsweredIDs).isSubset(of: Set(result.matchingAnsweredIDs)),
                   Set(previous.clozeAnsweredIDs).isSubset(of: Set(result.clozeAnsweredIDs)) else { throw TaskStatusError.verifiedEvidenceRequired }
