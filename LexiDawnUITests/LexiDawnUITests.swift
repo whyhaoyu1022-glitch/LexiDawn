@@ -9,6 +9,7 @@ final class LexiDawnUITests: XCTestCase {
     func testAppUsesFullSizeWindowOnModernCISimulator() {
         let app = launch("empty")
         XCTAssertTrue(app.tabBars.buttons["今日"].waitForExistence(timeout: 5))
+        capture("today-empty-native-window", in: app)
         let window = app.windows.firstMatch.frame
         XCTAssertGreaterThanOrEqual(window.width, 375, "Modern simulator must not use a legacy 320x480 window: \(window)")
         XCTAssertGreaterThanOrEqual(window.height, 667, "Modern simulator must not use a legacy 320x480 window: \(window)")
@@ -33,6 +34,8 @@ final class LexiDawnUITests: XCTestCase {
 
     func testUnavailableButtonsAreDisabledAndReloadDoesNotChangeReadyStates() throws {
         let app = launch("ready")
+        XCTAssertTrue(app.staticTexts["UI 测试文章（非真实内容）"].waitForExistence(timeout: 5))
+        capture("today-ready-isolated-fixture", in: app)
         try assertTaskState(app, expected: "待开始")
         for task in ["article", "review", "matching", "cloze"] {
             let button = app.buttons["unavailable-\(task)"]
@@ -51,6 +54,8 @@ final class LexiDawnUITests: XCTestCase {
     func testBlockedAndFailedReasonsExplainUnavailableRecoveryAndRemainUnchanged() throws {
         for scenario in ["blocked", "failed"] {
             let app = launch(scenario)
+            XCTAssertTrue(app.staticTexts["UI 测试文章（非真实内容）"].waitForExistence(timeout: 5))
+            capture("today-\(scenario)-isolated-fixture", in: app)
             try assertTaskState(app, expected: scenario == "blocked" ? "被阻塞" : "执行失败")
             for task in ["article", "review", "matching", "cloze"] {
                 let reason = app.staticTexts["reason-\(task)"]
@@ -89,6 +94,7 @@ final class LexiDawnUITests: XCTestCase {
     func testStartupFailureHasRealRetryAndNeverPretendsDataLoaded() {
         let app = launch("startupFailure")
         XCTAssertTrue(app.staticTexts["本地学习数据暂时不可用"].waitForExistence(timeout: 5))
+        capture("storage-unavailable-isolated-fixture", in: app)
         app.buttons["retry-storage"].tap()
         XCTAssertTrue(app.staticTexts["本地学习数据暂时不可用"].exists)
         XCTAssertFalse(app.tabBars.buttons["今日"].exists)
@@ -101,6 +107,14 @@ final class LexiDawnUITests: XCTestCase {
         XCTAssertTrue(app.tabBars.buttons["今日"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["暂时没有可分配文章"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["本地学习数据暂时不可用"].exists)
+    }
+
+    /// User-review evidence from the actual running simulator, retained even when assertions pass.
+    private func capture(_ name: String, in app: XCUIApplication) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 
     private func launch(_ scenario: String) -> XCUIApplication {
