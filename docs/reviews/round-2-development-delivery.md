@@ -59,6 +59,12 @@
 | 037e0b5 / [41178666260](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41178666260) | app 编译失败，测试未运行；已修复持久化字段名错误，不掩盖失败 |
 | 17b9dd2 / [41178773199](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41178773199) | app/test target 编译通过，unit step success，88 XCTest/0失败；12 UI/4失败，根因见下文 |
 | ab8da39 / [41179258125](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41179258125) | 91 XCTest/0失败；12 UI/4失败（相同词元/Toggle问题） |
+| 67174fb / [41179938274](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41179938274) | 91 XCTest/0；13 UI/5失败，包含新增详情用例 |
+| 0e8a0ba / [41192856507](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41192856507) | 91 XCTest/0；13 UI/2失败，词元/开关修复生效 |
+| 2f46b18 / [41193034745](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41193034745) | 92 XCTest/0；13 UI/2失败 |
+| ce21104 / [41194143665](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41194143665) | 92 XCTest/0；13 UI/1失败，详情嵌套返回通过 |
+| 8e59f0e / [41194173024](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41194173024) | 92 XCTest/0；13 UI/1失败，完整学习流程通过，单次重启导航失败 |
+| fcac01b / [41194434948](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41194434948) | **93 XCTest/0；13 UI/0，success** |
 
 新增测试覆盖：原 URL 去重、非候选导入在库可见、探索双门禁和排除已使用、精确授权到期/离线/回拨/撤回/恢复、唯一段落锚点、具体句子、词条和最终复习事务故障、缓存删除保留、完整 eligible 缺状态报错、实际学习日、真实官方网络与429/timeout、到期/上限/跨日新周期、3504词分词及二分命中 measure、新模型磁盘重开。原61回归和两旧schema迁移没有删除或降级。
 
@@ -77,9 +83,9 @@ xcresult、完整 unit/UI 日志及 keepAlways 原生截图由现有 workflow �
 93 XCTest/13 UI的应用代码运行已验证最小学习闭环；这不代表整个 SPEC §25、M2–M5全量、iOS27/真机或独立验收通过。
 
 
-### UI 故障追踪（继续修复中）
+### 历史 UI 故障追踪（当时状态，后续通过见第7节）
 
-67174fb / run41179938274：91 XCTest/0，13 UI/5失败。原8 UI均继续通过；新用例失败集中在词元不可见和Toggle外层行点击。实际下载17b9dd2的artifact13034590947并解码zstd/AX记录：UITextView仍暴露段落，导入授权为0且保存disabled。改用UIView词级AX容器，明确隐藏TextView系统段落AX，布局后生成词元；测试点击内层原生switch，并增加即时值和保存成功精确断言，没有删除原失败断言。新增UIKit真实布局/glyph物理点击及标点拒绝回归。当前修复提交0e8a0ba4caef789512ea5b2e93ac9138b8b0c005的run41192856507运行中，不能预填通过。
+67174fb / run41179938274：91 XCTest/0，13 UI/5失败。原8 UI均继续通过；新用例失败集中在词元不可见和Toggle外层行点击。实际下载17b9dd2的artifact13034590947并解码zstd/AX记录：UITextView仍暴露段落，导入授权为0且保存disabled。改用UIView词级AX容器，明确隐藏TextView系统段落AX，布局后生成词元；测试点击内层原生switch，并增加即时值和保存成功精确断言，没有删除原失败断言。新增UIKit真实布局/glyph物理点击及标点拒绝回归。该阶段修复0e8a0ba4caef789512ea5b2e93ac9138b8b0c005的run41192856507当时尚未结束；后来结果为91 XCTest/0、13 UI/2失败，最终通过证据见第7节。
 
 
 ## 7. 已结束的应用代码最终验证
@@ -99,3 +105,6 @@ xcresult、完整 unit/UI 日志及 keepAlways 原生截图由现有 workflow �
 - [规则与排程](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Domain/Learning/LearningRules.swift)
 - [Round2 XCTest](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnTests/Round2Tests.swift)、[UI测试](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnUITests/LexiDawnUITests.swift)
 - [需求追踪](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/docs/requirements-traceability.md)、[测试计划](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/docs/test-plan.md)、[开发日志](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/docs/daily/2026-10-31-round-2.md)
+
+
+本文CI表为已经结束的应用代码运行记录。最终文档和测试定位增强提交自己的CI在交付答复单独列出；不将运行中状态预填为成功。后续独立验收应使用答复中的最终main SHA、Actions及artifact核对。

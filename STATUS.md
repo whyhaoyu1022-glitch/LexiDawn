@@ -1,5 +1,7 @@
 # 当前状态
 
+> 前半部分保留 Round 1 历史基线与不变量；当前生产功能、Round 2 验证结果和未完成项见文末及 Round 2 开发交付自述。
+
 - 2026-10-31：Round 1 第二次整改的适用代码、回归和证据已提交；等待下一次独立验收，不自称已满足整个 SPEC §25。
 - 起始 main：`b894bdacadbee3a52073f6c300ab043c7e43caa8`。旧基线 run40706618129 的25 XCTest/2 UI不是本次证明。
 - 代码 `309afe81aecfbfd84e5a9f52251c59f8e32c0575` 的 [run 41170754181](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41170754181) **success**：XCTest 61/0、XCUITest 8/0；UI用例合计 321.466 秒。artifact [13031277540](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41170754181/artifacts/13031277540)。
