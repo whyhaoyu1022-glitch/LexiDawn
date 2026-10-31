@@ -570,6 +570,12 @@ extension LexiDawnTests {
         XCTAssertThrowsError(try DailyStudyCycle(assignedLocalDate: "2026-10-26", assignedTimeZoneID: "invalid", articleID: "a1", createdAtUTC: now, updatedAtUTC: now, assignmentReason: "test"))
         XCTAssertThrowsError(try DailyStudyCycle(assignedLocalDate: "2026-10-26", assignedTimeZoneID: "UTC", articleID: "a1", articleTaskStatus: .completed, createdAtUTC: now, updatedAtUTC: now, assignmentReason: "test"))
         XCTAssertThrowsError(try DailyStudyCycle(assignedLocalDate: "2026-10-26", assignedTimeZoneID: "UTC", articleID: "a1", createdAtUTC: now, updatedAtUTC: now, completedAtUTC: now, assignmentReason: "test"))
+        XCTAssertThrowsError(try DailyStudyCycle(assignedLocalDate: "2026-10-26", assignedTimeZoneID: "UTC", articleID: "a1", createdAtUTC: now, updatedAtUTC: Date(timeIntervalSince1970: .infinity), assignmentReason: "test"))
+        XCTAssertThrowsError(try DailyStudyCycle(assignedLocalDate: "2026-10-26", assignedTimeZoneID: "UTC", articleID: "a1", createdAtUTC: now, updatedAtUTC: now, carryOverCount: 1, assignmentReason: "test"))
+        var overflow = try DailyStudyCycle(assignedLocalDate: "2026-10-26", assignedTimeZoneID: "UTC", articleID: "a1", createdAtUTC: now, updatedAtUTC: now, carryOverCount: Int.max, assignmentReason: "test", lastCarryOverLocalDate: "2026-10-27")
+        let before = overflow
+        XCTAssertThrowsError(try overflow.markCarryOverIfNeeded(for: "2026-10-28", calendar: utcCalendar, at: now.addingTimeInterval(86400 * 2)))
+        XCTAssertEqual(overflow, before)
         var cycle = try freshCycle()
         XCTAssertThrowsError(try cycle.update(task: .article, to: .failed, at: now))
         XCTAssertEqual(cycle.articleTaskStatus, .ready)
@@ -733,7 +739,7 @@ extension LexiDawnTests {
                 bodyText: body, contentStatus: status, topicTags: tags, cachePermission: cache,
                 imageLicenseID: imageLicense, sourceAttribution: "test", fullTextDisplayAllowed: displayAllowed, imageLicenseVerified: imageLicense != nil)
         }
-        let invalid = [candidate(tags: []), candidate(cache: nil), candidate(cache: .until(now)),
+        let invalid = [candidate(tags: []), candidate(cache: nil), candidate(cache: .until(now)), candidate(cache: .until(Date(timeIntervalSince1970: .infinity))),
             candidate(image: "file:///private/test", attribution: "test", imageLicense: "test"),
             candidate(image: "https://example.invalid/image"), candidate(verified: false), candidate(displayAllowed: false), candidate(body: nil), candidate(status: .partial)]
         for candidate in invalid { XCTAssertThrowsError(try dependencies.articleRepository.save(candidate: candidate, fetchedAt: now)) }
@@ -748,11 +754,11 @@ extension LexiDawnTests {
     func testCarryOverCountsSkippedCivilDatesAndNeverRecountsRollback() throws {
         var cycle = try freshCycle()
         let now = cycle.createdAtUTC.addingTimeInterval(86400 * 5)
-        XCTAssertTrue(cycle.markCarryOverIfNeeded(for: "2026-10-29", calendar: utcCalendar, at: now))
+        XCTAssertTrue(try cycle.markCarryOverIfNeeded(for: "2026-10-29", calendar: utcCalendar, at: now))
         XCTAssertEqual(cycle.carryOverCount, 3)
-        XCTAssertFalse(cycle.markCarryOverIfNeeded(for: "2026-10-27", calendar: utcCalendar, at: now))
-        XCTAssertFalse(cycle.markCarryOverIfNeeded(for: "2026-10-29", calendar: utcCalendar, at: now))
-        XCTAssertTrue(cycle.markCarryOverIfNeeded(for: "2026-10-30", calendar: utcCalendar, at: now))
+        XCTAssertFalse(try cycle.markCarryOverIfNeeded(for: "2026-10-27", calendar: utcCalendar, at: now))
+        XCTAssertFalse(try cycle.markCarryOverIfNeeded(for: "2026-10-29", calendar: utcCalendar, at: now))
+        XCTAssertTrue(try cycle.markCarryOverIfNeeded(for: "2026-10-30", calendar: utcCalendar, at: now))
         XCTAssertEqual(cycle.carryOverCount, 4)
     }
 
@@ -1059,7 +1065,7 @@ extension LexiDawnTests {
         var cycle = try freshCycle()
         let eventTime = cycle.createdAtUTC
         let refreshedAt = eventTime.addingTimeInterval(86400 * 2)
-        _ = cycle.markCarryOverIfNeeded(for: "2026-10-28", calendar: utcCalendar, at: refreshedAt)
+        _ = try cycle.markCarryOverIfNeeded(for: "2026-10-28", calendar: utcCalendar, at: refreshedAt)
         let proof = try ReviewQueueEvidence.evaluate(cycleID: cycle.cycleID, reader: FixtureReviewQueue(), at: eventTime)
         try cycle.resolveEmptyReview(proof)
         try cycle.completeReading(readingProof(articleID: cycle.articleID, at: eventTime))

@@ -281,7 +281,8 @@ final class PreferencesRepository {
         }
     }
     private func validate(_ preferences: UserPreferencesRecord) throws {
-        guard preferences.preferencesID == "default", preferences.schemaVersion == 1,
+        guard preferences.lastUpdatedAt.timeIntervalSince1970.isFinite,
+              preferences.preferencesID == "default", preferences.schemaVersion == 1,
                   (0...23).contains(preferences.dailyReadingReminderHour), (0...59).contains(preferences.dailyReadingReminderMinute),
                   (0...23).contains(preferences.dailyReviewReminderHour), (0...59).contains(preferences.dailyReviewReminderMinute),
                   ["device", "fixed"].contains(preferences.timeZonePolicy),

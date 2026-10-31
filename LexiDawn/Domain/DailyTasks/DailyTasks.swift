@@ -174,6 +174,7 @@ struct ArticleCandidate: Equatable, Sendable {
         func require(_ condition: Bool, _ message: String) throws {
             if !condition { throw DailyCycleServiceError.invalidCandidate(message) }
         }
+        try require(timestamp.timeIntervalSince1970.isFinite && (publishedAt?.timeIntervalSince1970.isFinite ?? true), "文章时间戳无效")
         try require(!id.isBlank && !title.isBlank && !sourceID.isBlank, "缺少 ID、标题或来源")
         try require(Self.isWebURL(canonicalURL), "canonicalURL 无效")
         try require(licenseVerified && !(licenseID?.isBlank ?? true), "许可尚未核验或缺少依据")
@@ -334,7 +335,9 @@ struct DailyStudyCycle: Equatable, Sendable {
         try require(Self.civilDate(assignedLocalDate) != nil, "分配日期格式错误")
         try require(TimeZone(identifier: assignedTimeZoneID) != nil, "时区无效")
         try require(!articleID.isBlank && !assignmentReason.isBlank, "缺少文章或指派原因")
+        try require(createdAtUTC.timeIntervalSince1970.isFinite && updatedAtUTC.timeIntervalSince1970.isFinite, "时间戳必须是有限值")
         try require(createdAtUTC <= updatedAtUTC && carryOverCount >= 0, "时间戳或跨日计数无效")
+        try require((carryOverCount == 0) == (lastCarryOverLocalDate == nil), "跨日计数与高水位日期不一致")
         if let lastCarryOverLocalDate {
             try require(Self.civilDate(lastCarryOverLocalDate) != nil && lastCarryOverLocalDate > assignedLocalDate, "跨日日期无效")
         }
@@ -498,14 +501,16 @@ struct DailyStudyCycle: Equatable, Sendable {
         self = next
     }
 
-    mutating func markCarryOverIfNeeded(for localDate: String, calendar: Calendar, at timestamp: Date) -> Bool {
+    mutating func markCarryOverIfNeeded(for localDate: String, calendar: Calendar, at timestamp: Date) throws -> Bool {
         // Count traversed civil study dates, with a monotone high-water mark; DST is not 86400-second arithmetic.
         let previous = lastCarryOverLocalDate ?? assignedLocalDate
         guard hasOutstandingWork, timestamp >= updatedAtUTC,
               let start = Self.civilDate(previous), let end = Self.civilDate(localDate), end > start else { return false }
         let civilCalendar = Self.civilCalendar
         let days = civilCalendar.dateComponents([.day], from: start, to: end).day ?? 0
-        carryOverCount += days
+        let (nextCount, overflow) = carryOverCount.addingReportingOverflow(days)
+        guard !overflow else { throw TaskStatusError.invalidState("跨日计数超出范围，原记录已保留") }
+        carryOverCount = nextCount
         lastCarryOverLocalDate = localDate
         updatedAtUTC = timestamp
         return true
@@ -518,6 +523,7 @@ struct DailyStudyCycle: Equatable, Sendable {
     }
 
     static func civilDate(_ value: String) -> Date? {
+        guard value.count == 10 else { return nil }
         let formatter = DateFormatter()
         formatter.calendar = civilCalendar
         formatter.timeZone = civilCalendar.timeZone
@@ -574,12 +580,13 @@ final class DailyCycleService {
         calendar: Calendar,
         assignmentReason: String = "daily-required"
     ) throws -> DailyCycleProvisioningResult {
+        guard now.timeIntervalSince1970.isFinite else { throw TaskStatusError.invalidState("当前时间无效") }
         var workingCalendar = Calendar(identifier: .gregorian)
         workingCalendar.timeZone = timeZone
         let studyDate = Self.studyDate(for: now, calendar: workingCalendar)
 
         if var incomplete = try cycleStore.fetchEarliestIncomplete() {
-            if incomplete.markCarryOverIfNeeded(for: studyDate, calendar: workingCalendar, at: now) {
+            if try incomplete.markCarryOverIfNeeded(for: studyDate, calendar: workingCalendar, at: now) {
                 try cycleStore.save(incomplete)
             }
             return .cycle(incomplete, created: false)
@@ -694,7 +701,8 @@ enum ArticleCachePermission: Equatable, Sendable, Codable {
     case persistent
     case until(Date)
     func permits(at timestamp: Date) -> Bool {
-        switch self { case .persistent: return true; case let .until(expiry): return expiry > timestamp }
+        guard timestamp.timeIntervalSince1970.isFinite else { return false }
+        switch self { case .persistent: return true; case let .until(expiry): return expiry.timeIntervalSince1970.isFinite && expiry > timestamp }
     }
 }
 
@@ -713,7 +721,7 @@ struct ReadingCompletionEvidence: Equatable, Sendable, Codable {
     }
 
     func validate(articleID: String, createdAt: Date, updatedAt: Date) throws {
-        guard self.articleID == articleID, !articleID.isBlank,
+        guard confirmedAt.timeIntervalSince1970.isFinite, self.articleID == articleID, !articleID.isBlank,
               bodyHash.count == 64, bodyHash.allSatisfy({ $0.isHexDigit }),
               progress.isFinite, (0...1).contains(progress),
               confirmation == .manualConfirmation || progress >= 0.9,
@@ -761,7 +769,7 @@ struct ReviewQueueEvidence: Equatable, Sendable, Codable {
     }
 
     func validate(cycleID: UUID, createdAt: Date, updatedAt: Date) throws {
-        guard self.cycleID == cycleID, !sourceRevision.isBlank, eligibleCount == 0, completeSnapshot,
+        guard evaluatedAt.timeIntervalSince1970.isFinite, self.cycleID == cycleID, !sourceRevision.isBlank, eligibleCount == 0, completeSnapshot,
               evaluatedAt >= createdAt, evaluatedAt <= updatedAt else { throw TaskStatusError.verifiedEvidenceRequired }
     }
 }
@@ -795,7 +803,7 @@ struct ReviewSessionResult: Equatable, Sendable, Codable {
     var clozeComplete: Bool { Set(clozeQuestionIDs) == Set(clozeAnsweredIDs) }
     var isComplete: Bool { matchingComplete && clozeComplete }
     func validate(cycleID: UUID, createdAt: Date, updatedAt: Date) throws {
-        guard self.cycleID == cycleID, !sourceRevision.isBlank,
+        guard recordedAt.timeIntervalSince1970.isFinite, self.cycleID == cycleID, !sourceRevision.isBlank,
               recordedAt >= createdAt, recordedAt <= updatedAt else { throw TaskStatusError.verifiedEvidenceRequired }
         guard clozeAnsweredIDs.isEmpty || matchingComplete else { throw TaskStatusError.verifiedEvidenceRequired }
         for (questions, answers) in [(matchingQuestionIDs, matchingAnsweredIDs), (clozeQuestionIDs, clozeAnsweredIDs)] {
