@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+@testable import LexiDawn
 
 // Frozen stored properties from public Git commits; keep these schemas unchanged.
 // Source: c13906ae66515c29cb9a602da061caf810a62ade, LexiDawn/Data/PersistenceModels.swift
