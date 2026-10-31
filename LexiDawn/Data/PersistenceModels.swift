@@ -14,6 +14,9 @@ final class ArticleRecord {
     var licenseVerified: Bool
     var bodyText: String?
     var bodyHash: String?
+    var cachePermissionData: Data?
+    var imageLicenseID: String?
+    var sourceAttribution: String?
     var wordCount: Int
     var estimatedReadMinutes: Int
     var topicTags: [String]
@@ -57,6 +60,9 @@ final class ArticleRecord {
         self.licenseVerified = licenseVerified
         self.bodyText = bodyText
         self.bodyHash = bodyHash
+        self.cachePermissionData = nil
+        self.imageLicenseID = nil
+        self.sourceAttribution = nil
         self.wordCount = wordCount
         self.estimatedReadMinutes = estimatedReadMinutes
         self.topicTags = topicTags
@@ -91,8 +97,13 @@ final class DailyStudyCycleRecord {
     var reviewTaskReason: String?
     var matchingStageReason: String?
     var clozeStageReason: String?
+    var readingEvidenceData: Data?
+    var reviewEvidenceData: Data?
+    var reviewProgressData: Data?
+    var recoveryArchiveData: Data?
 
-    init(cycle: DailyStudyCycle) {
+    init(cycle: DailyStudyCycle) throws {
+        try cycle.validate()
         self.cycleID = cycle.cycleID.uuidString
         self.assignedLocalDate = cycle.assignedLocalDate
         self.assignedTimeZoneID = cycle.assignedTimeZoneID
@@ -113,9 +124,17 @@ final class DailyStudyCycleRecord {
         self.reviewTaskReason = cycle.reviewTaskReason
         self.matchingStageReason = cycle.matchingStageReason
         self.clozeStageReason = cycle.clozeStageReason
+        self.readingEvidenceData = try cycle.readingEvidence.map { try JSONEncoder().encode($0) }
+        self.reviewEvidenceData = try cycle.reviewEvidence.map { try JSONEncoder().encode($0) }
+        self.reviewProgressData = try cycle.reviewProgress.map { try JSONEncoder().encode($0) }
+        self.recoveryArchiveData = nil
     }
 
-    func apply(_ cycle: DailyStudyCycle) {
+    func apply(_ cycle: DailyStudyCycle) throws {
+        try cycle.validate()
+        reviewProgressData = try cycle.reviewProgress.map { try JSONEncoder().encode($0) }
+        readingEvidenceData = try cycle.readingEvidence.map { try JSONEncoder().encode($0) }
+        reviewEvidenceData = try cycle.reviewEvidence.map { try JSONEncoder().encode($0) }
         assignedLocalDate = cycle.assignedLocalDate
         assignedTimeZoneID = cycle.assignedTimeZoneID
         articleID = cycle.articleID
@@ -146,7 +165,7 @@ final class DailyStudyCycleRecord {
               let clozeStatus = TaskStatus(rawValue: clozeStageStatusRaw) else {
             throw PersistenceError.invalidCycleRecord(rawCycleID)
         }
-        return DailyStudyCycle(
+        return try DailyStudyCycle(
             cycleID: cycleID,
             assignedLocalDate: assignedLocalDate,
             assignedTimeZoneID: assignedTimeZoneID,
@@ -166,7 +185,10 @@ final class DailyStudyCycleRecord {
             articleTaskReason: articleTaskReason,
             reviewTaskReason: reviewTaskReason,
             matchingStageReason: matchingStageReason,
-            clozeStageReason: clozeStageReason
+            clozeStageReason: clozeStageReason,
+            readingEvidence: try readingEvidenceData.map { try JSONDecoder().decode(ReadingCompletionEvidence.self, from: $0) },
+            reviewEvidence: try reviewEvidenceData.map { try JSONDecoder().decode(ReviewQueueEvidence.self, from: $0) },
+            reviewProgress: try reviewProgressData.map { try JSONDecoder().decode(ReviewSessionResult.self, from: $0) }
         )
     }
 }
@@ -175,6 +197,7 @@ final class DailyStudyCycleRecord {
 final class UserPreferencesRecord {
     @Attribute(.unique) var preferencesID: String
     var schemaVersion: Int
+    var ageRange: String?
     var displayName: String
     var learningGoal: String
     var interestTopics: [String]
@@ -205,6 +228,7 @@ final class UserPreferencesRecord {
         preferencesID: String = "default",
         schemaVersion: Int = 1,
         displayName: String = "",
+        ageRange: String? = nil,
         learningGoal: String = "提升英文阅读能力",
         interestTopics: [String] = [],
         dailyReadingReminderEnabled: Bool = true,
@@ -217,13 +241,13 @@ final class UserPreferencesRecord {
         fixedTimeZoneID: String? = nil,
         autoAddOnWordTap: Bool = true,
         defaultPronunciation: String = "system",
-        readerFontSize: Double = 18,
-        readerLineSpacing: Double = 1.2,
+        readerFontSize: Double = 19,
+        readerLineSpacing: Double = 1.5,
         readerTheme: String = "system",
         showChineseSummary: Bool = true,
-        dailyReviewLimit: Int = 20,
-        matchingPairCount: Int = 5,
-        clozeQuestionCount: Int = 5,
+        dailyReviewLimit: Int = 12,
+        matchingPairCount: Int = 6,
+        clozeQuestionCount: Int = 4,
         clozeDifficulty: String = "adaptive",
         aiEnabled: Bool = false,
         aiResponseLanguage: String = "zh-Hans",
@@ -233,6 +257,7 @@ final class UserPreferencesRecord {
         self.preferencesID = preferencesID
         self.schemaVersion = schemaVersion
         self.displayName = displayName
+        self.ageRange = ageRange
         self.learningGoal = learningGoal
         self.interestTopics = interestTopics
         self.dailyReadingReminderEnabled = dailyReadingReminderEnabled
@@ -265,13 +290,88 @@ enum PersistenceError: Error, Equatable, LocalizedError {
     case missingPreferences
     case duplicateAssignedDate(String)
     case duplicateCanonicalURL(String)
+    case integrity(String)
 
     var errorDescription: String? {
         switch self {
+        case let .integrity(reason): return "数据一致性检查失败：\(reason)。原记录保留，请勿删除数据库。"
         case let .invalidCycleRecord(id): return "学习周期数据无效：\(id)"
         case .missingPreferences: return "未找到用户偏好设置"
         case let .duplicateAssignedDate(date): return "本地学习日期已有周期：\(date)"
         case let .duplicateCanonicalURL(url): return "文章 canonicalURL 重复：\(url)"
         }
+    }
+}
+
+/// A lossless archive of cycle scalar fields before a conservative legacy repair.
+struct CycleRecoveryArchive: Codable {
+    let cycleID: String
+    let articleID: String
+    let assignedLocalDate: String
+    let assignedTimeZoneID: String
+    let statuses: [String]
+    let reasons: [String?]
+    let createdAtUTC: Date
+    let updatedAtUTC: Date
+    let completedAtUTC: Date?
+    let carryOverCount: Int
+    let lastCarryOverLocalDate: String?
+    let assignmentReason: String
+    let completionReason: String?
+    let isCurrent: Bool
+    let readingEvidenceData: Data?
+    let reviewEvidenceData: Data?
+    let repairedAt: Date
+
+    init(_ record: DailyStudyCycleRecord, at timestamp: Date) {
+        cycleID = record.cycleID; articleID = record.articleID
+        assignedLocalDate = record.assignedLocalDate; assignedTimeZoneID = record.assignedTimeZoneID
+        statuses = [record.articleTaskStatusRaw, record.reviewTaskStatusRaw, record.matchingStageStatusRaw, record.clozeStageStatusRaw]
+        reasons = [record.articleTaskReason, record.reviewTaskReason, record.matchingStageReason, record.clozeStageReason]
+        createdAtUTC = record.createdAtUTC; updatedAtUTC = record.updatedAtUTC; completedAtUTC = record.completedAtUTC
+        carryOverCount = record.carryOverCount; lastCarryOverLocalDate = record.lastCarryOverLocalDate
+        assignmentReason = record.assignmentReason; completionReason = record.completionReason; isCurrent = record.isCurrent
+        readingEvidenceData = record.readingEvidenceData; reviewEvidenceData = record.reviewEvidenceData; repairedAt = timestamp
+    }
+}
+
+extension DailyStudyCycleRecord {
+    /// Only known legacy defects are repaired. Unknown enums, malformed proof data,
+    /// invalid identity/time fields and missing articles stop recovery without deleting data.
+    func repairKnownLegacyState(at timestamp: Date) throws -> Bool {
+        if (try? domain()) != nil { return false }
+        let raws = [articleTaskStatusRaw, reviewTaskStatusRaw, matchingStageStatusRaw, clozeStageStatusRaw]
+        guard raws.allSatisfy({ TaskStatus(rawValue: $0) != nil }),
+              readingEvidenceData == nil, reviewEvidenceData == nil, reviewProgressData == nil else {
+            throw PersistenceError.invalidCycleRecord(cycleID)
+        }
+        let archive = try JSONEncoder().encode(CycleRecoveryArchive(self, at: timestamp))
+        let explanation = "历史状态缺少可验证的完成依据，原始状态已保留；功能接入前尚不能恢复学习"
+        if articleTaskStatusRaw == "deferred" || articleTaskStatusRaw == "completed" || articleTaskStatusRaw == "locked" {
+            articleTaskStatusRaw = "blocked"; articleTaskReason = explanation
+        }
+        if reviewTaskStatusRaw == "deferred" || reviewTaskStatusRaw == "completed" {
+            reviewTaskStatusRaw = "blocked"; reviewTaskReason = explanation
+        }
+        if matchingStageStatusRaw == "deferred" || matchingStageStatusRaw == "completed" {
+            matchingStageStatusRaw = "blocked"; matchingStageReason = explanation
+        }
+        if clozeStageStatusRaw == "deferred" || clozeStageStatusRaw == "completed" {
+            clozeStageStatusRaw = "blocked"; clozeStageReason = explanation
+        }
+        if ["blocked", "failed"].contains(articleTaskStatusRaw), articleTaskReason?.isBlank ?? true { articleTaskReason = explanation }
+        if ["blocked", "failed"].contains(reviewTaskStatusRaw), reviewTaskReason?.isBlank ?? true { reviewTaskReason = explanation }
+        if ["blocked", "failed"].contains(matchingStageStatusRaw), matchingStageReason?.isBlank ?? true { matchingStageReason = explanation }
+        if ["blocked", "failed"].contains(clozeStageStatusRaw), clozeStageReason?.isBlank ?? true { clozeStageReason = explanation }
+        if ["ready", "inProgress"].contains(articleTaskStatusRaw) { articleTaskReason = nil }
+        if ["ready", "inProgress"].contains(reviewTaskStatusRaw) { reviewTaskReason = nil }
+        if ["ready", "inProgress"].contains(matchingStageStatusRaw) { matchingStageReason = nil }
+        if ["ready", "inProgress"].contains(clozeStageStatusRaw) { clozeStageReason = nil }
+        completedAtUTC = nil; completionReason = nil
+        // Preserve chronology and the user's assignment; original completion/progress remains in the archive.
+        updatedAtUTC = max(updatedAtUTC, timestamp)
+        if recoveryArchiveData == nil { recoveryArchiveData = archive }
+        _ = try domain()
+        return true
     }
 }

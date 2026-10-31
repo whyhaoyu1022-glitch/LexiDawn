@@ -1,14 +1,14 @@
 # 架构
 
-Round 1 按 SPEC §15.1–15.5 保留原生 SwiftUI 与 SwiftData，并把每日任务规则放到可独立测试的 Domain 层。UI 不再创建或去重周期；它通过依赖容器使用 Repository 和 `DailyCycleService`。
+依据 SPEC §15.3：“数据修改通过 Repository / Use Case 统一执行。”保留 SwiftUI / Domain / Repository / SwiftData 分层，所有服务和 Repository 在 MainActor 同步调用。
 
-- `LexiDawn/Domain/DailyTasks/DailyTasks.swift`：`TaskStatus`、合法迁移、`DailyStudyCycle`、候选文章协议与每日周期服务。学习日期由注入的本地时区和 Calendar 计算，时间戳仍为 UTC；跨日计数使用 `lastCarryOverLocalDate` 幂等更新。
-- `LexiDawn/Data/PersistenceModels.swift`：`ArticleRecord`、`DailyStudyCycleRecord`、`UserPreferencesRecord`。文章保存展示标题、难度、图片署名、许可和正文可用性；周期保存 `completionReason`、当前标记和任务原因；状态以 raw value 保存，偏好包含 schemaVersion 和规格默认值，不保存 API Key。
-- `LexiDawn/Data/Repositories.swift`：SwiftData Repository，负责规范化 URL、候选去重、同一学习日期防重复、唯一当前标记、保存失败传播和偏好默认记录创建。周期与文章通过同一 `ModelContext.save()` 边界创建；SwiftData 当前没有跨进程事务接口，失败时调用 rollback。生产候选 provider 为空时返回明确的无候选结果；测试使用显式 `FixtureArticleCandidateProvider`。
-- `LexiDawn/AppCore/DependencyContainer.swift`：创建共享 ModelContainer、Repository 和 Domain service；应用与测试均可注入独立的内存容器。
-- `LexiDawn/Features/Today/TodayFeature.swift`：`TodayViewModel` 读取真实周期与文章记录并暴露 loading、无候选、失败、保存失败和周期状态；`TodayView` 只呈现状态并发出状态迁移意图。
-- `LexiDawn/RootTabView.swift`：保留“今日、探索、词汇、复习、我的”顺序，其余入口继续诚实显示未接入模块。
+- Domain：`DailyStudyCycle` 可抛错初始化、只读对外状态和统一 `validate()`。通用更新不能 completed/deferred。阅读完成需文章 ID、内容哈希、有效进度及明确确认；手动确认允许低进度，不增加查词要求。复习空队列只由完整可复习集合的 reader 生成绑定 cycleID/版本/时间的证据，三个复习状态一次性解析；不可用 reader 抛错。正常/部分复习结果由固定会话题目与已答 ID 的结构化结果约束。生产未实现这些模块，不产生伪结果。
+- Data：新增字段均可选，保留原有字段/实体。Record.domain() 走同一领域验证。已知旧 deferred/无证据完成状态在显式恢复事务中存档全部原标量与证据后变成说明清楚的 blocked；无法辨认的状态或关联异常终止恢复，不删除或合并数据。
+- Repository：`RepositoryWriter` 关闭 autosave，每次同步写入统一 save/catch/rollback。创建必须同一上下文写文章和周期；移除非原子 fallback。普通保存验证文章存在、身份不变、日期/文章指派唯一、状态不回退、完成证据和内容版本匹配。current 总是最早未完成周期；历史多个未完成记录保留。文章相同 ID 仅接受完全相同快照重试，不覆盖已分配正文。
+- Article：Candidate 负责许可/缓存期限、来源与图片署名、HTTP(S) URL、正文/主题门禁；正文 SHA-256、英文词数和按 200 词/分钟估算阅读时间由正文计算。所有 Repository 文章入口复用门禁。历史缺少缓存权利的文章不推断获得许可，后续阅读器必须重新核验。
+- AppCore：生产打开原默认数据库 URL，先创建父目录并保留一次升级前数据库/WAL/SHM 冷启动备份；自动轻量迁移仅新增可选列。不支持活动外部写入下文件备份；当前无 extension/后台独立写进程。打开失败提供真实重试，无删除重建分支。
+- Today：读取偏好固定/设备时区；统一使用 Gregorian yyyy-MM-dd 学习日期。显示四任务原因；未接入操作 disabled，说明当前尚不能恢复学习。“重新读取已保存状态”只重读/执行安全恢复；启动“重新打开存储”重新执行初始化。
 
-周期完成条件是文章状态必须为 `completed`，复习及两个阶段为 `completed` 或带原因的合法 `deferred`。文章不得 deferred；`blocked`、`failed`、`ready` 和 `inProgress` 不会被误认为完成。候选文章必须通过 URL、标题、来源、许可核验和可用正文门禁，不能用 UI 或生产 fixture 生成伪文章。
+保障范围：同一应用单一容器、串行 MainActor Repository 是受支持写入口。不同 context 的顺序读取有测试；没有对多容器/跨进程竞争作数据库唯一约束承诺。唯一性使用同一同步 unit of work 的事务性去重，不能把主线程串行解释成跨进程锁。Preferences 仍返回托管记录，调用者必须在同一同步编辑/保存操作中完成；不要跨 await 保留未提交编辑或混入其他写事务。
 
-SwiftData 当前采用默认本地容器；新增可选字段和默认值用于轻量迁移，旧数据中的缺省 `completionReason` 保持为空。当前周期唯一性和日期/URL 去重由 Repository 在单一 ModelContext 内维护；并发跨进程写入不由 SwiftData 当前 API 保证，失败窗口与回滚行为记录在整改报告中。常规 Debug/Release 产品 Deployment Target 仍为 iOS 27.0；CI 在 checkout 中临时使用 iOS 26.5 兼容目标，并保存 XCTest/XCUITest 的 `.xcresult` artifact。
+迁移支持范围与计数语义见 ADR-004–007；实际升级成功必须以两个历史 schema 磁盘测试为准，当前模型重开测试不能替代迁移测试。

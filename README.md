@@ -18,3 +18,8 @@ GitHub Actions 先使用 `build-for-testing` 和 `generic/platform=iOS Simulator
 ## 交付边界
 
 模拟器/未签名构建与可安装签名 IPA 分开记录。Windows + AltServer/AltStore 路径和免费 Apple ID 限制见 [docs/signing.md](docs/signing.md)。
+
+
+## Round 1 第二次整改状态
+
+2026-10-31 开始对第二次独立审核实施整改。当前源码新增领域证据、严格状态恢复、统一回滚、两版旧模型升级回归和 UI 禁用/错误说明测试；本地无 Swift/Xcode，尚未取得本次 Actions 的执行结论。准确状态见 [STATUS.md](STATUS.md) 和 [测试计划](docs/test-plan.md)。生产候选与阅读/复习模块仍未接入，测试 fixture 不作为真实内容或授权来源。

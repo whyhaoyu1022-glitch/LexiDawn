@@ -7,7 +7,7 @@
   A00000000000000000000002 /* LexiDawn */ = { isa = PBXGroup; children = (A00000000000000000000004, A00000000000000000000005, A00000000000000000000006, A00000000000000000000007); sourceTree = "<group>"; };
   A00000000000000000000003 /* Products */ = { isa = PBXGroup; children = (A00000000000000000000050, A00000000000000000000051, A00000000000000000000052); name = Products; sourceTree = "<group>"; };
   A00000000000000000000004 /* App Sources */ = { isa = PBXGroup; children = (A00000000000000000000011, A00000000000000000000012, A00000000000000000000015, A00000000000000000000016, A00000000000000000000017, A00000000000000000000018, A00000000000000000000019, A0000000000000000000001A); path = LexiDawn; sourceTree = "<group>"; };
-  A00000000000000000000005 /* Unit Tests */ = { isa = PBXGroup; children = (A00000000000000000000013); path = LexiDawnTests; sourceTree = "<group>"; };
+  A00000000000000000000005 /* Unit Tests */ = { isa = PBXGroup; children = (A00000000000000000000013, B00000000000000000000001); path = LexiDawnTests; sourceTree = "<group>"; };
   A00000000000000000000006 /* UI Tests */ = { isa = PBXGroup; children = (A00000000000000000000014); path = LexiDawnUITests; sourceTree = "<group>"; };
   A00000000000000000000007 /* Frameworks */ = { isa = PBXGroup; children = (); name = Frameworks; sourceTree = "<group>"; };
   A00000000000000000000011 /* LexiDawnApp.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LexiDawnApp.swift; sourceTree = "<group>"; };
@@ -19,6 +19,8 @@
   A00000000000000000000019 /* DependencyContainer.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCore/DependencyContainer.swift; sourceTree = "<group>"; };
   A0000000000000000000001A /* TodayFeature.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Today/TodayFeature.swift; sourceTree = "<group>"; };
   A00000000000000000000013 /* LexiDawnTests.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LexiDawnTests.swift; sourceTree = "<group>"; };
+  B00000000000000000000001 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationFixtures.swift; sourceTree = "<group>"; };
+  B00000000000000000000002 = { isa = PBXBuildFile; fileRef = B00000000000000000000001; };
   A00000000000000000000014 /* LexiDawnUITests.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LexiDawnUITests.swift; sourceTree = "<group>"; };
   A00000000000000000000050 /* LexiDawn.app */ = { isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LexiDawn.app; sourceTree = BUILT_PRODUCTS_DIR; };
   A00000000000000000000051 /* LexiDawnTests.xctest */ = { isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LexiDawnTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -32,7 +34,7 @@
   A00000000000000000000076 /* Repositories.swift */ = { isa = PBXBuildFile; fileRef = A00000000000000000000018; };
   A00000000000000000000077 /* DependencyContainer.swift */ = { isa = PBXBuildFile; fileRef = A00000000000000000000019; };
   A00000000000000000000078 /* TodayFeature.swift */ = { isa = PBXBuildFile; fileRef = A0000000000000000000001A; };
-  A00000000000000000000064 /* Unit Sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000065); runOnlyForDeploymentPostprocessing = 0; };
+  A00000000000000000000064 /* Unit Sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000065, B00000000000000000000002); runOnlyForDeploymentPostprocessing = 0; };
   A00000000000000000000065 /* LexiDawnTests.swift */ = { isa = PBXBuildFile; fileRef = A00000000000000000000013; };
   A00000000000000000000066 /* UI Sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000067); runOnlyForDeploymentPostprocessing = 0; };
   A00000000000000000000067 /* LexiDawnUITests.swift */ = { isa = PBXBuildFile; fileRef = A00000000000000000000014; };
@@ -49,7 +51,7 @@
   A00000000000000000000021 = { isa = XCConfigurationList; buildConfigurations = (A00000000000000000000024, A00000000000000000000025); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
   A00000000000000000000031 = { isa = XCConfigurationList; buildConfigurations = (A00000000000000000000026, A00000000000000000000027); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
   A00000000000000000000041 = { isa = XCConfigurationList; buildConfigurations = (A00000000000000000000028, A00000000000000000000029); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
-  A00000000000000000000022 = { isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; SWIFT_VERSION = 5.0; }; name = Debug; };
+  A00000000000000000000022 = { isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; SWIFT_VERSION = 5.0; SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG"; }; name = Debug; };
   A00000000000000000000023 = { isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; SWIFT_VERSION = 5.0; }; name = Release; };
   A00000000000000000000024 = { isa = XCBuildConfiguration; buildSettings = { PRODUCT_BUNDLE_IDENTIFIER = com.lexidawn.app; PRODUCT_NAME = LexiDawn; INFOPLIST_KEY_CFBundleDisplayName = LexiDawn; GENERATE_INFOPLIST_FILE = YES; MARKETING_VERSION = 0.1.0; CURRENT_PROJECT_VERSION = 1; IPHONEOS_DEPLOYMENT_TARGET = 27.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
   A00000000000000000000025 = { isa = XCBuildConfiguration; buildSettings = { PRODUCT_BUNDLE_IDENTIFIER = com.lexidawn.app; PRODUCT_NAME = LexiDawn; INFOPLIST_KEY_CFBundleDisplayName = LexiDawn; GENERATE_INFOPLIST_FILE = YES; MARKETING_VERSION = 0.1.0; CURRENT_PROJECT_VERSION = 1; IPHONEOS_DEPLOYMENT_TARGET = 27.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };

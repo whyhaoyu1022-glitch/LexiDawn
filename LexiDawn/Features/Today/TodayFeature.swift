@@ -23,6 +23,7 @@ final class TodayViewModel: ObservableObject {
     private let dependencies: AppDependencies
     private let now: () -> Date
     private var pendingSave: PendingTaskUpdate?
+    private var selectedTimeZone: TimeZone?
 
     private struct PendingTaskUpdate {
         let cycleID: UUID
@@ -40,13 +41,18 @@ final class TodayViewModel: ObservableObject {
         state = .loading
         let timestamp = now()
         do {
+            let preferences = try dependencies.preferencesRepository.load()
+            if preferences.timeZonePolicy == "fixed" {
+                guard let zone = TimeZone(identifier: preferences.fixedTimeZoneID ?? "") else { throw DailyCycleServiceError.invalidTimeZone(preferences.fixedTimeZoneID ?? "") }
+                selectedTimeZone = zone
+            } else { selectedTimeZone = dependencies.timeZone }
+            try dependencies.cycleRepository.recoverLegacyRecords(at: timestamp)
             // Round 1 has no reader or exercise screen yet. If an older build
-            // left a task in progress, make the blocked state explicit and
-            // recoverable instead of leaving a task permanently in progress.
+            // left a task in progress, make the blocked state explicit instead of leaving a task permanently in progress.
             _ = try dependencies.cycleService.recoverUnavailableInProgressTasks(at: timestamp)
             let result = try dependencies.cycleService.ensureCurrentCycle(
                 now: timestamp,
-                timeZone: dependencies.timeZone,
+                timeZone: selectedTimeZone ?? dependencies.timeZone,
                 calendar: dependencies.calendar
             )
             switch result {
@@ -110,7 +116,7 @@ final class TodayViewModel: ObservableObject {
 
     private func calendarForCurrentTimeZone() -> Calendar {
         var calendar = dependencies.calendar
-        calendar.timeZone = dependencies.timeZone
+        calendar.timeZone = selectedTimeZone ?? dependencies.timeZone
         return calendar
     }
 }
@@ -134,6 +140,7 @@ struct TodayView: View {
             .navigationTitle("今日")
             .task { viewModel.load() }
             .refreshable { viewModel.load() }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in viewModel.load() }
         }
     }
 
@@ -189,10 +196,10 @@ struct TodayView: View {
                     .font(.subheadline)
             }
 
-            TaskStatusRow(title: "阅读任务", status: snapshot.cycle.articleTaskStatus)
-            TaskStatusRow(title: "复习任务", status: snapshot.cycle.reviewTaskStatus)
-            TaskStatusRow(title: "连线阶段", status: snapshot.cycle.matchingStageStatus)
-            TaskStatusRow(title: "拼写补全阶段", status: snapshot.cycle.clozeStageStatus)
+            TaskStatusRow(title: "阅读任务", status: snapshot.cycle.articleTaskStatus, reason: snapshot.cycle.articleTaskReason, task: .article)
+            TaskStatusRow(title: "复习任务", status: snapshot.cycle.reviewTaskStatus, reason: snapshot.cycle.reviewTaskReason, task: .review)
+            TaskStatusRow(title: "连线阶段", status: snapshot.cycle.matchingStageStatus, reason: snapshot.cycle.matchingStageReason, task: .matching)
+            TaskStatusRow(title: "拼写补全阶段", status: snapshot.cycle.clozeStageStatus, reason: snapshot.cycle.clozeStageReason, task: .cloze)
 
             if snapshot.cycle.isComplete {
                 Label("本周期已完成", systemImage: "checkmark.seal.fill")
@@ -208,39 +215,32 @@ struct TodayView: View {
         .accessibilityElement(children: .contain)
     }
 
-    @ViewBuilder
     private func actionButtons(_ cycle: DailyStudyCycle) -> some View {
         VStack(alignment: .leading, spacing: LexiDawnSpacing.sm) {
-            if cycle.articleTaskStatus == .ready {
-                Button("开始阅读（未接入）") { viewModel.start(task: .article) }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(true)
-                    .accessibilityHint("阅读器尚未接入，不会改变任务状态")
-            } else if cycle.articleTaskStatus == .inProgress || cycle.articleTaskStatus == .blocked {
-                Text("阅读器尚未接入；任务保持可恢复的阻塞状态。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            if cycle.reviewTaskStatus == .ready {
-                Button("开始复习（未接入）") { viewModel.start(task: .review) }
+            ForEach(DailyTask.allCases, id: \.rawValue) { task in
+                Button(buttonTitle(task)) { viewModel.start(task: task) }
                     .buttonStyle(.bordered)
                     .disabled(true)
-                    .accessibilityHint("复习流程尚未接入，不会改变任务状态")
+                    .accessibilityIdentifier("unavailable-\(task.rawValue)")
+                    .accessibilityHint("功能尚未接入，不会改变任务状态")
             }
-            if cycle.matchingStageStatus == .ready {
-                Button("开始连线阶段（未接入）") { viewModel.start(task: .matching) }
-                    .buttonStyle(.bordered)
-                    .disabled(true)
-                    .accessibilityHint("连线题尚未接入，不会改变任务状态")
-            }
-            if cycle.clozeStageStatus == .ready {
-                Button("开始拼写补全（未接入）") { viewModel.start(task: .cloze) }
-                    .buttonStyle(.bordered)
-                    .disabled(true)
-                    .accessibilityHint("拼写补全题尚未接入，不会改变任务状态")
-            }
+            Text("阅读器和复习功能尚未接入，当前尚不能恢复学习；任务和原文章将继续保留。")
+                .font(.footnote).foregroundStyle(.secondary)
+                .accessibilityIdentifier("unavailable-explanation")
+            Button("重新读取已保存状态") { viewModel.load() }
+                .accessibilityIdentifier("reload-cycle")
         }
     }
+
+    private func buttonTitle(_ task: DailyTask) -> String {
+        switch task {
+        case .article: return "开始阅读（未接入）"
+        case .review: return "开始复习（未接入）"
+        case .matching: return "开始连线阶段（未接入）"
+        case .cloze: return "开始拼写补全（未接入）"
+        }
+    }
+
 }
 
 private struct StatusBadge: View {
@@ -270,12 +270,21 @@ private struct StatusBadge: View {
 private struct TaskStatusRow: View {
     let title: String
     let status: TaskStatus
+    let reason: String?
+    let task: DailyTask
 
     var body: some View {
-        HStack {
-            Text(title)
-            Spacer()
-            Text(status.displayName).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(title)
+                Spacer()
+                Text(status.displayName).foregroundStyle(.secondary)
+                    .accessibilityIdentifier("status-\(task.rawValue)")
+            }
+            if let reason {
+                Text(reason).font(.footnote).foregroundStyle(.secondary)
+                    .accessibilityIdentifier("reason-\(task.rawValue)")
+            }
         }
         .font(.subheadline)
     }

@@ -111,7 +111,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone \
             -parallel-testing-enabled NO \
             -resultBundlePath "${RUNNER_TEMP}/LexiDawn-unit.xcresult" \
-            -only-testing:LexiDawnTests test
+            -only-testing:LexiDawnTests test 2>&1 | tee "${RUNNER_TEMP}/LexiDawn-unit.log"
       - name: Run UI tests on concrete simulator
         shell: bash
         run: |
@@ -123,7 +123,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone \
             -parallel-testing-enabled NO \
             -resultBundlePath "${RUNNER_TEMP}/LexiDawn-ui.xcresult" \
-            -only-testing:LexiDawnUITests test
+            -only-testing:LexiDawnUITests test 2>&1 | tee "${RUNNER_TEMP}/LexiDawn-ui.log"
       - name: Upload test result bundles
         if: always()
         uses: actions/upload-artifact@v4
@@ -132,4 +132,6 @@ jobs:
           path: |
             ${{ runner.temp }}/LexiDawn-unit.xcresult
             ${{ runner.temp }}/LexiDawn-ui.xcresult
+            ${{ runner.temp }}/LexiDawn-unit.log
+            ${{ runner.temp }}/LexiDawn-ui.log
           if-no-files-found: warn
