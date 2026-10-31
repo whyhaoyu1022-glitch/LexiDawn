@@ -95,6 +95,7 @@ final class StudyCycleRepository: StudyCycleStore, AtomicCycleCreationStore {
 
     private func upsert(_ cycle: DailyStudyCycle, records: [DailyStudyCycleRecord], articles: [ArticleRecord]) throws {
         guard let article = articles.first(where: { $0.articleID == cycle.articleID }) else { throw PersistenceError.integrity("周期缺少对应文章") }
+        try article.validateStoredMetadata()
         if let proof = cycle.readingEvidence {
             guard proof.bodyHash == article.bodyHash else { throw PersistenceError.integrity("完成证据与文章内容版本不匹配") }
         }
@@ -161,7 +162,8 @@ final class StudyCycleRepository: StudyCycleStore, AtomicCycleCreationStore {
               Set(cycles.map(\.articleID)).count == cycles.count else { throw PersistenceError.integrity("历史周期存在重复身份、日期或文章指派，需人工核对") }
         for cycle in cycles {
             let matches = articles.filter { $0.articleID == cycle.articleID }
-            guard matches.count == 1 else { throw PersistenceError.integrity("周期文章关联不完整") }
+            guard matches.count == 1, let article = matches.first else { throw PersistenceError.integrity("周期文章关联不完整") }
+            try article.validateStoredMetadata()
             if let proof = cycle.readingEvidence, matches.first?.bodyHash != proof.bodyHash {
                 throw PersistenceError.integrity("持久化完成证据与文章内容版本不一致")
             }
@@ -191,12 +193,13 @@ final class ArticleRepository: ArticleStore {
     func fetch(articleID: String) throws -> ArticleRecord? {
         try writer.read { context in
             let record = try context.fetch(FetchDescriptor<ArticleRecord>()).first { $0.articleID == articleID }
-            if let record, ArticleContentStatus(rawValue: record.contentStatus) == nil { throw PersistenceError.integrity("文章内容状态无效") }
+            if let record { try record.validateStoredMetadata() }
             return record
         }
     }
 
     fileprivate static func insertOrValidate(_ candidate: ArticleCandidate, fetchedAt: Date, context: ModelContext, records: [ArticleRecord]) throws {
+        for record in records { try record.validateStoredMetadata() }
         if records.contains(where: { ArticleCandidate.normalizeCanonicalURL($0.canonicalURL) == candidate.canonicalURL && $0.articleID != candidate.id }) {
             throw PersistenceError.duplicateCanonicalURL(candidate.canonicalURL)
         }
@@ -233,6 +236,24 @@ final class ArticleRepository: ArticleStore {
 }
 
 extension ArticleRecord {
+    /// Validate stored metadata separately from current display/cache rights. Old unknown rights stay unknown.
+    func validateStoredMetadata() throws {
+        guard !articleID.isBlank, !originalTitle.isBlank, !sourceID.isBlank,
+              ArticleCandidate.isWebURL(canonicalURL),
+              fetchedAt.timeIntervalSince1970.isFinite, createdAt.timeIntervalSince1970.isFinite,
+              updatedAt.timeIntervalSince1970.isFinite, createdAt <= updatedAt,
+              publishedAt?.timeIntervalSince1970.isFinite ?? true,
+              wordCount >= 0, estimatedReadMinutes >= 0,
+              let status = ArticleContentStatus(rawValue: contentStatus) else {
+            throw PersistenceError.integrity("文章元数据、日期或内容状态无效")
+        }
+        if let bodyHash {
+            guard bodyHash.count == 64, bodyHash.allSatisfy({ $0.isHexDigit }) else { throw PersistenceError.integrity("文章指纹格式无效") }
+            if bodyText != nil, try candidate().bodyHash != bodyHash { throw PersistenceError.integrity("文章正文与存储指纹不一致，原正文保留") }
+        }
+        if status == .available, bodyText?.isBlank ?? true { throw PersistenceError.integrity("文章标为可用但正文缺失") }
+    }
+
     func candidate() throws -> ArticleCandidate {
         guard let status = ArticleContentStatus(rawValue: contentStatus) else { throw PersistenceError.integrity("文章内容状态无效") }
         return ArticleCandidate(id: articleID, canonicalURL: canonicalURL, title: originalTitle, sourceID: sourceID,

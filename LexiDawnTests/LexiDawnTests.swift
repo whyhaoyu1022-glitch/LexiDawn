@@ -1075,11 +1075,19 @@ extension LexiDawnTests {
         XCTAssertEqual(cycle.carryOverCount, 2)
     }
 
-    func testPersistedUnknownArticleContentStatusIsAnErrorWithoutDeletingBody() throws {
+    func testPersistedInvalidArticleStatusAndFingerprintAreErrorsWithoutDeletingBody() throws {
         let dependencies = try AppDependencies.makeInMemory()
         try dependencies.articleRepository.save(candidate: fixture(id: "a1"), fetchedAt: .now)
         let context = dependencies.modelContainer.mainContext
         let record = try XCTUnwrap(context.fetch(FetchDescriptor<ArticleRecord>()).first)
+        let cycle = try freshCycle()
+        try dependencies.cycleRepository.save(cycle)
+        record.bodyHash = String(repeating: "0", count: 64)
+        try context.save()
+        XCTAssertThrowsError(try dependencies.articleRepository.fetch(articleID: "a1"))
+        XCTAssertThrowsError(try dependencies.cycleRepository.fetchAll())
+        XCTAssertEqual(record.bodyText, "Fixture body a1")
+        record.bodyHash = fixture(id: "a1").bodyHash
         record.contentStatus = "invented-status"
         try context.save()
         XCTAssertThrowsError(try dependencies.articleRepository.fetch(articleID: "a1"))
