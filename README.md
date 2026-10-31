@@ -22,4 +22,8 @@ GitHub Actions 先使用 `build-for-testing` 和 `generic/platform=iOS Simulator
 
 ## Round 1 第二次整改状态
 
-2026-10-31 开始对第二次独立审核实施整改。当前源码新增领域证据、严格状态恢复、统一回滚、两版旧模型升级回归和 UI 禁用/错误说明测试；本地无 Swift/Xcode，尚未取得本次 Actions 的执行结论。准确状态见 [STATUS.md](STATUS.md) 和 [测试计划](docs/test-plan.md)。生产候选与阅读/复习模块仍未接入，测试 fixture 不作为真实内容或授权来源。
+代码 `309afe81aecfbfd84e5a9f52251c59f8e32c0575` 的 [run 41170754181](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41170754181) **success**：XCTest 61/0、XCUITest 8/0；UI用例合计 321.466 秒。artifact [13031277540](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41170754181/artifacts/13031277540)。
+
+已实施领域证据、严格状态恢复、隔离事务上下文、真实磁盘故障/重开、两版旧schema升级和UI禁用/错误/启动恢复回归。UI长循环已排查，补齐原生启动配置并改为有界定向定位；未减少业务断言。CI固定iPhone17Pro/iOS26.5，共享derivedData，保留完整日志与xcresult。
+
+生产候选与阅读/复习模块仍未接入，fixture不作为真实内容或授权来源；兼容模拟器结果不等于iOS27、真机、IPA或完整产品验收。准确边界见 [STATUS.md](STATUS.md)、[测试计划](docs/test-plan.md) 和 [本轮整改报告](docs/reviews/round-1-second-remediation-report-2026-10-31.md)。后续文档提交的Actions与上述代码运行分别记录。

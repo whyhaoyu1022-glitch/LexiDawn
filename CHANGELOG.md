@@ -6,8 +6,14 @@
 - 所有 Repository 写入统一 rollback；原子创建、关联/重复/身份保护及最早 current。
 - 文章指纹、词数、估算时长、主题/来源/缓存与图片许可；可选年龄段和规格默认偏好。
 - 历史 schema 升级前备份、已知非法状态审计归档、启动重试与任务原因说明。
-- 补充真实 SwiftData、只读磁盘故障、磁盘重开、历史升级及 XCUITest；源码已新增，运行待本次 CI。
+- 补充真实 SwiftData、只读磁盘故障、磁盘重开、两版历史升级及 XCUITest；本轮最终代码61 XCTest/8 UI、0失败，具体SHA/run见下。
 - 修正此前把 FakeStore/源码数量扩大为持久化证明的文档。旧审查/整改报告保留，纠正说明见本轮新报告。
+- 修复真实save失败后rollback仍有context幽灵对象、VM读重试误重放写、固定时区/非Gregorian日期、时间非有限值/计数溢出及正文指纹恢复漏洞。
+- 修复UI固定重复滚动与原生launch/scene配置缺失；新增窗口尺寸断言、滚动无进展失败诊断，保留可见/disabled/实际点击和状态断言。
+
+本轮代码验证：代码 `309afe81aecfbfd84e5a9f52251c59f8e32c0575` 的 [run 41170754181](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41170754181) **success**：XCTest 61/0、XCUITest 8/0；UI用例合计 321.466 秒。artifact [13031277540](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41170754181/artifacts/13031277540)。 产品27.0/CI26.5不变；不代表真机或全部SPEC完成。
+
+历史条目按日期保留。2026-10-28条目曾把blocked称作“可恢复”，当前真实学习模块仍未接入，只能重读/重开存储；旧运行不能证明本次代码，历史证据纠正见新报告。
 
 
 ## Round 1 整改 — 2026-10-28

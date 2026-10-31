@@ -1,11 +1,14 @@
 # 当前状态
 
-- 2026-10-31：Round 1 第二次整改实施中，尚未宣称达到 SPEC §25 完成标准。
-- 本次起始 main：`b894bdacadbee3a52073f6c300ab043c7e43caa8`。此基线 run [40706618129](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40706618129) success，日志实测 XCTest 25/0、XCUITest 2/0，artifact 12823774520；这是旧代码结果，不能证明本次改动。
-- 已修改：类型化空队列证据、阅读完成契约、领域构造/恢复校验、统一 rollback、文章/周期原子创建与关联保护、最早未完成 current、文章许可/缓存/元数据、可选年龄段、偏好默认值、民用日期跨日计数、所有任务原因说明和启动重试。
-- 测试源码包含领域/FakeStore、内存 SwiftData 故障注入、只读磁盘真实保存错误、磁盘重开、两个历史模型升级和 UI 状态断言。源码数量不等于执行数量；本次运行证据待取得。
-- 本地无 Swift、Xcode、模拟器，不能执行 XCTest/XCUITest/SwiftData。已执行 `git diff --check`，编译和运行尚待当前提交 Actions。
-- Debug/Release 三个 target 继续 iOS 27.0；CI 仅在 checkout 临时使用已批准的 26.5 目标。兼容模拟器不等于产品目标、真机、签名 IPA 或无障碍验证。
-- 生产文章来源、阅读器、复习队列/会话/题目仍未接入；默认拒绝产生完成或空队列证明，未接入按钮禁用。测试 fixture 仅存在显式隔离环境，Release 排除 UI fixture。
-- PR #1 实查 closed、merged=false；旧分支保留。此前报告中的 `ab70b5a` 在本地公开历史不可解析，不再作为整合证据；实际 main 提交链包含 `c291c225273774df59a28e3bd9c784550253682c` 等普通提交。
-- 历史报告原文保留；后续证据与纠正记录在本轮新报告。跨进程、多容器同时写入、真实设备、VoiceOver/动态字体/深色模式和 iOS 27 仍未验证。
+- 2026-10-31：Round 1 第二次整改的适用代码、回归和证据已提交；等待下一次独立验收，不自称已满足整个 SPEC §25。
+- 起始 main：`b894bdacadbee3a52073f6c300ab043c7e43caa8`。旧基线 run40706618129 的25 XCTest/2 UI不是本次证明。
+- 代码 `309afe81aecfbfd84e5a9f52251c59f8e32c0575` 的 [run 41170754181](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41170754181) **success**：XCTest 61/0、XCUITest 8/0；UI用例合计 321.466 秒。artifact [13031277540](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41170754181/artifacts/13031277540)。
+- 已修复：任意字符串deferred、无证据阅读完成、非法构造/恢复、非原子fallback、失败context残留、文章/周期关联与去重、最早未完成current、文章元数据/许可与缓存、偏好、跨日高水位、任务错误说明和真实启动重试。
+- 新增旧复习时间/终态凭据替换回归、两条真实历史schema磁盘升级、同模型磁盘重开、只读真实save错误/rollback/可写重试均在上述61个XCTest中通过；FakeStore、内存注入与真实磁盘证据分开记录。
+- 用户指出的两次UI失败已按日志和xcresult排查：旧定位固定重复滑动、没有进展检测；现代设备窗口却是320×480。原生launch/scene配置与有界定向定位已修复，新增实际现代窗口尺寸断言，保留全部禁用/可见/实际点击/状态断言。
+- Debug/Release三个target的产品目标均保持iOS27.0；上述结果仅适用于Xcode26.6、iOS26.5、iPhone17Pro兼容模拟器，不等于真机/签名IPA/iOS27/无障碍通过。
+- 本地无Swift/Xcode；实际执行静态差异、YAML/scheme/测试索引与旧报告保留检查。iOS运行证据来自GitHub Actions。
+- 生产文章来源、阅读器、复习队列/保存会话仍未接入；默认拒绝伪造完成或空队列，按钮禁用。UI fixture仅DEBUG模拟器显式隔离启用。
+- PR#1 closed、merged=false；旧分支保留。旧报告中的ab70b5a不再作为整合证据。三份旧报告原文不改，新证据见 [本轮整改报告](docs/reviews/round-1-second-remediation-report-2026-10-31.md)。
+- 未验证：跨进程/多容器同时写、磁盘满/断电/OS强杀、真实用户旧库、iOS27/真机/IPA、完整无障碍/动态字体/深色模式。未知损坏/历史重复记录保留报错，暂无自动合并或人工修复UI。
+- 本文及报告属于后续docs-only提交；上述CI严格对应列明代码SHA。docs提交自己的运行状态以Actions为准，不冒用代码run。

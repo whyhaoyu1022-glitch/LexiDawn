@@ -12,3 +12,9 @@
 保障范围：同一应用单一容器、串行 MainActor Repository 是受支持写入口。不同 context 的顺序读取有测试；没有对多容器/跨进程竞争作数据库唯一约束承诺。唯一性使用同一同步 unit of work 的事务性去重，不能把主线程串行解释成跨进程锁。Preferences返回用于编辑的托管记录，save先捕获完整独立快照、回滚编辑context，再在专属写context应用。调用者不要跨await悬置编辑；UI保存后重新load。
 
 迁移支持范围与计数语义见 ADR-004–007；实际升级成功必须以两个历史 schema 磁盘测试为准，当前模型重开测试不能替代迁移测试。
+
+原生窗口和CI定位：App Debug/Release均启用标准UILaunchScreen与UIApplicationSceneManifest生成，CI读取真实产物plist校验；XCUITest实际验证现代窗口尺寸。UI定位仅操作标识today-scroll，按可用viewport和目标方向滚动，无进展附截图/层级失败；不通过跳过点击来隐藏不可见控件。固定iPhone17Pro/iOS26.5兼容环境，共享derivedData但不跳过target。详见ADR-010及本轮报告。
+
+实际验证：代码 `309afe81aecfbfd84e5a9f52251c59f8e32c0575` 的 [run 41170754181](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41170754181) **success**：XCTest 61/0、XCUITest 8/0；UI用例合计 321.466 秒。artifact [13031277540](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41170754181/artifacts/13031277540)。
+
+复习源结果的recordedAt相对上一个已保存会话结果不可回退；复习已完成时，其完整结果凭据即保持不变，即使文章仍未完成。领域命令与直接Repository更新都执行该检查；初次延迟结果仍可早于周期updatedAt高水位，保留源事件时间。

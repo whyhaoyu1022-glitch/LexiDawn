@@ -49,3 +49,8 @@
 ## ADR-010 原生窗口与有界UI定位
 - 实测artifact13029591495的ActionDeviceRecord为iPhone17Pro/iOS26.5，AX窗口320x480、按钮在Y604.67，滚动无进展。手工工程缺少标准Launch Screen/Scene Manifest生成，按[Apple Build Settings Reference](https://developer.apple.com/documentation/xcode/build-settings-reference)配置两项生成开关，并在CI验证产物Info.plist；是否恢复现代全屏以新增真实UI窗口断言为准。
 - UI测试只在指定ScrollView向目标方向滚动，检查窗口/导航/标签栏裁剪后的实际viewport。到边界/无进展立即红灯并附诊断，绝不删除visible或disabled断言。固定重复滑动不是有效证明，取消这些动作不会减少业务验收要求。
+
+### ADR-008 补充：复习结果历史边界
+- 复习源事件recordedAt相对上一个结果单调；已完成的reviewProgress整体不可替换，即使文章尚未完成。Domain和Repository均校验，精确相同结果仍幂等。初次延迟恢复可早于周期updatedAt高水位，不能用“请求时间”改写学习事件。真实内存SwiftData回归为 `testSwiftDataReviewResultsRejectStaleSnapshotsAndTerminalEvidenceReplacement`，执行证据见本轮报告。
+
+- ADR-010实测结论：最终代码run41170754181的窗口尺寸回归通过，原始PNG为1206×2622；完整UI日志仅3次定向上滑/0次下滑，8个UI用例321.466秒。保留5个keepAlways截图作为用户审阅证据，不降低业务断言。
