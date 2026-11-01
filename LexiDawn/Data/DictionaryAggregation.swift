@@ -75,20 +75,28 @@ struct WiktionaryDictionaryProvider: DictionaryProvider {
             let ns = englishHTML as NSString
             return try regex.matches(in: englishHTML, range: NSRange(location: 0, length: ns.length)).map { try ArticleHTMLExtractor.extract(ns.substring(with: $0.range(at: 1))).text }
         }
-        let ipa = try sourceFragments(#"<span\b[^>]*class=["'][^"']*\bIPA\b[^"']*["'][^>]*>(.*?)</span>"#).first
+        let pronunciations = try sourceFragments(#"<span\b[^>]*class=["'][^"']*\bIPA\b[^"']*["'][^>]*>(.*?)</span>"#)
         let forms = try sourceFragments(#"<(?:p|span)\b[^>]*class=["'][^"']*(?:headword-line|form-of)[^"']*["'][^>]*>(.*?)</(?:p|span)>"#)
         let parts: Set<String> = ["noun", "verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "interjection", "determiner", "phrase"]
         var pos: String?, section = "", etymology: [String] = [], senses: [DictionarySense] = []
+        var currentIPA: String?, currentForms: [String] = []
         for block in document.blocks {
             if block.kind == .heading {
+                let previousSection = section
                 section = block.text.lowercased().trimmingCharacters(in: .whitespaces)
                 let heading = section.split(separator: " ").first.map(String.init) ?? section
                 pos = parts.contains(heading) ? heading : nil
-                if heading == "etymology" { etymology = [] }
+                if pos != nil { currentForms = []; if !previousSection.hasPrefix("pronunciation") { currentIPA = nil } }
+                if heading == "etymology" { etymology = []; currentIPA = nil; currentForms = [] }
+            } else if section.hasPrefix("pronunciation") {
+                let values = pronunciations.filter { block.text.contains($0) }
+                if !values.isEmpty { currentIPA = Array(Set(values)).sorted().joined(separator: " · ") }
+            } else if pos != nil, forms.contains(block.text) {
+                currentForms = Array(Set(currentForms + [block.text])).sorted()
             } else if section.hasPrefix("etymology"), block.kind == .paragraph { etymology.append(block.text) }
             else if block.kind == .listItem, block.listOrdinal != nil, let pos {
                 senses.append(DictionarySense(id: "wiktionary|" + fingerprint(pos + block.text), en: block.text, zh: "", line: "English Wiktionary contributors · CC BY-SA 4.0", partOfSpeech: pos,
-                    ipa: ipa, forms: forms.isEmpty ? nil : forms, etymology: etymology.isEmpty ? nil : etymology.joined(separator: "\n\n"), sources: ["Wiktionary"]))
+                    ipa: currentIPA, forms: currentForms.isEmpty ? nil : currentForms, etymology: etymology.isEmpty ? nil : etymology.joined(separator: "\n\n"), sources: ["Wiktionary"]))
             } else if block.kind == .listItem, block.listOrdinal == nil, pos != nil, !senses.isEmpty {
                 var last = senses.removeLast(); last.examples = (last.examples ?? []) + [block.text]; senses.append(last)
             }
@@ -110,7 +118,7 @@ struct WiktionaryDictionaryProvider: DictionaryProvider {
 }
 
 actor DictionaryAggregator {
-    static let versions = ["Free Dictionary API": "api-v2-schema-2", "Wiktionary": "rest-and-action-schema-3"]
+    static let versions = ["Free Dictionary API": "api-v2-schema-2", "Wiktionary": "rest-and-action-schema-4"]
     private let providers: [(String, any DictionaryProvider)]
     init(providers: [(String, any DictionaryProvider)] = [("Free Dictionary API", FreeDictionaryProvider()), ("Wiktionary", WiktionaryDictionaryProvider())]) { self.providers = providers }
     func lookup(_ lemma: String) async -> DictionaryProviderOutcome {

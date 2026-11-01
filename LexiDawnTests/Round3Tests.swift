@@ -108,6 +108,13 @@ import SwiftData
         XCTAssertEqual(senses.first?.ipa, "/bʊk/"); XCTAssertEqual(senses.first?.examples, ["An explicit fixture example."])
         XCTAssertEqual(senses.first?.forms, ["book (plural books)"]); XCTAssertEqual(senses.first?.etymology, "Explicit etymology fixture.")
     }
+    func testWiktionaryPronunciationAndInflectionsStayWithTheirPartOfSpeech() throws {
+        let html = "<h2 id=\"English\">English</h2><h3>Pronunciation</h3><span class=\"IPA\">/ˈrek.əd/</span><h3>Noun</h3><p class=\"headword-line\">record (plural records)</p><ol><li>An explicit fixture entry in a log.</li></ol><h3>Pronunciation</h3><span class=\"IPA\">/rɪˈkɔːd/</span><h3>Verb</h3><p class=\"headword-line\">record (records, recorded)</p><ol><li>To write an explicit fixture entry.</li></ol>"
+        let senses = try WiktionaryDictionaryProvider.parseEnglishHTML(html)
+        let noun = try XCTUnwrap(senses.first { $0.partOfSpeech == "noun" }), verb = try XCTUnwrap(senses.first { $0.partOfSpeech == "verb" })
+        XCTAssertEqual(noun.ipa, "/ˈrek.əd/"); XCTAssertEqual(verb.ipa, "/rɪˈkɔːd/")
+        XCTAssertEqual(noun.forms, ["record (plural records)"]); XCTAssertEqual(verb.forms, ["record (records, recorded)"])
+    }
     func testExpiredFullTextMovesToHistoryAndNeverLeavesPartialArticleRecord() throws {
         let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)
         try content.importFullText(item(), at: now)
