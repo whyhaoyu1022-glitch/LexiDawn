@@ -3,7 +3,7 @@ import SwiftUI
 enum LexiDawnColor {
     static let ink950 = Color(red: 0.07, green: 0.08, blue: 0.12)
     static let ink800 = Color(red: 0.18, green: 0.20, blue: 0.27)
-    static let dawn500 = Color(red: 0.95, green: 0.45, blue: 0.32)
+    static let dawn500 = Color(red: 0.73, green: 0.24, blue: 0.14)
     static let sky500 = Color(red: 0.22, green: 0.55, blue: 0.90)
     static let lavender400 = Color(red: 0.63, green: 0.53, blue: 0.90)
     static let paper50 = Color(red: 0.98, green: 0.98, blue: 0.97)
@@ -20,3 +20,4 @@ enum LexiDawnSpacing {
     static let xl: CGFloat = 32
     static let xxl: CGFloat = 40
 }
+

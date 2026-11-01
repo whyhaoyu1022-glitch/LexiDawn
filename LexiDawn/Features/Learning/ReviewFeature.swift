@@ -22,7 +22,7 @@ struct ReviewPracticeContent: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text("把刚认识的词，变成自己的词").font(.title2.bold())
-                Text("本地确定性排程 · 题组建立后固定，退出后继续原题。").font(.caption).foregroundStyle(.secondary)
+                Text("FSRS 4.5 · 两阶段首次正确为 Good；错误或提示为 Hard；显示答案为 Again。题组与下次时间在本地保存。").font(.caption).foregroundStyle(.secondary)
                 if loading { ProgressView("正在查询完整复习队列…") }
                 else if let session {
                     if session.completedAt != nil {

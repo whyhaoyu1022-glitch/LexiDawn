@@ -71,11 +71,11 @@ final class AppStartup: ObservableObject {
                         try learning.content.beginFetch(at: now)
                         try learning.content.finishFetch(error: "Screenshot fault injection: HTTP 429", retryAfter: now.addingTimeInterval(3600), at: now)
                     }
-                    if scenario == "gallery-review" || scenario == "gallery-missing-state" {
+                    if scenario == "gallery-review" || scenario == "gallery-round3-review" || scenario == "gallery-missing-state" {
                         let article = try learning.content.read(articleID: SourceRegistry.rfc.id, at: now)
-                        let pairs = scenario == "gallery-review" ? [("Internet", "互联网（个人释义）"), ("document", "文档（个人释义）")] : [("Internet", "互联网（个人释义）")]
+                        let pairs = scenario == "gallery-round3-review" ? [("Internet", "互联网（个人释义）"), ("document", "文档（个人释义）"), ("book", "书（个人释义）")] : scenario == "gallery-review" ? [("Internet", "互联网（个人释义）"), ("document", "文档（个人释义）")] : [("Internet", "互联网（个人释义）")]
                         for (index, pair) in pairs.enumerated() {
-                            if let token = EnglishTokenizer.tokens(in: article.body).first(where: { $0.surface == pair.0 }),
+                            if let token = EnglishTokenizer.tokens(in: article.body).first(where: { $0.surface == pair.0 }) ?? (scenario == "gallery-round3-review" && pair.0 == "book" ? EnglishToken(surface: "book", range: NSRange(location: 0, length: 4), sentence: "Explicit test fixture: read a book.") : nil),
                                let added = try learning.vocabulary.add(token: token, articleID: article.id, autoAdd: true, at: now.addingTimeInterval(Double(index) * 0.001)) {
                                 try learning.vocabulary.annotate(entryID: added.entryID, meaning: pair.1, notes: "Screenshot test seed; actual RFC context", at: Date())
                             }
@@ -139,3 +139,4 @@ private struct StorageUnavailableView: View {
         }.padding(24)
     }
 }
+

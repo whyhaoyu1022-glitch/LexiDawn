@@ -3,10 +3,14 @@ import SwiftUI
 struct ArticleLibraryView: View {
     @ObservedObject var learning: LearningServices
     @State private var items: [ArticleLibraryItem] = []
-    @State private var query = "", source = "all", topic = "all", mode = "all"
+    @State private var query = ""
+    @State private var source = "all"
+    @State private var topic = "all"
+    @State private var mode = "all"
     @State private var newestFirst = true
     @State private var reader: ReaderRoute?
-    @State private var error: String?, notice: String?
+    @State private var error: String?
+    @State private var notice: String?
     @State private var loading = false
     private var visible: [ArticleLibraryItem] {
         items.filter { $0.readable && (query.isEmpty || $0.title.localizedCaseInsensitiveContains(query)) &&

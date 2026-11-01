@@ -161,7 +161,9 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
         if let aggregator, let richCache {
             let key = EnglishTokenizer.lemma(surface)
             let old = try richCache.load(key, at: now)
-            if old.complete { return DictionaryResult(headword: key, senses: DictionaryAggregator.rank(old.senses, context: context), updatedAt: old.date, sourceURL: "https://dictionaryapi.dev/", licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/", cached: true, versions: DictionaryAggregator.versions) }
+            if old.complete {
+                let local = try? await lookupLocal(surface, at: now)
+                return DictionaryResult(headword: key, senses: DictionaryAggregator.rank((local?.senses ?? []) + old.senses, context: context), updatedAt: old.date, sourceURL: "https://dictionaryapi.dev/", licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/", cached: true, versions: DictionaryAggregator.versions) }
             let outcome = await aggregator.lookup(key)
             try Task.checkCancellation()
             let local = try? await lookupLocal(surface, at: now)

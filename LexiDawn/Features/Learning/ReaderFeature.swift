@@ -181,6 +181,7 @@ struct ReaderView: View {
 struct WordLookupSheet: View {
     @StateObject private var model: WordLookupModel
     @Environment(\.dismiss) private var dismiss
+    @State private var phraseSelection: WordLookupModel?
     init(token: EnglishToken, articleID: String, autoAdd: Bool, learning: LearningServices) {
         _model = StateObject(wrappedValue: WordLookupModel(token: token, articleID: articleID, autoAdd: autoAdd, learning: learning))
     }
@@ -189,6 +190,19 @@ struct WordLookupSheet: View {
         NavigationStack {
             List {
                 Section { Text(model.token.surface).font(.largeTitle.bold()); Text("标准词形：\(EnglishTokenizer.lemma(model.token.surface))"); Text(model.token.sentence).font(.body.italic()) }
+                if model.depth < 3 {
+                    let phrases = EnglishPhraseRecognizer.phrases(around: model.token.surface, sentence: model.token.sentence)
+                    if !phrases.isEmpty {
+                        Section("语境短语") {
+                            ForEach(phrases, id: \.self) { phrase in
+                                Button(phrase) {
+                                    let token = EnglishToken(surface: phrase, range: NSRange(location: model.token.range.location, length: (phrase as NSString).length), sentence: model.token.sentence)
+                                    phraseSelection = WordLookupModel(token: token, articleID: model.articleID, autoAdd: model.autoAdd, learning: model.learning, depth: model.depth + 1)
+                                }
+                            }
+                        }
+                    }
+                }
                 Section("生词本") {
                     if model.addition?.created == true { Label("刚刚加入", systemImage: "checkmark.circle"); Button("撤销本次加入") { model.undo() }.accessibilityIdentifier("undo-word") }
                     else if model.existing { Label("此前已加入", systemImage: "bookmark.fill") }
@@ -206,6 +220,7 @@ struct WordLookupSheet: View {
             .task { await model.begin() }
             .onReceive(model.learning.$revision) { _ in model.refreshMembership() }
         }.presentationDetents([.medium, .large])
+            .sheet(item: $phraseSelection) { WordLookupSheet(model: $0) }
     }
 }
 struct DictionaryResultContent: View {
@@ -249,7 +264,7 @@ struct DictionaryDetailView: View {
         List {
             Section { Text(result.headword).font(.largeTitle); Button("系统英语朗读") { let utterance = AVSpeechUtterance(string: result.headword); utterance.voice = AVSpeechSynthesisVoice(language: "en-US"); speech.speak(utterance) } }
             Section("生词本") {
-                if entry != nil { Label("已在生词本", systemImage: "bookmark.fill"); Button("手动移除词条", role: .destructive) { removeConfirmation = true } }
+                if entry != nil { Label("已在生词本", systemImage: "bookmark.fill"); if let meaning = entry?.meaning { Text("个人释义：" + meaning) }; Button("手动移除词条", role: .destructive) { removeConfirmation = true } }
                 else if articleID != nil { Button("加入生词本") { add() } }
                 if let error { Text(error).foregroundStyle(.red) }
             }
