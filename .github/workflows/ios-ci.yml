@@ -148,7 +148,7 @@ jobs:
   combined-native-evidence:
     name: Combine original PNG evidence and complete index
     needs: [build-and-test, ui-tests]
-    if: ${{ always() && !cancelled() }}
+    if: ${{ always() && !cancelled() && needs.ui-tests.result != 'skipped' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

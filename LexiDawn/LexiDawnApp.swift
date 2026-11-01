@@ -52,7 +52,7 @@ final class AppStartup: ObservableObject {
             if scenario == "round3-history-gate", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
                 // Explicit gate fixture, distinct from the genuinely empty live cold-start test.
                 let url = FileManager.default.temporaryDirectory.appendingPathComponent("round3-gate-\(storeID).store")
-                let app = AppDependencies(modelContainer: try openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
+                let app = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
                 if try app.articleRepository.allArticleIDs().isEmpty, let learning = app.learning {
                     let previous = Date().addingTimeInterval(-86400)
                     try learning.content.installBundledRFC(at: previous)
