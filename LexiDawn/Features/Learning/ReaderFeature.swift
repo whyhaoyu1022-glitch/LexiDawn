@@ -164,6 +164,7 @@ struct ReaderView: View {
         let generation = UUID(); lookupGeneration = generation; loading = true
         defer { if lookupGeneration == generation { loading = false } }
         do {
+            if let local = try? await learning.dictionary.localResult(token.surface), generation == lookupGeneration, !Task.isCancelled { result = local }
             let value = try await learning.dictionary.lookup(token.surface, context: token.sentence)
             guard generation == lookupGeneration, !Task.isCancelled else { return }
             result = value; error = nil

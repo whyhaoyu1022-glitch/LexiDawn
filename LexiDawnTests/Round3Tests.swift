@@ -179,4 +179,72 @@ import SwiftData
         XCTAssertEqual(try content.read(articleID: id, at: now).body, "Full original\ntext.")
         XCTAssertNotNil(try ModelContext(app.modelContainer).fetch(FetchDescriptor<ArticleRecord>()).first?.structuredBody)
     }
+    func testCompletedMeaningCannotBeConsumedByAnotherQuestion() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let id = try learning.content.importArticle(ArticleImportDraft(title: "Own fixture", body: "A book explains science.", source: "Test author", rightsConfirmed: true), at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected real saved cycle") }
+        for (word, meaning) in [("book", "书（个人释义）"), ("science", "科学（个人释义）")] {
+            let addition = try XCTUnwrap(learning.vocabulary.add(token: EnglishToken(surface: word, range: NSRange(location: 0, length: word.count), sentence: "A book explains science."), articleID: id, autoAdd: true, at: now))
+            try learning.vocabulary.annotate(entryID: addition.entryID, meaning: meaning, notes: "", at: now)
+        }
+        let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 2, pairCount: 2, clozeCount: 2, at: now)
+        let questions = try XCTUnwrap(prepared).matching
+        XCTAssertTrue(try learning.review.submit(cycleID: cycle.cycleID, questionID: questions[0].id, answer: questions[0].senseID, at: now))
+        XCTAssertThrowsError(try learning.review.submit(cycleID: cycle.cycleID, questionID: questions[1].id, answer: questions[0].senseID, at: now))
+        XCTAssertEqual(try learning.review.session(cycleID: cycle.cycleID)?.matching.first { $0.id == questions[1].id }?.attempts, 0)
+    }
+    func testHistoricalRound2DiskSchemaMigratesLearningRelationsAndFullText() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("legacy.store"), articleID = UUID().uuidString
+        let raw = "A complete historical article.\n\nIts final paragraph remains preserved."
+        let cycle = try DailyStudyCycle(assignedLocalDate: "2026-11-01", assignedTimeZoneID: "Asia/Shanghai", articleID: articleID, createdAtUTC: now, updatedAtUTC: now, assignmentReason: "historical-fixture")
+        var entryID = "", sessionID = ""
+        do {
+            let container = try ModelContainer(for: FrozenRound2Schema.schema, configurations: [ModelConfiguration(url: url)])
+            let context = ModelContext(container)
+            let article = FrozenRound2Schema.ArticleRecord(articleID: articleID, canonicalURL: "lexidawn-local://article/\(articleID)", originalTitle: "Historical original", sourceID: "user-import", fetchedAt: now, licenseID: "user-declared-local-use", licenseVerified: true, bodyText: raw, bodyHash: fingerprint(raw), contentStatus: "available", createdAt: now, updatedAt: now)
+            article.cachePermissionData = try JSONEncoder().encode(ArticleCachePermission.persistent); article.sourceAttribution = "Historical local author"; article.fullTextDisplayAllowed = true; article.topicTags = ["test"]
+            context.insert(article); context.insert(try FrozenRound2Schema.DailyStudyCycleRecord(cycle: cycle))
+            context.insert(FrozenRound2Schema.ContentGrantRecord(articleID: articleID, sourceID: "user-import", bodyHash: fingerprint(raw), scope: "user-local", evidenceURL: "local-user-confirmation", originalURL: nil, acceptedAt: now, eligibleForDaily: true))
+            let progress = FrozenRound2Schema.ArticleProgressRecord(articleID: articleID, cycleID: cycle.cycleID, bodyHash: fingerprint(raw), at: now); progress.readingPercent = 0.4; progress.characterOffset = 12; context.insert(progress)
+            let entry = FrozenRound2Schema.VocabularyEntryRecord(lemma: "book", surface: "book", type: "word", at: now, from: articleID, token: "historical-token")
+            entry.userMeaning = "个人释义"; entry.notes = "保留笔记"; entryID = entry.entryID; context.insert(entry)
+            context.insert(FrozenRound2Schema.ReviewStateRecord(entryID: entryID, at: now))
+            let session = FrozenRound2Schema.ReviewSessionRecord(cycleID: cycle.cycleID, entries: [entryID], at: now, limit: 12); sessionID = session.sessionID; context.insert(session)
+            context.insert(FrozenRound2Schema.ReviewExerciseRecord(sessionID: sessionID, entryID: entryID, stage: "matching", position: 0, prompt: "book", answer: "个人释义", senseID: "user"))
+            context.insert(FrozenRound2Schema.ReviewExerciseRecord(sessionID: sessionID, entryID: entryID, stage: "cloze", position: 0, prompt: "bo__", answer: "book", senseID: "user"))
+            let preferences = FrozenRound2Schema.UserPreferencesRecord(); preferences.displayName = "Historical reader"; context.insert(preferences)
+            try context.save()
+        }
+        let container = try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url))
+        let context = ModelContext(container), content = ContentRepository(context: context)
+        try content.migrateRound3(at: now)
+        XCTAssertEqual(try content.read(articleID: articleID, at: now).body, raw)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first?.notes, "保留笔记")
+        XCTAssertEqual(try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first?.entryID, entryID)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<ReviewSessionRecord>()).first?.sessionID, sessionID)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<ReviewExerciseRecord>()).count, 2)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<ReviewStateRecord>()).first?.algorithmVersion, BasicReviewScheduler.version)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<ArticleProgressRecord>()).first?.readingPercent, 0.4)
+        XCTAssertEqual(try StudyCycleRepository(context: context).fetchAll().first?.cycleID, cycle.cycleID)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<UserPreferencesRecord>()).first?.displayName, "Historical reader")
+        XCTAssertFalse(try XCTUnwrap(context.fetch(FetchDescriptor<ArticleRecord>()).first).isFavorite)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: url.appendingPathExtension("before-round3").path))
+    }
+    func testLegacyUnavailableRowIsArchivedWithoutLosingCycleReference() throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let id = try learning.content.importArticle(ArticleImportDraft(title: "Own historical fixture", body: "Complete historical original.", source: "Test author", rightsConfirmed: true), at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        let context = ModelContext(app.modelContainer), record = try XCTUnwrap(context.fetch(FetchDescriptor<ArticleRecord>()).first)
+        record.bodyText = nil; record.structuredBody = nil; record.contentStatus = "unavailable"; try context.save()
+        try learning.content.archiveLegacyIncompleteArticles(at: now)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ArticleRecord>()), 0)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ArticleHistoryArchiveRecord>()), 1)
+        XCTAssertTrue(try learning.content.library(at: now).isEmpty)
+        XCTAssertEqual(try learning.cycles.fetchAll().first?.cycleID, cycle.cycleID)
+        XCTAssertEqual(try learning.cycles.fetchAll().first?.articleTaskStatus, .ready)
+        XCTAssertThrowsError(try learning.content.read(articleID: id, at: now))
+    }
 }

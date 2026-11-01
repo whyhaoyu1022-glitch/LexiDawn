@@ -1,3 +1,19 @@
+# CURRENT · Round 3追踪
+
+| 需求与逐字依据 | 实现 | 依赖与证据 | 当前边界 |
+|---|---|---|---|
+| v1.1 E：“rawContent 和 structuredBody 必须原子写入” | ArticleQualityValidator、FullTextRepository、ArticleDocument | 来源权利证据；事务失败、缺正文、截断、双正文/去重测试 | 新测试运行结果单独核对，不能用fixture冒充真网络 |
+| v1.1 D：“不得将候选写入磁盘缓存” | 内存ArticleDiscoveryItem、ephemeral HTTP、未入库不进UI | RSS/Atom/API解析及LiveWikipedia测试 | 其余候选禁用，不展示摘要或外链 |
+| v1.1 G：“不提供原站阅读按钮、外部 URL 跳转或 WebView” | Reader/Library/Vocabulary移除文章Link | 原生阅读器；canonical仅出处文本 | 许可/词典来源链接不是文章阅读入口 |
+| SPEC §10.1：“FSRS…或经审查的等价间隔复习实现” | 独立FSRS 4.5 DSR、固定参数与不可变日志 | 初始向量、R(S)=0.9、遗忘/非法状态及旧闭环 | 不宣称最新FSRS/Anki分钟步骤或个性优化器 |
+| SPEC §10.5：“已配对的条目应保持可见” | MatchingBoard双列随机、Canvas、双端禁用 | 真实线像素/旋转UI、重复消费事务 | 多设备/完整VO仍待执行 |
+| SPEC §19.10：“数据迁移与一致性” | 冷备份、可选列回填、历史归档 | FrozenRound2Schema磁盘升级及既有两版旧schema | 损坏/未知schema失败保留，不自动清库 |
+| 用户功能六：收藏不创建周期 | 标题/分类/来源/时间、收藏/稍后/历史 | 独立标记写入与无周期断言 | 完整UI截图矩阵仍待运行 |
+
+原93 XCTest/20 UI保留；Round2-A01至A20逐项状态见[Round 3记录](reviews/round-3-development-delivery.md)。以下为历史基线。
+
+---
+
 # 需求追踪矩阵
 
 > 前半部分保留 Round 1 历史基线与不变量；当前生产功能、Round 2 验证结果和未完成项见文末及 Round 2 开发交付自述。
@@ -62,3 +78,4 @@
 
 
 | 截图审阅补充 | SPEC §24.6：“加载、空状态、错误状态和锁定状态都可通过 VoiceOver 理解。” §24.7：“冷启动、首页加载、文章打开、浮窗查词和词典详情页响应时间。” | 7个gallery UI场景，生产RFC与隔离故障明确区分，原始PNG附件导出；截图不代替完整无障碍/性能验证 | 依赖已运行原生App与真实资源 | CI实际结果和下载图片包以本次交付答复核对，未运行前不宣称通过 |
+

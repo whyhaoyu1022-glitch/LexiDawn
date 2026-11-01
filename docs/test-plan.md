@@ -1,3 +1,15 @@
+# CURRENT · Round 3验证计划与事实
+
+本轮保留原93 XCTest与20 XCUITest，新增解析、全文准入/丢弃/回滚、版本缓存、多Provider、FSRS、真实冻结Round2磁盘迁移和归档引用测试。另有真实网络Free Dictionary、Wiktionary、Wikipedia空库全文导入测试，名称以testLive开头；URLProtocol故障测试以testInjected标注，不相互替代。
+
+UI新增十次旋转正文可见/点词、中央列间隙真实线像素/双端禁用和真实网络空库完整闭环，原20方法不改。冷启动UI通过实际点词和用户填写个人释义建立可靠答案，无预置词条或完成状态。所有新用例执行与失败情况以对应main SHA Actions日志为准。
+
+原生截图通过XCTAttachment保留PNG和JSON元数据；export-round3-evidence.py仅复制实际xcresult PNG、核对唯一映射及SHA，导出manifest/CSV/完整ZIP。空manifest或历史截图不算Round 3完整证据。完整功能/失败矩阵、双尺寸、三主题、最大动态字体、VO及Instruments仍需逐项核验。
+
+已发生的三次编译失败和修正详见[Round 3记录](reviews/round-3-development-delivery.md)。f1a7f3e的Actions已观察到app构建、测试编译和unit步骤success；UI当时仍运行，不把它写成整次CI通过，精确计数待完整日志。
+
+---
+
 # 测试计划与证据边界
 
 > 前半部分保留 Round 1 历史基线与不变量；当前生产功能、Round 2 验证结果和未完成项见文末及 Round 2 开发交付自述。
@@ -67,3 +79,4 @@ UI定位回归：固定iPhone17Pro，实际断言窗口至少375×667，产物pl
 
 
 0ba4a65 / Actions41201712543：93 XCTest/0，20 UI/1失败，其他19个UI场景通过并已导出90张当前功能截图。实际AX证据显示未知长词已命中并打开查词、词条成功保存；长标题占满medium sheet，List尚未创建下方无结果行。保留无结果断言，先展开/滚动原生浮窗再验证该行与截图。此轮修正只涉及测试可见性，不能将旧失败运行写为通过；最终SHA结果以交付答复为准。
+

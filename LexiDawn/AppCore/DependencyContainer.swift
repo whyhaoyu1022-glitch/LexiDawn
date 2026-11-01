@@ -45,6 +45,7 @@ final class AppDependencies: ObservableObject {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: false)
         let dependencies = AppDependencies(modelContainer: try openPersistentStore(configuration: configuration), learningEnabled: true)
         try dependencies.learning?.content.migrateRound3(at: Date())
+        try dependencies.learning?.content.archiveLegacyIncompleteArticles(at: Date())
         dependencies.learning?.productionNetworking = true
         dependencies.learning?.dictionary.enableOnlineProviders()
         if try !dependencies.articleRepository.allArticleIDs().contains(SourceRegistry.rfc.id) { try dependencies.learning?.content.installBundledRFC(at: Date()) }

@@ -20,7 +20,7 @@ struct VocabularyListView: View {
                             else if let meaning = item.dictionaryMeanings.first { Text("可能对应：\(meaning)").font(.subheadline) }
                             Text("\(item.type == "word" ? "单词" : "短语") · \(item.addedAt.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.secondary)
                         }
-                    }.swipeActions { Button("移除", role: .destructive) { removing = item } }
+                    }.accessibilityIdentifier("vocabulary-entry-\(item.lemma)").swipeActions { Button("移除", role: .destructive) { removing = item } }
                 }
                 if let error { Text(error).foregroundStyle(.red); Button("重新读取", action: load) }
             }.searchable(text: $search, prompt: "搜索词形、lemma 或已缓存中文释义")

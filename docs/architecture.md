@@ -1,3 +1,17 @@
+# CURRENT · Round 3 架构增量
+
+生产继续使用SwiftUI/SwiftData/RepositoryWriter。ArticleDiscoveryService只持有内存候选；ArticleFetchService使用ephemeral会话、有限重试和HTTPS host核对；ArticleHTMLExtractor与ArticleDocumentNormalizer只调整结构/空白；ArticleQualityValidator与ContentRepository.importFullText在事务前后保护完整正文。canonicalURL和SHA均用于去重，不是阅读入口。
+
+ArticleRecord保留旧bodyText列作为rawContent的原始存储，新增structuredBody、author、rights evidence、extractionVersion、completenessVerifiedAt及收藏/稍后标记。新增可选列用于轻量迁移，不删除原始学习数据。生产启动先冷备份、回填，再将不完整旧记录移入ArticleHistoryArchiveRecord；周期校验可读取分离的历史元数据，但文章库/候选/阅读器不可从归档取正文。迁移失败不清库。真实冻结Round 2 schema升级测试与旧两版schema测试均保留，运行结果待核对。
+
+DictionaryAggregator独立并发调用两英语Provider；Local CEDICT保留；DictionaryCacheRepository按语言/lemma/provider/version保存允许缓存的真实义项。个人释义、生词和复习实体独立，清缓存不删用户数据。WordLookupModel用generation丢弃过期UI结果。
+
+MatchingBoard用AnchorPreference与Canvas绘线，两个端点同时禁用；ReviewQueueService在独立事务拒绝复用已完成sense。FSRSScheduler保存S/D/R、计数与算法版本；旧basic日志保持原版本，下一次真实复习事件才转换记忆状态；不把新公式描述为历史用户已经运行过。
+
+ReaderTextProjection把空白重排映射回原始UTF16偏移；原文和hash不改。TextKit负责点击、结构样式、动态字体；稳定的可见词元AX对象减少布局重建。实际横屏、性能、VoiceOver仍需原生运行验证。
+
+---
+
 # 架构
 
 > 前半部分保留 Round 1 历史基线与不变量；当前生产功能、Round 2 验证结果和未完成项见文末及 Round 2 开发交付自述。
@@ -47,3 +61,4 @@
 后续测试定位增强提交 `1b2e26b39c33aff434298ab141eff426725caf24` 仅增加重启后foreground/hittable等待和一次真实坐标触摸，保留恢复百分比与可见词元位置断言。最终文档提交的SHA/Actions以GitHub History和交付答复为准；本节不冒用应用代码的绿色运行作为其他SHA的证明。
 
 这是 iOS26.5兼容模拟器/Xcode26.6 结果，不代表iOS27、真机、签名IPA、全量无障碍或独立验收通过。详细范围、全部失败及未完成项见 Round 2 开发交付自述。
+

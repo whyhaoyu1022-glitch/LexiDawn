@@ -89,6 +89,13 @@ final class AppStartup: ObservableObject {
                 }
                 return dependencies
             }
+            if scenario == "round3-network", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
+                let url = FileManager.default.temporaryDirectory.appendingPathComponent("round3-network-\(storeID.uuidString).store")
+                let dependencies = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
+                dependencies.learning?.productionNetworking = true
+                dependencies.learning?.dictionary.enableOnlineProviders()
+                return dependencies
+            }
             if scenario == "round2-disk", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
                 let url = FileManager.default.temporaryDirectory.appendingPathComponent("round2-ui-\(storeID.uuidString).store")
                 let dependencies = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)

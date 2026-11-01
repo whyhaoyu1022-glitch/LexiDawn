@@ -1,3 +1,11 @@
+# CURRENT · Round 3 开发与验证中
+
+文章采用补充规范v1.1唯一模式：合法完整原文原子保存本地后才可阅读。新增Wikipedia全文API、词典聚合、真实连线、FSRS 4.5和文章库管理的源码与测试；尚未完成全部截图和统一验收。
+
+当前证据及未完成项见[Round 3开发记录](docs/reviews/round-3-development-delivery.md)；逐源结论见[来源审查](docs/article-source-eligibility-audit.md)。所有源码提交直接main。下面保留历史说明，不作为本轮验收结论。
+
+---
+
 # 词光 LexiDawn
 
 个人使用的原生 iOS 英语阅读、词典与间隔复习应用。产品行为以 [SPEC.md](SPEC.md) 为准，当前正在推进 Round 2 功能交付。
@@ -55,3 +63,4 @@ GitHub Actions 先使用 `build-for-testing` 和 `generic/platform=iOS Simulator
 后续测试定位增强提交 `1b2e26b39c33aff434298ab141eff426725caf24` 仅增加重启后foreground/hittable等待和一次真实坐标触摸，保留恢复百分比与可见词元位置断言。最终文档提交的SHA/Actions以GitHub History和交付答复为准；本节不冒用应用代码的绿色运行作为其他SHA的证明。
 
 这是 iOS26.5兼容模拟器/Xcode26.6 结果，不代表iOS27、真机、签名IPA、全量无障碍或独立验收通过。详细范围、全部失败及未完成项见 Round 2 开发交付自述。
+

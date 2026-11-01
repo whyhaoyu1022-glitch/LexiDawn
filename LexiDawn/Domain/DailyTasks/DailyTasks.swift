@@ -96,7 +96,7 @@ enum DailyTask: String, CaseIterable, Sendable {
     case cloze
 }
 
-struct ArticleCandidate: Equatable, Sendable {
+struct ArticleCandidate: Equatable, Sendable, Codable {
     let id: String
     let canonicalURL: String
     let title: String
@@ -837,3 +837,4 @@ struct SavedReviewSessionSnapshot {
     let clozeAnsweredIDs: [String]
     let recordedAt: Date
 }
+

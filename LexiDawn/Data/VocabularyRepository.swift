@@ -169,14 +169,18 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
             try Task.checkCancellation()
             let local = try? await lookupLocal(surface, at: now)
             let all = (local?.senses ?? []) + outcome.senses
-            let senses = all.isEmpty ? old.senses : all
+            let fallback = old.senses.filter { !Set($0.sources ?? []).intersection(outcome.failed).isEmpty }
+            let senses = DictionaryAggregator.merge(all + fallback)
             guard !senses.isEmpty || outcome.failed.isEmpty else { throw LearningError.invalid("词典来源暂时不可用；本地没有缓存，请联网后重试。") }
             if !outcome.senses.isEmpty { try richCache.save(key, senses: outcome.senses, successful: outcome.successful, at: now) }
             return DictionaryResult(headword: key, senses: DictionaryAggregator.rank(senses, context: context), updatedAt: now,
                 sourceURL: "https://dictionaryapi.dev/", licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/", failedProviders: outcome.failed,
-                cached: all.isEmpty && !old.senses.isEmpty, versions: DictionaryAggregator.versions)
+                cached: !fallback.isEmpty || outcome.senses.isEmpty && !(local?.senses.isEmpty ?? true), versions: DictionaryAggregator.versions)
         }
         return try await lookupLocal(surface, at: now)
+    }
+    func localResult(_ surface: String, at now: Date = Date()) async throws -> DictionaryResult {
+        var value = try await lookupLocal(surface, at: now); value.cached = true; return value
     }
     private func lookupLocal(_ surface: String, at now: Date) async throws -> DictionaryResult {
         let key = EnglishTokenizer.lemma(surface)

@@ -186,7 +186,7 @@ import SwiftData
     static var schema: Schema { Schema([ArticleRecord.self, DailyStudyCycleRecord.self, UserPreferencesRecord.self,
         ContentGrantRecord.self, SourceAcquisitionRecord.self, ArticleProgressRecord.self, VocabularyEntryRecord.self,
         VocabularySourceContextRecord.self, DictionaryEntryRecord.self, DictionarySenseRecord.self, ReviewStateRecord.self,
-        ReviewSessionRecord.self, ReviewExerciseRecord.self, ReviewLogRecord.self, DictionaryProviderCacheRecord.self]) }
+        ReviewSessionRecord.self, ReviewExerciseRecord.self, ReviewLogRecord.self, DictionaryProviderCacheRecord.self, ArticleHistoryArchiveRecord.self]) }
     static func container(configuration: ModelConfiguration) throws -> ModelContainer {
         try ModelContainer(for: schema, configurations: [configuration])
     }

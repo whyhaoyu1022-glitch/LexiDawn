@@ -61,7 +61,7 @@ final class StudyCycleRepository: StudyCycleStore, AtomicCycleCreationStore {
             let cycles = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>())
                 .sorted { ($0.assignedLocalDate, $0.createdAtUTC, $0.cycleID) < ($1.assignedLocalDate, $1.createdAtUTC, $1.cycleID) }
                 .map { try $0.domain() }
-            let articles = try context.fetch(FetchDescriptor<ArticleRecord>())
+            let articles = try historicalArticleMetadata(in: context)
             try validateCollection(cycles, articles: articles)
             return cycles
         }
@@ -75,7 +75,7 @@ final class StudyCycleRepository: StudyCycleStore, AtomicCycleCreationStore {
         try writer.write {
             try cycle.validate()
             let records = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>())
-            let articles = try context.fetch(FetchDescriptor<ArticleRecord>())
+            let articles = try historicalArticleMetadata(in: context)
             try upsert(cycle, records: records, articles: articles, in: context)
         }
     }
@@ -86,9 +86,9 @@ final class StudyCycleRepository: StudyCycleStore, AtomicCycleCreationStore {
             try candidate.validate(at: fetchedAt)
             guard cycle.articleID == candidate.id else { throw PersistenceError.integrity("文章与周期 ID 不匹配") }
             let cycles = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>())
-            let articles = try context.fetch(FetchDescriptor<ArticleRecord>())
+            let articles = try historicalArticleMetadata(in: context)
             try ArticleRepository.insertOrValidate(candidate, fetchedAt: fetchedAt, context: context, records: articles)
-            let allArticles = try context.fetch(FetchDescriptor<ArticleRecord>())
+            let allArticles = try historicalArticleMetadata(in: context)
             try upsert(cycle, records: cycles, articles: allArticles, in: context)
         }
     }
@@ -96,7 +96,7 @@ final class StudyCycleRepository: StudyCycleStore, AtomicCycleCreationStore {
     func applyInTransaction(_ cycle: DailyStudyCycle, context: ModelContext) throws {
         try cycle.validate()
         try upsert(cycle, records: context.fetch(FetchDescriptor<DailyStudyCycleRecord>()),
-                   articles: context.fetch(FetchDescriptor<ArticleRecord>()), in: context)
+                   articles: historicalArticleMetadata(in: context), in: context)
     }
 
     private func upsert(_ cycle: DailyStudyCycle, records: [DailyStudyCycleRecord], articles: [ArticleRecord], in context: ModelContext) throws {
@@ -153,7 +153,7 @@ final class StudyCycleRepository: StudyCycleStore, AtomicCycleCreationStore {
             let records = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>())
             for record in records { _ = try record.repairKnownLegacyState(at: timestamp) }
             try normalizeCurrent(records)
-            try validateCollection(records.map { try $0.domain() }, articles: context.fetch(FetchDescriptor<ArticleRecord>()))
+            try validateCollection(records.map { try $0.domain() }, articles: historicalArticleMetadata(in: context))
         }
     }
 
