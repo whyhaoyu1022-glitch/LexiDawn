@@ -44,7 +44,6 @@ struct VocabularyListView: View {
                 if let error { Text(error).foregroundStyle(.red); Button("重新读取", action: load) }
             }.searchable(text: $search, prompt: "搜索词形、lemma 或已缓存中文释义")
                 .navigationTitle("生词本").task { load() }.onReceive(learning.$revision) { _ in load() }
-                .onChange(of: search) { _, _ in load() }.onChange(of: filter) { _, _ in load() }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in load() }
                 .toolbar { Menu("导出生词", systemImage: "square.and.arrow.up") { Button("导出 JSON（完整学习数据）") { prepareExport(.json) }; Button("导出 CSV") { prepareExport(.csv) } } }
                 .fileExporter(isPresented: $exporting, document: exportDocument, contentType: exportType, defaultFilename: "LexiDawn-vocabulary") { result in

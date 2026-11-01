@@ -71,7 +71,7 @@ struct VocabularyAddition {
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
             let states = try context.fetch(FetchDescriptor<ReviewStateRecord>())
             let providerCaches = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>())
-            return all.filter { $0.deletedAt == nil && (type == nil || $0.entryType == type) }.map { record in
+            return try all.filter { $0.deletedAt == nil && (type == nil || $0.entryType == type) }.map { record in
                 let attached = contexts.filter { $0.entryID == record.entryID }
                 let definitions = senses.filter { $0.entryID == "cedict-reverse-v1|\(record.lemma)" }.sorted { $0.senseID < $1.senseID }.map(\.chinese)
                 let sourceItems: [VocabularyContextItem] = attached.map { source in
