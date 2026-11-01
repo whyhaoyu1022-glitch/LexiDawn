@@ -136,9 +136,25 @@ jobs:
             echo "No finalized xcresult after interruption; retained UI log is diagnostic, not successful screenshot evidence."
           fi
       - uses: actions/upload-artifact@v4
+        id: upload_ui_evidence
         if: always()
+        continue-on-error: true
         with:
           name: LexiDawn-round3-${{ matrix.suite }}-${{ github.run_id }}-${{ github.run_attempt }}
+          compression-level: 0
+          path: |
+            ${{ runner.temp }}/native-evidence
+            ${{ runner.temp }}/native-attachments
+            ${{ runner.temp }}/ui.xcresult
+            ${{ runner.temp }}/ui.log
+            ${{ runner.temp }}/ci-tests.txt
+          if-no-files-found: error
+      - name: Retry native evidence upload after a transient artifact service failure
+        uses: actions/upload-artifact@v4
+        if: ${{ always() && steps.upload_ui_evidence.outcome == 'failure' }}
+        with:
+          name: LexiDawn-round3-${{ matrix.suite }}-${{ github.run_id }}-${{ github.run_attempt }}
+          overwrite: true
           compression-level: 0
           path: |
             ${{ runner.temp }}/native-evidence

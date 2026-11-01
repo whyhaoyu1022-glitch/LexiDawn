@@ -4,6 +4,16 @@ import ImageIO
 
 final class Round3UITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false; XCUIDevice.shared.orientation = .portrait }
+    override func tearDownWithError() throws {
+        // This isolated fixture contains no live discovery candidates or user data.
+        // Retain its failure hierarchy in the log even if artifact upload is unavailable.
+        if name.contains("testVocabularyStatusSortConfirmedMeaningAndNativeExportDialogs"), (testRun?.failureCount ?? 0) > 0 {
+            let hierarchy = XCUIApplication().debugDescription
+            print("ROUND3_EXPORT_FAILURE_HIERARCHY_BEGIN\n" + hierarchy + "\nROUND3_EXPORT_FAILURE_HIERARCHY_END")
+            let attachment = XCTAttachment(string: hierarchy)
+            attachment.name = "round3-export-failure-hierarchy"; attachment.lifetime = .keepAlways; add(attachment)
+        }
+    }
     private func launch(_ scenario: String) -> XCUIApplication {
         let app = XCUIApplication(); app.launchEnvironment["LEXIDAWN_UI_SCENARIO"] = scenario
         app.launchEnvironment["LEXIDAWN_UI_STORE_ID"] = UUID().uuidString; app.launch(); return app
@@ -89,17 +99,30 @@ final class Round3UITests: XCTestCase {
             let exporterBar = app.navigationBars["FullDocumentManagerViewControllerNavigationBar"]
             XCTAssertTrue(exporterBar.waitForExistence(timeout: 15))
             XCTAssertTrue(filename.waitForExistence(timeout: 15))
-            capture("R3-V\(index + 14)", app: app, feature: "vocabulary-export", state: index == 0 ? "native-JSON-export-dialog" : "native-CSV-export-dialog", origin: "real-repository-staged-file-native-document-picker-fixture-vocabulary")
-            let cancel = app.buttons.matching(NSPredicate(format: "label IN %@", ["Cancel", "取消"])).firstMatch
-            if cancel.exists { cancel.tap() }
-            else {
-                // iOS 26's folder-level exporter has Back/Save, without Cancel.
-                // Dismiss the native sheet by its navigation bar; never tap Save.
-                XCTAssertTrue(exporterBar.exists); exporterBar.swipeDown()
+            let expectedName = index == 0 ? "LexiDawn-vocabulary.json" : "LexiDawn-vocabulary.csv"
+            XCTAssertEqual(app.staticTexts["vocabulary-export-filename"].label, expectedName)
+            if index == 0 {
+                app.buttons["cancel-vocabulary-export"].tap()
+                expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: exporterBar)
+                waitForExpectations(timeout: 10)
+                XCTAssertFalse(app.staticTexts["vocabulary-export-completed"].exists)
+                capture("R3-V18", app: app, feature: "vocabulary-export", state: "cancelled-export-no-success-feedback", origin: "real-repository-staged-file-native-document-picker-fixture-vocabulary")
+                app.buttons["vocabulary-export"].tap(); app.buttons[title].tap()
+                XCTAssertTrue(exporterBar.waitForExistence(timeout: 15))
+                XCTAssertTrue(filename.waitForExistence(timeout: 15))
             }
+            capture("R3-V\(index + 14)", app: app, feature: "vocabulary-export", state: index == 0 ? "native-JSON-export-dialog" : "native-CSV-export-dialog", origin: "real-repository-staged-file-native-document-picker-fixture-vocabulary")
+            let save = exporterBar.buttons.matching(NSPredicate(format: "label IN %@", ["Save", "保存", "存储"])).firstMatch
+            expectation(for: NSPredicate { _, _ in save.exists && save.isEnabled && save.isHittable }, evaluatedWith: save)
+            waitForExpectations(timeout: 15)
+            save.tap()
+            let completed = app.staticTexts["vocabulary-export-completed"]
+            XCTAssertTrue(completed.waitForExistence(timeout: 30))
+            XCTAssertTrue(completed.label.contains(expectedName))
             expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: exporterBar)
             waitForExpectations(timeout: 10)
             XCTAssertTrue(app.navigationBars["生词本"].waitForExistence(timeout: 10))
+            capture("R3-V\(index + 16)", app: app, feature: "vocabulary-export", state: index == 0 ? "system-JSON-copy-completed" : "system-CSV-copy-completed", origin: "native-document-picker-completion-callback-not-preset-success")
         }
         let search = app.searchFields.firstMatch
         for _ in 0..<5 { if search.exists && search.isHittable { break }; app.swipeDown() }

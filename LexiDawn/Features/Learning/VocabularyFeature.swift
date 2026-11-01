@@ -14,6 +14,7 @@ struct VocabularyListView: View {
     @State private var now = Date()
     @State private var exportFile: VocabularyExportFile?
     @State private var cleanupExport: VocabularyExportFile?
+    @State private var exportNotice: String?
     private let exportFiles = VocabularyExportFileService()
     private var items: [VocabularyItem] { VocabularyQuery.apply(allItems, search: search, type: filter, status: status, sort: sort, at: now) }
     var body: some View {
@@ -42,12 +43,35 @@ struct VocabularyListView: View {
                     }.accessibilityIdentifier("vocabulary-entry-\(item.lemma)").swipeActions { Button("移除", role: .destructive) { removing = item } }
                 }
                 if let error { Text(error).foregroundStyle(.red); Button("重新读取", action: load) }
+            }.safeAreaInset(edge: .top) {
+                if let exportNotice {
+                    Text(exportNotice).font(.subheadline).frame(maxWidth: .infinity, alignment: .leading).padding()
+                        .background(.regularMaterial).accessibilityIdentifier("vocabulary-export-completed")
+                }
             }.searchable(text: $search, prompt: "搜索词形、lemma 或已缓存中文释义")
                 .navigationTitle("生词本").task { load() }.onReceive(learning.$revision) { _ in load() }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in load() }
                 .toolbar { Menu("导出生词", systemImage: "square.and.arrow.up") { Button("导出 JSON（完整学习数据）") { prepareExport(.json) }; Button("导出 CSV") { prepareExport(.csv) } }.accessibilityIdentifier("vocabulary-export") }
                 .sheet(item: $exportFile, onDismiss: clearExport) { file in
-                    VocabularyExportPicker(file: file) { exportFile = nil }
+                    VStack(spacing: 0) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("导出生词").font(.headline)
+                                // This is the actual staged file's name, also readable by
+                                // VoiceOver when the system provider omits its filename field.
+                                Text(file.url.lastPathComponent).font(.subheadline)
+                                    .accessibilityIdentifier("vocabulary-export-filename")
+                            }
+                            Spacer()
+                            Button("取消") { exportFile = nil }.accessibilityIdentifier("cancel-vocabulary-export")
+                        }.padding()
+                        Divider()
+                        VocabularyExportPicker(file: file) { destination in
+                            guard exportFile?.id == file.id else { return }
+                            if let destination { exportNotice = "已导出 " + destination.lastPathComponent }
+                            exportFile = nil
+                        }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }.presentationDetents([.large])
                 }
                 .alert("确认移除生词？", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })) {
                     Button("取消", role: .cancel) { removing = nil }
@@ -58,6 +82,7 @@ struct VocabularyListView: View {
     private func load() { do { allItems = try learning.vocabulary.entries(); now = Date(); error = nil } catch { self.error = error.localizedDescription } }
     private func prepareExport(_ format: VocabularyExportFormat) {
         guard exportFile == nil, cleanupExport == nil else { return }
+        exportNotice = nil
         do {
             let file = try exportFiles.prepare(learning.vocabulary.export(format, at: Date()), format: format)
             cleanupExport = file; exportFile = file; error = nil
@@ -74,7 +99,7 @@ struct VocabularyListView: View {
 /// Public UIKit export API receives an existing file, never a changing optional document.
 struct VocabularyExportPicker: UIViewControllerRepresentable {
     let file: VocabularyExportFile
-    let finished: () -> Void
+    let finished: (URL?) -> Void
     func makeCoordinator() -> Coordinator { Coordinator(finished: finished) }
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let picker = UIDocumentPickerViewController(forExporting: [file.url], asCopy: true)
@@ -84,10 +109,10 @@ struct VocabularyExportPicker: UIViewControllerRepresentable {
     }
     func updateUIViewController(_ controller: UIDocumentPickerViewController, context: Context) { }
     @MainActor final class Coordinator: NSObject, UIDocumentPickerDelegate {
-        let finished: () -> Void
-        init(finished: @escaping () -> Void) { self.finished = finished }
-        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) { finished() }
-        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) { finished() }
+        let finished: (URL?) -> Void
+        init(finished: @escaping (URL?) -> Void) { self.finished = finished }
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) { finished(nil) }
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) { finished(urls.first) }
     }
 }
 struct VocabularyDetailView: View {

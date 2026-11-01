@@ -804,6 +804,24 @@
       "feature": "dictionary-context",
       "state": "嵌套词的词典语境证据与关联文章分开",
       "screenshotIDPattern": "^R3-D67-"
+    },
+    {
+      "requirementID": "export-json-completed",
+      "feature": "vocabulary-export",
+      "state": "JSON真实系统保存完成",
+      "screenshotIDPattern": "^R3-V16-"
+    },
+    {
+      "requirementID": "export-csv-completed",
+      "feature": "vocabulary-export",
+      "state": "CSV真实系统保存完成",
+      "screenshotIDPattern": "^R3-V17-"
+    },
+    {
+      "requirementID": "export-cancelled",
+      "feature": "vocabulary-export",
+      "state": "取消导出无成功反馈",
+      "screenshotIDPattern": "^R3-V18-"
     }
   ],
   "additionalChecks": [
