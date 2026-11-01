@@ -205,16 +205,6 @@ struct ReviewSessionView: Equatable {
 }
 @MainActor private struct TransactionSessionSnapshot: ReviewSessionReading {
     let snapshot: SavedReviewSessionSnapshot
-    func scheduleFeedback(cycleID: UUID) throws -> [String] {
-        try writer.read { context in
-            guard let session = try context.fetch(FetchDescriptor<ReviewSessionRecord>()).first(where: { $0.cycleID == cycleID.uuidString }) else { return [] }
-            let entries = try context.fetch(FetchDescriptor<VocabularyEntryRecord>())
-            return try context.fetch(FetchDescriptor<ReviewLogRecord>()).filter { $0.sessionID == session.sessionID }.sorted { $0.entryID < $1.entryID }.map { log in
-                let lemma = entries.first { $0.entryID == log.entryID }?.lemma ?? "词条"
-                return "\(lemma) · \(log.grade.capitalized) · 下次复习 \(log.nextDueAt.formatted(date: .abbreviated, time: .shortened)) · \(log.algorithmVersion)"
-            }
-        }
-    }
     func savedSession(for cycleID: UUID, at timestamp: Date) throws -> SavedReviewSessionSnapshot { snapshot }
 }
 

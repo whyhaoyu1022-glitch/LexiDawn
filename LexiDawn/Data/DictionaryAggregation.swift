@@ -35,8 +35,34 @@ struct FreeDictionaryProvider: DictionaryProvider {
 struct WiktionaryDictionaryProvider: DictionaryProvider {
     func lookup(_ headword: String) async throws -> [DictionarySense] {
         let url = URL(string: "https://en.wiktionary.org/api/rest_v1/page/definition/")!.appendingPathComponent(headword)
-        let data = try await ArticleFetchService().fetch(url, allowedHost: "en.wiktionary.org")
-        return try Self.parse(data)
+        do {
+            let data = try await ArticleFetchService().fetch(url, allowedHost: "en.wiktionary.org")
+            return try Self.parse(data)
+        } catch is CancellationError { throw CancellationError() }
+        catch {
+            // The official Action API remains available when the older REST route is unavailable.
+            let api = try OfficialArticleAPI.url(host: "en.wiktionary.org", fields: ["action": "parse", "page": headword, "prop": "text", "format": "json", "formatversion": "2", "disableeditsection": "1"])
+            let data = try await ArticleFetchService().fetch(api, allowedHost: "en.wiktionary.org")
+            struct Response: Decodable { struct Page: Decodable { let text: String }; let parse: Page }
+            return try Self.parseEnglishHTML(JSONDecoder().decode(Response.self, from: data).parse.text)
+        }
+    }
+    static func parseEnglishHTML(_ html: String) throws -> [DictionarySense] {
+        guard let marker = html.range(of: "id=\"English\""),
+              let start = html.range(of: "<h2", options: .backwards, range: html.startIndex..<marker.lowerBound) else { return [] }
+        let end = html.range(of: "<h2", range: marker.upperBound..<html.endIndex)?.lowerBound ?? html.endIndex
+        let document = try ArticleHTMLExtractor.extract(String(html[start.lowerBound..<end]))
+        let parts: Set<String> = ["noun", "verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "interjection", "determiner", "phrase"]
+        var pos: String?, senses: [DictionarySense] = []
+        for block in document.blocks {
+            if block.kind == .heading {
+                let heading = block.text.lowercased().trimmingCharacters(in: .whitespaces)
+                pos = parts.contains(heading) ? heading : nil
+            } else if block.kind == .listItem, let pos {
+                senses.append(DictionarySense(id: "wiktionary|" + fingerprint(pos + block.text), en: block.text, zh: "", line: "English Wiktionary contributors · CC BY-SA 4.0", partOfSpeech: pos, sources: ["Wiktionary"]))
+            }
+        }
+        return senses
     }
     static func parse(_ data: Data) throws -> [DictionarySense] {
         struct Section: Decodable {
@@ -114,7 +140,9 @@ actor DictionaryAggregator {
                 guard let version = DictionaryAggregator.versions[provider] else { continue }
                 let values = senses.filter { ($0.sources ?? []).contains(provider) && (provider != "Free Dictionary API" || $0.line.contains("creativecommons.org")) }
                 guard !values.isEmpty else { continue }
-                for old in try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()) where old.key == "en|\(provider)|\(version)|\(lemma)" { context.delete(old) }
+                let previous = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.key == "en|\(provider)|\(version)|\(lemma)" }
+                if previous.contains(where: { $0.fetchedAt > now }) { continue }
+                for old in previous { context.delete(old) }
                 context.insert(DictionaryProviderCacheRecord(lemma: lemma, provider: provider, version: version, data: try JSONEncoder().encode(values), at: now))
             }
         }

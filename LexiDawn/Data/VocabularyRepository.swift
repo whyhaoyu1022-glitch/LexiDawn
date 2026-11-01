@@ -139,6 +139,7 @@ struct DictionaryResult: Equatable {
 protocol DictionaryProvider: Sendable { func lookup(_ headword: String) async throws -> [DictionarySense] }
 /// Local, source-derived, legally redistributable index. No network or personal reading history upload.
 actor CEDICTDictionaryProvider: DictionaryProvider {
+    static let sourceVersion = "2026-10-30-reverse-v1"
     private var index: [String: [DictionarySense]]?
     func lookup(_ headword: String) async throws -> [DictionarySense] {
         if index == nil {
@@ -186,7 +187,12 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
             let context = writer.context
             let record = try context.fetch(FetchDescriptor<DictionaryEntryRecord>()).first { $0.headword == key } ?? DictionaryEntryRecord(headword: key, at: now)
             if record.modelContext == nil { context.insert(record) }
-            let old = try context.fetch(FetchDescriptor<DictionarySenseRecord>())
+            var old = try context.fetch(FetchDescriptor<DictionarySenseRecord>())
+            if record.sourceVersion != CEDICTDictionaryProvider.sourceVersion {
+                for stale in old where stale.entryID == record.entryID { context.delete(stale) }
+                old.removeAll { $0.entryID == record.entryID }
+                record.sourceVersion = CEDICTDictionaryProvider.sourceVersion; record.updatedAt = now
+            }
             for sense in senses where !old.contains(where: { $0.senseID == record.entryID + "|" + sense.id }) {
                 context.insert(DictionarySenseRecord(senseID: record.entryID + "|" + sense.id, entryID: record.entryID, english: sense.en, chinese: sense.zh, sourceLine: sense.line))
             }
@@ -197,7 +203,7 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
         try writer.read { context in
             let entries = try context.fetch(FetchDescriptor<DictionaryEntryRecord>()).filter { $0.headword == key }
             guard entries.count <= 1 else { throw PersistenceError.integrity("重复词典缓存") }
-            guard let entry = entries.first else { return nil }
+            guard let entry = entries.first, entry.sourceVersion == CEDICTDictionaryProvider.sourceVersion else { return nil }
             let senses = try context.fetch(FetchDescriptor<DictionarySenseRecord>()).filter { $0.entryID == entry.entryID }
                 .sorted { $0.senseID < $1.senseID }.map { DictionarySense(id: String($0.senseID.split(separator: "|").last ?? ""), en: $0.english, zh: $0.chinese, line: $0.sourceLine) }
             return DictionaryResult(headword: key, senses: senses, updatedAt: entry.updatedAt, sourceURL: entry.sourceURL, licenseURL: entry.licenseURL)

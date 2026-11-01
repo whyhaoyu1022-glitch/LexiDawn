@@ -61,7 +61,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
                     if block.kind == .heading {
                         attributed.addAttribute(.font, value: UIFontMetrics(forTextStyle: .headline).scaledFont(for: .systemFont(ofSize: CGFloat(fontSize + 3), weight: .bold)), range: range)
                     } else if block.kind == .quotation || block.kind == .listItem {
-                        let indented = paragraph.mutableCopy() as! NSMutableParagraphStyle
+                        let indented = NSMutableParagraphStyle(); indented.setParagraphStyle(paragraph)
                         indented.headIndent = 16; indented.firstLineHeadIndent = 16
                         attributed.addAttribute(.paragraphStyle, value: indented, range: range)
                     }

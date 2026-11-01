@@ -165,7 +165,7 @@ struct ArticleAccessError: LocalizedError {
                 grantHash: grant.bodyHash, scope: grant.scope, now: now, highWater: grant.accessHighWater)
             if !permitted {
                 if candidate.cachePermission?.permits(at: grant.accessHighWater) == false {
-                    article.bodyText = nil; article.contentStatus = ArticleContentStatus.unavailable.rawValue
+                    article.bodyText = nil; article.structuredBody = nil; article.contentStatus = ArticleContentStatus.unavailable.rawValue
                 }
                 return nil
             }

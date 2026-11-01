@@ -146,6 +146,7 @@ struct ReaderView: View {
     @Published var loading = false
     @Published var vocabularyError: String?
     private var started = false
+    private var lookupGeneration = UUID()
     let token: EnglishToken, articleID: String, autoAdd: Bool, learning: LearningServices
     init(token: EnglishToken, articleID: String, autoAdd: Bool, learning: LearningServices, depth: Int = 0) { self.token = token; self.articleID = articleID; self.autoAdd = autoAdd; self.learning = learning; self.depth = depth }
     func begin() async {
@@ -160,10 +161,14 @@ struct ReaderView: View {
         } catch { vocabularyError = error.localizedDescription }
     }
     func lookup() async {
-        loading = true
-        do { result = try await learning.dictionary.lookup(token.surface, context: token.sentence); error = nil }
-        catch { self.error = error.localizedDescription }
-        loading = false
+        let generation = UUID(); lookupGeneration = generation; loading = true
+        defer { if lookupGeneration == generation { loading = false } }
+        do {
+            let value = try await learning.dictionary.lookup(token.surface, context: token.sentence)
+            guard generation == lookupGeneration, !Task.isCancelled else { return }
+            result = value; error = nil
+        } catch is CancellationError { }
+        catch { if generation == lookupGeneration { self.error = error.localizedDescription } }
     }
     func add(explicit: Bool) {
         do {

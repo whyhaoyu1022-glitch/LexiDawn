@@ -90,13 +90,14 @@ import SwiftData
     @Attribute(.unique) var entryID: String
     var headword: String
     var provider: String
+    var sourceVersion: String?
     var sourceURL: String
     var licenseURL: String
     var updatedAt: Date
     init(headword: String, at: Date) {
         entryID = "cedict-reverse-v1|\(headword)"; self.headword = headword; provider = "CC-CEDICT reverse index"
         sourceURL = "https://www.mdbg.net/chinese/dictionary?page=cc-cedict"
-        licenseURL = "https://creativecommons.org/licenses/by-sa/4.0/"; updatedAt = at
+        licenseURL = "https://creativecommons.org/licenses/by-sa/4.0/"; updatedAt = at; sourceVersion = CEDICTDictionaryProvider.sourceVersion
     }
 }
 @Model final class DictionarySenseRecord {
