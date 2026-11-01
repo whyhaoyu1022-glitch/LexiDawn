@@ -248,6 +248,16 @@ final class Round3UITests: XCTestCase {
         app.buttons["match-word-book"].tap(); app.buttons["match-meaning-书（个人释义）"].tap()
         XCTAssertTrue(app.textFields["cloze-answer"].waitForExistence(timeout: 10))
         capture("R3-M07", app: app, feature: "review", state: "matching-complete-spelling-context")
+        app.buttons["show-completed-matches"].tap()
+        for text in ["internet", "document", "book"] { XCTAssertFalse(app.buttons["match-word-" + text].isEnabled) }
+        XCTAssertGreaterThan(greenLinePixels(app: app), 24)
+        capture("R3-M08", app: app, feature: "matching", state: "all-three-completed-connections-retained")
+        let board = app.otherElements["matching-board"].firstMatch
+        let previousY = board.frame.minY
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.7)).press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.6)))
+        XCTAssertLessThan(board.frame.minY, previousY)
+        XCTAssertGreaterThan(greenLinePixels(app: app), 12)
+        capture("R3-M11", app: app, feature: "matching", state: "completed-lines-remain-anchored-after-scroll")
     }
     func testLiveColdStartImportReadingLookupPersonalMeaningReviewAndRestart() throws {
         let app = launch("round3-network")
@@ -463,7 +473,13 @@ final class Round3UITests: XCTestCase {
         capture("R3-S00", app: app, feature: "article", state: "live-multiple-source-import-library", origin: "production-network-empty-isolated-store")
         // Unlock through actual app actions, never by inserting completed cycles or review evidence.
         app.navigationBars.buttons.firstMatch.tap()
-        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 10)); app.buttons["open-reader"].tap()
+        let sourceCards = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'today-source-'"))
+        for _ in 0..<12 { if sourceCards.firstMatch.exists && sourceCards.firstMatch.isHittable { break }; app.swipeUp() }
+        XCTAssertGreaterThanOrEqual(sourceCards.count, 2); XCTAssertTrue(sourceCards.firstMatch.isHittable)
+        capture("R3-S01", app: app, feature: "today", state: "diverse-source-complete-originals-homepage", origin: "production-network-empty-isolated-store")
+        let task = app.buttons["open-reader"]
+        for _ in 0..<15 { if task.exists && task.isHittable { break }; app.swipeDown() }
+        XCTAssertTrue(task.waitForExistence(timeout: 10)); XCTAssertTrue(task.isHittable); task.tap()
         XCTAssertTrue(app.buttons["finish-reading"].waitForExistence(timeout: 10)); app.buttons["finish-reading"].tap()
         if app.alerts.buttons["确认我已读完"].waitForExistence(timeout: 2) { app.alerts.buttons["确认我已读完"].tap() }
         XCTAssertTrue(app.staticTexts["reading-completed"].waitForExistence(timeout: 10)); app.buttons["返回今日"].tap()

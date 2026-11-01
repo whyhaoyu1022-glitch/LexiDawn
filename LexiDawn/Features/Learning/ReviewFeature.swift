@@ -19,6 +19,7 @@ struct ReviewPracticeContent: View {
     @State private var emptyResolved = false
     @State private var extraMode = false
     @State private var extraEmpty = false
+    @State private var showCompletedMatches = false
     @State private var loadGeneration = UUID()
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -36,7 +37,11 @@ struct ReviewPracticeContent: View {
                     if session.completedAt != nil {
                         ContentUnavailableView("本次复习已保存", systemImage: "checkmark.seal.fill", description: Text("作答、复习日志和下次时间已保存。生词本条目继续保留。")).accessibilityIdentifier("review-completed")
                     } else if !session.matchingComplete { matching(session) }
-                    else { cloze(session) }
+                    else {
+                        DisclosureGroup("连线已完成 · 查看全部连接", isExpanded: $showCompletedMatches) { matching(session) }
+                            .accessibilityIdentifier("show-completed-matches")
+                        cloze(session)
+                    }
                 } else if emptyResolved { Label("完整队列中没有应复习词条，已记录合法空队列结果。", systemImage: "checkmark.circle") }
                 else { Text("请先在今日页获得文章，并在阅读中积累词汇。") }
                 ForEach(schedules, id: \.self) { Text($0).font(.footnote).accessibilityIdentifier("review-next-due") }
@@ -82,7 +87,7 @@ struct ReviewPracticeContent: View {
     }
     private func load() async {
         let generation = UUID(); loadGeneration = generation
-        loading = true; message = nil; selected = nil; spelling = ""; feedback = nil; emptyResolved = false; session = nil; schedules = []; extraMode = false; extraEmpty = false
+        loading = true; message = nil; selected = nil; spelling = ""; feedback = nil; emptyResolved = false; session = nil; schedules = []; extraMode = false; extraEmpty = false; showCompletedMatches = false
         defer { if loadGeneration == generation { loading = false } }
         do {
             let cycles = try learning.cycles.fetchAll()

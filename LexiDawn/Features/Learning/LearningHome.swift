@@ -72,14 +72,14 @@ struct LiveTodayView: View {
                     if !articles.filter(\.readable).isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("本地完整原文").font(.title3.bold())
-                            ForEach(Array(articles.filter(\.readable).prefix(6))) { article in
+                            ForEach(highlightedArticles) { article in
                                 NavigationLink { ArticleLibraryView(learning: learning) } label: {
                                     VStack(alignment: .leading, spacing: 6) {
                                         Text(ArticleSourceRegistry.name(article.sourceID)).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                                         Text(article.title).font(.headline).lineLimit(3)
                                         Text("\(article.minutes) 分钟 · \(article.topics.joined(separator: " · ")) · 离线可读").font(.caption).foregroundStyle(.secondary)
                                     }.frame(maxWidth: .infinity, alignment: .leading).padding().background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
-                                }.buttonStyle(.plain)
+                                }.buttonStyle(.plain).accessibilityIdentifier("today-source-" + article.sourceID)
                             }
                         }
                     }
@@ -101,6 +101,10 @@ struct LiveTodayView: View {
             .fullScreenCover(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("返回今日") { reader = nil } } } } }
             .sheet(isPresented: $review) { NavigationStack { ReviewPracticeContent(learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("返回今日") { review = false; reload() } } } } }
         }
+    }
+    private var highlightedArticles: [ArticleLibraryItem] {
+        var seen = Set<String>()
+        return Array(articles.filter { $0.readable && seen.insert($0.sourceID).inserted }.prefix(6))
     }
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())

@@ -32,3 +32,6 @@
 ## 历史记录
 
 [Round 2 独立审核](docs/reviews/round-2-independent-acceptance-and-91-screenshot-audit-2026-10-31.md) 与 [Round 2 交付](docs/reviews/round-2-development-delivery.md) 保留原文。旧 STATUS 的时间顺序记录可从 [main 在本次整理前的版本](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/c96015ab68827df96572a25236345c7cd972dda5/STATUS.md) 查阅；旧测试计数和“未接入”描述不代表当前实现。
+
+
+补齐截图覆盖：今日原文卡片优先每源一篇，全部仍来自本地完整库；真实多源UI返回今日采集R3-S01。连线全部完成后可展开查看已保存全部连接，进入拼写不删除线条证据；新增M08全部双端禁用/实线和M11滚动后锚点实线PNG断言，主用例数量不变。新增截图仍待当前代码运行。
