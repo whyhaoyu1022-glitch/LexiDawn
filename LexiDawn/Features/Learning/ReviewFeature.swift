@@ -38,8 +38,10 @@ struct ReviewPracticeContent: View {
                         ContentUnavailableView("本次复习已保存", systemImage: "checkmark.seal.fill", description: Text("作答、复习日志和下次时间已保存。生词本条目继续保留。")).accessibilityIdentifier("review-completed")
                     } else if !session.matchingComplete { matching(session) }
                     else {
-                        DisclosureGroup("连线已完成 · 查看全部连接", isExpanded: $showCompletedMatches) { matching(session) }
-                            .accessibilityIdentifier("show-completed-matches")
+                        Button { showCompletedMatches.toggle() } label: {
+                            Label("连线已完成 · 查看全部连接", systemImage: showCompletedMatches ? "chevron.up" : "chevron.down")
+                        }.accessibilityIdentifier("show-completed-matches").accessibilityValue(showCompletedMatches ? "已展开" : "已收起")
+                        if showCompletedMatches { matching(session) }
                         cloze(session)
                     }
                 } else if emptyResolved { Label("完整队列中没有应复习词条，已记录合法空队列结果。", systemImage: "checkmark.circle") }

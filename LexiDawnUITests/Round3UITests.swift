@@ -91,6 +91,12 @@ final class Round3UITests: XCTestCase {
             let cancel = app.buttons.matching(NSPredicate(format: "label IN %@", ["Cancel", "取消"])).firstMatch
             XCTAssertTrue(cancel.exists); cancel.tap(); XCTAssertTrue(app.navigationBars["生词本"].waitForExistence(timeout: 10))
         }
+        let search = app.searchFields.firstMatch
+        for _ in 0..<5 { if search.exists && search.isHittable { break }; app.swipeDown() }
+        XCTAssertTrue(search.isHittable); search.tap(); search.typeText("zzzzunfindable")
+        XCTAssertTrue(app.staticTexts["还没有匹配的生词"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'vocabulary-entry-'")).count, 0)
+        capture("R3-V13", app: app, feature: "vocabulary", state: "typed-search-no-result", origin: "real-RFC-explicit-personal-vocabulary-fixture")
     }
     private func capture(_ id: String, app: XCUIApplication, feature: String, state: String, theme: String = "system", origin: String = "fixture-real-rfc-isolated-learning-state") {
         let device = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? UIDevice.current.name
@@ -249,7 +255,7 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.textFields["cloze-answer"].waitForExistence(timeout: 10))
         capture("R3-M07", app: app, feature: "review", state: "matching-complete-spelling-context")
         app.buttons["show-completed-matches"].tap()
-        for text in ["internet", "document", "book"] { XCTAssertFalse(app.buttons["match-word-" + text].isEnabled) }
+        for text in ["internet", "document", "book"] { let word = app.buttons["match-word-" + text]; XCTAssertTrue(word.exists); XCTAssertFalse(word.isEnabled) }
         XCTAssertGreaterThan(greenLinePixels(app: app), 24)
         capture("R3-M08", app: app, feature: "matching", state: "all-three-completed-connections-retained")
         let board = app.otherElements["matching-board"].firstMatch
@@ -556,6 +562,7 @@ final class Round3UITests: XCTestCase {
                 capture("R3-D" + String(index + 20), app: app, feature: "dictionary", state: "nested-phrase-" + phrase, origin: "explicit-original-context-fixture-local-real-CEDICT")
                 app.buttons["close-word"].firstMatch.tap()
                 XCTAssertTrue(app.staticTexts["标准词形：" + lemma].waitForExistence(timeout: 10))
+                capture("R3-D" + String(index + 60), app: app, feature: "dictionary", state: "returned-from-nested-phrase-" + phrase, origin: "explicit-original-context-fixture-local-real-CEDICT")
             }
             app.buttons["close-word"].firstMatch.tap(); XCTAssertTrue(app.otherElements["reader-body"].firstMatch.waitForExistence(timeout: 10))
         }
@@ -568,6 +575,10 @@ final class Round3UITests: XCTestCase {
             XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10))
             capture("R3-D" + String(index + 30), app: app, feature: "dictionary", state: "reader-popup-theme-" + theme, theme: theme, origin: "real-bundled-RFC-local-real-CEDICT")
             app.buttons["close-word"].tap()
+            app.buttons["来源详情"].firstMatch.tap()
+            XCTAssertTrue(app.navigationBars["来源详情"].waitForExistence(timeout: 10))
+            capture("R3-D" + String(index + 33), app: app, feature: "reader-source", state: "reader-source-sheet-theme-" + theme, theme: theme, origin: "real-bundled-RFC-source-metadata")
+            app.buttons["close-source-details"].tap()
         }
     }
     func testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce() throws {

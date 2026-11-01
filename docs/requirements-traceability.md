@@ -1,6 +1,6 @@
 # CURRENT · Round 3 需求追踪
 
-功能存在、持久化、测试、真实截图和 CI 都必须有同一代码证据才能标记完成。当前仍在验证；174 XCTest / 48 UI 为源码清单。20 项 R2-A01–A20 的逐项实现及证据缺口见 [本轮矩阵](reviews/round-3-development-delivery.md)。
+功能存在、持久化、测试、真实截图和 CI 都必须有同一代码证据才能标记完成。当前仍在验证；175 XCTest / 48 UI 为源码清单。20 项 R2-A01–A20 的逐项实现及证据缺口见 [本轮矩阵](reviews/round-3-development-delivery.md)。
 
 | 需求 | 当前实现 | 主要验证 | 剩余验收 |
 |---|---|---|---|
@@ -8,7 +8,7 @@
 | 完整原文唯一本地模式 | Registry/Audit/内存发现/HTTPS抓取/HTML/Normalizer/Quality/Repository；无阅读降级 | 全文准入、截断/部分/URL/原子回滚/失败刷新/去重；Live10源 | 最终源列表/完整UI与PNG |
 | 负责人个人模式特别指示 | personal-full-text 与 audited-full-text 分开，不伪造出版社授权 | importBasis/伪造证据拒绝；官方源真实运行 | Reuters401/AP403/Smithsonian不完整如实舍弃 |
 | 所有入口仅当前任务 | ArticleLearningAccess；Reader打开/save/complete均检查 | 历史/收藏/稍后/跨日门禁Domain及UI | 最新全量UI |
-| 双正文原子保存 | rawContent物理旧列+structuredBody+证据/哈希同事务 | failure/rollback/no孤儿/结构不一致拒绝 | 最新构建/174测试 |
+| 双正文原子保存 | rawContent物理旧列+structuredBody+证据/哈希同事务 | failure/rollback/no孤儿/结构不一致拒绝 | 最新构建/175测试 |
 | 多词典/离线/简明+详情 | Free/Wiktionary/CEDICT，版本缓存，最多两条简明义项、独立完整详情 | 多Provider/缓存/英文节POS/IPA/词形/失败UI | Free真实间歇404与最终截图 |
 | 真正连线 | 锚点Canvas、多线、错误重试、两端禁用、Domain拒绝重复 | 像素/布局/旋转/会话恢复/AX等价 | 最新双尺寸及逐图审阅 |
 | 阅读器/主题/结构/恢复 | TextKit、原文投影、三主题、大字/横屏、位置/版本恢复 | 十次旋转实际正文/点词；原创HTML结构和版本UI | 最新三主题/双尺寸PNG |

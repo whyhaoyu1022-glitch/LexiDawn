@@ -90,6 +90,7 @@ struct ReaderView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(readerBackground)
+        .accessibilityHidden(selection != nil || sourceDetails)
         .toolbarBackground(readerBackground, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .preferredColorScheme(theme == "dark" ? .dark : ["paper", "light"].contains(theme) ? .light : nil)
@@ -123,7 +124,15 @@ struct ReaderView: View {
                 }
             } catch { }
         }
-        .sheet(isPresented: $sourceDetails) { NavigationStack { ScrollView { Text(model.article?.source ?? "来源信息不可用").font(.body).textSelection(.enabled).padding() }.navigationTitle("来源详情").toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { sourceDetails = false } } } } }
+        .sheet(isPresented: $sourceDetails) {
+            NavigationStack {
+                ScrollView { Text(model.article?.source ?? "来源信息不可用").font(.body).textSelection(.enabled).padding() }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity).background(readerBackground)
+                    .navigationTitle("来源详情").navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(readerBackground, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { sourceDetails = false }.accessibilityIdentifier("close-source-details") } }
+            }.presentationBackground(readerBackground)
+        }
         .sheet(item: $selection) { selected in WordLookupSheet(model: selected) }
         .alert("明确确认已读完", isPresented: $manualConfirmation) {
             Button("取消", role: .cancel) { }
@@ -269,11 +278,12 @@ struct WordLookupSheet: View {
                         .disabled(result.senses.isEmpty)
                     }
                 }
-                ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() }.accessibilityIdentifier("close-word") }
+                ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() }.accessibilityIdentifier("close-word").accessibilityHidden(showDetails || phraseSelection != nil) }
             }
             .task { if let preferences = try? dependencies.preferencesRepository.load() { theme = preferences.readerTheme }; await model.begin() }
             .onReceive(model.learning.$revision) { _ in model.refreshMembership() }
-        }.presentationDetents([.medium, .large], selection: $detent).presentationBackground(sheetBackground)
+        }.accessibilityHidden(showDetails || phraseSelection != nil)
+            .presentationDetents([.medium, .large], selection: $detent).presentationBackground(sheetBackground)
             .preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
             .sheet(item: $phraseSelection) { WordLookupSheet(model: $0) }
             .fullScreenCover(isPresented: $showDetails) {
@@ -393,6 +403,7 @@ struct DictionaryDetailView: View {
         }.scrollContentBackground(.hidden)
             .background(theme == "paper" ? Color(red: 0.97, green: 0.94, blue: 0.87) : theme == "dark" ? Color(white: 0.08) : Color(uiColor: .systemGroupedBackground))
             .navigationTitle("详细释义").navigationBarTitleDisplayMode(.inline).task { refresh() }.onReceive(learning.$revision) { _ in refresh() }
+            .accessibilityHidden(selection != nil)
             .sheet(item: $selection) { selected in WordLookupSheet(model: selected) }
             .alert("确认移除词条", isPresented: $removeConfirmation) {
                 Button("取消", role: .cancel) { }

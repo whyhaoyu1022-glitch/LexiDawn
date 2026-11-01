@@ -2,7 +2,7 @@
 
 原生 iOS 英文全文阅读、查词、生词管理和间隔复习应用。使用 SwiftUI、SwiftData、Domain、Service 和 Repository，不依赖网页阅读器或大型 UI 框架。
 
-**CURRENT · Round 3 仍在开发验证，尚未统一验收通过。** 当前源码清单为 174 XCTest / 48 XCUITest，包含原 93 / 20。已核验的代码和失败详情见 [STATUS](STATUS.md) 与 [Round 3 开发记录](docs/reviews/round-3-development-delivery.md)，清单数量不代表通过数量。
+**CURRENT · Round 3 仍在开发验证，尚未统一验收通过。** 当前源码清单为 175 XCTest / 48 XCUITest，包含原 93 / 20。已核验的代码和失败详情见 [STATUS](STATUS.md) 与 [Round 3 开发记录](docs/reviews/round-3-development-delivery.md)，清单数量不代表通过数量。
 
 ## 使用入口与任务融合
 

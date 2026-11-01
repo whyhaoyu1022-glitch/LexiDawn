@@ -74,7 +74,7 @@ struct VocabularyAddition {
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
             let states = try context.fetch(FetchDescriptor<ReviewStateRecord>())
             let providerCaches = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>())
-            return try all.filter { $0.deletedAt == nil && (type == nil || $0.entryType == type) }.map { record in
+            return all.filter { $0.deletedAt == nil && (type == nil || $0.entryType == type) }.map { record in
                 let attached = contexts.filter { $0.entryID == record.entryID }
                 let definitions = senses.filter { $0.entryID == "cedict-reverse-v1|\(record.lemma)" }.sorted { $0.senseID < $1.senseID }.map(\.chinese)
                 let sourceItems: [VocabularyContextItem] = attached.map { source in
@@ -88,7 +88,7 @@ struct VocabularyAddition {
                     contexts: attached.map(\.sentence), sourceArticleID: attached.first?.articleID,
                     dictionaryMeanings: definitions, sourceContexts: sourceItems)
                 let providerRows = providerCaches.filter { $0.lemma == record.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
-                value.dictionarySenses = DictionaryAggregator.merge(try providerRows.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) })
+                value.dictionarySenses = DictionaryAggregator.merge(providerRows.flatMap { (try? JSONDecoder().decode([DictionarySense].self, from: $0.payload)) ?? [] })
                 value.ipa = value.dictionarySenses.compactMap(\.ipa).first
                 value.reviewMeaningSenseID = record.reviewMeaningSenseID
                 value.reviewMeaningText = record.reviewMeaningText; value.reviewMeaningEvidence = record.reviewMeaningEvidence

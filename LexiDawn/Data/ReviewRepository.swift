@@ -140,7 +140,7 @@ struct ReviewSessionView: Equatable {
                 let projection = ClozeContext.make(lemma: entry.lemma, surfaces: source.map { [$0.surface] + entry.surfaceForms } ?? entry.surfaceForms, sentence: source?.sentence)
                 let question = ReviewExerciseRecord(sessionID: session.sessionID, entryID: entry.entryID, stage: "cloze", position: position, prompt: BasicReviewScheduler.mask(projection.answer), answer: projection.answer, senseID: senseID)
                 question.sourceContext = projection.sentence; context.insert(question)
-                let originalSenses = try providerCaches.filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) }
+                let originalSenses = providerCaches.filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }.flatMap { (try? JSONDecoder().decode([DictionarySense].self, from: $0.payload)) ?? [] }
                 question.acceptedAnswers = SpellingAnswerPolicy.variants(answer: projection.answer, lemma: entry.lemma, senses: originalSenses)
             }
         }

@@ -1,0 +1,813 @@
+{
+  "status": "requirements-not-captured-evidence",
+  "requirements": [
+    {
+      "requirementID": "article-01",
+      "feature": "article",
+      "state": "多来源首页",
+      "screenshotIDPattern": "^R3-S01-"
+    },
+    {
+      "requirementID": "article-02",
+      "feature": "article",
+      "state": "每个实际来源首/中/末全文",
+      "screenshotIDPattern": "^R3-S-.+-end-"
+    },
+    {
+      "requirementID": "article-03",
+      "feature": "article",
+      "state": "完整原文详情",
+      "screenshotIDPattern": "^R3-S-.+-body-"
+    },
+    {
+      "requirementID": "article-04",
+      "feature": "article",
+      "state": "正文首屏",
+      "screenshotIDPattern": "^R3-R01-"
+    },
+    {
+      "requirementID": "article-05",
+      "feature": "article",
+      "state": "正文中段",
+      "screenshotIDPattern": "^R3-R03-"
+    },
+    {
+      "requirementID": "article-06",
+      "feature": "article",
+      "state": "正文末段",
+      "screenshotIDPattern": "^R3-S-.+-end-"
+    },
+    {
+      "requirementID": "article-07",
+      "feature": "article",
+      "state": "分类筛选",
+      "screenshotIDPattern": "^R3-L10-"
+    },
+    {
+      "requirementID": "article-08",
+      "feature": "article",
+      "state": "标题搜索",
+      "screenshotIDPattern": "^R3-L02-"
+    },
+    {
+      "requirementID": "article-09",
+      "feature": "article",
+      "state": "收藏",
+      "screenshotIDPattern": "^R3-L04-"
+    },
+    {
+      "requirementID": "article-10",
+      "feature": "article",
+      "state": "稍后阅读",
+      "screenshotIDPattern": "^R3-L04-"
+    },
+    {
+      "requirementID": "article-11",
+      "feature": "article",
+      "state": "已读历史",
+      "screenshotIDPattern": "^R3-L12-"
+    },
+    {
+      "requirementID": "article-12",
+      "feature": "article",
+      "state": "本地离线全文",
+      "screenshotIDPattern": "^R3-R05-"
+    },
+    {
+      "requirementID": "article-13",
+      "feature": "article",
+      "state": "空文章库",
+      "screenshotIDPattern": "^R3-L01-"
+    },
+    {
+      "requirementID": "article-14",
+      "feature": "article",
+      "state": "断网丢弃",
+      "screenshotIDPattern": "^R3-A10-"
+    },
+    {
+      "requirementID": "article-15",
+      "feature": "article",
+      "state": "Feed/API失败",
+      "screenshotIDPattern": "^R3-A13-"
+    },
+    {
+      "requirementID": "article-16",
+      "feature": "article",
+      "state": "429限流",
+      "screenshotIDPattern": "^R3-A12-"
+    },
+    {
+      "requirementID": "article-17",
+      "feature": "article",
+      "state": "权限不足丢弃",
+      "screenshotIDPattern": "^R3-A14-"
+    },
+    {
+      "requirementID": "article-18",
+      "feature": "article",
+      "state": "解析失败无记录",
+      "screenshotIDPattern": "^R3-A15-"
+    },
+    {
+      "requirementID": "article-19",
+      "feature": "article",
+      "state": "截断无记录",
+      "screenshotIDPattern": "^R3-A16-"
+    },
+    {
+      "requirementID": "article-20",
+      "feature": "article",
+      "state": "重试成功",
+      "screenshotIDPattern": "^R3-A18-"
+    },
+    {
+      "requirementID": "article-21",
+      "feature": "article",
+      "state": "刷新无新文章",
+      "screenshotIDPattern": "^R3-A19-"
+    },
+    {
+      "requirementID": "article-22",
+      "feature": "article",
+      "state": "重复文章去重",
+      "screenshotIDPattern": "^R3-A19-"
+    },
+    {
+      "requirementID": "article-23",
+      "feature": "article",
+      "state": "通用失败提示",
+      "screenshotIDPattern": "^R3-A11-"
+    },
+    {
+      "requirementID": "article-24",
+      "feature": "article",
+      "state": "404",
+      "screenshotIDPattern": "^R3-A22-"
+    },
+    {
+      "requirementID": "article-25",
+      "feature": "article",
+      "state": "数据库提交失败",
+      "screenshotIDPattern": "^R3-A23-"
+    },
+    {
+      "requirementID": "article-26",
+      "feature": "article",
+      "state": "加载",
+      "screenshotIDPattern": "^R3-A20-"
+    },
+    {
+      "requirementID": "article-27",
+      "feature": "article",
+      "state": "取消无残留",
+      "screenshotIDPattern": "^R3-A21-"
+    },
+    {
+      "requirementID": "article-28",
+      "feature": "article",
+      "state": "刷新失败保留本地版本",
+      "screenshotIDPattern": "^R3-L06-"
+    },
+    {
+      "requirementID": "dictionary-01",
+      "feature": "dictionary",
+      "state": "普通查词",
+      "screenshotIDPattern": "^R3-legacy-P05-"
+    },
+    {
+      "requirementID": "dictionary-02",
+      "feature": "dictionary",
+      "state": "多义词",
+      "screenshotIDPattern": "^R3-D41-"
+    },
+    {
+      "requirementID": "dictionary-03",
+      "feature": "dictionary",
+      "state": "IPA",
+      "screenshotIDPattern": "^R3-D4[01]-"
+    },
+    {
+      "requirementID": "dictionary-04",
+      "feature": "dictionary",
+      "state": "不同词性",
+      "screenshotIDPattern": "^R3-D41-"
+    },
+    {
+      "requirementID": "dictionary-05",
+      "feature": "dictionary",
+      "state": "多来源合并",
+      "screenshotIDPattern": "^R3-D0[25]-"
+    },
+    {
+      "requirementID": "dictionary-06",
+      "feature": "dictionary",
+      "state": "例句",
+      "screenshotIDPattern": "^R3-D54-"
+    },
+    {
+      "requirementID": "dictionary-07",
+      "feature": "dictionary",
+      "state": "四种语境短语",
+      "screenshotIDPattern": "^R3-D2[2-5]-"
+    },
+    {
+      "requirementID": "dictionary-08",
+      "feature": "dictionary",
+      "state": "同义词对照",
+      "screenshotIDPattern": "^R3-D54-"
+    },
+    {
+      "requirementID": "dictionary-09",
+      "feature": "dictionary",
+      "state": "无可靠中文",
+      "screenshotIDPattern": "^R3-D41-"
+    },
+    {
+      "requirementID": "dictionary-10",
+      "feature": "dictionary",
+      "state": "个人释义",
+      "screenshotIDPattern": "^R3-legacy-S04-"
+    },
+    {
+      "requirementID": "dictionary-11",
+      "feature": "dictionary",
+      "state": "本地缓存",
+      "screenshotIDPattern": "^R3-D05-"
+    },
+    {
+      "requirementID": "dictionary-12",
+      "feature": "dictionary",
+      "state": "加载",
+      "screenshotIDPattern": "^R3-D01-"
+    },
+    {
+      "requirementID": "dictionary-13",
+      "feature": "dictionary",
+      "state": "单Provider失败",
+      "screenshotIDPattern": "^R3-D02-"
+    },
+    {
+      "requirementID": "dictionary-14",
+      "feature": "dictionary",
+      "state": "全部Provider失败",
+      "screenshotIDPattern": "^R3-D03-"
+    },
+    {
+      "requirementID": "dictionary-15",
+      "feature": "dictionary",
+      "state": "离线旧缓存",
+      "screenshotIDPattern": "^R3-D06-"
+    },
+    {
+      "requirementID": "dictionary-16",
+      "feature": "dictionary",
+      "state": "无结果",
+      "screenshotIDPattern": "^R3-D04-"
+    },
+    {
+      "requirementID": "dictionary-17",
+      "feature": "dictionary",
+      "state": "嵌套返回",
+      "screenshotIDPattern": "^R3-D62-"
+    },
+    {
+      "requirementID": "dictionary-18",
+      "feature": "dictionary",
+      "state": "简明义项限量",
+      "screenshotIDPattern": "^R3-D40-"
+    },
+    {
+      "requirementID": "dictionary-19",
+      "feature": "dictionary",
+      "state": "完整独立详情",
+      "screenshotIDPattern": "^R3-D41-"
+    },
+    {
+      "requirementID": "dictionary-20",
+      "feature": "dictionary",
+      "state": "对照加载",
+      "screenshotIDPattern": "^R3-D50-"
+    },
+    {
+      "requirementID": "dictionary-21",
+      "feature": "dictionary",
+      "state": "对照空",
+      "screenshotIDPattern": "^R3-D51-"
+    },
+    {
+      "requirementID": "dictionary-22",
+      "feature": "dictionary",
+      "state": "对照失败",
+      "screenshotIDPattern": "^R3-D52-"
+    },
+    {
+      "requirementID": "dictionary-23",
+      "feature": "dictionary",
+      "state": "对照重试",
+      "screenshotIDPattern": "^R3-D53-"
+    },
+    {
+      "requirementID": "dictionary-24",
+      "feature": "dictionary",
+      "state": "对照重试成功",
+      "screenshotIDPattern": "^R3-D54-"
+    },
+    {
+      "requirementID": "matching-01",
+      "feature": "matching",
+      "state": "初始双列",
+      "screenshotIDPattern": "^R3-M01-"
+    },
+    {
+      "requirementID": "matching-02",
+      "feature": "matching",
+      "state": "选中英文",
+      "screenshotIDPattern": "^R3-M02-"
+    },
+    {
+      "requirementID": "matching-03",
+      "feature": "matching",
+      "state": "错误配对",
+      "screenshotIDPattern": "^R3-M03-"
+    },
+    {
+      "requirementID": "matching-04",
+      "feature": "matching",
+      "state": "错误反馈",
+      "screenshotIDPattern": "^R3-M03-"
+    },
+    {
+      "requirementID": "matching-05",
+      "feature": "matching",
+      "state": "正确实线",
+      "screenshotIDPattern": "^R3-M04-"
+    },
+    {
+      "requirementID": "matching-06",
+      "feature": "matching",
+      "state": "多条实线",
+      "screenshotIDPattern": "^R3-M05-"
+    },
+    {
+      "requirementID": "matching-07",
+      "feature": "matching",
+      "state": "已完成两端禁用",
+      "screenshotIDPattern": "^R3-M04-"
+    },
+    {
+      "requirementID": "matching-08",
+      "feature": "matching",
+      "state": "全部完成保留三条线",
+      "screenshotIDPattern": "^R3-M08-"
+    },
+    {
+      "requirementID": "matching-09",
+      "feature": "matching",
+      "state": "旋转实线",
+      "screenshotIDPattern": "^R3-M06-"
+    },
+    {
+      "requirementID": "matching-10",
+      "feature": "matching",
+      "state": "滚动实线",
+      "screenshotIDPattern": "^R3-M11-"
+    },
+    {
+      "requirementID": "matching-11",
+      "feature": "matching",
+      "state": "会话恢复",
+      "screenshotIDPattern": "^R3-legacy-S14-"
+    },
+    {
+      "requirementID": "matching-12",
+      "feature": "matching",
+      "state": "VoiceOver等价已选/禁用",
+      "screenshotIDPattern": "^R3-M10-"
+    },
+    {
+      "requirementID": "reader-01",
+      "feature": "reader",
+      "state": "竖屏首屏",
+      "screenshotIDPattern": "^R3-R01-"
+    },
+    {
+      "requirementID": "reader-02",
+      "feature": "reader",
+      "state": "中间正文",
+      "screenshotIDPattern": "^R3-R03-"
+    },
+    {
+      "requirementID": "reader-03",
+      "feature": "reader",
+      "state": "真实长文",
+      "screenshotIDPattern": "^R3-P01-"
+    },
+    {
+      "requirementID": "reader-04",
+      "feature": "reader",
+      "state": "标题小标题",
+      "screenshotIDPattern": "^R3-R10-"
+    },
+    {
+      "requirementID": "reader-05",
+      "feature": "reader",
+      "state": "引用列表",
+      "screenshotIDPattern": "^R3-R11-"
+    },
+    {
+      "requirementID": "reader-06",
+      "feature": "reader",
+      "state": "深色",
+      "screenshotIDPattern": "^R3-R07-"
+    },
+    {
+      "requirementID": "reader-07",
+      "feature": "reader",
+      "state": "浅色",
+      "screenshotIDPattern": "^R3-R06-"
+    },
+    {
+      "requirementID": "reader-08",
+      "feature": "reader",
+      "state": "暖纸",
+      "screenshotIDPattern": "^R3-R08-"
+    },
+    {
+      "requirementID": "reader-09",
+      "feature": "reader",
+      "state": "横屏",
+      "screenshotIDPattern": "^R3-R02-"
+    },
+    {
+      "requirementID": "reader-10",
+      "feature": "reader",
+      "state": "大字体",
+      "screenshotIDPattern": "^R3-R0[6-8]-"
+    },
+    {
+      "requirementID": "reader-11",
+      "feature": "reader",
+      "state": "短文",
+      "screenshotIDPattern": "^R3-legacy-F08-"
+    },
+    {
+      "requirementID": "reader-12",
+      "feature": "reader",
+      "state": "精简来源",
+      "screenshotIDPattern": "^R3-legacy-P03-"
+    },
+    {
+      "requirementID": "reader-13",
+      "feature": "reader",
+      "state": "来源详情",
+      "screenshotIDPattern": "^R3-legacy-P04-"
+    },
+    {
+      "requirementID": "reader-14",
+      "feature": "reader",
+      "state": "点词",
+      "screenshotIDPattern": "^R3-R04-"
+    },
+    {
+      "requirementID": "reader-15",
+      "feature": "reader",
+      "state": "离线",
+      "screenshotIDPattern": "^R3-R05-"
+    },
+    {
+      "requirementID": "reader-16",
+      "feature": "reader",
+      "state": "失败刷新仍可读",
+      "screenshotIDPattern": "^R3-L06-"
+    },
+    {
+      "requirementID": "reader-17",
+      "feature": "reader",
+      "state": "版本变化位置恢复",
+      "screenshotIDPattern": "^R3-R13-"
+    },
+    {
+      "requirementID": "reader-18",
+      "feature": "reader",
+      "state": "提取失败安全提示且不可进入正文",
+      "screenshotIDPattern": "^R3-A15-"
+    },
+    {
+      "requirementID": "reader-19",
+      "feature": "reader",
+      "state": "个人版本更新确认",
+      "screenshotIDPattern": "^R3-R12-"
+    },
+    {
+      "requirementID": "vocabulary-review-01",
+      "feature": "vocabulary-review",
+      "state": "生词有数据",
+      "screenshotIDPattern": "^R3-legacy-S01-"
+    },
+    {
+      "requirementID": "vocabulary-review-02",
+      "feature": "vocabulary-review",
+      "state": "空状态",
+      "screenshotIDPattern": "^R3-legacy-F02-"
+    },
+    {
+      "requirementID": "vocabulary-review-03",
+      "feature": "vocabulary-review",
+      "state": "搜索命中",
+      "screenshotIDPattern": "^R3-legacy-S03-"
+    },
+    {
+      "requirementID": "vocabulary-review-04",
+      "feature": "vocabulary-review",
+      "state": "搜索无结果",
+      "screenshotIDPattern": "^R3-V13-"
+    },
+    {
+      "requirementID": "vocabulary-review-05",
+      "feature": "vocabulary-review",
+      "state": "筛选",
+      "screenshotIDPattern": "^R3-V10-"
+    },
+    {
+      "requirementID": "vocabulary-review-06",
+      "feature": "vocabulary-review",
+      "state": "个人释义",
+      "screenshotIDPattern": "^R3-legacy-S04-"
+    },
+    {
+      "requirementID": "vocabulary-review-07",
+      "feature": "vocabulary-review",
+      "state": "笔记保存",
+      "screenshotIDPattern": "^R3-V04-"
+    },
+    {
+      "requirementID": "vocabulary-review-08",
+      "feature": "vocabulary-review",
+      "state": "删除确认",
+      "screenshotIDPattern": "^R3-legacy-S07-"
+    },
+    {
+      "requirementID": "vocabulary-review-09",
+      "feature": "vocabulary-review",
+      "state": "删除成功",
+      "screenshotIDPattern": "^R3-legacy-S08-"
+    },
+    {
+      "requirementID": "vocabulary-review-10",
+      "feature": "vocabulary-review",
+      "state": "连线正确",
+      "screenshotIDPattern": "^R3-M04-"
+    },
+    {
+      "requirementID": "vocabulary-review-11",
+      "feature": "vocabulary-review",
+      "state": "连线错误",
+      "screenshotIDPattern": "^R3-M03-"
+    },
+    {
+      "requirementID": "vocabulary-review-12",
+      "feature": "vocabulary-review",
+      "state": "拼写初始",
+      "screenshotIDPattern": "^R3-legacy-S15-"
+    },
+    {
+      "requirementID": "vocabulary-review-13",
+      "feature": "vocabulary-review",
+      "state": "拼写键盘",
+      "screenshotIDPattern": "^R3-legacy-S16-"
+    },
+    {
+      "requirementID": "vocabulary-review-14",
+      "feature": "vocabulary-review",
+      "state": "拼写错误",
+      "screenshotIDPattern": "^R3-legacy-S17-"
+    },
+    {
+      "requirementID": "vocabulary-review-15",
+      "feature": "vocabulary-review",
+      "state": "显示答案Again",
+      "screenshotIDPattern": "^R3-legacy-S19-"
+    },
+    {
+      "requirementID": "vocabulary-review-16",
+      "feature": "vocabulary-review",
+      "state": "Hard Good",
+      "screenshotIDPattern": "^R3-G01-"
+    },
+    {
+      "requirementID": "vocabulary-review-17",
+      "feature": "vocabulary-review",
+      "state": "下次复习",
+      "screenshotIDPattern": "^R3-G02-"
+    },
+    {
+      "requirementID": "vocabulary-review-18",
+      "feature": "vocabulary-review",
+      "state": "会话恢复",
+      "screenshotIDPattern": "^R3-E02-"
+    },
+    {
+      "requirementID": "vocabulary-review-19",
+      "feature": "vocabulary-review",
+      "state": "队列为空",
+      "screenshotIDPattern": "^R3-legacy-P36-"
+    },
+    {
+      "requirementID": "vocabulary-review-20",
+      "feature": "vocabulary-review",
+      "state": "数据加载失败",
+      "screenshotIDPattern": "^R3-legacy-X14-"
+    },
+    {
+      "requirementID": "vocabulary-review-21",
+      "feature": "vocabulary-review",
+      "state": "生词保存失败",
+      "screenshotIDPattern": "^R3-V01-"
+    },
+    {
+      "requirementID": "vocabulary-review-22",
+      "feature": "vocabulary-review",
+      "state": "笔记保存失败",
+      "screenshotIDPattern": "^R3-V05-"
+    },
+    {
+      "requirementID": "vocabulary-review-23",
+      "feature": "vocabulary-review",
+      "state": "作答保存失败",
+      "screenshotIDPattern": "^R3-G10-"
+    },
+    {
+      "requirementID": "vocabulary-review-24",
+      "feature": "vocabulary-review",
+      "state": "作答重试",
+      "screenshotIDPattern": "^R3-G11-"
+    },
+    {
+      "requirementID": "vocabulary-review-25",
+      "feature": "vocabulary-review",
+      "state": "作答重启恢复",
+      "screenshotIDPattern": "^R3-G12-"
+    },
+    {
+      "requirementID": "vocabulary-review-26",
+      "feature": "vocabulary-review",
+      "state": "确认中文义项",
+      "screenshotIDPattern": "^R3-V12-"
+    },
+    {
+      "requirementID": "vocabulary-review-27",
+      "feature": "vocabulary-review",
+      "state": "JSON导出",
+      "screenshotIDPattern": "^R3-V14-"
+    },
+    {
+      "requirementID": "vocabulary-review-28",
+      "feature": "vocabulary-review",
+      "state": "CSV导出",
+      "screenshotIDPattern": "^R3-V15-"
+    },
+    {
+      "requirementID": "global-01",
+      "feature": "global",
+      "state": "今日",
+      "screenshotIDPattern": "^R3-legacy-P01-"
+    },
+    {
+      "requirementID": "global-02",
+      "feature": "global",
+      "state": "探索锁定",
+      "screenshotIDPattern": "^R3-LOCK01-"
+    },
+    {
+      "requirementID": "global-03",
+      "feature": "global",
+      "state": "探索解锁有内容",
+      "screenshotIDPattern": "^R3-X01-"
+    },
+    {
+      "requirementID": "global-04",
+      "feature": "global",
+      "state": "文章库",
+      "screenshotIDPattern": "^R3-S00-"
+    },
+    {
+      "requirementID": "global-05",
+      "feature": "global",
+      "state": "设置",
+      "screenshotIDPattern": "^R3-legacy-P30-"
+    },
+    {
+      "requirementID": "global-06",
+      "feature": "global",
+      "state": "空",
+      "screenshotIDPattern": "^R3-legacy-F01-"
+    },
+    {
+      "requirementID": "global-07",
+      "feature": "global",
+      "state": "加载",
+      "screenshotIDPattern": "^R3-A20-"
+    },
+    {
+      "requirementID": "global-08",
+      "feature": "global",
+      "state": "错误",
+      "screenshotIDPattern": "^R3-A11-"
+    },
+    {
+      "requirementID": "global-09",
+      "feature": "global",
+      "state": "重试",
+      "screenshotIDPattern": "^R3-A18-"
+    },
+    {
+      "requirementID": "global-10",
+      "feature": "global",
+      "state": "数据不可用",
+      "screenshotIDPattern": "^R3-legacy-X14-"
+    },
+    {
+      "requirementID": "global-11",
+      "feature": "global",
+      "state": "离线",
+      "screenshotIDPattern": "^R3-R05-"
+    },
+    {
+      "requirementID": "global-12",
+      "feature": "global",
+      "state": "横屏",
+      "screenshotIDPattern": "^R3-R02-"
+    },
+    {
+      "requirementID": "global-13",
+      "feature": "global",
+      "state": "深色",
+      "screenshotIDPattern": "^R3-R07-"
+    },
+    {
+      "requirementID": "global-14",
+      "feature": "global",
+      "state": "大字",
+      "screenshotIDPattern": "^R3-R08-"
+    },
+    {
+      "requirementID": "global-15",
+      "feature": "global",
+      "state": "推荐锁定",
+      "screenshotIDPattern": "^R3-N01-"
+    },
+    {
+      "requirementID": "global-16",
+      "feature": "global",
+      "state": "推荐真实候选",
+      "screenshotIDPattern": "^R3-N02-"
+    },
+    {
+      "requirementID": "global-17",
+      "feature": "global",
+      "state": "推荐显式加入",
+      "screenshotIDPattern": "^R3-N04-"
+    },
+    {
+      "requirementID": "global-18",
+      "feature": "global",
+      "state": "推荐加载",
+      "screenshotIDPattern": "^R3-N0?5-"
+    },
+    {
+      "requirementID": "global-19",
+      "feature": "global",
+      "state": "推荐空",
+      "screenshotIDPattern": "^R3-N0?6-"
+    },
+    {
+      "requirementID": "global-20",
+      "feature": "global",
+      "state": "推荐失败",
+      "screenshotIDPattern": "^R3-N0?7-"
+    },
+    {
+      "requirementID": "global-21",
+      "feature": "global",
+      "state": "额外复习",
+      "screenshotIDPattern": "^R3-E01-"
+    },
+    {
+      "requirementID": "global-22",
+      "feature": "global",
+      "state": "探索重置确认",
+      "screenshotIDPattern": "^R3-X02-"
+    }
+  ],
+  "additionalChecks": [
+    "Every source appearing in a R3-S-*-library capture must also have body, scrolled and end captures.",
+    "At least five distinct live sources must have all four captures.",
+    "SE and large device IDs must both have landscape reader and rendered matching screenshots.",
+    "Accessibility equivalence does not prove actual VoiceOver speech or focus operation."
+  ],
+  "requiredDeviceModels": {
+    "small": "iPhone14,6",
+    "large": "iPhone18,2"
+  }
+}

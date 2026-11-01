@@ -551,6 +551,22 @@ private actor CacheRequestProbe: DictionaryProvider {
         let result = await DictionaryAggregator(providers: [("failed", Failure()), ("ok", Success())]).lookup("book")
         XCTAssertEqual(result.failed, ["failed"]); XCTAssertEqual(result.senses.count, 1)
     }
+    func testBrokenProviderPayloadCannotHideVocabularyExportOrBlockPersonalMeaningReview() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let id = try learning.content.importArticle(.init(title: "Explicit corrupt-cache fixture", body: "A book helps people learn.", source: "Fixture author", rightsConfirmed: true), at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected actual cycle") }
+        let word = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "book", range: NSRange(location: 2, length: 4), sentence: "A book helps people learn."), articleID: id, autoAdd: true, at: now))
+        try learning.vocabulary.annotate(entryID: word.entryID, meaning: "书（明确个人释义）", notes: "Personal notes must remain accessible.", at: now)
+        let context = ModelContext(app.modelContainer)
+        context.insert(DictionaryProviderCacheRecord(lemma: "book", provider: "Free Dictionary API", version: DictionaryAggregator.versions["Free Dictionary API"]!, data: Data("Damaged disposable fixture payload".utf8), at: now)); try context.save()
+        XCTAssertEqual(try learning.vocabulary.find(surface: "book")?.notes, "Personal notes must remain accessible.")
+        let exported = String(decoding: try learning.vocabulary.export(.json, at: now), as: UTF8.self)
+        XCTAssertTrue(exported.contains("Personal notes must remain accessible."))
+        let preparedValue = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        let prepared = try XCTUnwrap(preparedValue)
+        XCTAssertEqual(prepared.matching.first?.answer, "书（明确个人释义）"); XCTAssertEqual(prepared.cloze.first?.acceptedAnswers, ["book"])
+        XCTAssertEqual(try learning.vocabulary.entries().count, 1)
+    }
     func testCorruptDisposableProviderCacheDoesNotHideOtherProviderAndCanBeRepaired() throws {
         let app = try AppDependencies.makeLearningInMemory(), context = ModelContext(app.modelContainer)
         let valid = DictionarySense(id: "explicit-valid-cache", en: "Explicit original cache fixture.", zh: "", line: "Explicit fixture", sources: ["Wiktionary"])

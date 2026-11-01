@@ -74,7 +74,9 @@ def index(source, output):
         writer.writerows(rows)
     with zipfile.ZipFile(output.parent / "original-pngs.zip", "w", zipfile.ZIP_DEFLATED) as archive:
         for path in sorted(source.rglob("*")):
-            if path.is_file():
+            # PNG/metadata only. Full videos remain in native attachments and xcresult;
+            # duplicating compressed MP4 inside the PNG ZIP wastes CPU, transfer and storage.
+            if path.is_file() and path.suffix.lower() in {".png", ".json"}:
                 archive.write(path, "xcresult-originals/" + str(path.relative_to(source)))
         for path in sorted(output.iterdir()):
             if path.is_file():

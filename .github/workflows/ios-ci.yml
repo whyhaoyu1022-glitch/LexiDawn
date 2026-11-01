@@ -129,14 +129,17 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-          if [[ -d "${RUNNER_TEMP}/ui.xcresult" ]]; then
+          if [[ -f "${RUNNER_TEMP}/ui.xcresult/Info.plist" ]]; then
             xcrun xcresulttool export attachments --path "${RUNNER_TEMP}/ui.xcresult" --output-path "${RUNNER_TEMP}/native-attachments"
             python3 scripts/export-round3-evidence.py "${RUNNER_TEMP}/native-attachments" "${RUNNER_TEMP}/native-evidence/screenshots"
+          else
+            echo "No finalized xcresult after interruption; retained UI log is diagnostic, not successful screenshot evidence."
           fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: LexiDawn-round3-${{ matrix.suite }}-${{ github.run_id }}-${{ github.run_attempt }}
+          compression-level: 0
           path: |
             ${{ runner.temp }}/native-evidence
             ${{ runner.temp }}/native-attachments
@@ -158,8 +161,12 @@ jobs:
           path: native-jobs
       - name: Verify hashes and combine untouched native PNGs
         run: python3 scripts/merge-round3-evidence.py native-jobs combined-round3 --commit '${{ github.sha }}' --run-url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+      - name: Verify every required state and per-source native evidence
+        run: python3 scripts/verify-round3-coverage.py combined-round3/manifest.json --report combined-round3/COVERAGE.md
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: LexiDawn-round3-complete-native-package-${{ github.run_id }}-${{ github.run_attempt }}
+          compression-level: 0
           path: combined-round3
           if-no-files-found: error
