@@ -66,6 +66,9 @@ import SwiftData
     var lastOpenedAt: Date
     var notes: String?
     var userMeaning: String?
+    var reviewMeaningSenseID: String?
+    var reviewMeaningText: String?
+    var reviewMeaningEvidence: String?
     var creationToken: String
     var revision: Int
     init(lemma: String, surface: String, type: String, at: Date, from: String, token: String) {
@@ -165,6 +168,7 @@ import SwiftData
     var completedAt: Date?
     var sourceContext: String?
     var contextSnapshotVersion: Int?
+    var acceptedAnswers: [String]?
     init(sessionID: String, entryID: String, stage: String, position: Int, prompt: String, answer: String, senseID: String) {
         exerciseID = "\(sessionID)|\(stage)|\(entryID)"; self.sessionID = sessionID; self.entryID = entryID
         sourceContext = nil; contextSnapshotVersion = 1

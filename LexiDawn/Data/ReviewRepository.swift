@@ -7,6 +7,7 @@ struct ReviewQuestion: Identifiable, Equatable {
     let usedHint: Bool
     let completed: Bool
     var context: String? = nil
+    var acceptedAnswers: [String] = []
 }
 struct ReviewSessionView: Equatable {
     let id: String
@@ -91,13 +92,15 @@ struct ReviewSessionView: Equatable {
         let exercises = try validatedExercises(session, context: context)
         func questions(_ stage: String) -> [ReviewQuestion] {
             exercises.filter { $0.stage == stage }.sorted { $0.position < $1.position }.map { exercise in
-                ReviewQuestion(id: exercise.exerciseID, entryID: exercise.entryID, stage: stage, prompt: exercise.prompt, answer: exercise.answer, senseID: exercise.senseID, attempts: exercise.attempts, usedHint: exercise.usedHint, completed: exercise.completedAt != nil, context: exercise.sourceContext)
+                ReviewQuestion(id: exercise.exerciseID, entryID: exercise.entryID, stage: stage, prompt: exercise.prompt, answer: exercise.answer, senseID: exercise.senseID, attempts: exercise.attempts, usedHint: exercise.usedHint, completed: exercise.completedAt != nil, context: exercise.sourceContext, acceptedAnswers: exercise.acceptedAnswers ?? [exercise.answer])
             }
         }
         return ReviewSessionView(id: session.sessionID, matching: questions("matching"), cloze: questions("cloze"), completedAt: session.completedAt)
     }
     private func primeMeanings(_ selected: [(String, String)], at now: Date) async throws {
         for (id, lemma) in selected {
+            let confirmed = try writer.read { context in try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first { $0.entryID == id }?.reviewMeaningText }
+            if let confirmed, !confirmed.isBlank { continue }
             let personal = try writer.read { context in try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first { $0.entryID == id }?.userMeaning }
             if let personal, !personal.isBlank { continue }
             // The local Chinese source works offline. English-only providers cannot invent a Chinese answer.
@@ -109,6 +112,7 @@ struct ReviewSessionView: Equatable {
         let senses = try context.fetch(FetchDescriptor<DictionarySenseRecord>())
         let sources = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).sorted { ($0.createdAt, $0.contextID) < ($1.createdAt, $1.contextID) }
         let states = try context.fetch(FetchDescriptor<ReviewStateRecord>())
+        let providerCaches = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>())
         let rankedSpelling = chosen.enumerated().sorted { a, b in
             let aLapses = states.first { $0.entryID == a.element.entryID }?.lapses ?? 0
             let bLapses = states.first { $0.entryID == b.element.entryID }?.lapses ?? 0
@@ -123,7 +127,10 @@ struct ReviewSessionView: Equatable {
             let available = senses.filter { $0.entryID == "cedict-reverse-v1|\(entry.lemma)" && !$0.chinese.isBlank && !meanings.contains($0.chinese) }
             let ranked = DictionaryAggregator.rank(available.map { DictionarySense(id: $0.senseID, en: $0.english, zh: $0.chinese, line: $0.sourceLine) }, context: source?.sentence ?? "", surface: entry.lemma)
             let meaning: String, senseID: String
-            if let personal = entry.userMeaning, !personal.isBlank, !meanings.contains(personal) {
+            if let selectedID = entry.reviewMeaningSenseID {
+                guard let selectedText = entry.reviewMeaningText, !selectedText.isBlank, entry.reviewMeaningEvidence?.isBlank == false, !meanings.contains(selectedText) else { throw LearningError.invalid("所选复习义项缺少原始证据或与本组其他释义重复，请重新选择义项或修改个人释义。") }
+                meaning = selectedText; senseID = selectedID
+            } else if let personal = entry.userMeaning, !personal.isBlank, !meanings.contains(personal) {
                 meaning = personal; senseID = "user-meaning|\(entry.entryID)|\(fingerprint(personal))"
             } else if let sense = ranked.first { meaning = sense.zh; senseID = sense.id }
             else { throw LearningError.invalid("“\(entry.lemma)”暂无可用且不重复的中文配对义项。请在生词本添加明确标记的个人释义后重试；队列不会被当作空队列。") }
@@ -133,6 +140,8 @@ struct ReviewSessionView: Equatable {
                 let projection = ClozeContext.make(lemma: entry.lemma, surfaces: source.map { [$0.surface] + entry.surfaceForms } ?? entry.surfaceForms, sentence: source?.sentence)
                 let question = ReviewExerciseRecord(sessionID: session.sessionID, entryID: entry.entryID, stage: "cloze", position: position, prompt: BasicReviewScheduler.mask(projection.answer), answer: projection.answer, senseID: senseID)
                 question.sourceContext = projection.sentence; context.insert(question)
+                let originalSenses = try providerCaches.filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) }
+                question.acceptedAnswers = SpellingAnswerPolicy.variants(answer: projection.answer, lemma: entry.lemma, senses: originalSenses)
             }
         }
     }
@@ -212,7 +221,7 @@ struct ReviewSessionView: Equatable {
                 throw LearningError.invalid("此释义已完成配对，请选择未完成的释义。")
             }
             question.attempts += 1
-            let correct = question.stage == "matching" ? answer == question.senseID : EnglishTokenizer.normalized(answer) == EnglishTokenizer.normalized(question.answer)
+            let correct = question.stage == "matching" ? answer == question.senseID : SpellingAnswerPolicy.accepts(answer, expected: question.answer, alternatives: question.acceptedAnswers ?? [])
             question.firstTryCorrect = question.attempts == 1 && correct && !question.usedHint && !reveal
             if correct || reveal { question.completedAt = timestamp; question.revealed = reveal }
             session.revision += 1; session.updatedAt = timestamp

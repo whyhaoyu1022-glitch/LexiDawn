@@ -1,5 +1,28 @@
 import Foundation
 
+enum SpellingAnswerPolicy {
+    /// Accept only an explicit spelling relation in the original provider definition.
+    /// A different tense or plural form is never inferred as an alternative answer.
+    static func variants(answer: String, lemma: String, senses: [DictionarySense]) -> [String] {
+        let expected = EnglishTokenizer.normalized(answer)
+        guard expected == EnglishTokenizer.normalized(lemma), !expected.contains(" ") else { return [expected] }
+        var values: Set<String> = [expected]
+        let pattern = #"\b(?:alternative|British|American)\s+spelling\s+of\s+[\"'“‘]?([A-Za-z]+)\b"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { return [expected] }
+        for sense in senses {
+            let text = sense.en as NSString
+            for match in regex.matches(in: sense.en, range: NSRange(location: 0, length: text.length)) {
+                values.insert(EnglishTokenizer.normalized(text.substring(with: match.range(at: 1))))
+            }
+        }
+        return values.sorted()
+    }
+    static func accepts(_ input: String, expected: String, alternatives: [String]) -> Bool {
+        let value = EnglishTokenizer.normalized(input)
+        return value == EnglishTokenizer.normalized(expected) || alternatives.contains { EnglishTokenizer.normalized($0) == value }
+    }
+}
+
 enum ClozeContext {
     struct Projection: Equatable, Sendable { let answer: String; let sentence: String? }
     static func make(lemma: String, surfaces: [String], sentence: String?) -> Projection {

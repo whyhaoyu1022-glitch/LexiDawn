@@ -67,6 +67,7 @@ struct ReviewPracticeContent: View {
                 Text(question.prompt).font(.largeTitle.monospaced()).accessibilityIdentifier("cloze-prompt")
                 if let meaning = session.matching.first(where: { $0.entryID == question.entryID })?.answer { Text(meaning).font(.headline) }
                 Text("输入完整英文词条，大小写不影响判定。")
+                if question.acceptedAnswers.count > 1 { Text("本题接受词典明确标注的英美拼写变体。").font(.caption).foregroundStyle(.secondary) }
                 TextField("完整拼写", text: $spelling).textInputAutocapitalization(.never).autocorrectionDisabled().textFieldStyle(.roundedBorder).accessibilityIdentifier("cloze-answer").submitLabel(.done).onSubmit { if submit(questionID: question.id, answer: spelling) { spelling = "" } }
                 Button("提交答案") { if submit(questionID: question.id, answer: spelling) { spelling = "" } }.buttonStyle(.borderedProminent).accessibilityIdentifier("submit-spelling")
                 HStack {

@@ -13,6 +13,42 @@ private actor CacheRequestProbe: DictionaryProvider {
 @MainActor final class Round3Tests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 1793534400)
     private var webBody: String { (1...3).map { "<p>Paragraph \($0) is explicit original fixture writing. Science helps people understand nature and share discoveries. Every sentence in this complete document is preserved for a deterministic parser test, including the final sentence.</p>" }.joined() }
+    func testConfirmedDictionaryMeaningIsUsedAndSavedQuestionCannotBeRewritten() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let id = try learning.content.importArticle(.init(title: "Explicit sense fixture", body: "We book the room.", source: "Fixture author", rightsConfirmed: true), at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        let entry = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "book", range: NSRange(location: 3, length: 4), sentence: "We book the room."), articleID: id, autoAdd: true, at: now))
+        let context = ModelContext(app.modelContainer)
+        context.insert(DictionaryEntryRecord(headword: "book", at: now))
+        for (key, en, zh) in [("one", "A collection of pages.", "书（明确原创义项夹具）"), ("two", "To reserve a room.", "预订（明确原创义项夹具）")] {
+            context.insert(DictionarySenseRecord(senseID: "cedict-reverse-v1|book|" + key, entryID: "cedict-reverse-v1|book", english: en, chinese: zh, sourceLine: "Explicit original fixture; not dictionary content."))
+        }
+        try context.save(); try learning.vocabulary.confirmReviewMeaning(entryID: entry.entryID, sourceSenseID: "two")
+        _ = try learning.dictionary.clearCaches()
+        XCTAssertEqual(try learning.vocabulary.find(surface: "book")?.reviewMeaningText, "预订（明确原创义项夹具）")
+        let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        XCTAssertEqual(prepared?.matching.first?.answer, "预订（明确原创义项夹具）")
+        try learning.vocabulary.annotate(entryID: entry.entryID, meaning: "后来修改的个人释义", notes: "", at: now)
+        XCTAssertNil(try learning.vocabulary.find(surface: "book")?.reviewMeaningSenseID)
+        XCTAssertEqual(try learning.review.session(cycleID: cycle.cycleID)?.matching.first?.answer, prepared?.matching.first?.answer)
+    }
+    func testSpellingVariantsRequireExplicitSourceRelationAndFreezeIntoQuestion() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let id = try learning.content.importArticle(.init(title: "Explicit spelling fixture", body: "The colour is clear.", source: "Fixture author", rightsConfirmed: true), at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        let entry = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "colour", range: NSRange(location: 4, length: 6), sentence: "The colour is clear."), articleID: id, autoAdd: true, at: now))
+        try learning.vocabulary.annotate(entryID: entry.entryID, meaning: "颜色（明确个人释义）", notes: "", at: now)
+        let sense = DictionarySense(id: "explicit-spelling-fixture", en: "Alternative spelling of color.", zh: "", line: "Explicit original relation fixture, not live dictionary content.", sources: ["Wiktionary"], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/")
+        try DictionaryCacheRepository(context: ModelContext(app.modelContainer)).save("colour", senses: [sense], successful: ["Wiktionary"], at: now)
+        let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        let session = try XCTUnwrap(prepared)
+        XCTAssertEqual(session.cloze[0].acceptedAnswers, ["color", "colour"])
+        XCTAssertFalse(SpellingAnswerPolicy.accepts("colored", expected: "colour", alternatives: session.cloze[0].acceptedAnswers))
+        XCTAssertEqual(SpellingAnswerPolicy.variants(answer: "running", lemma: "run", senses: [sense]), ["running"])
+        try learning.review.submit(cycleID: cycle.cycleID, questionID: session.matching[0].id, answer: session.matching[0].senseID, at: now)
+        XCTAssertTrue(try learning.review.submit(cycleID: cycle.cycleID, questionID: session.cloze[0].id, answer: " COLOR ", at: now))
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetch(FetchDescriptor<ReviewLogRecord>()).first?.grade, "good")
+    }
     func testRecommendationCandidatesKeepOriginalInflectedPhraseAndRealOffset() throws {
         let body = "The team carried out an investigation and took into account the evidence."
         let article = ReadableArticle(id: "explicit-original-fixture", title: "Explicit original fixture", source: "Fixture author", body: body, bodyHash: fingerprint(body), topics: ["Science"], minutes: 1, publishedAt: nil, originalURL: nil)

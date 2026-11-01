@@ -9,7 +9,7 @@ import SwiftUI
     private var generation = UUID()
     func refreshMembership(_ learning: LearningServices) {
         do { saved = Set(try learning.vocabulary.entries().map(\.lemma)); allowed = try learning.explorationAllowed() }
-        catch { error = error.localizedDescription; allowed = false }
+        catch { self.error = error.localizedDescription; allowed = false }
     }
     func load(_ learning: LearningServices) async {
         let request = UUID(); generation = request; items = []; error = nil; loading = true

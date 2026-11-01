@@ -26,6 +26,9 @@ struct VocabularyItem: Identifiable, Equatable, Codable {
     var stability: Double? = nil
     var difficulty: Double? = nil
     var dictionarySenses: [DictionarySense] = []
+    var reviewMeaningSenseID: String? = nil
+    var reviewMeaningText: String? = nil
+    var reviewMeaningEvidence: String? = nil
 }
 enum VocabularyStatusFilter: String, CaseIterable { case all = "全部状态", due = "待复习", overdue = "逾期", recent = "近7日添加", familiar = "较熟悉" }
 enum VocabularySort: String, CaseIterable { case added = "最近添加", due = "到期时间", alphabet = "字母顺序", priority = "复习优先级" }
@@ -87,6 +90,8 @@ struct VocabularyAddition {
                 let providerRows = providerCaches.filter { $0.lemma == record.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
                 value.dictionarySenses = DictionaryAggregator.merge(try providerRows.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) })
                 value.ipa = value.dictionarySenses.compactMap(\.ipa).first
+                value.reviewMeaningSenseID = record.reviewMeaningSenseID
+                value.reviewMeaningText = record.reviewMeaningText; value.reviewMeaningEvidence = record.reviewMeaningEvidence
                 value.partsOfSpeech = Array(Set(value.dictionarySenses.compactMap(\.partOfSpeech))).sorted()
                 if let state = states.first(where: { $0.entryID == record.entryID }) {
                     value.dueAt = state.dueAt; value.lastReviewedAt = state.lastReviewedAt; value.intervalDays = state.intervalDays
@@ -175,8 +180,19 @@ struct VocabularyAddition {
         guard meaning.count <= 200, notes.count <= 2000 else { throw LearningError.invalid("个人释义或笔记过长。") }
         try writer.write {
             guard let entry = try writer.context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID }), entry.deletedAt == nil else { throw LearningError.invalid("词条已移除。") }
-            entry.userMeaning = meaning.isBlank ? nil : meaning; entry.notes = notes.isBlank ? nil : notes
+            let updatedMeaning = meaning.isBlank ? nil : meaning
+            if entry.userMeaning != updatedMeaning { entry.reviewMeaningSenseID = nil; entry.reviewMeaningText = nil; entry.reviewMeaningEvidence = nil }
+            entry.userMeaning = updatedMeaning; entry.notes = notes.isBlank ? nil : notes
             entry.lastOpenedAt = max(now, entry.lastOpenedAt); entry.revision += 1
+        }
+    }
+    func confirmReviewMeaning(entryID: String, sourceSenseID: String) throws {
+        try writer.write {
+            let context = writer.context
+            guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID && $0.deletedAt == nil }) else { throw LearningError.invalid("词条不存在或已移除。") }
+            let senses = try context.fetch(FetchDescriptor<DictionarySenseRecord>()).filter { $0.entryID == "cedict-reverse-v1|\(entry.lemma)" && !$0.chinese.isBlank && ($0.senseID == sourceSenseID || $0.senseID.hasSuffix("|" + sourceSenseID)) }
+            guard senses.count == 1, let sense = senses.first else { throw LearningError.invalid("无法唯一核实此中文义项，请重新查词或填写个人释义。") }
+            entry.reviewMeaningSenseID = sense.senseID; entry.reviewMeaningText = sense.chinese; entry.reviewMeaningEvidence = sense.sourceLine; entry.revision += 1
         }
     }
 }

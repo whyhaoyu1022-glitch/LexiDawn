@@ -78,6 +78,8 @@ struct VocabularyDetailView: View {
     @State private var saved = false
     @State private var saveError: String?
     @State private var dictionaryError: String?
+    @State private var selectedMeaningSaved = false
+    @State private var selectedMeaningError: String?
     @State private var removeConfirmation = false
     @State private var source: ArticleLibraryItem?
     @FocusState private var editing: Bool
@@ -93,7 +95,24 @@ struct VocabularyDetailView: View {
                 if saved { Label("已保存", systemImage: "checkmark.circle") }
                 Text("来源没有可用中文对应词时，可填写自己的释义用于复习。个人内容与开放词典数据明确区分。").font(.caption).foregroundStyle(.secondary)
             }
-            if let result { DictionaryResultContent(result: result); NavigationLink("详细词典") { DictionaryDetailView(result: result, context: item.contexts.first ?? "", learning: learning, articleID: item.sourceArticleID) } }
+            if let result {
+                Section("复习用义项") {
+                    if let selected = item.reviewMeaningText { Text("已确认：" + selected).font(.subheadline) }
+                    Text("可明确选择词典中的中文义项用于以后新题组。修改个人释义后改用个人释义；已保存题组保持原答案。").font(.caption).foregroundStyle(.secondary)
+                    DisclosureGroup("选择词典中文义项") {
+                        ForEach(result.senses.filter { !$0.zh.isEmpty }) { sense in
+                            Button(sense.zh) {
+                                do { try learning.vocabulary.confirmReviewMeaning(entryID: item.id, sourceSenseID: sense.id); selectedMeaningSaved = true; selectedMeaningError = nil; learning.changed() }
+                                catch { selectedMeaningSaved = false; selectedMeaningError = error.localizedDescription }
+                            }
+                        }
+                    }
+                    if selectedMeaningSaved { Label("复习义项已保存", systemImage: "checkmark.circle") }
+                    if let selectedMeaningError { Text(selectedMeaningError).foregroundStyle(.red) }
+                }
+                DictionaryResultContent(result: result)
+                NavigationLink("详细词典") { DictionaryDetailView(result: result, context: item.contexts.first ?? "", learning: learning, articleID: item.sourceArticleID) }
+            }
             Section("来源上下文") {
                 if let source {
                     Text(source.title).font(.headline); Text(source.source).font(.caption).foregroundStyle(.secondary)
