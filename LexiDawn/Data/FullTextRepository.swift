@@ -2,6 +2,23 @@ import Foundation
 import SwiftData
 
 extension ContentRepository {
+    /// Only unreferenced, unmarked, re-downloadable official text is cache data.
+    /// Every cycle, progress and vocabulary context protects its article, regardless of completion.
+    func clearUnusedArticleCache() throws -> Int {
+        try writer.write {
+            let context = writer.context
+            let protected = Set(try context.fetch(FetchDescriptor<DailyStudyCycleRecord>()).map(\.articleID))
+                .union(try context.fetch(FetchDescriptor<ArticleProgressRecord>()).map(\.articleID))
+                .union(try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).map(\.articleID))
+            let records = try context.fetch(FetchDescriptor<ArticleRecord>()).filter {
+                ["wikipedia", SourceRegistry.rfc.id].contains($0.sourceID) && !protected.contains($0.articleID) && !$0.isFavorite && !$0.readLater
+            }
+            let ids = Set(records.map(\.articleID))
+            for grant in try context.fetch(FetchDescriptor<ContentGrantRecord>()) where ids.contains(grant.articleID) { context.delete(grant) }
+            for article in records { context.delete(article) }
+            return records.count
+        }
+    }
     func sourceRefreshState(_ sourceID: String) throws -> (success: Date?, error: String?, retryAfter: Date?) {
         try writer.read { context in
             let records = try context.fetch(FetchDescriptor<SourceAcquisitionRecord>()).filter { $0.sourceID == sourceID }

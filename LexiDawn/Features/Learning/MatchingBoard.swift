@@ -44,7 +44,7 @@ struct MatchingBoard: View {
                             var path = Path(); path.move(to: CGPoint(x: a.maxX + 2, y: a.midY))
                             let middle = (a.maxX + b.minX) / 2
                             path.addCurve(to: CGPoint(x: b.minX - 2, y: b.midY), control1: CGPoint(x: middle, y: a.midY), control2: CGPoint(x: middle, y: b.midY))
-                            context.stroke(path, with: .color(.green), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                            context.stroke(path, with: .color(Color(red: 0.1, green: 0.52, blue: 0.3)), style: StrokeStyle(lineWidth: 3, lineCap: .round))
                         }
                     }
                 }.allowsHitTesting(false).accessibilityHidden(true)

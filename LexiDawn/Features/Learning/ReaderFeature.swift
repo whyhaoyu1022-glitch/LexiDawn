@@ -56,7 +56,7 @@ struct ReaderView: View {
             if let article = model.article {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(article.title).font(.title3.bold()).lineLimit(verticalSizeClass == .compact ? 1 : 2)
-                    Text("\(article.topics.joined(separator: " · ")) · \(article.minutes) 分钟").font(.caption).foregroundStyle(.secondary)
+                    Text("\(compactSource(article)) · \(article.minutes) 分钟").font(.caption).foregroundStyle(.secondary).lineLimit(1)
                     if verticalSizeClass != .compact, let published = article.publishedAt { Text("发布：\(published.formatted(date: .abbreviated, time: .omitted))").font(.caption) }
                     if verticalSizeClass != .compact { DisclosureGroup("来源与许可") { Text(article.source).font(.caption).textSelection(.enabled); Text("全文授权在每次访问及保存时重新检查。导入内容仅限本地使用。").font(.caption) } }
                     HStack { ProgressView(value: model.position.percent); Text("\(Int(model.position.percent * 100))%").font(.caption.monospacedDigit()).accessibilityIdentifier("reader-progress") }
@@ -124,6 +124,11 @@ struct ReaderView: View {
             Button("取消", role: .cancel) { }
             Button("确认我已读完") { model.complete(manual: true) }
         } message: { Text("适用于短文章、恢复位置不准确或已认真读完的情况。记录实际进度与本次手动确认，不会伪造 90% 进度。") }
+    }
+    private func compactSource(_ article: ReadableArticle) -> String {
+        if article.sourceID == SourceRegistry.rfc.id { return "RFC Editor · M. Nottingham" }
+        if article.sourceID == "wikipedia" { return "Wikipedia · Contributors" }
+        return article.author ?? article.source
     }
     private var readerBackground: Color {
         theme == "dark" ? Color(white: 0.08) : theme == "paper" ? Color(red: 0.97, green: 0.94, blue: 0.87) : theme == "light" ? .white : Color(uiColor: .systemBackground)
@@ -251,7 +256,7 @@ struct DictionaryResultContent: View {
                     Text((sense.sources ?? ["CC-CEDICT reverse index"]).joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
                 }.padding(.vertical, 4)
             }
-            if result.cached { Label("本地缓存 · 离线可用", systemImage: "internaldrive").font(.caption) }
+            if result.cached { Label("本地缓存 · 可离线查看，可能不是最新版本", systemImage: "internaldrive").font(.caption) }
             if !result.failedProviders.isEmpty { Label("部分来源不可用：" + result.failedProviders.joined(separator: "、") + "。已保留其他真实结果。", systemImage: "exclamationmark.triangle").font(.caption) }
             Text("中文反向索引是可能对应词；语境排序使用确定性词汇重合规则，不保证已完成语义消歧。").font(.caption).foregroundStyle(.secondary)
         }

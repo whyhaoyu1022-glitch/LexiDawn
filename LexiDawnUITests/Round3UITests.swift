@@ -8,12 +8,14 @@ final class Round3UITests: XCTestCase {
         app.launchEnvironment["LEXIDAWN_UI_STORE_ID"] = UUID().uuidString; app.launch(); return app
     }
     private func capture(_ id: String, app: XCUIApplication, feature: String, state: String, theme: String = "system", origin: String = "fixture-real-rfc-isolated-learning-state") {
-        let image = XCTAttachment(screenshot: app.screenshot()); image.name = id; image.lifetime = .keepAlways; add(image)
-        let metadata: [String: String] = ["screenshotID": id, "featureID": feature, "screenName": feature, "state": state,
+        let device = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? UIDevice.current.name
+        let identifier = id + "-" + device.map { $0.isLetter || $0.isNumber || $0 == "-" ? String($0) : "-" }.joined()
+        let image = XCTAttachment(screenshot: app.screenshot()); image.name = identifier; image.lifetime = .keepAlways; add(image)
+        let metadata: [String: String] = ["screenshotID": identifier, "featureID": feature, "screenName": feature, "state": state,
             "device": ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? UIDevice.current.name, "orientation": XCUIDevice.shared.orientation.isLandscape ? "landscape" : "portrait", "theme": theme,
-            "testName": name, "fixtureOrProduction": origin, "fileName": id + ".png", "notes": "Native Simulator screenshot; no image generation."]
+            "testName": name, "fixtureOrProduction": origin, "fileName": identifier + ".png", "notes": "Native Simulator screenshot; no image generation."]
         if let data = try? JSONSerialization.data(withJSONObject: metadata, options: [.sortedKeys]) {
-            let json = XCTAttachment(data: data, uniformTypeIdentifier: "public.json"); json.name = id + "-metadata"; json.lifetime = .keepAlways; add(json)
+            let json = XCTAttachment(data: data, uniformTypeIdentifier: "public.json"); json.name = identifier + "-metadata"; json.lifetime = .keepAlways; add(json)
         }
     }
     func testReaderBodySurvivesTenRotationsAndWordRemainsTappable() throws {
@@ -156,6 +158,42 @@ final class Round3UITests: XCTestCase {
         app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).firstMatch.tap()
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'word-'")).firstMatch.waitForExistence(timeout: 10))
         capture("R3-R05", app: app, feature: "reader", state: "local-fulltext-with-failing-network", origin: "URLProtocol-offline-original-fixture")
+    }
+    func testLargeDynamicTypeThreeThemesRemainReadableInLandscape() throws {
+        let app = XCUIApplication(); app.launchEnvironment["LEXIDAWN_UI_SCENARIO"] = "gallery-reader"; app.launchEnvironment["LEXIDAWN_UI_STORE_ID"] = UUID().uuidString
+        app.launchArguments = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]; app.launch()
+        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
+        for (theme, title, id) in [("light", "浅色", "R3-R06"), ("dark", "深色", "R3-R07"), ("paper", "暖纸色", "R3-R08")] {
+            XCUIDevice.shared.orientation = .portrait
+            let appearance = app.buttons["阅读外观"].firstMatch; XCTAssertTrue(appearance.waitForExistence(timeout: 10)); appearance.tap(); app.buttons[title].tap()
+            XCUIDevice.shared.orientation = .landscapeLeft
+            let word = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'word-'")).firstMatch
+            XCTAssertTrue(word.waitForExistence(timeout: 10)); XCTAssertTrue(word.isHittable)
+            capture(id, app: app, feature: "reader", state: "maximum-type-landscape-" + theme, theme: theme)
+        }
+    }
+    func testRealLongArticleScrollMemoryAndClockMetrics() throws {
+        let app = launch("gallery-reader")
+        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
+        let body = app.otherElements["reader-body"].firstMatch; XCTAssertTrue(body.waitForExistence(timeout: 10))
+        let options = XCTMeasureOptions(); options.iterationCount = 3
+        measure(metrics: [XCTMemoryMetric(application: app), XCTClockMetric()], options: options) {
+            for _ in 0..<4 { body.swipeUp() }
+            for _ in 0..<4 { body.swipeDown() }
+        }
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'word-'")).firstMatch.isHittable)
+        capture("R3-P01", app: app, feature: "performance", state: "real-rfc-long-scroll-measured-no-fps-claim")
+    }
+    func testMatchingEquivalentAccessibilityActionsAndLabels() throws {
+        let app = launch("gallery-round3-review"); app.tabBars.buttons["复习"].tap()
+        let word = app.buttons["match-word-internet"]; XCTAssertTrue(word.waitForExistence(timeout: 15))
+        try app.performAccessibilityAudit(for: [.sufficientElementDescription])
+        word.tap(); XCTAssertEqual(word.value as? String, "已选择")
+        capture("R3-M09", app: app, feature: "matching", state: "accessibility-selected-equivalent-action")
+        let meaning = app.buttons["match-meaning-互联网（个人释义）"]; meaning.tap()
+        XCTAssertEqual(word.value as? String, "已配对"); XCTAssertEqual(meaning.value as? String, "已配对")
+        XCTAssertFalse(word.isEnabled); XCTAssertFalse(meaning.isEnabled)
+        capture("R3-M10", app: app, feature: "matching", state: "accessibility-completed-both-ends-disabled")
     }
     /// Sample only the middle of the board's gap. Button text/icons cannot satisfy this assertion.
     private func greenLinePixels(app: XCUIApplication) -> Int {

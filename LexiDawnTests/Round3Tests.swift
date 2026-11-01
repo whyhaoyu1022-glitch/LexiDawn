@@ -247,4 +247,26 @@ import SwiftData
         XCTAssertEqual(try learning.cycles.fetchAll().first?.articleTaskStatus, .ready)
         XCTAssertThrowsError(try learning.content.read(articleID: id, at: now))
     }
+    func testCacheCleanupProtectsFavoritePersonalImportAndVocabularyContext() throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        try learning.content.importFullText(item(), at: now)
+        try learning.content.setLibraryFlags(articleID: item().articleID, favorite: true)
+        XCTAssertEqual(try learning.content.clearUnusedArticleCache(), 0)
+        try learning.content.setLibraryFlags(articleID: item().articleID, favorite: false)
+        _ = try learning.vocabulary.add(token: EnglishToken(surface: "book", range: NSRange(location: 0, length: 4), sentence: "A book."), articleID: item().articleID, autoAdd: true, at: now)
+        XCTAssertEqual(try learning.content.clearUnusedArticleCache(), 0)
+        _ = try learning.content.importArticle(ArticleImportDraft(title: "User owned", body: "User owned complete original.", source: "Test author", rightsConfirmed: true), at: now)
+        XCTAssertEqual(try learning.content.clearUnusedArticleCache(), 0)
+        _ = try learning.dictionary.clearCaches()
+        XCTAssertEqual(try learning.vocabulary.entries().count, 1)
+    }
+    func testUnreferencedOfficialCacheIsRemovedAtomicallyWithoutCreatingCycle() throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        try learning.content.importFullText(item(), at: now)
+        XCTAssertEqual(try learning.content.clearUnusedArticleCache(), 1)
+        XCTAssertTrue(try learning.content.library(at: now).isEmpty)
+        XCTAssertTrue(try learning.cycles.fetchAll().isEmpty)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ContentGrantRecord>()), 0)
+    }
+
 }

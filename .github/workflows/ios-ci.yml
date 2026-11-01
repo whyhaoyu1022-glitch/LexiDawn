@@ -186,3 +186,62 @@ jobs:
             ${{ runner.temp }}/LexiDawn-ui.log
           if-no-files-found: warn
 
+  device-ui-regressions:
+    name: Reader and matching · ${{ matrix.device }}
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        device: [iPhone-SE-3rd-generation, iPhone-17-Pro-Max]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and boot a second supported device size
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcrun simctl list runtimes
+          xcrun simctl list devicetypes
+          if ! xcrun simctl list runtimes | grep -F 'iOS 26.5'; then
+            xcodebuild -downloadPlatform iOS
+          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('LexiDawn.xcodeproj/project.pbxproj')
+          path.write_text(path.read_text().replace('IPHONEOS_DEPLOYMENT_TARGET = 27.0;', 'IPHONEOS_DEPLOYMENT_TARGET = 26.5;'))
+          PY
+          DEVICE_ID="$(xcrun simctl create 'LexiDawn size regression' 'com.apple.CoreSimulator.SimDeviceType.${{ matrix.device }}' 'com.apple.CoreSimulator.SimRuntime.iOS-26-5')"
+          xcrun simctl boot "$DEVICE_ID"
+          xcrun simctl bootstatus "$DEVICE_ID" -b
+          echo "LEXIDAWN_DEVICE_UI_ID=$DEVICE_ID" >> "$GITHUB_ENV"
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/device-derived" -sdk iphonesimulator -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE_ID" IPHONEOS_DEPLOYMENT_TARGET=26.5 CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone -parallel-testing-enabled NO build-for-testing 2>&1 | tee "${RUNNER_TEMP}/device-build.log"
+      - name: Run real reader rotation, large type, themes and matching regressions
+        timeout-minutes: 30
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/device-derived" -sdk iphonesimulator -configuration Debug -destination "platform=iOS Simulator,id=${LEXIDAWN_DEVICE_UI_ID}" IPHONEOS_DEPLOYMENT_TARGET=26.5 CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/device-ui.xcresult" \
+            -only-testing:LexiDawnUITests/Round3UITests/testReaderBodySurvivesTenRotationsAndWordRemainsTappable \
+            -only-testing:LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates \
+            -only-testing:LexiDawnUITests/Round3UITests/testLargeDynamicTypeThreeThemesRemainReadableInLandscape test-without-building 2>&1 | tee "${RUNNER_TEMP}/device-ui.log"
+      - name: Export native device evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -d "${RUNNER_TEMP}/device-ui.xcresult" ]]; then
+            xcrun xcresulttool export attachments --path "${RUNNER_TEMP}/device-ui.xcresult" --output-path "${RUNNER_TEMP}/device-attachments"
+            python3 scripts/export-round3-evidence.py "${RUNNER_TEMP}/device-attachments" "${RUNNER_TEMP}/device-evidence/screenshots"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: LexiDawn-round3-${{ matrix.device }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/device-evidence
+            ${{ runner.temp }}/device-attachments
+            ${{ runner.temp }}/device-ui.xcresult
+            ${{ runner.temp }}/device-ui.log
+            ${{ runner.temp }}/device-build.log
+          if-no-files-found: error
+

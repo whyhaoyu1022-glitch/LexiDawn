@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ReviewPracticeView: View {
     @ObservedObject var learning: LearningServices
@@ -37,6 +38,7 @@ struct ReviewPracticeContent: View {
                 Button("重新读取 / 重试", action: { Task { await load() } }).disabled(loading)
             }.padding(20)
         }.scrollDismissesKeyboard(.interactively).navigationTitle("复习").task { await load() }
+            .onChange(of: feedback) { _, message in if let message { UIAccessibility.post(notification: .announcement, argument: message) } }
             .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await load() } } }
     }
     private func matching(_ session: ReviewSessionView) -> some View {
@@ -58,7 +60,7 @@ struct ReviewPracticeContent: View {
                 Text(question.prompt).font(.largeTitle.monospaced()).accessibilityIdentifier("cloze-prompt")
                 if let meaning = session.matching.first(where: { $0.entryID == question.entryID })?.answer { Text(meaning).font(.headline) }
                 Text("输入完整英文词条，大小写不影响判定。")
-                TextField("完整拼写", text: $spelling).textInputAutocapitalization(.never).autocorrectionDisabled().textFieldStyle(.roundedBorder).accessibilityIdentifier("cloze-answer")
+                TextField("完整拼写", text: $spelling).textInputAutocapitalization(.never).autocorrectionDisabled().textFieldStyle(.roundedBorder).accessibilityIdentifier("cloze-answer").submitLabel(.done).onSubmit { if submit(questionID: question.id, answer: spelling) { spelling = "" } }
                 Button("提交答案") { if submit(questionID: question.id, answer: spelling) { spelling = "" } }.buttonStyle(.borderedProminent).accessibilityIdentifier("submit-spelling")
                 HStack {
                     Button("使用提示") { if submit(questionID: question.id, answer: "", hint: true) { feedback = "首字母：\(question.answer.first.map(String.init) ?? "")；提示使用已保存" } }

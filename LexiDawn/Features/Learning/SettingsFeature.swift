@@ -15,6 +15,7 @@ struct LearningSettingsView: View {
     @State private var timezonePolicy = "device"
     @State private var fixedTimezone = "Asia/Shanghai"
     @State private var message: String?
+    @State private var cacheKind: String?
     var body: some View {
         NavigationStack {
             Form {
@@ -41,14 +42,32 @@ struct LearningSettingsView: View {
                     Button("保存设置", action: save).accessibilityIdentifier("save-settings")
                     if let message { Text(message).font(.footnote).accessibilityIdentifier("settings-message") }
                 }
+                Section("本地缓存") {
+                    Button("清理未使用的文章缓存") { cacheKind = "article" }
+                    Button("清理词典缓存") { cacheKind = "dictionary" }
+                    Text("阅读历史、未完成周期、生词、笔记、收藏、稍后阅读和个人导入都保留。仅清理未使用的官方文章；词典缓存可从开放来源重新取得。").font(.footnote)
+                    if let message { Text(message).font(.footnote) }
+                }
                 Section("关于与许可") {
                     Text("通知与 AI 功能准备中，目前没有安排系统通知，也不上传阅读历史。")
-                    NavigationLink("内容与词典许可") { ScrollView { Text(licenseText).font(.footnote).textSelection(.enabled).padding() }.navigationTitle("来源与许可") }
+                    NavigationLink("内容与词典许可") { SourceLicensesView(bundledNotices: licenseText) }
                 }
             }.navigationTitle("我的").task { load() }
+                .confirmationDialog("确认清理可重新取得的缓存？", isPresented: Binding(get: { cacheKind != nil }, set: { if !$0 { cacheKind = nil } })) {
+                    if cacheKind == "article" { Button("确认清理文章缓存", role: .destructive) { clearCache(kind: "article") } }
+                    else { Button("确认清理词典缓存", role: .destructive) { clearCache(kind: "dictionary") } }
+                    Button("取消", role: .cancel) { cacheKind = nil }
+                }
         }
     }
     private var licenseText: String { guard let url = Bundle.main.url(forResource: "CONTENT-LICENSES", withExtension: "txt"), let text = try? String(contentsOf: url, encoding: .utf8) else { return "许可资源读取失败，请核对安装包。" }; return text }
+    private func clearCache(kind: String) {
+        do {
+            let count = try kind == "article" ? learning.content.clearUnusedArticleCache() : learning.dictionary.clearCaches()
+            message = "已清理 \(count) 项可重新取得的缓存；学习记录保留。"; learning.changed()
+        } catch { message = error.localizedDescription }
+        cacheKind = nil
+    }
     private func load() {
         do {
             let prefs = try dependencies.preferencesRepository.load()
@@ -69,3 +88,4 @@ struct LearningSettingsView: View {
         } catch { message = error.localizedDescription }
     }
 }
+

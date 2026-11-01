@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import NaturalLanguage
 
 struct DictionaryProviderOutcome: Sendable {
     let senses: [DictionarySense]
@@ -27,7 +28,7 @@ struct FreeDictionaryProvider: DictionaryProvider {
                 DictionarySense(id: "free|" + fingerprint(meaning.partOfSpeech + definition.definition), en: definition.definition, zh: "", line: entry.license.map { "\($0.name) \($0.url)" } ?? "Free Dictionary API; license not supplied; memory only",
                     partOfSpeech: meaning.partOfSpeech, ipa: entry.phonetic ?? entry.phonetics?.compactMap(\.text).first,
                     examples: definition.example.map { [$0] }, synonyms: definition.synonyms ?? meaning.synonyms, antonyms: definition.antonyms ?? meaning.antonyms,
-                    etymology: entry.origin, audioURL: entry.phonetics?.compactMap(\.audio).first { $0.hasPrefix("https://") }, sources: ["Free Dictionary API"])
+                    etymology: entry.origin, audioURL: entry.phonetics?.compactMap(\.audio).first { $0.hasPrefix("https://") }, sources: ["Free Dictionary API"], licenseURL: entry.license?.url)
             } }
         }
     }
@@ -37,14 +38,18 @@ struct WiktionaryDictionaryProvider: DictionaryProvider {
         let url = URL(string: "https://en.wiktionary.org/api/rest_v1/page/definition/")!.appendingPathComponent(headword)
         do {
             let data = try await ArticleFetchService().fetch(url, allowedHost: "en.wiktionary.org")
-            return try Self.parse(data)
+            return try Self.parse(data).map { value in
+                var sense = value; sense.line += " · " + URL(string: "https://en.wiktionary.org/wiki/")!.appendingPathComponent(headword).absoluteString; return sense
+            }
         } catch is CancellationError { throw CancellationError() }
         catch {
             // The official Action API remains available when the older REST route is unavailable.
             let api = try OfficialArticleAPI.url(host: "en.wiktionary.org", fields: ["action": "parse", "page": headword, "prop": "text", "format": "json", "formatversion": "2", "disableeditsection": "1"])
             let data = try await ArticleFetchService().fetch(api, allowedHost: "en.wiktionary.org")
             struct Response: Decodable { struct Page: Decodable { let text: String }; let parse: Page }
-            return try Self.parseEnglishHTML(JSONDecoder().decode(Response.self, from: data).parse.text)
+            return try Self.parseEnglishHTML(JSONDecoder().decode(Response.self, from: data).parse.text).map { value in
+                var sense = value; sense.line += " · " + URL(string: "https://en.wiktionary.org/wiki/")!.appendingPathComponent(headword).absoluteString; return sense
+            }
         }
     }
     static func parseEnglishHTML(_ html: String) throws -> [DictionarySense] {
@@ -79,7 +84,7 @@ struct WiktionaryDictionaryProvider: DictionaryProvider {
 }
 
 actor DictionaryAggregator {
-    static let versions = ["Free Dictionary API": "v2", "Wiktionary": "rest-definition-1"]
+    static let versions = ["Free Dictionary API": "api-v2-schema-2", "Wiktionary": "rest-or-action-schema-2"]
     private let providers: [(String, any DictionaryProvider)]
     init(providers: [(String, any DictionaryProvider)] = [("Free Dictionary API", FreeDictionaryProvider()), ("Wiktionary", WiktionaryDictionaryProvider())]) { self.providers = providers }
     func lookup(_ lemma: String) async -> DictionaryProviderOutcome {
@@ -96,16 +101,35 @@ actor DictionaryAggregator {
         var merged: [String: DictionarySense] = [:]
         for sense in senses.sorted(by: { $0.id < $1.id }) {
             let key = "\(sense.partOfSpeech ?? "unknown")|\(EnglishTokenizer.normalized(sense.en))|\(sense.zh)"
-            if var old = merged[key] { old.sources = Array(Set((old.sources ?? []) + (sense.sources ?? []))).sorted(); merged[key] = old }
+            if var old = merged[key] {
+                old.sources = Array(Set((old.sources ?? []) + (sense.sources ?? []))).sorted()
+                if old.line != sense.line { old.line += "\n" + sense.line }
+                old.ipa = old.ipa ?? sense.ipa; old.audioURL = old.audioURL ?? sense.audioURL
+                old.examples = Array(Set((old.examples ?? []) + (sense.examples ?? []))).sorted()
+                old.synonyms = Array(Set((old.synonyms ?? []) + (sense.synonyms ?? []))).sorted()
+                old.antonyms = Array(Set((old.antonyms ?? []) + (sense.antonyms ?? []))).sorted()
+                old.forms = Array(Set((old.forms ?? []) + (sense.forms ?? []))).sorted()
+                old.etymology = old.etymology ?? sense.etymology
+                merged[key] = old
+            }
             else { merged[key] = sense }
         }
         return merged.values.sorted { $0.id < $1.id }
     }
-    nonisolated static func rank(_ senses: [DictionarySense], context: String) -> [DictionarySense] {
+    nonisolated static func rank(_ senses: [DictionarySense], context: String, surface: String? = nil) -> [DictionarySense] {
         let stop: Set<String> = ["the", "and", "with", "this", "that", "from", "into", "have", "been"]
         func words(_ string: String) -> Set<String> { Set(string.lowercased().split { !$0.isLetter }.map(String.init).filter { $0.count > 3 && !stop.contains($0) }) }
         let contextWords = words(context)
-        func score(_ sense: DictionarySense) -> Int { contextWords.intersection(words(sense.en + " " + (sense.examples ?? []).joined(separator: " "))).count }
+        var grammaticalPart: String?
+        if let surface, let token = EnglishTokenizer.tokens(in: context).first(where: { EnglishTokenizer.lemma($0.surface) == EnglishTokenizer.lemma(surface) }), let range = Range(token.range, in: context) {
+            let tagger = NLTagger(tagSchemes: [.lexicalClass]); tagger.string = context
+            tagger.setLanguage(.english, range: context.startIndex..<context.endIndex)
+            grammaticalPart = tagger.tag(at: range.lowerBound, unit: .word, scheme: .lexicalClass).0?.rawValue.lowercased()
+        }
+        func score(_ sense: DictionarySense) -> Int {
+            contextWords.intersection(words(sense.en + " " + (sense.examples ?? []).joined(separator: " "))).count * 10 +
+            (grammaticalPart != nil && sense.partOfSpeech == grammaticalPart ? 20 : 0) + (sense.partOfSpeech != nil ? 2 : 0)
+        }
         return merge(senses).sorted { score($0) == score($1) ? $0.id < $1.id : score($0) > score($1) }
     }
 }
@@ -138,7 +162,7 @@ actor DictionaryAggregator {
             let context = writer.context
             for provider in successful {
                 guard let version = DictionaryAggregator.versions[provider] else { continue }
-                let values = senses.filter { ($0.sources ?? []).contains(provider) && (provider != "Free Dictionary API" || $0.line.contains("creativecommons.org")) }
+                let values = senses.filter { ($0.sources ?? []).contains(provider) && (provider != "Free Dictionary API" || URL(string: $0.licenseURL ?? "")?.host == "creativecommons.org") }
                 guard !values.isEmpty else { continue }
                 let previous = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.key == "en|\(provider)|\(version)|\(lemma)" }
                 if previous.contains(where: { $0.fetchedAt > now }) { continue }

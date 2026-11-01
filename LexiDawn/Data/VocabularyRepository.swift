@@ -114,7 +114,8 @@ struct VocabularyAddition {
 }
 
 struct DictionarySense: Codable, Equatable, Identifiable, Sendable {
-    let id: String, en: String, zh: String, line: String
+    let id: String, en: String, zh: String
+    var line: String
     var partOfSpeech: String? = nil
     var ipa: String? = nil
     var examples: [String]? = nil
@@ -124,6 +125,7 @@ struct DictionarySense: Codable, Equatable, Identifiable, Sendable {
     var etymology: String? = nil
     var audioURL: String? = nil
     var sources: [String]? = nil
+    var licenseURL: String? = nil
 }
 
 struct DictionaryResult: Equatable {
@@ -155,6 +157,16 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
     private var aggregator: DictionaryAggregator?
     private var richCache: DictionaryCacheRepository?
     func enableOnlineProviders() { aggregator = DictionaryAggregator(); richCache = DictionaryCacheRepository(context: writer.context) }
+    func clearCaches() throws -> Int {
+        try writer.write {
+            let context = writer.context
+            let local = try context.fetch(FetchDescriptor<DictionaryEntryRecord>())
+            let remote = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>())
+            for record in try context.fetch(FetchDescriptor<DictionarySenseRecord>()) { context.delete(record) }
+            for record in local { context.delete(record) }; for record in remote { context.delete(record) }
+            return local.count + remote.count
+        }
+    }
     init(context: ModelContext, provider: DictionaryProvider = CEDICTDictionaryProvider()) {
         writer = RepositoryWriter(context: context); self.provider = provider
     }
@@ -164,7 +176,7 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
             let old = try richCache.load(key, at: now)
             if old.complete {
                 let local = try? await lookupLocal(surface, at: now)
-                return DictionaryResult(headword: key, senses: DictionaryAggregator.rank((local?.senses ?? []) + old.senses, context: context), updatedAt: old.date, sourceURL: "https://dictionaryapi.dev/", licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/", cached: true, versions: DictionaryAggregator.versions) }
+                return DictionaryResult(headword: key, senses: DictionaryAggregator.rank((local?.senses ?? []) + old.senses, context: context, surface: key), updatedAt: old.date, sourceURL: "https://dictionaryapi.dev/", licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/", cached: true, versions: DictionaryAggregator.versions) }
             let outcome = await aggregator.lookup(key)
             try Task.checkCancellation()
             let local = try? await lookupLocal(surface, at: now)
@@ -173,7 +185,7 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
             let senses = DictionaryAggregator.merge(all + fallback)
             guard !senses.isEmpty || outcome.failed.isEmpty else { throw LearningError.invalid("词典来源暂时不可用；本地没有缓存，请联网后重试。") }
             if !outcome.senses.isEmpty { try richCache.save(key, senses: outcome.senses, successful: outcome.successful, at: now) }
-            return DictionaryResult(headword: key, senses: DictionaryAggregator.rank(senses, context: context), updatedAt: now,
+            return DictionaryResult(headword: key, senses: DictionaryAggregator.rank(senses, context: context, surface: key), updatedAt: now,
                 sourceURL: "https://dictionaryapi.dev/", licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/", failedProviders: outcome.failed,
                 cached: !fallback.isEmpty || outcome.senses.isEmpty && !(local?.senses.isEmpty ?? true), versions: DictionaryAggregator.versions)
         }
@@ -186,6 +198,7 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
         let key = EnglishTokenizer.lemma(surface)
         if let cached = try cached(key) { return cached }
         let senses = try await provider.lookup(key)
+        try Task.checkCancellation()
         guard Set(senses.map(\.id)).count == senses.count else { throw LearningError.invalid("词典返回重复义项，不能保存。") }
         return try writer.write {
             let context = writer.context

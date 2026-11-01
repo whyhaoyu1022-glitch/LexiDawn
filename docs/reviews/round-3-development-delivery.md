@@ -48,7 +48,7 @@
 | f1a7f3ec41bfb0f0cb24b760e9958f907876a86e | https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41266764773 | 构建、测试编译、unit步骤已观察success；UI当时仍运行，最终结果待核对 |
 | a05402fc7ef68d371d5ff5af802fcc2e360b8da3 | https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41267424498 | 应用构建通过；新冻结schema测试文件漏@testable import，test编译失败，已定位修正 |
 
-当前源码方法清单为133 XCTest、25 XCUITest，含原93/20；数量不是运行结果。新增真实网络测试与URLProtocol故障/fixture解析严格分开。本地Linux没有Swift/Xcode/Simulator；没有本地iOS编译、真实PNG或xcresult。截图manifest在原生UI附件产生前保持空，不能当截图包交付。
+当前源码方法清单为135 XCTest、28 XCUITest，含原93/20；数量不是运行结果。新增真实网络测试与URLProtocol故障/fixture解析严格分开。本地Linux没有Swift/Xcode/Simulator；没有本地iOS编译、真实PNG或xcresult。截图manifest在原生UI附件产生前保持空，不能当截图包交付。
 
 ## 尚未完成的硬门槛
 
@@ -57,7 +57,7 @@
 3. 新的真实网络冷启动UI学习全闭环，小/大屏、三主题、最大动态字体和完整VoiceOver。
 4. 已新增ArticleHistoryArchiveRecord和生产启动归档迁移，旧周期引用保持且不进入库/推荐；冻结旧schema与归档测试待运行。既有legacy运行时到期处理仍须完整验证，不能清库、破坏引用或删除旧测试断言。
 5. 除Wikipedia外的候选仍因权利或逐篇身份核验不足而禁用；没有伪造五源成功。
-6. 同义词辨析、完整词形/词源/短语覆盖和语法词性排序仍需扩展；目前重合排序不冒称语义消歧。
+6. 同义词辨析、完整词形/词源/短语覆盖和语境语义排序仍需扩展；目前语法词性与重合排序不冒称完整语义消歧。
 7. Instruments、页面内存、真实设备长文性能和全部异常/重试验证。
 
 手动验证：在对应工具链运行App，从今日进入文章库，点击“发现完整文章”，确认成功入库后离线打开；切换标题/来源/分类、收藏和稍后阅读并重启；阅读中点词查看来源和个人释义；在原周期完成阅读与两阶段复习，确认连线和排程；旧周期未完成时刷新不得覆盖。不能把手动步骤写成已执行证据。

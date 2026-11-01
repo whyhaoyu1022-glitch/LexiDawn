@@ -10,6 +10,7 @@ struct ReadableArticle: Identifiable {
     var accessExpiresAt: Date? = nil
     var document: ArticleDocument? = nil
     var author: String? = nil
+    var sourceID: String = ""
 }
 
 struct ArticleLibraryItem: Identifiable {
@@ -173,7 +174,7 @@ struct ArticleAccessError: LocalizedError {
                 body: article.bodyText ?? "", bodyHash: article.bodyHash ?? "", topics: article.topicTags, minutes: article.estimatedReadMinutes,
                 publishedAt: article.publishedAt, originalURL: grant.originalURL)
             if let data = article.structuredBody { result.document = try JSONDecoder().decode(ArticleDocument.self, from: data) }
-            result.author = article.author
+            result.author = article.author; result.sourceID = article.sourceID
             if case let .until(expiry)? = candidate.cachePermission { result.accessExpiresAt = expiry }
             return result
         }

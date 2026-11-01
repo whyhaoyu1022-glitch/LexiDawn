@@ -147,7 +147,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
                 let sourceOffset = projection.rawOffset(token.range.location)
                 let element = wordElements[sourceOffset] ?? WordAccessibilityElement(accessibilityContainer: accessibilityContainer)
                 retained[sourceOffset] = element
-                element.accessibilityLabel = token.surface; element.accessibilityTraits = .button
+                element.accessibilityLabel = token.surface; element.accessibilityTraits = .button; element.accessibilityLanguage = "en-US"
                 element.accessibilityIdentifier = "word-\(token.surface)"
                 element.accessibilityValue = "\(projection.rawOffset(token.range.location))"
                 element.accessibilityHint = "查看词义；根据偏好加入生词本"
@@ -180,6 +180,22 @@ final class EnglishTextContainer: UIView {
     override init(frame: CGRect) { super.init(frame: frame); addSubview(textView) }
     required init?(coder: NSCoder) { super.init(coder: coder); addSubview(textView) }
     override func layoutSubviews() { super.layoutSubviews(); textView.frame = bounds; onLayout?() }
+    override func accessibilityScroll(_ direction: UIAccessibilityScrollDirection) -> Bool {
+        guard textView.isScrollEnabled, textView.bounds.height > 0 else { return false }
+        let sign: CGFloat
+        switch direction {
+        case .up, .left, .next: sign = 1
+        case .down, .right, .previous: sign = -1
+        default: return false
+        }
+        let limit = max(0, textView.contentSize.height - textView.bounds.height)
+        let next = min(limit, max(0, textView.contentOffset.y + sign * textView.bounds.height * 0.8))
+        guard abs(next - textView.contentOffset.y) > 1 else { return false }
+        textView.setContentOffset(CGPoint(x: 0, y: next), animated: false); onLayout?()
+        let percent = Int(min(1, max(0, (next + textView.bounds.height) / max(1, textView.contentSize.height))) * 100)
+        UIAccessibility.post(notification: .pageScrolled, argument: "阅读进度 \(percent)%")
+        return true
+    }
 }
 
 /// Short dictionary passages use native attributed links so List row accessibility does not
