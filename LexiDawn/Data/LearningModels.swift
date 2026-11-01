@@ -142,6 +142,7 @@ import SwiftData
     var revision: Int
     var dailyLimit: Int
     var algorithmVersion: String
+    var purpose: String?
     init(cycleID: UUID, entries: [String], at: Date, limit: Int) {
         sessionID = UUID().uuidString; self.cycleID = cycleID.uuidString; selectedEntryIDs = entries
         createdAt = at; updatedAt = at; revision = 0; dailyLimit = limit; algorithmVersion = FSRSScheduler.version

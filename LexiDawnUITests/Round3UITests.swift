@@ -52,6 +52,24 @@ final class Round3UITests: XCTestCase {
         app.navigationBars.buttons["查词"].tap(); XCTAssertTrue(app.buttons["close-word"].exists)
         capture("R3-D42", app: app, feature: "dictionary", state: "detail-returns-to-original-quick-meaning", origin: "explicit-original-six-sense-provider-fixture")
     }
+    func testExtraReviewRestartsSameQuestionAndDoesNotRelockExplore() throws {
+        let app = launch("round3-extra-review"); app.tabBars.buttons["复习"].tap()
+        XCTAssertTrue(app.staticTexts["extra-review-label"].waitForExistence(timeout: 15))
+        capture("R3-E01", app: app, feature: "extra-review", state: "new-extra-session-after-required-completion", origin: "explicit-extra-review-fixture-real-domain-evidence")
+        let word = app.buttons["match-word-internet"]; XCTAssertTrue(word.exists); word.tap(); app.buttons["match-meaning-互联网（额外复习夹具）"].tap()
+        app.terminate(); app.launch(); app.tabBars.buttons["复习"].tap()
+        XCTAssertTrue(app.staticTexts["extra-review-label"].waitForExistence(timeout: 10))
+        XCTAssertTrue(word.exists); XCTAssertFalse(word.isEnabled)
+        capture("R3-E02", app: app, feature: "extra-review", state: "restart-restores-extra-pair-progress", origin: "explicit-extra-review-fixture-real-domain-evidence")
+        app.buttons["match-word-document"].tap(); app.buttons["match-meaning-文档（额外复习夹具）"].tap()
+        for answer in ["internet", "document"] {
+            let field = app.textFields["cloze-answer"]; XCTAssertTrue(field.waitForExistence(timeout: 10)); field.tap(); field.typeText(answer); app.buttons["submit-spelling"].tap()
+        }
+        XCTAssertTrue(app.descendants(matching: .any)["review-completed"].firstMatch.waitForExistence(timeout: 10))
+        capture("R3-E03", app: app, feature: "extra-review", state: "extra-results-and-next-due-saved", origin: "explicit-extra-review-fixture-real-domain-evidence")
+        app.tabBars.buttons["探索"].tap(); XCTAssertFalse(app.staticTexts["先完成必做，再自由探索"].exists)
+        capture("R3-E04", app: app, feature: "extra-review", state: "daily-unlock-unchanged-after-extra-session", origin: "explicit-extra-review-fixture-real-domain-evidence")
+    }
     func testReaderBodySurvivesTenRotationsAndWordRemainsTappable() throws {
         let app = launch("gallery-reader")
         XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()

@@ -17,6 +17,8 @@ struct ReviewPracticeContent: View {
     @State private var loading = false
     @State private var schedules: [String] = []
     @State private var emptyResolved = false
+    @State private var extraMode = false
+    @State private var extraEmpty = false
     @State private var loadGeneration = UUID()
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -29,6 +31,7 @@ struct ReviewPracticeContent: View {
                 }
                 if loading { ProgressView("正在查询完整复习队列…") }
                 else if let session {
+                    if extraMode { Label("额外复习 · 不创建每日任务", systemImage: "plus.circle").font(.headline).accessibilityIdentifier("extra-review-label") }
                     if session.completedAt != nil {
                         ContentUnavailableView("本次复习已保存", systemImage: "checkmark.seal.fill", description: Text("作答、复习日志和下次时间已保存。生词本条目继续保留。")).accessibilityIdentifier("review-completed")
                     } else if !session.matchingComplete { matching(session) }
@@ -36,6 +39,7 @@ struct ReviewPracticeContent: View {
                 } else if emptyResolved { Label("完整队列中没有应复习词条，已记录合法空队列结果。", systemImage: "checkmark.circle") }
                 else { Text("请先在今日页获得文章，并在阅读中积累词汇。") }
                 ForEach(schedules, id: \.self) { Text($0).font(.footnote).accessibilityIdentifier("review-next-due") }
+                if extraEmpty { Text("额外复习暂无到期词条，刚完成的题组不会立即重复。").font(.footnote) }
                 if let feedback { Text(feedback).foregroundStyle(feedback == "正确，已保存" ? .green : .orange).accessibilityIdentifier("review-feedback") }
                 if let message { Text(message).foregroundStyle(.red) }
                 Button("重新读取 / 重试", action: { Task { await load() } }).disabled(loading)
@@ -77,7 +81,7 @@ struct ReviewPracticeContent: View {
     }
     private func load() async {
         let generation = UUID(); loadGeneration = generation
-        loading = true; message = nil; selected = nil; spelling = ""; feedback = nil; emptyResolved = false; session = nil; schedules = []
+        loading = true; message = nil; selected = nil; spelling = ""; feedback = nil; emptyResolved = false; session = nil; schedules = []; extraMode = false; extraEmpty = false
         defer { if loadGeneration == generation { loading = false } }
         do {
             let cycles = try learning.cycles.fetchAll()
@@ -91,6 +95,12 @@ struct ReviewPracticeContent: View {
             schedules = try learning.review.scheduleFeedback(cycleID: cycle.cycleID)
             let restoredCycle = try learning.cycles.fetch(by: cycle.cycleID)
             emptyResolved = session == nil && restoredCycle?.reviewEvidence != nil
+            if prepared?.completedAt != nil || emptyResolved {
+                let extra = try await learning.review.prepareExtra(dailyLimit: prefs.dailyReviewLimit, pairCount: prefs.matchingPairCount, clozeCount: prefs.clozeQuestionCount, at: Date())
+                guard generation == loadGeneration, !Task.isCancelled else { return }
+                if let extra { session = extra; extraMode = true; emptyResolved = false; schedules = try learning.review.extraScheduleFeedback(sessionID: extra.id) }
+                else { extraEmpty = true }
+            }
             learning.changed()
         } catch { self.message = error.localizedDescription }
         loading = false
@@ -99,9 +109,16 @@ struct ReviewPracticeContent: View {
         guard let cycleID else { return false }
         feedback = nil
         do {
-            let correct = try learning.review.submit(cycleID: cycleID, questionID: questionID, answer: answer, reveal: reveal, hint: hint, at: Date())
-            session = try learning.review.session(cycleID: cycleID)
-            schedules = try learning.review.scheduleFeedback(cycleID: cycleID)
+            let correct: Bool
+            if extraMode, let saved = session {
+                correct = try learning.review.submitExtra(sessionID: saved.id, questionID: questionID, answer: answer, reveal: reveal, hint: hint, at: Date())
+                session = try learning.review.extraSession(sessionID: saved.id)
+                schedules = try learning.review.extraScheduleFeedback(sessionID: saved.id)
+            } else {
+                correct = try learning.review.submit(cycleID: cycleID, questionID: questionID, answer: answer, reveal: reveal, hint: hint, at: Date())
+                session = try learning.review.session(cycleID: cycleID)
+                schedules = try learning.review.scheduleFeedback(cycleID: cycleID)
+            }
             feedback = correct ? "正确，已保存" : hint ? "提示使用已记录" : "还不正确，请再试一次（尝试次数已保存）"
             learning.changed(); message = nil
             return true

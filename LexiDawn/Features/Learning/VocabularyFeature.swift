@@ -1,24 +1,41 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct VocabularyListView: View {
     @ObservedObject var learning: LearningServices
-    @State private var items: [VocabularyItem] = []
+    @State private var allItems: [VocabularyItem] = []
     @State private var search = ""
     @State private var filter = "all"
     @State private var error: String?
     @State private var removing: VocabularyItem?
+    @State private var status: VocabularyStatusFilter = .all
+    @State private var sort: VocabularySort = .added
+    @State private var now = Date()
+    @State private var exporting = false
+    @State private var exportDocument: VocabularyExportDocument?
+    @State private var exportType: UTType = .json
+    private var items: [VocabularyItem] { VocabularyQuery.apply(allItems, search: search, type: filter, status: status, sort: sort, at: now) }
     var body: some View {
         NavigationStack {
             List {
                 Picker("词条类型", selection: $filter) { Text("全部").tag("all"); Text("单词").tag("word"); Text("短语").tag("phrase") }.pickerStyle(.segmented)
+                Section {
+                    Text("共 \(allItems.count) 条 · 待复习 \(allItems.filter { $0.dueAt.map { $0 <= now } ?? false }.count) · 逾期 \(allItems.filter { $0.dueAt.map { $0 < Calendar.current.startOfDay(for: now) } ?? false }.count)").font(.caption).foregroundStyle(.secondary)
+                    Picker("复习状态", selection: $status) { ForEach(VocabularyStatusFilter.allCases, id: \.self) { Text($0.rawValue).tag($0) } }.accessibilityIdentifier("vocabulary-status-filter")
+                    Picker("排序", selection: $sort) { ForEach(VocabularySort.allCases, id: \.self) { Text($0.rawValue).tag($0) } }.accessibilityIdentifier("vocabulary-sort")
+                }
                 if items.isEmpty { ContentUnavailableView("还没有匹配的生词", systemImage: "text.book.closed", description: Text("在正文点击英文单词，或在查词浮窗手动加入。")) }
                 ForEach(items) { item in
                     NavigationLink { VocabularyDetailView(item: item, learning: learning) } label: {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(item.lemma).font(.headline)
+                            if let ipa = item.ipa { Text(ipa).font(.caption.monospaced()) }
+                            if !item.partsOfSpeech.isEmpty { Text(item.partsOfSpeech.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
                             if let meaning = item.meaning { Text("个人释义：\(meaning)").font(.subheadline) }
                             else if let meaning = item.dictionaryMeanings.first { Text("可能对应：\(meaning)").font(.subheadline) }
                             Text("\(item.type == "word" ? "单词" : "短语") · \(item.addedAt.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.secondary)
+                            if let due = item.dueAt { Text("下次复习：" + due.formatted(date: .abbreviated, time: .shortened)).font(.caption) }
+                            if let last = item.lastReviewedAt { Text("最近复习：" + last.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary) }
                         }
                     }.accessibilityIdentifier("vocabulary-entry-\(item.lemma)").swipeActions { Button("移除", role: .destructive) { removing = item } }
                 }
@@ -26,13 +43,29 @@ struct VocabularyListView: View {
             }.searchable(text: $search, prompt: "搜索词形、lemma 或已缓存中文释义")
                 .navigationTitle("生词本").task { load() }.onReceive(learning.$revision) { _ in load() }
                 .onChange(of: search) { _, _ in load() }.onChange(of: filter) { _, _ in load() }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in load() }
+                .toolbar { Menu("导出生词", systemImage: "square.and.arrow.up") { Button("导出 JSON（完整学习数据）") { prepareExport(.json) }; Button("导出 CSV") { prepareExport(.csv) } }
+                .fileExporter(isPresented: $exporting, document: exportDocument, contentType: exportType, defaultFilename: "LexiDawn-vocabulary") { result in
+                    if case let .failure(failure) = result { error = failure.localizedDescription }
+                }
                 .alert("确认移除生词？", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })) {
                     Button("取消", role: .cancel) { removing = nil }
                     Button("移除", role: .destructive) { if let item = removing { do { try learning.vocabulary.remove(entryID: item.id, at: Date()); learning.changed() } catch { self.error = error.localizedDescription } }; removing = nil }
                 } message: { Text("这是你主动移除的操作。历史学习与复习日志保留；复习成功不会自动删除词条。") }
         }
     }
-    private func load() { do { items = try learning.vocabulary.entries(search: search, type: filter == "all" ? nil : filter); error = nil } catch { self.error = error.localizedDescription } }
+    private func load() { do { allItems = try learning.vocabulary.entries(); now = Date(); error = nil } catch { self.error = error.localizedDescription } }
+    private func prepareExport(_ format: VocabularyExportFormat) {
+        do { exportDocument = VocabularyExportDocument(data: try learning.vocabulary.export(format, at: Date())); exportType = format == .json ? .json : .commaSeparatedText; exporting = true; error = nil }
+        catch { self.error = error.localizedDescription }
+    }
+}
+struct VocabularyExportDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.json, .commaSeparatedText] }
+    let data: Data
+    init(data: Data) { self.data = data }
+    init(configuration: ReadConfiguration) throws { guard let bytes = configuration.file.regularFileContents else { throw CocoaError(.fileReadCorruptFile) }; data = bytes }
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper { FileWrapper(regularFileWithContents: data) }
 }
 struct VocabularyDetailView: View {
     let item: VocabularyItem

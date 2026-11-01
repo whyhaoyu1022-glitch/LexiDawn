@@ -1,11 +1,11 @@
 import Foundation
 import SwiftData
 
-struct VocabularyContextItem: Identifiable, Equatable {
+struct VocabularyContextItem: Identifiable, Equatable, Codable {
     let id: String, articleID: String, sentence: String, title: String, attribution: String
     let originalURL: String?
 }
-struct VocabularyItem: Identifiable, Equatable {
+struct VocabularyItem: Identifiable, Equatable, Codable {
     let id: String, lemma: String, type: String
     let surfaces: [String]
     let addedAt: Date
@@ -15,6 +15,42 @@ struct VocabularyItem: Identifiable, Equatable {
     let sourceArticleID: String?
     let dictionaryMeanings: [String]
     let sourceContexts: [VocabularyContextItem]
+    var ipa: String? = nil
+    var partsOfSpeech: [String] = []
+    var dueAt: Date? = nil
+    var lastReviewedAt: Date? = nil
+    var intervalDays = 0
+    var repetitions = 0
+    var lapses = 0
+    var algorithmVersion: String? = nil
+    var stability: Double? = nil
+    var difficulty: Double? = nil
+    var dictionarySenses: [DictionarySense] = []
+}
+enum VocabularyStatusFilter: String, CaseIterable { case all = "全部状态", due = "待复习", overdue = "逾期", recent = "近7日添加", familiar = "较熟悉" }
+enum VocabularySort: String, CaseIterable { case added = "最近添加", due = "到期时间", alphabet = "字母顺序", priority = "复习优先级" }
+enum VocabularyExportFormat: Equatable { case json, csv }
+enum VocabularyQuery {
+    static func apply(_ entries: [VocabularyItem], search: String, type: String, status: VocabularyStatusFilter, sort: VocabularySort, at now: Date) -> [VocabularyItem] {
+        entries.filter { item in
+            guard type == "all" || item.type == type else { return false }
+            guard search.isBlank || ([item.lemma, item.meaning ?? ""] + item.surfaces + item.dictionaryMeanings).contains(where: { $0.localizedCaseInsensitiveContains(search) }) else { return false }
+            switch status {
+            case .all: return true
+            case .due: return item.dueAt.map { $0 <= now } ?? false
+            case .overdue: return item.dueAt.map { $0 < Calendar.current.startOfDay(for: now) } ?? false
+            case .recent: return item.addedAt >= now.addingTimeInterval(-7 * 86400)
+            case .familiar: return item.repetitions >= 3 && item.intervalDays >= 21
+            }
+        }.sorted { a, b in
+            switch sort {
+            case .added: return (a.addedAt, a.id) > (b.addedAt, b.id)
+            case .alphabet: return (a.lemma, a.id) < (b.lemma, b.id)
+            case .due: return (a.dueAt ?? .distantFuture, a.id) < (b.dueAt ?? .distantFuture, b.id)
+            case .priority: return (a.dueAt ?? .distantFuture, -a.lapses, a.id) < (b.dueAt ?? .distantFuture, -b.lapses, b.id)
+            }
+        }
+    }
 }
 struct VocabularyAddition {
     let entryID: String
@@ -33,6 +69,8 @@ struct VocabularyAddition {
             let senses = try context.fetch(FetchDescriptor<DictionarySenseRecord>())
             let articles = try historicalArticleMetadata(in: context)
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
+            let states = try context.fetch(FetchDescriptor<ReviewStateRecord>())
+            let providerCaches = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>())
             return all.filter { $0.deletedAt == nil && (type == nil || $0.entryType == type) }.map { record in
                 let attached = contexts.filter { $0.entryID == record.entryID }
                 let definitions = senses.filter { $0.entryID == "cedict-reverse-v1|\(record.lemma)" }.sorted { $0.senseID < $1.senseID }.map(\.chinese)
@@ -42,10 +80,20 @@ struct VocabularyAddition {
                         title: article?.originalTitle ?? source.articleID, attribution: article?.sourceAttribution ?? article?.sourceID ?? "来源元数据不可用",
                         originalURL: grants.first { $0.articleID == source.articleID }?.originalURL)
                 }
-                return VocabularyItem(id: record.entryID, lemma: record.lemma, type: record.entryType, surfaces: record.surfaceForms,
+                var value = VocabularyItem(id: record.entryID, lemma: record.lemma, type: record.entryType, surfaces: record.surfaceForms,
                     addedAt: record.addedAt, meaning: record.userMeaning, notes: record.notes,
                     contexts: attached.map(\.sentence), sourceArticleID: attached.first?.articleID,
                     dictionaryMeanings: definitions, sourceContexts: sourceItems)
+                let providerRows = providerCaches.filter { $0.lemma == record.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
+                value.dictionarySenses = DictionaryAggregator.merge(try providerRows.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) })
+                value.ipa = value.dictionarySenses.compactMap(\.ipa).first
+                value.partsOfSpeech = Array(Set(value.dictionarySenses.compactMap(\.partOfSpeech))).sorted()
+                if let state = states.first(where: { $0.entryID == record.entryID }) {
+                    value.dueAt = state.dueAt; value.lastReviewedAt = state.lastReviewedAt; value.intervalDays = state.intervalDays
+                    value.repetitions = state.repetitions; value.lapses = state.lapses; value.algorithmVersion = state.algorithmVersion
+                    value.stability = state.stability; value.difficulty = state.difficulty
+                }
+                return value
             }.filter { search.isBlank || ([$0.lemma, $0.meaning ?? ""] + $0.surfaces + $0.dictionaryMeanings).contains { $0.localizedCaseInsensitiveContains(search) } }
                 .sorted { $0.addedAt > $1.addedAt }
         }
@@ -53,6 +101,26 @@ struct VocabularyAddition {
     func find(surface: String, type: String? = nil) throws -> VocabularyItem? {
         let lemma = EnglishTokenizer.lemma(surface)
         return try entries(type: type ?? (lemma.contains(" ") ? "phrase" : "word")).first { $0.lemma == lemma }
+    }
+    func export(_ format: VocabularyExportFormat, at now: Date) throws -> Data {
+        let items = try entries()
+        struct ExportLog: Codable { let entryID: String, eventID: String, grade: String, algorithmVersion: String; let reviewedAt: Date, nextDueAt: Date }
+        struct Payload: Codable { let formatVersion: Int; let exportedAt: Date; let entries: [VocabularyItem]; let reviewLogs: [ExportLog] }
+        let ids = Set(items.map(\.id))
+        let logs = try writer.read { context in try context.fetch(FetchDescriptor<ReviewLogRecord>()).filter { ids.contains($0.entryID) }.map { ExportLog(entryID: $0.entryID, eventID: $0.eventID, grade: $0.grade, algorithmVersion: $0.algorithmVersion, reviewedAt: $0.reviewedAt, nextDueAt: $0.nextDueAt) } }
+        if format == .json {
+            let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601; encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            return try encoder.encode(Payload(formatVersion: 1, exportedAt: now, entries: items, reviewLogs: logs))
+        }
+        let date = ISO8601DateFormatter()
+        func quote(_ text: String) -> String { "\"" + text.replacingOccurrences(of: "\"", with: "\"\"") + "\"" }
+        var rows = [["entryID", "lemma", "surfaceForms", "type", "personalMeaning", "dictionaryMeanings", "notes", "sourceContextsJSON", "addedAt", "lastReviewedAt", "nextDueAt", "algorithmVersion", "repetitions", "lapses", "stability", "difficulty", "dictionarySensesJSON", "reviewLogsJSON"]]
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601; encoder.outputFormatting = .sortedKeys
+        for item in items {
+            rows.append([item.id, item.lemma, item.surfaces.joined(separator: " | "), item.type, item.meaning ?? "", item.dictionaryMeanings.joined(separator: " | "), item.notes ?? "",
+                String(decoding: try encoder.encode(item.sourceContexts), as: UTF8.self), date.string(from: item.addedAt), item.lastReviewedAt.map { date.string(from: $0) } ?? "", item.dueAt.map { date.string(from: $0) } ?? "", item.algorithmVersion ?? "", String(item.repetitions), String(item.lapses), item.stability.map { String($0) } ?? "", item.difficulty.map { String($0) } ?? "", String(decoding: try encoder.encode(item.dictionarySenses), as: UTF8.self), String(decoding: try encoder.encode(logs.filter { $0.entryID == item.id }), as: UTF8.self)])
+        }
+        return Data((rows.map { $0.map(quote).joined(separator: ",") }.joined(separator: "\r\n") + "\r\n").utf8)
     }
     func add(token: EnglishToken, articleID: String, autoAdd: Bool, explicit: Bool = false, at now: Date) throws -> VocabularyAddition? {
         guard autoAdd || explicit else { return nil }

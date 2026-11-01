@@ -13,6 +13,63 @@ private actor CacheRequestProbe: DictionaryProvider {
 @MainActor final class Round3Tests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 1793534400)
     private var webBody: String { (1...3).map { "<p>Paragraph \($0) is explicit original fixture writing. Science helps people understand nature and share discoveries. Every sentence in this complete document is preserved for a deterministic parser test, including the final sentence.</p>" }.joined() }
+    func testExtraReviewRestoresFixedSessionSchedulesOnceAndNeverChangesDailyCycle() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let articleID = try learning.content.importArticle(.init(title: "Explicit extra review fixture", body: "A book helps readers learn.", source: "Fixture author", rightsConfirmed: true), at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected daily cycle") }
+        _ = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        try learning.reader.complete(articleID: articleID, cycleID: cycle.cycleID, manualConfirmation: true, at: now)
+        let before = try learning.cycles.fetchAll()
+        let word = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "book", range: NSRange(location: 2, length: 4), sentence: "A book helps readers learn."), articleID: articleID, autoAdd: true, at: now))
+        try learning.vocabulary.annotate(entryID: word.entryID, meaning: "书（明确个人释义）", notes: "", at: now)
+        let prepared = try await learning.review.prepareExtra(dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        let extra = try XCTUnwrap(prepared)
+        let recovered = ReviewQueueService(context: ModelContext(app.modelContainer), cycles: learning.cycles, dictionary: learning.dictionary)
+        let resumed = try await recovered.prepareExtra(dailyLimit: 99, pairCount: 9, clozeCount: 9, at: now)
+        XCTAssertEqual(resumed, extra)
+        try recovered.submitExtra(sessionID: extra.id, questionID: extra.matching[0].id, answer: extra.matching[0].senseID, at: now)
+        try recovered.submitExtra(sessionID: extra.id, questionID: extra.cloze[0].id, answer: extra.cloze[0].answer, at: now)
+        try recovered.submitExtra(sessionID: extra.id, questionID: extra.cloze[0].id, answer: extra.cloze[0].answer, at: now)
+        XCTAssertEqual(try learning.cycles.fetchAll(), before)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ReviewLogRecord>()), 1)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetch(FetchDescriptor<ReviewStateRecord>()).first?.repetitions, 1)
+        let next = try await recovered.prepareExtra(dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        XCTAssertNil(next); XCTAssertEqual(try learning.vocabulary.entries().count, 1)
+    }
+    func testPersonalMeaningReviewNeedsNoEnglishNetworkAndExtraCannotBypassRequiredReview() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let id = try learning.content.importArticle(.init(title: "Explicit offline review fixture", body: "A book helps.", source: "Fixture author", rightsConfirmed: true), at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        let addition = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "book", range: NSRange(location: 2, length: 4), sentence: "A book helps."), articleID: id, autoAdd: true, at: now))
+        try learning.vocabulary.annotate(entryID: addition.entryID, meaning: "书（个人）", notes: "", at: now)
+        let provider = CacheRequestProbe()
+        try learning.dictionary.configureDictionaryEvidence(providers: [("Free Dictionary API", provider), ("Wiktionary", provider)])
+        do { _ = try await learning.review.prepareExtra(dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now); XCTFail("Required review cannot be bypassed") } catch { }
+        let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        XCTAssertEqual(prepared?.matching.first?.answer, "书（个人）")
+        let requests = await provider.requests; XCTAssertEqual(requests, 0)
+    }
+    func testVocabularyQueriesAndExportsKeepChineseNotesSourcesAndSchedule() throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let id = try learning.content.importArticle(.init(title: "Explicit export source", body: "A book uses the Internet.", source: "Fixture author", rightsConfirmed: true), at: now.addingTimeInterval(-10 * 86400))
+        let book = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "book", range: NSRange(location: 2, length: 4), sentence: "A book uses the Internet."), articleID: id, autoAdd: true, at: now.addingTimeInterval(-10 * 86400)))
+        _ = try learning.vocabulary.add(token: .init(surface: "Internet", range: NSRange(location: 16, length: 8), sentence: "A book uses the Internet."), articleID: id, autoAdd: true, at: now)
+        try learning.vocabulary.annotate(entryID: book.entryID, meaning: "书，册", notes: "A \"quoted\" note\nwith another line.", at: now)
+        let context = ModelContext(app.modelContainer), state = try XCTUnwrap(context.fetch(FetchDescriptor<ReviewStateRecord>()).first { $0.entryID == book.entryID })
+        state.dueAt = now.addingTimeInterval(-2 * 86400); try context.save()
+        let entries = try learning.vocabulary.entries()
+        XCTAssertEqual(VocabularyQuery.apply(entries, search: "册", type: "word", status: .overdue, sort: .alphabet, at: now).map(\.id), [book.entryID])
+        XCTAssertEqual(VocabularyQuery.apply(entries, search: "", type: "all", status: .recent, sort: .added, at: now).map(\.lemma), ["internet"])
+        let json = try learning.vocabulary.export(.json, at: now)
+        let payload = try XCTUnwrap(JSONSerialization.jsonObject(with: json) as? [String: Any]), exported = try XCTUnwrap(payload["entries"] as? [[String: Any]])
+        XCTAssertEqual(exported.count, 2)
+        let exportedBook = try XCTUnwrap(exported.first { $0["id"] as? String == book.entryID })
+        XCTAssertEqual(exportedBook["notes"] as? String, "A \"quoted\" note\nwith another line.")
+        XCTAssertNotNil(exportedBook["dueAt"]); XCTAssertNotNil(exportedBook["sourceContexts"])
+        let csv = String(decoding: try learning.vocabulary.export(.csv, at: now), as: UTF8.self)
+        XCTAssertTrue(csv.contains("\"A \"\"quoted\"\" note\nwith another line.\"")); XCTAssertTrue(csv.contains("nextDueAt"))
+        XCTAssertEqual(try learning.vocabulary.entries().count, 2)
+    }
     func testHistoryFavoriteAndLaterCannotBypassCurrentCycleAtReaderBoundary() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
         let first = try learning.content.importArticle(.init(title: "Explicit first owned article", body: "A complete first original article.", source: "Fixture author", rightsConfirmed: true), at: now)
