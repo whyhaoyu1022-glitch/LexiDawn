@@ -4,6 +4,10 @@
 
 负责人后续特别指示采用公开官网完整正文的个人使用模式，优先于旧许可准入文字；用户使用声明与出版社授权证据分别记录。全文不完整即舍弃，绝不提供摘要、URL、原站或 WebView 降级。九个原候选全部调查，另外扩展 ScienceDaily、Phys.org 和 Smithsonian，真实结果见 [来源审查](../article-source-eligibility-audit.md)。
 
+## 最近 CI 核查
+
+main `89ccd99` 的 [41318724181](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41318724181) 已失败：Debug/Release、180 XCTest/0失败、真实10源29篇、大屏3/0；SE7/1，主UI另有重置确认及空库说明失败，其余取消。已依据录像/AX修复三处UI回归，强化真实持久化及确认/取消断言；本次原生复验待运行。[完整核查与SPEC逐字依据](round-3-ci-41318724181-repair.md)。最终截图合并仍缺状态，不能宣称齐全。
+
 ## 六个模块与融合
 
 | 模块 | 实际实现与入口 | 持久化和关键保护 |

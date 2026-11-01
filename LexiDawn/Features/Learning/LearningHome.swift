@@ -232,7 +232,10 @@ struct LiveExploreView: View {
                     Section("已解锁 · 本地合法文章") {
                         Text("按兴趣、内容完整性、长文价值与新鲜度推荐。已开始的文章在阅读历史继续。").font(.caption).foregroundStyle(.secondary)
                         Picker("主题", selection: $topic) { Text("所有主题").tag("all"); ForEach(Array(Set(articles.flatMap(\.topics))).sorted(), id: \.self) { Text($0).tag($0) } }.accessibilityIdentifier("explore-topic-filter")
-                        if visible.isEmpty { ContentUnavailableView("正在寻找新文章", systemImage: "sparkle.magnifyingglass", description: Text("没有符合当前筛选的未学习全文。可以调整主题或发现新文章。")); Button("发现新完整文章", action: discover).disabled(loading) }
+                        if visible.isEmpty {
+                            ContentUnavailableView("正在寻找新文章", systemImage: "sparkle.magnifyingglass", description: Text(articles.isEmpty ? "暂无合法探索内容，可先导入文章。" : "没有符合当前筛选的未学习全文。可以调整主题或发现新文章。"))
+                            Button("发现新完整文章", action: discover).disabled(loading)
+                        }
                         ForEach(Array(visible.enumerated()), id: \.element.id) { index, article in
                             VStack(alignment: .leading, spacing: 10) {
                                 Button {

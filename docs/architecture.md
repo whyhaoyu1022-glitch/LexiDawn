@@ -24,6 +24,8 @@ VocabularyEntry保留词形/语境/个人释义/笔记及安全撤销凭据。�
 
 VocabularyRecommendationService从真实完整正文提取实际词形与偏移、排除本中lemma，再查真实词典；锁定时拒绝，无结果不补造；详情/嵌套关闭自动加入，仅明确加入写本。
 
+生词详情将唯一释义/笔记保存动作放在导航栏，键盘存在时仍可访问；成功反馈仍依赖真实Repository写入和读回。文章库同一List行内按钮显式隔离样式；重置确认捕获呈现文章快照，避免关闭绑定时丢失对象或同行误触打开阅读器。空探索池与仅筛选无结果分别说明，均不创建替代文章。
+
 ## 复习
 
 MatchingBoard用AnchorPreference/Canvas画Bezier线；双端禁用，ReviewQueueService事务拒绝重复消费。FSRSScheduler为FSRS4.5固定参数DSR实现，保存版本/S/D/间隔/计数/日志。旧basic日志不改写；下次真实复习才转换状态。

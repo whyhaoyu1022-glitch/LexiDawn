@@ -92,7 +92,6 @@ struct VocabularyDetailView: View {
             Section("你的释义与笔记") {
                 TextField("个人中文释义（非词典原文）", text: $meaning).focused($editing).submitLabel(.done).onSubmit { editing = false }.accessibilityIdentifier("personal-meaning")
                 TextField("笔记", text: $notes, axis: .vertical).focused($editing).accessibilityIdentifier("vocabulary-notes")
-                Button("保存个人释义与笔记", action: save)
                 if let saveError { Text(saveError).foregroundStyle(.red); Button("重试保存释义与笔记", action: save) }
                 if saved { Label("已保存", systemImage: "checkmark.circle") }
                 Text("来源没有可用中文对应词时，可填写自己的释义用于复习。个人内容与开放词典数据明确区分。").font(.caption).foregroundStyle(.secondary)
@@ -138,7 +137,16 @@ struct VocabularyDetailView: View {
             if let dictionaryError { Text(dictionaryError).foregroundStyle(.red); Button("重试词典") { Task { await lookup() } } }
         }.scrollDismissesKeyboard(.interactively).navigationTitle(item.lemma).navigationBarTitleDisplayMode(.inline)
             .onChange(of: meaning) { _, _ in saved = false; selectedMeaningSaved = false }.onChange(of: notes) { _, _ in saved = false }
-            .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { editing = false } } }
+            .toolbar {
+                // Keep the single save action reachable above the keyboard, including
+                // on SE where a Form row can be obscured by the input accessory.
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存", action: save)
+                        .accessibilityLabel("保存个人释义与笔记")
+                        .accessibilityIdentifier("save-vocabulary-annotation")
+                }
+                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { editing = false } }
+            }
             .task {
                 meaning = item.meaning ?? ""; notes = item.notes ?? ""; chosenMeaningText = item.reviewMeaningText
                 do { source = try learning.content.library().first { $0.id == item.sourceArticleID } } catch { self.error = error.localizedDescription }
@@ -150,8 +158,8 @@ struct VocabularyDetailView: View {
             } message: { Text("仅由本次明确操作移除，复习状态和历史日志保留。") }
     }
     private func save() {
-        saved = false
-        do { try learning.vocabulary.annotate(entryID: item.id, meaning: meaning, notes: notes, at: Date()); chosenMeaningText = try learning.vocabulary.find(surface: item.lemma)?.reviewMeaningText; saved = true; saveError = nil; editing = false; learning.changed() }
+        saved = false; editing = false
+        do { try learning.vocabulary.annotate(entryID: item.id, meaning: meaning, notes: notes, at: Date()); chosenMeaningText = try learning.vocabulary.find(surface: item.lemma)?.reviewMeaningText; saved = true; saveError = nil; learning.changed() }
         catch { saveError = error.localizedDescription }
     }
     private func lookup() async { do { result = try await learning.dictionary.lookup(item.lemma); dictionaryError = nil } catch { self.dictionaryError = error.localizedDescription } }
