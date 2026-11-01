@@ -1,8 +1,10 @@
 # 词光 LexiDawn
 
+最近核查 main `0126709` 的运行41326351407：180单元/0失败、SE7/0、大屏3/0；前次嵌套、重置和外观回归已通过，主full-4仅导出文件名失败（13/1），其他取消，整次失败。本次将导出改为真实快照原子暂存后交给原生文件选择器，按请求隔离清理；保留文件名断言并校验真实关闭。新增2单元，本次源码182/49，原生复验待新CI。 [核查报告](docs/reviews/round-3-ci-41326351407-repair.md)。
+
 原生 iOS 英文全文阅读、查词、生词管理和间隔复习应用。使用 SwiftUI、SwiftData、Domain、Service 和 Repository，不依赖网页阅读器或大型 UI 框架。
 
-**CURRENT · Round 3 仍在开发验证，尚未统一验收通过。** 当前源码清单为 180 XCTest / 49 XCUITest，包含原 93 / 20。已核验的代码和失败详情见 [STATUS](STATUS.md) 与 [Round 3 开发记录](docs/reviews/round-3-development-delivery.md)，清单数量不代表通过数量。
+**CURRENT · Round 3 仍在开发验证，尚未统一验收通过。** 当前源码清单为 182 XCTest / 49 XCUITest，包含原 93 / 20。已核验的代码和失败详情见 [STATUS](STATUS.md) 与 [Round 3 开发记录](docs/reviews/round-3-development-delivery.md)，清单数量不代表通过数量。
 
 最近已核验运行 41318724181：180 单元/0失败、大屏3/0；SE及主UI仍有失败。已针对键盘保存、重置误开阅读器和探索空库说明修复源码，待新运行复验，见[核查报告](docs/reviews/round-3-ci-41318724181-repair.md)。
 

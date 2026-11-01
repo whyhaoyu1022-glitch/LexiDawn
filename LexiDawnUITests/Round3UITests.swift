@@ -86,16 +86,19 @@ final class Round3UITests: XCTestCase {
         for (index, title) in ["导出 JSON（完整学习数据）", "导出 CSV"].enumerated() {
             app.buttons["vocabulary-export"].tap(); app.buttons[title].tap()
             let filename = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS 'LexiDawn-vocabulary' OR value CONTAINS 'LexiDawn-vocabulary'")).firstMatch
+            let exporterBar = app.navigationBars["FullDocumentManagerViewControllerNavigationBar"]
+            XCTAssertTrue(exporterBar.waitForExistence(timeout: 15))
             XCTAssertTrue(filename.waitForExistence(timeout: 15))
-            capture("R3-V\(index + 14)", app: app, feature: "vocabulary-export", state: index == 0 ? "native-JSON-export-dialog" : "native-CSV-export-dialog", origin: "real-FileDocument-and-native-exporter-fixture-vocabulary")
+            capture("R3-V\(index + 14)", app: app, feature: "vocabulary-export", state: index == 0 ? "native-JSON-export-dialog" : "native-CSV-export-dialog", origin: "real-repository-staged-file-native-document-picker-fixture-vocabulary")
             let cancel = app.buttons.matching(NSPredicate(format: "label IN %@", ["Cancel", "取消"])).firstMatch
             if cancel.exists { cancel.tap() }
             else {
                 // iOS 26's folder-level exporter has Back/Save, without Cancel.
                 // Dismiss the native sheet by its navigation bar; never tap Save.
-                let exporterBar = app.navigationBars.firstMatch
                 XCTAssertTrue(exporterBar.exists); exporterBar.swipeDown()
             }
+            expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: exporterBar)
+            waitForExpectations(timeout: 10)
             XCTAssertTrue(app.navigationBars["生词本"].waitForExistence(timeout: 10))
         }
         let search = app.searchFields.firstMatch

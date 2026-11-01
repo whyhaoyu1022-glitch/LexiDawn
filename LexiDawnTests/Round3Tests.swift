@@ -191,6 +191,51 @@ private actor CacheRequestProbe: DictionaryProvider {
         XCTAssertTrue(csv.contains("\"A \"\"quoted\"\" note\nwith another line.\"")); XCTAssertTrue(csv.contains("nextDueAt"))
         XCTAssertEqual(try learning.vocabulary.entries().count, 2)
     }
+    func testVocabularyExportFilesKeepRepositoryBytesAndIsolateCleanup() throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let articleID = try learning.content.importArticle(.init(title: "Original export fixture", body: "A book helps.", source: "Fixture author", rightsConfirmed: true), at: now)
+        let entry = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "book", range: NSRange(location: 2, length: 4), sentence: "A book helps."), articleID: articleID, autoAdd: true, at: now))
+        try learning.vocabulary.annotate(entryID: entry.entryID, meaning: "书（个人释义）", notes: "Quoted \"note\"\n第二行", at: now)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let files = VocabularyExportFileService(directory: directory)
+        let json = try learning.vocabulary.export(.json, at: now), csv = try learning.vocabulary.export(.csv, at: now)
+        let first = try files.prepare(json, format: .json), second = try files.prepare(csv, format: .csv)
+        XCTAssertEqual(first.url.lastPathComponent, "LexiDawn-vocabulary.json")
+        XCTAssertEqual(second.url.lastPathComponent, "LexiDawn-vocabulary.csv")
+        XCTAssertNotEqual(first.url.deletingLastPathComponent(), second.url.deletingLastPathComponent())
+        XCTAssertEqual(try Data(contentsOf: first.url), json)
+        XCTAssertEqual(try Data(contentsOf: second.url), csv)
+        try files.discard(first); try files.discard(first)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: first.url.path))
+        XCTAssertEqual(try Data(contentsOf: second.url), csv)
+        // Reject cleanup outside this service's staging directory.
+        let unrelated = directory.deletingLastPathComponent().appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: unrelated, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: unrelated) }
+        let protectedURL = unrelated.appendingPathComponent("keep.txt")
+        try Data("keep".utf8).write(to: protectedURL)
+        XCTAssertThrowsError(try files.discard(.init(id: UUID(), url: protectedURL)))
+        XCTAssertEqual(try String(contentsOf: protectedURL, encoding: .utf8), "keep")
+        try files.discard(second)
+        XCTAssertEqual(try learning.vocabulary.entries().map(\.id), [entry.entryID])
+        XCTAssertEqual(try learning.vocabulary.find(surface: "book")?.notes, "Quoted \"note\"\n第二行")
+    }
+    func testVocabularyExportStagingFailureDoesNotPresentEmptyFileOrOverwriteData() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let blocker = directory.appendingPathComponent("blocked")
+        try Data("protected".utf8).write(to: blocker)
+        XCTAssertThrowsError(try VocabularyExportFileService(directory: blocker).prepare(Data("{}".utf8), format: .json))
+        XCTAssertEqual(try String(contentsOf: blocker, encoding: .utf8), "protected")
+        let files = VocabularyExportFileService(directory: directory.appendingPathComponent("empty"))
+        XCTAssertThrowsError(try files.prepare(Data(), format: .csv))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: files.directory.path))
+        let retry = try files.prepare(Data("lemma,meaning\nbook,书".utf8), format: .csv)
+        XCTAssertEqual(try Data(contentsOf: retry.url), Data("lemma,meaning\nbook,书".utf8))
+        try files.discard(retry)
+    }
     func testHistoryFavoriteAndLaterCannotBypassCurrentCycleAtReaderBoundary() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
         let first = try learning.content.importArticle(.init(title: "Explicit first owned article", body: "A complete first original article.", source: "Fixture author", rightsConfirmed: true), at: now)

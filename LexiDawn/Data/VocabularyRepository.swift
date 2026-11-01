@@ -39,6 +39,35 @@ struct VocabularyItem: Identifiable, Equatable, Codable {
 enum VocabularyStatusFilter: String, CaseIterable { case all = "全部状态", due = "待复习", overdue = "逾期", recent = "近7日添加", familiar = "较熟悉" }
 enum VocabularySort: String, CaseIterable { case added = "最近添加", due = "到期时间", alphabet = "字母顺序", priority = "复习优先级" }
 enum VocabularyExportFormat: Equatable { case json, csv }
+
+struct VocabularyExportFile: Identifiable {
+    let id: UUID
+    let url: URL
+}
+
+/// Stages an immutable repository snapshot before presenting the system exporter.
+/// Each request owns its directory; cancellation never touches another export or database.
+struct VocabularyExportFileService {
+    let directory: URL
+    init(directory: URL = FileManager.default.temporaryDirectory.appendingPathComponent("LexiDawn-vocabulary-exports", isDirectory: true)) {
+        self.directory = directory.standardizedFileURL
+    }
+    func prepare(_ data: Data, format: VocabularyExportFormat) throws -> VocabularyExportFile {
+        guard !data.isEmpty else { throw CocoaError(.fileWriteUnknown) }
+        let id = UUID(), folder = directory.appendingPathComponent(id.uuidString, isDirectory: true)
+        let url = folder.appendingPathComponent("LexiDawn-vocabulary." + (format == .json ? "json" : "csv"))
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        do { try data.write(to: url, options: .atomic) }
+        catch { try? FileManager.default.removeItem(at: folder); throw error }
+        return VocabularyExportFile(id: id, url: url)
+    }
+    func discard(_ file: VocabularyExportFile) throws {
+        let folder = file.url.deletingLastPathComponent().standardizedFileURL
+        guard folder.lastPathComponent == file.id.uuidString,
+              folder.deletingLastPathComponent().standardizedFileURL.path == directory.path else { throw CocoaError(.fileWriteNoPermission) }
+        if FileManager.default.fileExists(atPath: folder.path) { try FileManager.default.removeItem(at: folder) }
+    }
+}
 enum VocabularyQuery {
     static func apply(_ entries: [VocabularyItem], search: String, type: String, status: VocabularyStatusFilter, sort: VocabularySort, at now: Date) -> [VocabularyItem] {
         entries.filter { item in

@@ -1,5 +1,5 @@
 import SwiftUI
-import UniformTypeIdentifiers
+import UIKit
 
 struct VocabularyListView: View {
     @ObservedObject var learning: LearningServices
@@ -12,9 +12,9 @@ struct VocabularyListView: View {
     @State private var status: VocabularyStatusFilter = .all
     @State private var sort: VocabularySort = .added
     @State private var now = Date()
-    @State private var exporting = false
-    @State private var exportDocument: VocabularyExportDocument?
-    @State private var exportType: UTType = .json
+    @State private var exportFile: VocabularyExportFile?
+    @State private var cleanupExport: VocabularyExportFile?
+    private let exportFiles = VocabularyExportFileService()
     private var items: [VocabularyItem] { VocabularyQuery.apply(allItems, search: search, type: filter, status: status, sort: sort, at: now) }
     var body: some View {
         NavigationStack {
@@ -46,8 +46,8 @@ struct VocabularyListView: View {
                 .navigationTitle("生词本").task { load() }.onReceive(learning.$revision) { _ in load() }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in load() }
                 .toolbar { Menu("导出生词", systemImage: "square.and.arrow.up") { Button("导出 JSON（完整学习数据）") { prepareExport(.json) }; Button("导出 CSV") { prepareExport(.csv) } }.accessibilityIdentifier("vocabulary-export") }
-                .fileExporter(isPresented: $exporting, document: exportDocument, contentType: exportType, defaultFilename: "LexiDawn-vocabulary") { result in
-                    if case let .failure(failure) = result { error = failure.localizedDescription }
+                .sheet(item: $exportFile, onDismiss: clearExport) { file in
+                    VocabularyExportPicker(file: file) { exportFile = nil }
                 }
                 .alert("确认移除生词？", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })) {
                     Button("取消", role: .cancel) { removing = nil }
@@ -57,16 +57,38 @@ struct VocabularyListView: View {
     }
     private func load() { do { allItems = try learning.vocabulary.entries(); now = Date(); error = nil } catch { self.error = error.localizedDescription } }
     private func prepareExport(_ format: VocabularyExportFormat) {
-        do { exportDocument = VocabularyExportDocument(data: try learning.vocabulary.export(format, at: Date())); exportType = format == .json ? .json : .commaSeparatedText; exporting = true; error = nil }
+        guard exportFile == nil, cleanupExport == nil else { return }
+        do {
+            let file = try exportFiles.prepare(learning.vocabulary.export(format, at: Date()), format: format)
+            cleanupExport = file; exportFile = file; error = nil
+        }
         catch { self.error = error.localizedDescription }
     }
+    private func clearExport() {
+        guard let file = cleanupExport else { return }
+        defer { cleanupExport = nil }
+        do { try exportFiles.discard(file) } catch { self.error = error.localizedDescription }
+    }
 }
-struct VocabularyExportDocument: FileDocument {
-    static var readableContentTypes: [UTType] { [.json, .commaSeparatedText] }
-    let data: Data
-    init(data: Data) { self.data = data }
-    init(configuration: ReadConfiguration) throws { guard let bytes = configuration.file.regularFileContents else { throw CocoaError(.fileReadCorruptFile) }; data = bytes }
-    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper { FileWrapper(regularFileWithContents: data) }
+
+/// Public UIKit export API receives an existing file, never a changing optional document.
+struct VocabularyExportPicker: UIViewControllerRepresentable {
+    let file: VocabularyExportFile
+    let finished: () -> Void
+    func makeCoordinator() -> Coordinator { Coordinator(finished: finished) }
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let picker = UIDocumentPickerViewController(forExporting: [file.url], asCopy: true)
+        picker.shouldShowFileExtensions = true
+        picker.delegate = context.coordinator
+        return picker
+    }
+    func updateUIViewController(_ controller: UIDocumentPickerViewController, context: Context) { }
+    @MainActor final class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let finished: () -> Void
+        init(finished: @escaping () -> Void) { self.finished = finished }
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) { finished() }
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) { finished() }
+    }
 }
 struct VocabularyDetailView: View {
     let item: VocabularyItem

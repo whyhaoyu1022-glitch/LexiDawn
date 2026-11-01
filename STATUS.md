@@ -1,13 +1,14 @@
-# CURRENT · Round 3 开发与验证中（2026-11-01）
+# CURRENT · Round 3 开发与验证中（2026-11-02）
 
-本次核查运行41323390776：180单元/0失败、真实10源29篇、SE7/0、大屏3/0；主UI仍失败。修复嵌套关闭按钮重复、重置取消入口、阅读外观菜单截图路径，并按原生导出截图适配无Cancel的文件夹窗口。新原生验证待运行；原20 UI断言保持。 [核查与规格依据](docs/reviews/round-3-ci-41323390776-repair.md)。
+最近核查 main `0126709` 的运行41326351407：180单元/0失败、SE7/0、大屏3/0；前次嵌套、重置和外观回归已通过，主full-4仅导出文件名失败（13/1），其他取消，整次失败。本次将导出改为真实快照原子暂存后交给原生文件选择器，按请求隔离清理；保留文件名断言并校验真实关闭。新增2单元，本次源码182/49，原生复验待新CI。 [失败证据、SPEC原文及验收](docs/reviews/round-3-ci-41326351407-repair.md)。
 
-尚未达到统一验收条件。**本次源码清单为 180 XCTest / 49 XCUITest，包含原 93 / 20；新增清单不是通过结果。** 所有远端开发直接提交 main，没有新建分支。本次修复将由新的 Actions 验证，准确 SHA 与运行链接见 GitHub main/Actions。
+尚未达到统一验收条件。**本次源码清单为 182 XCTest / 49 XCUITest，包含原 93 / 20；新增清单不是通过结果。** 所有远端开发直接提交 main，没有新建分支。本次修复将由新的 Actions 验证，准确 SHA 与运行链接见 GitHub main/Actions。
 
 ## 最近已核验结果
 
 | 代码 SHA | Actions | 实际结果 |
 |---|---|---|
+| 0126709082265a3b2648b502772df889488c4b9f | [41326351407](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41326351407) | Debug/Release、180单元/0失败；SE7/0、大屏3/0；full-4 13/1导出失败，其余取消，整次失败。 |
 | 89ccd99e7978006470d36e7814ba64c1114438bc | [41318724181](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41318724181) | Debug/Release、180 XCTest/0失败，真实10源29篇；大屏3/0；SE7/1，主UI另发现重置确认与空库文案失败；其余取消，整次失败。 |
 | 747d7c322e5d11bc1aae9a94ec7d2a47723140ae | [41314198717](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41314198717) | Debug/Release、175 XCTest/0失败，真实10源29篇；UI full-3为13/1失败，其他组取消，整次失败。 |
 | d7f402025d87cd90ca35bff658b23eeda0ecf4da | [41312535622](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41312535622) | Debug/Release、174 XCTest/0失败；大屏3/1失败，其余未完成；整次失败。 |
