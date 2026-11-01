@@ -63,6 +63,11 @@ struct InteractiveEnglishText: UIViewRepresentable {
                     } else if block.kind == .quotation || block.kind == .listItem {
                         let indented = NSMutableParagraphStyle(); indented.setParagraphStyle(paragraph)
                         indented.headIndent = 16; indented.firstLineHeadIndent = 16
+                        if block.kind == .listItem {
+                            let list = NSTextList(markerFormat: block.listOrdinal == nil ? .disc : .decimal, options: 0)
+                            if let ordinal = block.listOrdinal { list.startingItemNumber = ordinal }
+                            indented.textLists = [list]
+                        }
                         attributed.addAttribute(.paragraphStyle, value: indented, range: range)
                     }
                     cursor = NSMaxRange(range)

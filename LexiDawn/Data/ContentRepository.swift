@@ -111,7 +111,9 @@ struct ArticleAccessError: LocalizedError {
         try writer.read { context in
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
             let started = Set(try context.fetch(FetchDescriptor<ArticleProgressRecord>()).filter { $0.mode == "explore" }.map(\.articleID))
-            return try context.fetch(FetchDescriptor<ArticleRecord>()).sorted { $0.createdAt > $1.createdAt }.compactMap { record in
+            let interests = Set(try context.fetch(FetchDescriptor<UserPreferencesRecord>()).first?.interestTopics ?? [])
+            let now = Date()
+            let eligible: [ArticleCandidate] = try context.fetch(FetchDescriptor<ArticleRecord>()).sorted { $0.createdAt > $1.createdAt }.compactMap { record in
                 guard !articleIDs.contains(record.articleID), !started.contains(record.articleID) else { return nil }
                 let matches = grants.filter { $0.articleID == record.articleID }
                 guard matches.count <= 1 else { throw PersistenceError.integrity("重复内容授权记录") }
@@ -120,6 +122,11 @@ struct ArticleAccessError: LocalizedError {
                 guard ArticleAccessPolicy.permits(candidate: candidate, storedHash: record.bodyHash ?? "", grantSource: grant.sourceID,
                     grantHash: grant.bodyHash, scope: grant.scope, now: Date(), highWater: grant.accessHighWater) else { return nil }
                 return candidate
+            }
+            return eligible.sorted {
+                let left = ArticleRecommendationService.score(title: $0.title, topics: $0.topicTags, interests: interests, publishedAt: $0.publishedAt, wordCount: $0.wordCount, at: now)
+                let right = ArticleRecommendationService.score(title: $1.title, topics: $1.topicTags, interests: interests, publishedAt: $1.publishedAt, wordCount: $1.wordCount, at: now)
+                return left == right ? $0.id < $1.id : left > right
             }
         }
     }

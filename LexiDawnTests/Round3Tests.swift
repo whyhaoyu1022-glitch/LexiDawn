@@ -62,6 +62,20 @@ import SwiftData
         let item = FullTextArticleImport(sourceID: "wikinews", canonicalURL: "https://en.wikinews.org/wiki/Explicit_fixture", title: "Explicit fixture", author: "Wikinews", publishedAt: Date(timeIntervalSince1970: 1700000000), rawContent: raw, document: ArticleDocumentNormalizer.plainText(raw), topics: ["test"], rights: ArticleSourceRegistry.wikinewsRights, completeDocument: true, expectedHash: nil, verifiedAt: now)
         XCTAssertThrowsError(try content.importFullText(item, at: now)); XCTAssertTrue(try content.library().isEmpty)
     }
+    func testNestedQuoteAndOrderedListPreserveStructureWithoutChangingText() throws {
+        let document = try ArticleHTMLExtractor.extract("<article><blockquote><p>Original quote.</p></blockquote><ol><li><p>First item.</p></li><li>Last item.</li></ol></article>")
+        XCTAssertEqual(document.blocks.map(\.text), ["Original quote.", "First item.", "Last item."])
+        XCTAssertEqual(document.blocks.map(\.kind), [.quotation, .listItem, .listItem])
+        XCTAssertEqual(document.blocks[1].listOrdinal, 1); XCTAssertEqual(document.blocks[2].listOrdinal, 2)
+    }
+    func testRecommendationUsesPreferencesAndCannotReuseAssignedCandidate() throws {
+        let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)
+        let prefs = try app.preferencesRepository.load(); prefs.interestTopics = ["科学"]; try app.preferencesRepository.save(prefs)
+        let preferred = try content.importArticle(.init(title: "Preferred science", body: "Original science article with preserved full text.", source: "Explicit fixture author", topic: "科学", rightsConfirmed: true), at: now)
+        _ = try content.importArticle(.init(title: "Other culture", body: "Another complete original article with different words.", source: "Explicit fixture author", topic: "文化", rightsConfirmed: true), at: now)
+        XCTAssertEqual(try content.candidates(excluding: []).first?.id, preferred)
+        XCTAssertFalse(try content.candidates(excluding: [preferred]).contains { $0.id == preferred })
+    }
     private func item(raw: String = "The original full article begins here.\n\nThe final paragraph is preserved.", complete: Bool = true, hash: String? = nil) -> FullTextArticleImport {
         FullTextArticleImport(sourceID: "wikipedia", canonicalURL: "https://en.wikipedia.org/wiki/Explicit_test_fixture", title: "Isolated original fixture", author: "Test author", publishedAt: nil, rawContent: raw,
             document: ArticleDocumentNormalizer.plainText(raw), topics: ["test"], rights: ArticleSourceRegistry.wikipediaRights,

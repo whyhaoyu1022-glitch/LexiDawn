@@ -206,6 +206,72 @@ final class Round3UITests: XCTestCase {
         XCTAssertFalse(word.isEnabled); XCTAssertFalse(meaning.isEnabled)
         capture("R3-M10", app: app, feature: "matching", state: "accessibility-completed-both-ends-disabled")
     }
+    func testDictionaryProviderFailureEmptyLoadingAndOfflineCacheEvidence() throws {
+        for (index, mode) in ["loading", "single-failed", "all-failed", "empty", "cache", "offline"].enumerated() {
+            let app = launch("round3-dictionary-" + mode)
+            XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
+            let word = app.buttons["word-Internet"].firstMatch; XCTAssertTrue(word.waitForExistence(timeout: 10)); word.tap()
+            XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10))
+            if mode == "loading" { XCTAssertTrue(app.progressIndicators["dictionary-loading"].waitForExistence(timeout: 3)) }
+            else if mode == "all-failed" { XCTAssertTrue(app.staticTexts["词典来源暂时不可用；本地没有缓存，请联网后重试。"].waitForExistence(timeout: 15)) }
+            else if mode == "empty" { XCTAssertTrue(app.staticTexts["暂无可验证的释义。可以继续阅读，或在生词本添加明确标记的个人释义。"].waitForExistence(timeout: 15)) }
+            else {
+                let detail = app.buttons["查看详细释义"]
+                for _ in 0..<5 { if detail.isHittable { break }; app.swipeUp() }
+                XCTAssertTrue(detail.waitForExistence(timeout: 15)); detail.tap()
+                let expected = mode == "single-failed" ? "部分来源不可用" : mode == "cache" || mode == "offline" ? "本地缓存" : "已合并"
+                let label = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", expected)).firstMatch
+                for _ in 0..<6 { if label.exists && label.isHittable { break }; app.swipeUp() }
+                XCTAssertTrue(label.waitForExistence(timeout: 15))
+            }
+            capture("R3-D" + String(format: "%02d", index + 1), app: app, feature: "dictionary", state: mode, origin: "explicit-original-provider-fixture-not-production-network")
+            app.terminate()
+        }
+    }
+    func testLiveMultipleSourcesLibraryFiltersAndCompleteLocalReaderEvidence() throws {
+        let app = launch("round3-network-all"); openLibrary(app)
+        app.buttons["发现完整文章"].tap()
+        XCTAssertTrue(app.staticTexts["article-notice"].waitForExistence(timeout: 240), "Real publisher discovery must complete; no seeded articles")
+        capture("R3-S00", app: app, feature: "article", state: "live-multiple-source-import-library", origin: "production-network-empty-isolated-store")
+        // Unlock through actual app actions, never by inserting completed cycles or review evidence.
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 10)); app.buttons["open-reader"].tap()
+        XCTAssertTrue(app.buttons["finish-reading"].waitForExistence(timeout: 10)); app.buttons["finish-reading"].tap()
+        if app.alerts.buttons["确认我已读完"].waitForExistence(timeout: 2) { app.alerts.buttons["确认我已读完"].tap() }
+        XCTAssertTrue(app.staticTexts["reading-completed"].waitForExistence(timeout: 10)); app.buttons["返回今日"].tap()
+        app.tabBars.buttons["复习"].tap()
+        XCTAssertTrue(app.staticTexts["完整队列中没有应复习词条，已记录合法空队列结果。"].waitForExistence(timeout: 10))
+        app.tabBars.buttons["今日"].tap(); XCTAssertTrue(app.staticTexts["cycle-completed"].waitForExistence(timeout: 10)); openLibrary(app)
+        let sources = [("wikipedia", "Wikipedia"), ("wikinews", "Wikinews"), ("bbc", "BBC News"), ("reuters", "Reuters"), ("ap", "AP News"), ("guardian", "The Guardian"), ("npr", "NPR"), ("dw", "Deutsche Welle"), ("voa", "VOA Learning English"), ("nasa", "NASA"), ("sciencedaily", "ScienceDaily"), ("phys", "Phys.org"), ("smithsonian", "Smithsonian Magazine")]
+        var inspected = 0
+        for (id, title) in sources {
+            let filter = app.buttons["library-source-filter"]
+            for _ in 0..<12 { if filter.isHittable { break }; app.swipeDown() }
+            XCTAssertTrue(filter.isHittable); filter.tap()
+            let choice = app.buttons[title]
+            guard choice.exists else { app.tap(); continue }
+            choice.tap()
+            let open = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).firstMatch
+            for _ in 0..<10 { if open.exists && open.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(open.isHittable)
+            capture("R3-S-" + id + "-library", app: app, feature: "article", state: "source-filter-" + id, origin: "production-network-empty-isolated-store")
+            open.tap()
+            XCTAssertTrue(app.navigationBars["英文阅读"].waitForExistence(timeout: 10)); XCTAssertTrue(visibleWord(in: app).isHittable)
+            capture("R3-S-" + id + "-body", app: app, feature: "reader", state: "complete-local-first-page-" + id, origin: "production-network-empty-isolated-store")
+            let body = app.otherElements["reader-body"].firstMatch
+            body.swipeUp(); XCTAssertTrue(visibleWord(in: app).isHittable)
+            capture("R3-S-" + id + "-scrolled", app: app, feature: "reader", state: "local-scrolled-page-" + id, origin: "production-network-empty-isolated-store")
+            for _ in 0..<80 {
+                let progress = Int(app.staticTexts["reader-progress"].label.replacingOccurrences(of: "%", with: "")) ?? 0
+                if progress >= 95 { break }; body.swipeUp(velocity: .fast)
+            }
+            XCTAssertGreaterThanOrEqual(Int(app.staticTexts["reader-progress"].label.replacingOccurrences(of: "%", with: "")) ?? 0, 95)
+            XCTAssertTrue(visibleWord(in: app).isHittable)
+            capture("R3-S-" + id + "-end", app: app, feature: "reader", state: "local-end-at-least-95-percent-" + id, origin: "production-network-empty-isolated-store")
+            app.buttons["关闭文章"].tap(); inspected += 1
+        }
+        XCTAssertGreaterThanOrEqual(inspected, 5, "At least five real imported source readers must be inspected")
+    }
     /// Scrolling can retain offscreen accessibility elements. Exercise a word in the visible viewport.
     private func visibleWord(in app: XCUIApplication) -> XCUIElement {
         let words = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'word-'"))

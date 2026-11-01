@@ -40,7 +40,7 @@ struct ReviewPracticeContent: View {
                 if let message { Text(message).foregroundStyle(.red) }
                 Button("重新读取 / 重试", action: { Task { await load() } }).disabled(loading)
             }.padding(20)
-        }.scrollDismissesKeyboard(.interactively).navigationTitle("复习").task { await load() }
+        }.safeAreaPadding(.bottom, 52).scrollDismissesKeyboard(.interactively).navigationTitle("复习").navigationBarTitleDisplayMode(.inline).task { await load() }
             .onChange(of: feedback) { _, message in if let message { UIAccessibility.post(notification: .announcement, argument: message) } }
             .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await load() } } }
     }

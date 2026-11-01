@@ -19,7 +19,7 @@ struct MatchingBoard: View {
                     Button { selected = question.id } label: {
                         Label(question.prompt, systemImage: question.completed ? "checkmark.circle.fill" : selected == question.id ? "circle.inset.filled" : "circle")
                             .frame(maxWidth: .infinity, minHeight: 48)
-                    }.buttonStyle(.bordered).tint(selected == question.id ? .orange : .accentColor)
+                    }.buttonStyle(MatchingOptionStyle(completed: question.completed, selected: selected == question.id))
                         .disabled(question.completed).accessibilityIdentifier("match-word-\(question.prompt)")
                         .accessibilityValue(question.completed ? "已配对" : selected == question.id ? "已选择" : "未配对")
                         .anchorPreference(key: MatchAnchors.self, value: .bounds) { ["left|" + question.id: $0] }
@@ -29,7 +29,7 @@ struct MatchingBoard: View {
                 ForEach(right) { option in
                     Button { if let selected { submit(selected, option.senseID) } else { noSelection() } } label: {
                         VStack { Text(option.answer); if option.completed { Image(systemName: "checkmark.circle.fill") } }.frame(maxWidth: .infinity, minHeight: 48)
-                    }.buttonStyle(.bordered).disabled(option.completed).accessibilityIdentifier("match-meaning-\(option.answer)")
+                    }.buttonStyle(MatchingOptionStyle(completed: option.completed, selected: false)).disabled(option.completed).accessibilityIdentifier("match-meaning-\(option.answer)")
                         .accessibilityValue(option.completed ? "已配对" : "选择此释义进行配对")
                         .anchorPreference(key: MatchAnchors.self, value: .bounds) { ["right|" + option.id: $0] }
                 }
@@ -53,5 +53,17 @@ struct MatchingBoard: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("matching-board")
         .accessibilityLabel("连线题，\(session.matching.filter(\.completed).count)条连接已保存")
+    }
+}
+
+private struct MatchingOptionStyle: ButtonStyle {
+    let completed: Bool, selected: Bool
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(completed ? Color.primary : selected ? Color.orange : Color.accentColor)
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .background(completed ? Color.green.opacity(0.12) : selected ? Color.orange.opacity(0.16) : Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+            .overlay { RoundedRectangle(cornerRadius: 16).strokeBorder(completed ? Color.green : selected ? Color.orange : Color.accentColor.opacity(0.25), lineWidth: selected || completed ? 2 : 1) }
+            .opacity(configuration.isPressed ? 0.8 : 1)
     }
 }

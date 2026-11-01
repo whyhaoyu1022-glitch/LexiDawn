@@ -7,11 +7,13 @@ enum ArticleHTMLExtractor {
         guard html.utf8.count <= 4_000_000 else { throw FullTextImportError.parsing }
         var cursor = html.startIndex, buffer = "", blocks: [ArticleDocument.Block] = []
         var kind = ArticleDocument.Block.Kind.paragraph, level = 0, suppressed: [String] = []
+        var styles: [(String, ArticleDocument.Block.Kind, Int)] = []
+        var lists: [(ordered: Bool, ordinal: Int)] = []
         let excluded: Set<String> = ["script", "style", "nav", "button"]
         let boundaries: Set<String> = ["p", "div", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote", "figcaption", "tr", "section", "article", "main", "pre"]
         func flush() throws {
             let value = try decodeEntities(buffer).split(whereSeparator: \.isWhitespace).joined(separator: " ")
-            if !value.isBlank { blocks.append(.init(kind: kind, text: value, level: level)) }; buffer = ""
+            if !value.isBlank { blocks.append(.init(kind: kind, text: value, level: level, listOrdinal: kind == .listItem && lists.last?.ordered == true ? lists.last?.ordinal : nil)) }; buffer = ""
         }
         while cursor < html.endIndex {
             if html[cursor] != "<" {
@@ -38,11 +40,20 @@ enum ArticleHTMLExtractor {
                 if closing { if suppressed.last == key { suppressed.removeLast() } }
                 else if !tag.hasSuffix("/") { suppressed.append(key) }
             } else if suppressed.isEmpty {
+                if key == "ol" || key == "ul" {
+                    try flush()
+                    if closing { if !lists.isEmpty { lists.removeLast() } }
+                    else { lists.append((key == "ol", 0)) }
+                }
                 if boundaries.contains(key) {
                     try flush()
                     if !closing {
-                        kind = key.hasPrefix("h") && key.count == 2 ? .heading : key == "li" ? .listItem : key == "blockquote" ? .quotation : key == "figcaption" ? .caption : .paragraph
+                        styles.append((key, kind, level))
+                        if key == "li", !lists.isEmpty { lists[lists.count - 1].ordinal += 1 }
+                        kind = key.hasPrefix("h") && key.count == 2 ? .heading : key == "li" ? .listItem : key == "blockquote" ? .quotation : key == "figcaption" ? .caption : [.quotation, .listItem].contains(kind) ? kind : .paragraph
                         level = kind == .heading ? Int(key.suffix(1)) ?? 0 : 0
+                    } else if let index = styles.lastIndex(where: { $0.0 == key }) {
+                        kind = styles[index].1; level = styles[index].2; styles.removeSubrange(index...)
                     } else { kind = .paragraph; level = 0 }
                 } else if ["br", "td", "th", "hr"].contains(key) { buffer += " " }
             }

@@ -156,6 +156,14 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
     private let provider: DictionaryProvider
     private var aggregator: DictionaryAggregator?
     private var richCache: DictionaryCacheRepository?
+    #if DEBUG && targetEnvironment(simulator)
+    private var fixtureWithoutLocal = false
+    func configureDictionaryEvidence(providers: [(String, any DictionaryProvider)], cachedSenses: [DictionarySense] = [], stale: Bool = false) throws {
+        fixtureWithoutLocal = true; aggregator = DictionaryAggregator(providers: providers)
+        let cache = DictionaryCacheRepository(context: writer.context); richCache = cache
+        if !cachedSenses.isEmpty { try cache.save("internet", senses: cachedSenses, successful: Array(DictionaryAggregator.versions.keys), at: Date().addingTimeInterval(stale ? -31 * 86400 : 0)) }
+    }
+    #endif
     func enableOnlineProviders() { aggregator = DictionaryAggregator(); richCache = DictionaryCacheRepository(context: writer.context) }
     func clearCaches() throws -> Int {
         try writer.write {
@@ -196,6 +204,9 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
     }
     private func lookupLocal(_ surface: String, at now: Date) async throws -> DictionaryResult {
         let key = EnglishTokenizer.lemma(surface)
+        #if DEBUG && targetEnvironment(simulator)
+        if fixtureWithoutLocal { return DictionaryResult(headword: key, senses: [], updatedAt: now, sourceURL: "https://dictionaryapi.dev/", licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/") }
+        #endif
         if let cached = try cached(key) { return cached }
         let senses = try await provider.lookup(key)
         try Task.checkCancellation()

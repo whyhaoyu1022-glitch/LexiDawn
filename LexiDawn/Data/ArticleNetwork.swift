@@ -25,13 +25,17 @@ actor ArticleFetchService {
                 let (data, response) = try await session.data(for: request, delegate: ArticleRedirectGuard(hosts: allowedHosts))
                 try Task.checkCancellation()
                 guard let http = response as? HTTPURLResponse, allowedHosts.contains(http.url?.host ?? "") else { throw FullTextImportError.transport }
-                if [429, 503].contains(http.statusCode), attempt < 2 {
+                if (http.statusCode == 429 || (500...599).contains(http.statusCode)), attempt < 2 {
                     let delay = Double(http.value(forHTTPHeaderField: "Retry-After") ?? "") ?? pow(2, Double(attempt + 1))
                     // Long server backoff is not silently shortened. Let the caller retry later.
                     guard delay <= 30 else { throw FullTextImportError.rateLimited }
                     try await Task.sleep(for: .seconds(max(1, delay))); continue
                 }
-                guard http.statusCode == 200 else { throw http.statusCode == 429 ? FullTextImportError.rateLimited : FullTextImportError.transport }
+                guard http.statusCode == 200 else {
+                    let sourceID = ArticleSourceRegistry.personalSources.first { $0.hosts.contains(url.host ?? "") }?.id ?? (url.host ?? "unknown")
+                    print("ARTICLE_HTTP_DIAGNOSTIC sourceID=\(sourceID) status=\(http.statusCode) attempt=\(attempt + 1)")
+                    throw http.statusCode == 429 ? FullTextImportError.rateLimited : FullTextImportError.transport
+                }
                 guard data.count <= 4_000_000, !data.isEmpty else { throw FullTextImportError.incomplete }
                 return data
             } catch is CancellationError { throw CancellationError() }

@@ -6,6 +6,7 @@ struct ArticleDocument: Codable, Equatable, Sendable {
         let kind: Kind
         let text: String
         var level: Int = 0
+        var listOrdinal: Int? = nil
     }
     let blocks: [Block]
     var text: String { blocks.map(\.text).joined(separator: "\n\n") }

@@ -1,6 +1,24 @@
 #if DEBUG && targetEnvironment(simulator)
 import Foundation
 
+struct DictionaryEvidenceProvider: DictionaryProvider {
+    let mode: String, source: String
+    func lookup(_ headword: String) async throws -> [DictionarySense] {
+        if mode == "loading" { try await Task.sleep(for: .seconds(4)) }
+        if ["all-failed", "offline", "single-failed"].contains(mode) && (mode != "single-failed" || source == "Wiktionary") { throw URLError(.notConnectedToInternet) }
+        if mode == "empty" { return [] }
+        return Self.senses(source: source)
+    }
+    static func senses(source: String) -> [DictionarySense] {
+        [DictionarySense(id: source + "|explicit-evidence", en: "An interconnected system of networks.", zh: "", line: "Explicit original dictionary UI fixture; not production dictionary data.", partOfSpeech: "noun", ipa: "/ˈɪntənet/", examples: ["Explicit fixture: the Internet connects networks."], synonyms: ["network"], sources: [source], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/")]
+    }
+    @MainActor static func install(mode: String, learning: LearningServices) throws {
+        let names = Array(DictionaryAggregator.versions.keys).sorted()
+        let cached = ["offline", "cache"].contains(mode) ? names.flatMap { senses(source: $0) } : []
+        try learning.dictionary.configureDictionaryEvidence(providers: names.map { ($0, DictionaryEvidenceProvider(mode: mode, source: $0)) }, cachedSenses: cached, stale: mode == "offline")
+    }
+}
+
 /// Explicit opt-in URLProtocol faults for native UI evidence. Never part of Release or production networking.
 final class Round3ScreenshotTransport: URLProtocol, @unchecked Sendable {
     private static let lock = NSLock()

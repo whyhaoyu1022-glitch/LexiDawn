@@ -21,8 +21,8 @@ struct ArticleLibraryView: View {
     var body: some View {
         List {
             Section {
-                Picker("来源", selection: $source) { Text("全部来源").tag("all"); ForEach(Array(Set(items.filter(\.readable).map(\.sourceID))).sorted(), id: \.self) { Text(ArticleSourceRegistry.name($0)).tag($0) } }
-                Picker("分类", selection: $topic) { Text("全部分类").tag("all"); ForEach(Array(Set(items.flatMap(\.topics))).sorted(), id: \.self) { Text($0).tag($0) } }
+                Picker("来源", selection: $source) { Text("全部来源").tag("all"); ForEach(Array(Set(items.filter(\.readable).map(\.sourceID))).sorted(), id: \.self) { Text(ArticleSourceRegistry.name($0)).tag($0) } }.accessibilityIdentifier("library-source-filter")
+                Picker("分类", selection: $topic) { Text("全部分类").tag("all"); ForEach(Array(Set(items.flatMap(\.topics))).sorted(), id: \.self) { Text($0).tag($0) } }.accessibilityIdentifier("library-topic-filter")
                 Picker("阅读内容", selection: $mode) { Text("全部").tag("all"); Text("收藏").tag("favorite"); Text("稍后阅读").tag("later"); Text("历史").tag("history") }
                 Toggle("最新导入优先", isOn: $newestFirst)
             }

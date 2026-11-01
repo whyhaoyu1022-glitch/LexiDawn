@@ -62,7 +62,7 @@ struct ReaderView: View {
                     if verticalSizeClass != .compact && !dynamicTypeSize.isAccessibilitySize, let published = article.publishedAt { Text("发布：\(published.formatted(date: .abbreviated, time: .omitted))").font(.caption) }
                     if verticalSizeClass != .compact && !dynamicTypeSize.isAccessibilitySize { DisclosureGroup("来源与许可") { Text(article.source).font(.caption).textSelection(.enabled); Text("全文授权在每次访问及保存时重新检查。导入内容仅限本地使用。").font(.caption) } }
                     HStack { ProgressView(value: model.position.percent); Text("\(Int(model.position.percent * 100))%").font(.caption.monospacedDigit()).accessibilityIdentifier("reader-progress") }
-                }.padding(.horizontal)
+                }.dynamicTypeSize(...DynamicTypeSize.xxxLarge).padding(.horizontal)
                 if let notice = model.notice { Text(notice).font(.caption).padding(.horizontal) }
                 InteractiveEnglishText(text: article.body, fontSize: fontSize, lineSpacing: lineSpacing, theme: theme, restore: model.position,
                     onPosition: model.observe, onWord: { token in
@@ -77,9 +77,9 @@ struct ReaderView: View {
                 .frame(maxWidth: .infinity, minHeight: 80, maxHeight: .infinity).layoutPriority(1)
                 if model.position.completedAt != nil { Label("阅读已完成", systemImage: "checkmark.circle.fill").foregroundStyle(.green).padding(.horizontal).accessibilityIdentifier("reading-completed") }
                 else {
-                    Button(model.position.percent >= 0.9 ? "确认完成阅读" : "我已读完，手动确认") {
+                    Button(verticalSizeClass == .compact ? "完成阅读" : model.position.percent >= 0.9 ? "确认完成阅读" : "我已读完，手动确认") {
                         if model.position.percent >= 0.9 { model.complete(manual: false) } else { manualConfirmation = true }
-                    }.buttonStyle(.borderedProminent).padding(.horizontal).accessibilityIdentifier("finish-reading")
+                    }.buttonStyle(.borderedProminent).dynamicTypeSize(...DynamicTypeSize.xxxLarge).padding(.horizontal).accessibilityIdentifier("finish-reading")
                 }
             } else {
                 ContentUnavailableView("暂时无法读取全文", systemImage: "doc.text.magnifyingglass", description: Text("学习记录保留，请检查许可、来源与存储。"))
@@ -224,7 +224,10 @@ struct WordLookupSheet: View {
                     else { Button("加入生词本") { model.add(explicit: true) }.accessibilityIdentifier("add-word") }
                     if let error = model.vocabularyError { Text(error).foregroundStyle(.red); Button("重试保存生词") { model.add(explicit: true) } }
                 }
-                if model.loading { ProgressView("正在查询本地开放词典…") }
+                #if DEBUG && targetEnvironment(simulator)
+                if ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"]?.hasPrefix("round3-dictionary-") == true { Text("明确测试夹具：词典 Provider 状态注入，非生产词典数据。").font(.caption).accessibilityIdentifier("dictionary-fixture-label") }
+                #endif
+                if model.loading { ProgressView("正在查询词典…").accessibilityIdentifier("dictionary-loading") }
                 if let result = model.result {
                     DictionaryResultContent(result: result)
                     NavigationLink("查看详细释义") { DictionaryDetailView(result: result, context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth) }
