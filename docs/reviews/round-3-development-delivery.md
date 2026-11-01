@@ -1,6 +1,6 @@
 # CURRENT · Round 3 开发记录与验收证据
 
-**开发和最终验证尚未完成，不是交付完成声明。** 起点 main `93b4253d5f809d0813508e02d5e6141e8825d37f`，所有远端开发提交直接进入 main。当前源码 173 XCTest / 46 XCUITest，包含原 93 / 20；旧测试没有删减或降低断言。最终 SHA、全量通过结果及完整截图包仍待最终代码验证后填写。
+**开发和最终验证尚未完成，不是交付完成声明。** 起点 main `93b4253d5f809d0813508e02d5e6141e8825d37f`，所有远端开发提交直接进入 main。当前源码 174 XCTest / 48 XCUITest，包含原 93 / 20；旧测试没有删减或降低断言。最终 SHA、全量通过结果及完整截图包仍待最终代码验证后填写。
 
 负责人后续特别指示采用公开官网完整正文的个人使用模式，优先于旧许可准入文字；用户使用声明与出版社授权证据分别记录。全文不完整即舍弃，绝不提供摘要、URL、原站或 WebView 降级。九个原候选全部调查，另外扩展 ScienceDaily、Phys.org 和 Smithsonian，真实结果见 [来源审查](../article-source-eligibility-audit.md)。
 
@@ -40,7 +40,7 @@
 | R2-A11 | 首页/库/探索/生词/设置语义卡片及反馈 | 最新所有界面与对比度截图待审阅 |
 | R2-A12 | 首屏简短来源作者日期、许可详情收纳、无外部阅读入口 | 已实现；最终截图待审阅 |
 | R2-A13 | Again/Hard/Good 原因、原定→下次、持久日志 | Hard/Good/restart UI +原 Again 测试；最新待跑 |
-| R2-A14 | 保留 20 旧 UI，新增旋转/大字/复杂词形/短语/嵌套/键盘/AX | 46 主 UI + SE7/大屏3；完整 VoiceOver 听读未实测 |
+| R2-A14 | 保留 20 旧 UI，新增旋转/大字/复杂词形/短语/嵌套/键盘/AX | 48 主 UI + SE7/大屏3；完整 VoiceOver 听读未实测 |
 | R2-A15 | DEBUG Simulator 隔离场景、元数据明确 fixture/production | Release 构建确认排除故障/截图标记；不冒充真冷启动 |
 | R2-A16 | README/STATUS/追踪/测试/报告 CURRENT 整理 | 当前真实状态与历史链接分开，最终结果待填 |
 | R2-A17 | generation、固定会话重载重置、后台重读、额外会话命名空间 | 单元通过；最新重启/跨会话 UI 待跑 |
@@ -56,13 +56,13 @@
 | d37b9aa65aebd6bc010de57294ee243c1a95d825 | [41295662878](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41295662878) | Debug/Release、169测试/0；真实10源29篇；大屏3/0。full-4 12/4失败，其余取消，整次失败 |
 | c96015ab68827df96572a25236345c7cd972dda5 | [41309801722](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41309801722) | 首次 Debug/Release 通过；170 中169通过，Free Dictionary book 连续404失败，UI未启动；已重跑失败关卡，结果待核对 |
 
-full-4 原始录像已核对：无效导入后向下拖动关闭了表单；medium 查词浮窗的状态与短语被义项列表推到屏外。修复增加显式取消/禁止意外关闭、状态与短语提前、初始 large 展开；保留原来“刚刚加入”“此前已加入”和短语可见断言，不能靠删除断言变绿。源码新补充的 173/46 清单待执行。
+full-4 原始录像已核对：无效导入后向下拖动关闭了表单；medium 查词浮窗的状态与短语被义项列表推到屏外。修复增加显式取消/禁止意外关闭、状态与短语提前、初始 large 展开；保留原来“刚刚加入”“此前已加入”和短语可见断言，不能靠删除断言变绿。源码新补充的 174/48 清单待执行。
 
 此前编译失败也保留在 Actions：状态属性合并声明、catch 遮蔽、错位方法、缺 import、toolbar 闭括号、throwing map、推荐 error 遮蔽和 NavigationLink 重载均有后续实际修复。历史失败不是通过证明。
 
 ## CI 效率与证据
 
-完整 Debug test products 仅编译一次；Release 独立检查无故障 fixture，所有单元/真实网络/迁移测试为必要关卡。4 个按估计耗时平衡的 UI 分组自动核对每个主方法恰好一次，SE7 和大屏3另加；所有设备共享相同 Xcode/架构编译产物。新 main 取消旧运行，矩阵 fail-fast 在一个分组失败后取消其他分组；不会声称首个断言发生即瞬间停止全部 XCTest。失败日志和 xcresult 仍上传。
+完整 Debug test products 仅编译一次；Release 独立检查无故障 fixture，所有单元/真实网络/迁移测试为必要关卡。4 个按估计耗时平衡的 UI 分组自动核对每个主方法恰好一次，SE7 和大屏3另加；所有设备共享相同 Xcode/架构编译产物。新 main 取消旧运行，矩阵 fail-fast 在一个分组失败后取消其他分组；不会声称首个断言发生即瞬间停止全部 XCTest。失败日志和 xcresult 仍上传。另加独立 Ubuntu 清理任务，用短期 workflow token 只取消已被当前 main 取代的旧 iOS 运行（包括旧策略重跑），每次取消前复核 main SHA，不删除产物，不碰其他分支/新提交。
 
 每张图片来自 `XCUIScreen.main.screenshot()`，keepAlways 附件含规定的元数据。导出脚本只复制原始 PNG，合并脚本核验每张 SHA，并生成 manifest/CSV/INDEX.md/原始 ZIP；不重绘或用录像帧代替交付截图。旧运行的附件可用于排查，不能混作最终代码的完整包。当前最终 manifest、CSV、ZIP、xcresult 与逐图索引尚未齐全，不能交付为空包或宣称完成。
 
@@ -83,6 +83,8 @@ full-4 原始录像已核对：无效导入后向下拖动关闭了表单；medi
 
 ## 尚未通过的硬门槛与限制
 
-最终同一代码提交的全量 CI 与所有设备 UI；每项功能/失败状态原始 PNG 及完整 ZIP/manifest/CSV/逐图索引/xcresult；逐图审阅；完整 VoiceOver 听读；真机/iOS27/Instruments。当前只有已批准 iOS26.5/Xcode26.6 兼容模拟器，不能将其结果称为上述环境通过。Free Dictionary 的外部服务间歇失败还须如实保留失败与重试结果。
+最终同一代码提交的全量 CI 与所有设备 UI；每项功能/失败状态原始 PNG 及完整 ZIP/manifest/CSV/逐图索引/xcresult；逐图审阅；完整 VoiceOver 听读；真机/iOS27/Instruments。本次新增对照词加载/空/失败/重试真实Repository故障等截图待运行，单个Provider损坏缓存可跳过并由实际成功请求修复，数据库读取错误仍抛出。
+
+当前只有已批准 iOS26.5/Xcode26.6 兼容模拟器，不能将其结果称为上述环境通过。Free Dictionary 的外部服务间歇失败还须如实保留失败与重试结果。
 
 修改文件的最终清单应从原 main 起点到最终真实 main SHA 的 GitHub compare 导出，不能用本地恢复快照 SHA 代替远端 SHA。最终报告还需回填准确提交、每个运行和产物链接；本文件目前是持续开发记录。

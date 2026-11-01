@@ -1,9 +1,21 @@
 #if DEBUG && targetEnvironment(simulator)
 import Foundation
 
+private actor DictionaryComparisonEvidenceProbe {
+    static let shared = DictionaryComparisonEvidenceProbe()
+    private var attempts: [String: Int] = [:]
+    func firstAttempt(source: String) -> Bool { attempts[source, default: 0] += 1; return attempts[source] == 1 }
+}
 struct DictionaryEvidenceProvider: DictionaryProvider {
     let mode: String, source: String
     func lookup(_ headword: String) async throws -> [DictionarySense] {
+        if mode.hasPrefix("comparison-"), headword == "network" {
+            if mode == "comparison-loading" { try await Task.sleep(for: .seconds(30)) }
+            if mode == "comparison-empty" { return [] }
+            if mode == "comparison-failed" { throw URLError(.notConnectedToInternet) }
+            if mode == "comparison-retry", await DictionaryComparisonEvidenceProbe.shared.firstAttempt(source: source) { throw URLError(.notConnectedToInternet) }
+            return [DictionarySense(id: source + "|explicit-network", en: "Explicit original comparison fixture: connected elements in a system.", zh: "", line: "Explicit original comparison fixture; not production dictionary data.", partOfSpeech: "noun", examples: ["Explicit fixture: a small network connects these rooms."], sources: [source], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/")]
+        }
         if mode == "loading" { try await Task.sleep(for: .seconds(30)) }
         if ["all-failed", "offline", "single-failed"].contains(mode) && (mode != "single-failed" || source == "Wiktionary") { throw URLError(.notConnectedToInternet) }
         if mode == "empty" { return [] }
@@ -65,9 +77,9 @@ final class Round3ScreenshotTransport: URLProtocol, @unchecked Sendable {
         client?.urlProtocol(self, didLoad: data); client?.urlProtocolDidFinishLoading(self)
     }
     override func stopLoading() { stateLock.lock(); stopped = true; stateLock.unlock() }
-    @MainActor static func install(in learning: LearningServices) {
+    @MainActor static func install(in learning: LearningServices, content: ContentRepository? = nil) {
         let configuration = URLSessionConfiguration.ephemeral; configuration.protocolClasses = [Round3ScreenshotTransport.self]
-        learning.setDiscoveryForUITesting(ArticleDiscoveryService(content: learning.content, fetcher: ArticleFetchService(configuration: configuration), sourceIDs: ["wikipedia"]))
+        learning.setDiscoveryForUITesting(ArticleDiscoveryService(content: content ?? learning.content, fetcher: ArticleFetchService(configuration: configuration), sourceIDs: ["wikipedia"]))
     }
 }
 #endif

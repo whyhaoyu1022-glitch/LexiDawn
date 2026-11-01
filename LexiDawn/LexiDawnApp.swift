@@ -118,9 +118,9 @@ final class AppStartup: ObservableObject {
                         try learning.content.beginFetch(at: now)
                         try learning.content.finishFetch(error: "Screenshot fault injection: HTTP 429", retryAfter: now.addingTimeInterval(3600), at: now)
                     }
-                    if scenario == "gallery-review" || scenario == "gallery-round3-review" || scenario == "gallery-missing-state" {
+                    if scenario == "gallery-review" || scenario == "gallery-review-save-failure" || scenario == "gallery-round3-review" || scenario == "gallery-missing-state" {
                         let article = try learning.content.read(articleID: SourceRegistry.rfc.id, at: now)
-                        let pairs = scenario == "gallery-round3-review" ? [("Internet", "互联网（个人释义）"), ("document", "文档（个人释义）"), ("book", "书（个人释义）")] : scenario == "gallery-review" ? [("Internet", "互联网（个人释义）"), ("document", "文档（个人释义）")] : [("Internet", "互联网（个人释义）")]
+                        let pairs = scenario == "gallery-round3-review" ? [("Internet", "互联网（个人释义）"), ("document", "文档（个人释义）"), ("book", "书（个人释义）")] : ["gallery-review", "gallery-review-save-failure"].contains(scenario) ? [("Internet", "互联网（个人释义）"), ("document", "文档（个人释义）")] : [("Internet", "互联网（个人释义）")]
                         for (index, pair) in pairs.enumerated() {
                             if let token = EnglishTokenizer.tokens(in: article.body).first(where: { $0.surface == pair.0 }) ?? (scenario == "gallery-round3-review" && pair.0 == "book" ? EnglishToken(surface: "book", range: NSRange(location: 0, length: 4), sentence: "Explicit test fixture: read a book.") : nil),
                                let added = try learning.vocabulary.add(token: token, articleID: article.id, autoAdd: true, at: now.addingTimeInterval(Double(index) * 0.001)) {
@@ -134,6 +134,7 @@ final class AppStartup: ObservableObject {
                         }
                     }
                 }
+                if scenario == "gallery-review-save-failure" { dependencies.learning?.injectReviewSaveFailureForEvidence() }
                 return dependencies
             }
             if scenario == "round3-phrases", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
@@ -167,7 +168,16 @@ final class AppStartup: ObservableObject {
             if scenario.hasPrefix("round3-import-"), let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
                 let url = FileManager.default.temporaryDirectory.appendingPathComponent("round3-import-\(storeID.uuidString).store")
                 let dependencies = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
-                if let learning = dependencies.learning { Round3ScreenshotTransport.install(in: learning) }
+                if let learning = dependencies.learning {
+                    let content: ContentRepository?
+                    if scenario == "round3-import-save-failed" {
+                        content = ContentRepository(context: ModelContext(dependencies.modelContainer)) { context in
+                            if try context.fetchCount(FetchDescriptor<ArticleRecord>()) > 0 { throw LearningError.invalid("Explicit original fixture: full-text database commit failed") }
+                            try context.save()
+                        }
+                    } else { content = nil }
+                    Round3ScreenshotTransport.install(in: learning, content: content)
+                }
                 return dependencies
             }
             if scenario == "round3-network-all", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {

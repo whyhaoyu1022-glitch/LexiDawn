@@ -55,7 +55,7 @@ jobs:
           with (app / 'Info.plist').open('rb') as stream:
               name = plistlib.load(stream)['CFBundleExecutable']
           data = (app / name).read_bytes()
-          for marker in [b'round3-dictionary-', b'round3-storage-', b'Explicit original dictionary UI fixture', b'gallery-round3-review', b'round3-phrases']:
+          for marker in [b'round3-dictionary-', b'round3-storage-', b'Explicit original dictionary UI fixture', b'gallery-round3-review', b'round3-phrases', b'gallery-review-save-failure', b'round3-import-save-failed']:
               assert marker not in data, 'Debug evidence fixture leaked into Release'
           print('Release built; explicit screenshot/fault fixture markers excluded.')
           PYRELEASE

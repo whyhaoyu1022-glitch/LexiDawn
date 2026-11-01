@@ -193,8 +193,13 @@ actor DictionaryAggregator {
     func load(_ lemma: String, at now: Date) throws -> (senses: [DictionarySense], complete: Bool, date: Date) {
         try writer.read { context in
             let records = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.lemma == lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
-            let senses = try records.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) }
-            return (senses, Set(records.filter { $0.expiresAt > now }.map(\.providerID)) == Set(DictionaryAggregator.versions.keys), records.map(\.fetchedAt).max() ?? now)
+            // One damaged disposable Provider payload must not block another Provider or live lookup.
+            // ModelContext fetch errors still propagate; a successful refresh replaces only that payload.
+            let valid = records.compactMap { record -> (DictionaryProviderCacheRecord, [DictionarySense])? in
+                guard let senses = try? JSONDecoder().decode([DictionarySense].self, from: record.payload) else { return nil }
+                return (record, senses)
+            }
+            return (valid.flatMap { $0.1 }, Set(valid.filter { $0.0.expiresAt > now }.map { $0.0.providerID }) == Set(DictionaryAggregator.versions.keys), valid.map { $0.0.fetchedAt }.max() ?? now)
         }
     }
     func save(_ lemma: String, senses: [DictionarySense], successful: [String], at now: Date) throws {

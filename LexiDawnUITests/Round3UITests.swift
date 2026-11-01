@@ -302,7 +302,7 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["文章库与历史"].waitForExistence(timeout: 10))
     }
     func testInjectedImportFailureMatrixDiscardsEveryCandidate() throws {
-        let cases = [("offline", "R3-A10"), ("403", "R3-A11"), ("429", "R3-A12"), ("503", "R3-A13"), ("rights", "R3-A14"), ("parse", "R3-A15"), ("truncated", "R3-A16"), ("summary", "R3-A17"), ("404", "R3-A22")]
+        let cases = [("offline", "R3-A10"), ("403", "R3-A11"), ("429", "R3-A12"), ("503", "R3-A13"), ("rights", "R3-A14"), ("parse", "R3-A15"), ("truncated", "R3-A16"), ("summary", "R3-A17"), ("404", "R3-A22"), ("save-failed", "R3-A23")]
         for (mode, id) in cases {
             let app = launch("round3-import-" + mode); openLibrary(app)
             app.buttons["发现完整文章"].tap()
@@ -402,6 +402,31 @@ final class Round3UITests: XCTestCase {
         XCTAssertEqual(word.value as? String, "已配对"); XCTAssertEqual(meaning.value as? String, "已配对")
         XCTAssertFalse(word.isEnabled); XCTAssertFalse(meaning.isEnabled)
         capture("R3-M10", app: app, feature: "matching", state: "accessibility-completed-both-ends-disabled")
+    }
+    func testSynonymComparisonHasOriginalDefinitionsLoadingEmptyFailureAndSafeRetry() throws {
+        for (index, mode) in ["loading", "empty", "failed", "retry"].enumerated() {
+            let app = launch("round3-dictionary-comparison-" + mode)
+            XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
+            let word = app.buttons["word-Internet"].firstMatch; XCTAssertTrue(word.waitForExistence(timeout: 10)); word.tap()
+            let detail = app.buttons["查看详细释义"]; XCTAssertTrue(detail.waitForExistence(timeout: 10))
+            for _ in 0..<15 { if detail.isEnabled { break }; _ = app.staticTexts["dictionary-providers"].waitForExistence(timeout: 1) }
+            XCTAssertTrue(detail.isEnabled); detail.tap()
+            let synonyms = app.buttons["dictionary-synonym-comparison"]
+            for _ in 0..<5 { if synonyms.exists && synonyms.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(synonyms.isHittable); synonyms.tap()
+            let link = app.buttons["dictionary-compare-network"]; XCTAssertTrue(link.waitForExistence(timeout: 10)); link.tap()
+            XCTAssertTrue(app.navigationBars["同义词对照"].waitForExistence(timeout: 10))
+            if mode == "loading" { XCTAssertTrue(app.descendants(matching: .any)["dictionary-comparison-loading"].waitForExistence(timeout: 5)) }
+            else if mode == "empty" { XCTAssertTrue(app.staticTexts["dictionary-comparison-empty"].waitForExistence(timeout: 10)) }
+            else { XCTAssertTrue(app.buttons["dictionary-comparison-retry"].waitForExistence(timeout: 10)) }
+            capture("R3-D\(50 + index)", app: app, feature: "dictionary-comparison", state: mode, origin: "explicit-original-provider-fixture-not-production-network")
+            if mode == "retry" {
+                app.buttons["dictionary-comparison-retry"].tap()
+                let definition = app.staticTexts["Explicit original comparison fixture: connected elements in a system."]
+                XCTAssertTrue(definition.waitForExistence(timeout: 10)); XCTAssertFalse(app.buttons["dictionary-comparison-retry"].exists)
+                capture("R3-D54", app: app, feature: "dictionary-comparison", state: "retry-success-with-original-provider-definition", origin: "explicit-original-provider-fixture-not-production-network")
+            }
+        }
     }
     func testDictionaryProviderFailureEmptyLoadingAndOfflineCacheEvidence() throws {
         for (index, mode) in ["loading", "single-failed", "all-failed", "empty", "cache", "offline"].enumerated() {
@@ -528,6 +553,22 @@ final class Round3UITests: XCTestCase {
             capture("R3-D" + String(index + 30), app: app, feature: "dictionary", state: "reader-popup-theme-" + theme, theme: theme, origin: "real-bundled-RFC-local-real-CEDICT")
             app.buttons["close-word"].tap()
         }
+    }
+    func testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce() throws {
+        let app = launch("gallery-review-save-failure"); app.tabBars.buttons["复习"].tap()
+        let word = app.buttons["match-word-internet"], meaning = app.buttons["match-meaning-互联网（个人释义）"]
+        XCTAssertTrue(word.waitForExistence(timeout: 15)); word.tap(); meaning.tap()
+        let error = app.staticTexts["review-storage-error"]
+        XCTAssertTrue(error.waitForExistence(timeout: 10)); XCTAssertTrue(word.isEnabled); XCTAssertTrue(meaning.isEnabled)
+        XCTAssertNotEqual(word.value as? String, "已配对"); XCTAssertFalse(app.staticTexts["正确，已保存"].exists)
+        capture("R3-G10", app: app, feature: "review-storage", state: "actual-answer-transaction-failed-without-completed-options", origin: "explicit-save-fault-real-Repository-question-and-cycle")
+        word.tap(); meaning.tap()
+        XCTAssertEqual(word.value as? String, "已配对"); XCTAssertFalse(word.isEnabled); XCTAssertFalse(meaning.isEnabled)
+        XCTAssertFalse(error.exists)
+        capture("R3-G11", app: app, feature: "review-storage", state: "retry-saved-correct-pair-once", origin: "explicit-save-fault-real-Repository-question-and-cycle")
+        app.terminate(); app.launch(); app.tabBars.buttons["复习"].tap()
+        XCTAssertTrue(word.waitForExistence(timeout: 15)); XCTAssertFalse(word.isEnabled); XCTAssertFalse(meaning.isEnabled)
+        capture("R3-G12", app: app, feature: "review-storage", state: "process-restart-restores-only-committed-answer", origin: "explicit-save-fault-real-Repository-question-and-cycle")
     }
     func testHardAndGoodFeedbackPersistScheduleChangesAcrossRestart() throws {
         let app = launch("gallery-round3-review"); app.tabBars.buttons["复习"].tap()

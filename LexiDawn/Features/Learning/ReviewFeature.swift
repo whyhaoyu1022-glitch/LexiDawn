@@ -25,6 +25,7 @@ struct ReviewPracticeContent: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                if let message { Label(message, systemImage: "exclamationmark.triangle").foregroundStyle(.red).accessibilityIdentifier("review-storage-error") }
                 if verticalSizeClass != .compact {
                     Text("把刚认识的词，变成自己的词").font(.title2.bold())
                     Text("FSRS 4.5 · 两阶段首次正确为 Good；错误或提示为 Hard；显示答案为 Again。题组与下次时间在本地保存。").font(.caption).foregroundStyle(.secondary)
@@ -41,7 +42,6 @@ struct ReviewPracticeContent: View {
                 ForEach(schedules, id: \.self) { Text($0).font(.footnote).accessibilityIdentifier("review-next-due") }
                 if extraEmpty { Text("额外复习暂无到期词条，刚完成的题组不会立即重复。").font(.footnote) }
                 if let feedback { Text(feedback).foregroundStyle(feedback == "正确，已保存" ? .green : .orange).accessibilityIdentifier("review-feedback") }
-                if let message { Text(message).foregroundStyle(.red) }
                 Button("重新读取 / 重试", action: { Task { await load() } }).disabled(loading)
             }.padding(20)
         }.safeAreaPadding(.bottom, 52).scrollDismissesKeyboard(.interactively).navigationTitle("复习").navigationBarTitleDisplayMode(.inline).task { await load() }

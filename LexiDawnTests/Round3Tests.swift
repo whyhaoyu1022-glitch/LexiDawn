@@ -551,6 +551,19 @@ private actor CacheRequestProbe: DictionaryProvider {
         let result = await DictionaryAggregator(providers: [("failed", Failure()), ("ok", Success())]).lookup("book")
         XCTAssertEqual(result.failed, ["failed"]); XCTAssertEqual(result.senses.count, 1)
     }
+    func testCorruptDisposableProviderCacheDoesNotHideOtherProviderAndCanBeRepaired() throws {
+        let app = try AppDependencies.makeLearningInMemory(), context = ModelContext(app.modelContainer)
+        let valid = DictionarySense(id: "explicit-valid-cache", en: "Explicit original cache fixture.", zh: "", line: "Explicit fixture", sources: ["Wiktionary"])
+        context.insert(DictionaryProviderCacheRecord(lemma: "book", provider: "Wiktionary", version: DictionaryAggregator.versions["Wiktionary"]!, data: try JSONEncoder().encode([valid]), at: now))
+        context.insert(DictionaryProviderCacheRecord(lemma: "book", provider: "Free Dictionary API", version: DictionaryAggregator.versions["Free Dictionary API"]!, data: Data("Damaged disposable fixture payload".utf8), at: now))
+        try context.save()
+        let cache = DictionaryCacheRepository(context: context), loaded = try cache.load("book", at: now)
+        XCTAssertEqual(loaded.senses.map(\.id), [valid.id]); XCTAssertFalse(loaded.complete)
+        let repaired = DictionarySense(id: "explicit-repair", en: "Explicit original repair fixture.", zh: "", line: "Explicit fixture", sources: ["Free Dictionary API"], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/")
+        try cache.save("book", senses: [repaired], successful: ["Free Dictionary API"], at: now.addingTimeInterval(1))
+        let current = try cache.load("book", at: now.addingTimeInterval(2))
+        XCTAssertTrue(current.complete); XCTAssertEqual(Set(current.senses.map(\.id)), Set([valid.id, repaired.id]))
+    }
     func testVersionedDictionaryCacheDoesNotEraseVocabulary() throws {
         let app = try AppDependencies.makeLearningInMemory(), context = ModelContext(app.modelContainer)
         let cache = DictionaryCacheRepository(context: context)

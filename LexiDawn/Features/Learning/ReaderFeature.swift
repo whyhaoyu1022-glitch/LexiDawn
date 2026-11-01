@@ -366,16 +366,19 @@ struct DictionaryDetailView: View {
                 else if articleID != nil { Button("加入生词本") { add() } }
                 if let error { Text(error).foregroundStyle(.red) }
             }
-            DictionaryResultContent(result: result)
             let synonyms = Array(Set(result.senses.flatMap { $0.synonyms ?? [] })).filter { $0.lowercased() != result.headword.lowercased() }.sorted()
             if !synonyms.isEmpty {
                 Section("同义词对照") {
-                    Text("对照真实词典义项、词性和例句，判断当前语境中的差别。").font(.caption)
-                    ForEach(synonyms, id: \.self) { synonym in
-                        NavigationLink(result.headword + " / " + synonym) { DictionaryComparisonView(original: result, synonym: synonym, context: context, learning: learning) }
-                    }
+                    DisclosureGroup("对照同义词（\(synonyms.count)）") {
+                        Text("对照原始词典义项、词性和例句，判断当前语境中的差别。").font(.caption)
+                        ForEach(synonyms, id: \.self) { synonym in
+                            NavigationLink { DictionaryComparisonView(original: result, synonym: synonym, context: context, learning: learning, theme: theme) } label: { Text(result.headword + " / " + synonym) }
+                                .accessibilityIdentifier("dictionary-compare-" + synonym)
+                        }
+                    }.accessibilityIdentifier("dictionary-synonym-comparison")
                 }
             }
+            DictionaryResultContent(result: result)
             Section("可点击的英文释义") {
                 ForEach(result.senses) { sense in english(sense.en); ForEach(sense.examples ?? [], id: \.self) { english($0) } }
             }
@@ -444,16 +447,21 @@ struct DictionaryComparisonView: View {
     let original: DictionaryResult
     let synonym: String, context: String
     @ObservedObject var learning: LearningServices
+    var theme: String = "system"
     @StateObject private var model = DictionaryComparisonModel()
     var body: some View {
         List {
             Section("当前文章语境") { Text(context) }
-            Text(original.headword).font(.title2.bold())
+            Section("对照词：" + synonym) {
+                if model.loading { ProgressView("正在查询对照词…").accessibilityIdentifier("dictionary-comparison-loading") }
+                if let error = model.error { Text(error).foregroundStyle(.red); Button("重试对照查词") { Task { await model.load(synonym, context: context, learning: learning) } }.accessibilityIdentifier("dictionary-comparison-retry") }
+                if model.result?.senses.isEmpty == true { Text("对照词暂无可验证义项。原词释义仍可阅读。").accessibilityIdentifier("dictionary-comparison-empty") }
+            }
+            if let result = model.result, !result.senses.isEmpty { Text(synonym).font(.title2.bold()); DictionaryResultContent(result: result) }
+            Text("原词：" + original.headword).font(.title2.bold())
             DictionaryResultContent(result: original)
-            Text(synonym).font(.title2.bold())
-            if model.loading { ProgressView("正在查询对照词…") }
-            if let result = model.result { DictionaryResultContent(result: result) }
-            if let error = model.error { Text(error).foregroundStyle(.red); Button("重试对照查词") { Task { await model.load(synonym, context: context, learning: learning) } } }
-        }.navigationTitle("同义词对照").navigationBarTitleDisplayMode(.inline).task { await model.load(synonym, context: context, learning: learning) }
+        }.scrollContentBackground(.hidden)
+            .background(theme == "paper" ? Color(red: 0.97, green: 0.94, blue: 0.87) : theme == "dark" ? Color(white: 0.08) : Color(uiColor: .systemGroupedBackground))
+            .navigationTitle("同义词对照").navigationBarTitleDisplayMode(.inline).task { await model.load(synonym, context: context, learning: learning) }
     }
 }

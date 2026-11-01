@@ -1,0 +1,21 @@
+name: Cancel superseded main iOS runs
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: lexidawn-main-supersession
+  cancel-in-progress: true
+jobs:
+  supersede:
+    name: Release runners held by superseded iOS verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cancel only older main iOS runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/ci-cancel-obsolete.py

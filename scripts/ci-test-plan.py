@@ -18,7 +18,7 @@ def plan():
         raise SystemExit('Duplicate or missing UI methods')
     def weight(name):
         if 'LiveMultipleSources' in name: return 440
-        if 'ProviderFailureEmptyLoading' in name: return 200
+        if 'ProviderFailureEmptyLoading' in name or 'SynonymComparison' in name: return 200
         if 'InjectedImportFailureMatrix' in name: return 180
         if 'Gallery' in name: return 110
         if 'LiveColdStart' in name: return 100

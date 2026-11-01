@@ -28,6 +28,17 @@ import Combine
     }
     #if DEBUG && targetEnvironment(simulator)
     func setDiscoveryForUITesting(_ service: ArticleDiscoveryService) { discovery = service }
+    func injectReviewSaveFailureForEvidence() {
+        // The first write creates the real question set; the following answer transaction fails once.
+        let fault = EvidenceSaveFault(allowSuccessfulWrites: 1)
+        review = ReviewQueueService(context: ModelContext(writer.context.container), cycles: cycles, dictionary: dictionary) { context in
+            if context.hasChanges, fault.remaining > 0 {
+                if fault.allowSuccessfulWrites > 0 { fault.allowSuccessfulWrites -= 1 }
+                else { fault.remaining -= 1; throw LearningError.invalid("明确故障注入：复习保存失败，作答、日志与排程均未提交。") }
+            }
+            try context.save()
+        }
+    }
     func injectVocabularySaveFailureForEvidence(allowSuccessfulWrites: Int = 0, message: String = "明确故障注入：数据库保存失败，未加入生词本。") {
         let fault = EvidenceSaveFault(allowSuccessfulWrites: allowSuccessfulWrites)
         vocabulary = VocabularyRepository(context: ModelContext(writer.context.container)) { context in
