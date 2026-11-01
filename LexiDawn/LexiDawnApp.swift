@@ -89,6 +89,15 @@ final class AppStartup: ObservableObject {
                 }
                 return dependencies
             }
+            if scenario == "round3-phrases", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
+                let url = FileManager.default.temporaryDirectory.appendingPathComponent("round3-phrases-\(storeID.uuidString).store")
+                let dependencies = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
+                if let learning = dependencies.learning {
+                    let body = "Yesterday I took a book home. I have taken the time to look into this question.\n\nThe team will carry out a careful study. We take into account every result. Clear examples play a role in learning.\n\nThis complete text is explicit original UI fixture writing. It is never presented as a publisher article or production dictionary content."
+                    _ = try learning.content.importArticle(ArticleImportDraft(title: "明确原创夹具：词形与短语", body: body, source: "Explicit original UI fixture author", rightsConfirmed: true), at: Date())
+                }
+                return dependencies
+            }
             if scenario == "round3-storage-vocabulary", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
                 let url = FileManager.default.temporaryDirectory.appendingPathComponent("round3-storage-\(storeID.uuidString).store")
                 let dependencies = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)

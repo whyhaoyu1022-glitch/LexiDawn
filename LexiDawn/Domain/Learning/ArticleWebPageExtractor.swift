@@ -57,7 +57,7 @@ enum ArticleWebPageExtractor {
             if let array = value as? [Any] { array.forEach(collect); return }
             guard let object = value as? [String: Any] else { return }
             let types = (object["@type"] as? [String]) ?? (object["@type"] as? String).map { [$0] } ?? []
-            if types.contains(where: { ["Article", "NewsArticle", "ReportageNewsArticle", "BlogPosting", "ScholarlyArticle"].contains($0) }) { articles.append(object) }
+            if types.contains(where: { ["Article", "NewsArticle", "ReportageNewsArticle", "BlogPosting", "ScholarlyArticle", "WebPage", "Person"].contains($0) }) { articles.append(object) }
             if let graph = object["@graph"] { collect(graph) }
         }
         let matches = scripts.matches(in: html, range: NSRange(location: 0, length: text.length))
@@ -107,10 +107,14 @@ enum ArticleWebPageExtractor {
         let metadata = Dictionary(nodes.filter { $0.name == "meta" }.compactMap { node -> (String, String)? in
             guard let key = node.attributes["property"] ?? node.attributes["name"], let value = node.attributes["content"] else { return nil }; return (key.lowercased(), value)
         }, uniquingKeysWith: { first, _ in first })
+        func hasBodyMarker(_ node: Element) -> Bool {
+            let values = [node.attributes["class"], node.attributes["id"], node.attributes["data-component"], node.attributes["data-testid"], node.attributes["data-gu-name"], node.attributes["itemprop"]].compactMap { $0 }
+            return node.attributes["itemprop"] == "articleBody" || values.contains { value in source.bodyMarkers.contains { marker in value.split(whereSeparator: \.isWhitespace).contains { String($0).caseInsensitiveCompare(marker) == .orderedSame || (marker.count > 4 && $0.lowercased().hasPrefix(marker.lowercased() + "__")) } } }
+        }
+        let hasExplicitBody = nodes.contains(where: hasBodyMarker)
         var selected = Set<Int>(), blocks: [ArticleDocument.Block] = []
         for (index, node) in nodes.enumerated() {
-            let values = [node.attributes["class"], node.attributes["id"], node.attributes["data-component"], node.attributes["data-testid"], node.attributes["data-gu-name"], node.attributes["itemprop"]].compactMap { $0 }
-            let matches = (["nasa", "bbc"].contains(source.id) && node.name == "article") || node.attributes["itemprop"] == "articleBody" || values.contains { value in source.bodyMarkers.contains { marker in value.split(whereSeparator: \.isWhitespace).contains { String($0).caseInsensitiveCompare(marker) == .orderedSame || (marker.count > 4 && $0.lowercased().hasPrefix(marker.lowercased() + "__")) } } }
+            let matches = hasBodyMarker(node) || (!hasExplicitBody && ["nasa", "bbc"].contains(source.id) && node.name == "article")
             guard matches else { continue }
             var parent = node.parent, nested = false
             while let current = parent { if selected.contains(current) { nested = true; break }; parent = nodes[current].parent }
@@ -121,7 +125,11 @@ enum ArticleWebPageExtractor {
             blocks += try ArticleHTMLExtractor.extract(fragment).blocks
         }
         var document = ArticleDocument(blocks: blocks)
-        let article = articles.max { (($0["articleBody"] as? String)?.count ?? 0) < (($1["articleBody"] as? String)?.count ?? 0) }
+        let articleRecords = articles.filter { object in
+            let types = (object["@type"] as? [String]) ?? (object["@type"] as? String).map { [$0] } ?? []
+            return !types.contains("Person")
+        }
+        let article = articleRecords.max { (($0["articleBody"] as? String)?.count ?? 0) < (($1["articleBody"] as? String)?.count ?? 0) }
         if let raw = article?["articleBody"] as? String, !raw.isBlank {
             let jsonDocument: ArticleDocument
             if raw.range(of: "<(p|div|br|h[1-6])\\b", options: [.regularExpression, .caseInsensitive]) != nil { jsonDocument = try ArticleHTMLExtractor.extract(raw) }
@@ -136,9 +144,22 @@ enum ArticleWebPageExtractor {
         let authorObject = article?["author"]
         let objectName = (authorObject as? [String: Any])?["name"] as? String
         let arrayName = (authorObject as? [[String: Any]])?.compactMap { $0["name"] as? String }.joined(separator: ", ")
-        let author = objectName ?? arrayName ?? (authorObject as? String) ?? metadata["author"] ?? source.name
-        let dateText = article?["datePublished"] as? String ?? metadata["article:published_time"]
-        let date = dateText.flatMap { ISO8601DateFormatter().date(from: $0) }
+        let authorID = (authorObject as? [String: Any])?["@id"] as? String
+        let linkedName = authorID.flatMap { id in articles.first { $0["@id"] as? String == id }?["name"] as? String }
+        let authorLink = nodes.first { $0.attributes["rel"]?.split(separator: " ").contains("author") == true }
+        let domAuthor = authorLink.flatMap { node -> String? in
+            guard let end = node.contentEnd, end > node.contentStart else { return nil }
+            return try? ArticleHTMLExtractor.extract(text.substring(with: NSRange(location: node.contentStart, length: end - node.contentStart))).text
+        }
+        let author = objectName ?? arrayName ?? linkedName ?? (authorObject as? String) ?? metadata["author"] ?? domAuthor ?? "作者未注明"
+        let dateText = article?["datePublished"] as? String ?? metadata["article:published_time"] ?? nodes.first { $0.name == "time" && $0.attributes["itemprop"] == "datePublished" }?.attributes["datetime"]
+        let date = dateText.flatMap { value -> Date? in
+            if let date = ISO8601DateFormatter().date(from: value) { return date }
+            let fractional = ISO8601DateFormatter(); fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = fractional.date(from: value) { return date }
+            let day = DateFormatter(); day.locale = Locale(identifier: "en_US_POSIX"); day.timeZone = TimeZone(secondsFromGMT: 0); day.dateFormat = "yyyy-MM-dd"
+            return day.date(from: value)
+        }
         var canonical = candidate.url
         if let link = nodes.first(where: { $0.name == "link" && $0.attributes["rel"]?.lowercased() == "canonical" })?.attributes["href"], let url = URL(string: link), accepts(url, source: source) { canonical = link }
         guard let url = URL(string: canonical), accepts(url, source: source) else { throw FullTextImportError.incomplete }

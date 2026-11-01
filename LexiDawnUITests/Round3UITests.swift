@@ -153,6 +153,9 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["没有匹配的完整文章"].waitForExistence(timeout: 10))
         capture("R3-L03", app: app, feature: "library", state: "title-search-no-result", origin: "explicit-original-fixture-URLProtocol")
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "zzzzunfindable".count))
+        if app.buttons["完成搜索"].exists { app.buttons["完成搜索"].tap() }
+        else if app.keyboards.buttons["Search"].exists { app.keyboards.buttons["Search"].tap() }
+        else if app.keyboards.buttons["搜索"].exists { app.keyboards.buttons["搜索"].tap() }
         if app.buttons["Cancel"].exists { app.buttons["Cancel"].tap() } else if app.buttons["取消"].exists { app.buttons["取消"].tap() }
         let favorite = app.buttons["收藏"]
         for _ in 0..<6 { if favorite.isHittable { break }; app.swipeUp() }
@@ -300,6 +303,56 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["已停止发现；已完整入库的文章保留。"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 0)
         capture("R3-A21", app: app, feature: "article", state: "cancelled-no-candidate-record", origin: "explicit-delayed-URLProtocol-fixture")
+    }
+    func testComplexFormsAndFourContextPhrasesUseNestedLookupAndReturn() throws {
+        let app = launch("round3-phrases")
+        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
+        for (index, surface, lemma, phrase) in [(0,"took","take",""),(1,"taken","take",""),(2,"look","look","look into"),(3,"carry","carry","carry out"),(4,"account","account","take into account"),(5,"role","role","play a role in")] {
+            let word = app.buttons["word-" + surface].firstMatch
+            for _ in 0..<8 { if word.exists && word.isHittable { break }; app.otherElements["reader-body"].firstMatch.swipeUp() }
+            XCTAssertTrue(word.isHittable); word.tap()
+            XCTAssertTrue(app.staticTexts["标准词形：" + lemma].waitForExistence(timeout: 10))
+            capture("R3-D" + String(index + 10), app: app, feature: "dictionary", state: "surface-" + surface, origin: "explicit-original-context-fixture-local-real-CEDICT")
+            if !phrase.isEmpty {
+                XCTAssertTrue(app.buttons[phrase].waitForExistence(timeout: 10)); app.buttons[phrase].tap()
+                XCTAssertTrue(app.staticTexts["标准词形：" + phrase].waitForExistence(timeout: 10))
+                capture("R3-D" + String(index + 20), app: app, feature: "dictionary", state: "nested-phrase-" + phrase, origin: "explicit-original-context-fixture-local-real-CEDICT")
+                app.buttons["close-word"].firstMatch.tap()
+                XCTAssertTrue(app.staticTexts["标准词形：" + lemma].waitForExistence(timeout: 10))
+            }
+            app.buttons["close-word"].firstMatch.tap(); XCTAssertTrue(app.otherElements["reader-body"].firstMatch.waitForExistence(timeout: 10))
+        }
+    }
+    func testReaderThemeExtendsToDictionaryPresentation() throws {
+        let app = launch("gallery-reader"); XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
+        for (index, title, theme) in [(0,"浅色","light"),(1,"深色","dark"),(2,"暖纸色","paper")] {
+            app.buttons["阅读外观"].firstMatch.tap(); app.buttons[title].tap()
+            let word = app.buttons["word-Internet"].firstMatch; XCTAssertTrue(word.waitForExistence(timeout: 10)); word.tap()
+            XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10))
+            capture("R3-D" + String(index + 30), app: app, feature: "dictionary", state: "reader-popup-theme-" + theme, theme: theme, origin: "real-bundled-RFC-local-real-CEDICT")
+            app.buttons["close-word"].tap()
+        }
+    }
+    func testHardAndGoodFeedbackPersistScheduleChangesAcrossRestart() throws {
+        let app = launch("gallery-round3-review"); app.tabBars.buttons["复习"].tap()
+        XCTAssertTrue(app.buttons["match-word-internet"].waitForExistence(timeout: 15))
+        app.buttons["match-word-internet"].tap(); app.buttons["match-meaning-文档（个人释义）"].tap()
+        XCTAssertTrue(app.staticTexts["review-feedback"].label.contains("还不正确"))
+        for (word, meaning) in [("internet","互联网（个人释义）"),("document","文档（个人释义）"),("book","书（个人释义）")] {
+            app.buttons["match-word-" + word].tap(); app.buttons["match-meaning-" + meaning].tap()
+        }
+        for word in ["internet", "document", "book"] {
+            let field = app.textFields["cloze-answer"]; XCTAssertTrue(field.waitForExistence(timeout: 10)); field.tap(); field.typeText(word)
+            app.buttons["submit-spelling"].tap()
+        }
+        XCTAssertTrue(app.staticTexts["本次复习已保存"].waitForExistence(timeout: 10))
+        let hard = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Hard' AND label CONTAINS '原定' AND label CONTAINS '下次复习'")).firstMatch
+        let good = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Good' AND label CONTAINS '原定' AND label CONTAINS '下次复习'")).firstMatch
+        XCTAssertTrue(hard.waitForExistence(timeout: 10)); XCTAssertTrue(good.exists)
+        capture("R3-G01", app: app, feature: "review", state: "hard-good-original-and-next-due", origin: "explicit-review-seed-real-RFC-and-personal-meanings")
+        app.terminate(); app.launch(); app.tabBars.buttons["复习"].tap()
+        XCTAssertTrue(hard.waitForExistence(timeout: 10)); XCTAssertTrue(good.exists)
+        capture("R3-G02", app: app, feature: "review", state: "persisted-grade-and-schedule-after-restart", origin: "explicit-review-seed-real-RFC-and-personal-meanings")
     }
     /// Scrolling can retain offscreen accessibility elements. Exercise a word in the visible viewport.
     private func visibleWord(in app: XCUIApplication) -> XCUIElement {

@@ -132,7 +132,10 @@ struct ReaderView: View {
     private func compactSource(_ article: ReadableArticle) -> String {
         if article.sourceID == SourceRegistry.rfc.id { return "RFC Editor · M. Nottingham" }
         if article.sourceID == "wikipedia" { return "Wikipedia · Contributors" }
-        return article.author ?? article.source
+        if article.sourceID == "user-import" { return article.source }
+        let source = ArticleSourceRegistry.name(article.sourceID)
+        if let author = article.author, !author.isBlank, author != source { return source + " · " + author }
+        return source
     }
     private var readerBackground: Color {
         theme == "dark" ? Color(white: 0.08) : theme == "paper" ? Color(red: 0.97, green: 0.94, blue: 0.87) : theme == "light" ? .white : Color(uiColor: .systemBackground)
@@ -196,7 +199,9 @@ struct ReaderView: View {
 struct WordLookupSheet: View {
     @StateObject private var model: WordLookupModel
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var dependencies: AppDependencies
     @State private var phraseSelection: WordLookupModel?
+    @State private var theme = "system"
     init(token: EnglishToken, articleID: String, autoAdd: Bool, learning: LearningServices) {
         _model = StateObject(wrappedValue: WordLookupModel(token: token, articleID: articleID, autoAdd: autoAdd, learning: learning))
     }
@@ -239,7 +244,8 @@ struct WordLookupSheet: View {
                 }
                 if let error = model.error { Text(error).foregroundStyle(.red); Button("重试词典查询") { Task { await model.lookup() } } }
             }
-            .navigationTitle("查词").toolbar {
+            .scrollContentBackground(.hidden).background(sheetBackground)
+            .navigationTitle("查词").toolbarBackground(sheetBackground, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar).toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if let result = model.result {
                         NavigationLink { DictionaryDetailView(result: result, context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth) }
@@ -249,11 +255,13 @@ struct WordLookupSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() }.accessibilityIdentifier("close-word") }
             }
-            .task { await model.begin() }
+            .task { if let preferences = try? dependencies.preferencesRepository.load() { theme = preferences.readerTheme }; await model.begin() }
             .onReceive(model.learning.$revision) { _ in model.refreshMembership() }
-        }.presentationDetents([.medium, .large])
+        }.presentationDetents([.medium, .large]).presentationBackground(sheetBackground)
+            .preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
             .sheet(item: $phraseSelection) { WordLookupSheet(model: $0) }
     }
+    private var sheetBackground: Color { theme == "paper" ? Color(red: 0.97, green: 0.94, blue: 0.87) : theme == "dark" ? Color(white: 0.08) : theme == "light" ? .white : Color(uiColor: .systemGroupedBackground) }
 }
 struct DictionaryResultContent: View {
     let result: DictionaryResult

@@ -13,6 +13,7 @@ struct ArticleLibraryView: View {
     @State private var notice: String?
     @State private var loading = false
     @State private var refreshTask: Task<Void, Never>?
+    @FocusState private var searchFocused: Bool
     private var visible: [ArticleLibraryItem] {
         items.filter { $0.readable && (query.isEmpty || $0.title.localizedCaseInsensitiveContains(query)) &&
             (source == "all" || $0.sourceID == source) && (topic == "all" || $0.topics.contains(topic)) &&
@@ -52,6 +53,10 @@ struct ArticleLibraryView: View {
             if visible.isEmpty, !loading { ContentUnavailableView("没有匹配的完整文章", systemImage: "books.vertical", description: Text("调整筛选，或导入有权在本地保存的完整英文原文。")) }
         }
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索完整文章标题")
+        .searchFocused($searchFocused)
+        .onSubmit(of: .search) { searchFocused = false }
+        .scrollDismissesKeyboard(.interactively)
+        .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成搜索") { searchFocused = false } } }
         .navigationTitle("文章库与历史")
         .toolbar { Button("发现完整文章", systemImage: "arrow.clockwise") { beginRefresh() }.disabled(loading) }
         .refreshable { await beginRefresh().value }

@@ -110,6 +110,17 @@ import SwiftData
         let result = try ArticleWebPageExtractor.extract(Data(html.utf8), candidate: candidate, source: source)
         XCTAssertEqual(result.document.blocks.count, 3); XCTAssertFalse(result.document.text.contains("<p>")); XCTAssertTrue(result.document.text.hasSuffix("including the final sentence."))
     }
+    func testPublisherExplicitBodyExcludesPageHeaderWhilePreservingAuthorAndDateMetadata() throws {
+        let source = try XCTUnwrap(ArticleSourceRegistry.personalSource("nasa"))
+        let candidate = ArticleDiscoveryItem(sourceID: source.id, title: "Fixture", url: "https://www.nasa.gov/news-release/explicit-fixture/", revision: nil)
+        let graph: [String: Any] = ["@graph": [["@type": "WebPage", "name": "Fixture", "datePublished": "2026-10-30T12:00:00.000Z", "author": ["@id": "fixture-person"]], ["@type": "Person", "@id": "fixture-person", "name": "Explicit fixture author"]]]
+        let json = String(decoding: try JSONSerialization.data(withJSONObject: graph), as: UTF8.self)
+        let html = "<html><script type='application/ld+json'>" + json + "</script><article><header><h1>Page title metadata</h1></header><div class='wp-block-post-content'>" + webBody + "</div></article></html>"
+        let result = try ArticleWebPageExtractor.extract(Data(html.utf8), candidate: candidate, source: source)
+        XCTAssertEqual(result.author, "Explicit fixture author"); XCTAssertNotNil(result.publishedAt)
+        XCTAssertEqual(result.document.blocks.count, 3); XCTAssertFalse(result.document.text.contains("Page title metadata"))
+        XCTAssertTrue(result.document.text.hasSuffix("including the final sentence."))
+    }
     func testRecommendationUsesPreferencesAndCannotReuseAssignedCandidate() throws {
         let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)
         let prefs = try app.preferencesRepository.load(); prefs.interestTopics = ["科学"]; try app.preferencesRepository.save(prefs)

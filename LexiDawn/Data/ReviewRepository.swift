@@ -170,7 +170,8 @@ struct ReviewSessionView: Equatable {
             let entries = try context.fetch(FetchDescriptor<VocabularyEntryRecord>())
             return try context.fetch(FetchDescriptor<ReviewLogRecord>()).filter { $0.sessionID == session.sessionID }.sorted { $0.entryID < $1.entryID }.map { log in
                 let lemma = entries.first { $0.entryID == log.entryID }?.lemma ?? "词条"
-                return "\(lemma) · \(log.grade.capitalized) · 下次复习 \(log.nextDueAt.formatted(date: .abbreviated, time: .shortened)) · \(log.algorithmVersion)"
+                let explanation = log.grade == "again" ? "已查看答案，安排重新学习" : log.grade == "hard" ? "有错误或使用提示，按 Hard 重新计算" : "两阶段首次正确，按 Good 重新计算"
+                return "\(lemma) · \(log.grade.capitalized) · \(explanation)\n原定 \(log.previousDueAt.formatted(date: .abbreviated, time: .shortened)) → 下次复习 \(log.nextDueAt.formatted(date: .abbreviated, time: .shortened))"
             }
         }
     }

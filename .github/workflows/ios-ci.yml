@@ -82,7 +82,7 @@ jobs:
           with (app / 'Info.plist').open('rb') as stream:
               name = plistlib.load(stream)['CFBundleExecutable']
           data = (app / name).read_bytes()
-          for marker in [b'round3-dictionary-', b'round3-storage-', b'Explicit original dictionary UI fixture', b'gallery-round3-review']:
+          for marker in [b'round3-dictionary-', b'round3-storage-', b'Explicit original dictionary UI fixture', b'gallery-round3-review', b'round3-phrases']:
               assert marker not in data, 'Debug evidence fixture leaked into Release'
           print('Release built; explicit screenshot/fault fixture markers excluded.')
           PYRELEASE
@@ -155,7 +155,7 @@ jobs:
           if-no-files-found: warn
       - name: Run UI tests on concrete simulator
         if: ${{ !cancelled() && steps.compile_tests.outcome == 'success' }}
-        timeout-minutes: 45
+        timeout-minutes: 90
         shell: bash
         run: |
           set -euo pipefail

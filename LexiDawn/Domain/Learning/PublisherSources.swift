@@ -29,7 +29,7 @@ extension ArticleSourceRegistry {
         .init(id: "voa", name: "VOA Learning English", discoveryURL: "https://learningenglish.voanews.com/api/zkm-ql-vomx-tpej-rqi", discovery: .feed,
               hosts: ["learningenglish.voanews.com", "www.learningenglish.voanews.com"], bodyMarkers: ["wsw", "body-container"], articlePathPattern: #"/a/.+/\d+\.html"#, topics: ["英语学习", "文化"]),
         .init(id: "nasa", name: "NASA", discoveryURL: "https://www.nasa.gov/news-release/feed/", discovery: .feed,
-              hosts: ["www.nasa.gov", "nasa.gov", "science.nasa.gov"], bodyMarkers: ["entry-content", "article-body"], articlePathPattern: #"/(news-release|missions|science-research|general)/"#, topics: ["科学", "太空"]),
+              hosts: ["www.nasa.gov", "nasa.gov", "science.nasa.gov"], bodyMarkers: ["entry-content", "article-body", "wp-block-post-content"], articlePathPattern: #"/(news-release|missions|science-research|general)/"#, topics: ["科学", "太空"]),
         .init(id: "sciencedaily", name: "ScienceDaily", discoveryURL: "https://www.sciencedaily.com/rss/top/science.xml", discovery: .feed,
               hosts: ["www.sciencedaily.com", "sciencedaily.com"], bodyMarkers: ["story_text"], articlePathPattern: #"/releases/\d{4}/\d{2}/"#, topics: ["科学"]),
         .init(id: "phys", name: "Phys.org", discoveryURL: "https://phys.org/rss-feed/", discovery: .feed,
