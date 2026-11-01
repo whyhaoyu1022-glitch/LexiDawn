@@ -32,6 +32,7 @@ struct ArticleLibraryView: View {
             ForEach(visible) { item in
                 VStack(alignment: .leading, spacing: 10) {
                     Text(item.title).font(.headline)
+                    Text(item.sourceID == "wikipedia" ? "Wikipedia" : item.sourceID == SourceRegistry.rfc.id ? SourceRegistry.rfc.name : item.source).font(.caption).lineLimit(2)
                     Text("\(item.topics.joined(separator: " · ")) · \(item.minutes) 分钟").font(.caption)
                     Label("完整原文 · 本地离线可读", systemImage: "checkmark.icloud").font(.caption).foregroundStyle(.secondary)
                     Text(item.completed ? "已完成 · 可重读" : item.started ? "进行中 \(Int(item.percent * 100))%" : item.cycleID != nil ? "每日必做" : "未读").font(.subheadline)
@@ -58,7 +59,7 @@ struct ArticleLibraryView: View {
     }
     private func load() { do { items = try learning.content.library(); error = nil } catch { self.error = error.localizedDescription } }
     private func flags(_ item: ArticleLibraryItem, favorite: Bool? = nil, later: Bool? = nil) {
-        do { try learning.content.setLibraryFlags(articleID: item.id, favorite: favorite, readLater: later); learning.changed(); error = nil }
+        do { try learning.content.setLibraryFlags(articleID: item.id, favorite: favorite, readLater: later); load(); error = nil }
         catch { self.error = error.localizedDescription }
     }
     private func refresh() async {

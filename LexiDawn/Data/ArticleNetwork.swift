@@ -2,6 +2,7 @@ import Foundation
 
 actor ArticleFetchService {
     private let session: URLSession
+    private var nextRequestAt = Date.distantPast
     init(configuration supplied: URLSessionConfiguration? = nil) {
         let configuration = supplied ?? URLSessionConfiguration.ephemeral
         configuration.urlCache = nil; configuration.httpCookieStorage = nil
@@ -13,6 +14,9 @@ actor ArticleFetchService {
         guard url.scheme == "https", url.host == allowedHost, url.user == nil, url.password == nil else { throw FullTextImportError.transport }
         for attempt in 0..<3 {
             try Task.checkCancellation()
+            let delay = max(0, nextRequestAt.timeIntervalSinceNow)
+            nextRequestAt = max(Date(), nextRequestAt).addingTimeInterval(1)
+            if delay > 0 { try await Task.sleep(for: .seconds(delay)) }
             var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
             request.setValue("LexiDawn/0.3 (personal offline reader; https://github.com/whyhaoyu1022-glitch/LexiDawn)", forHTTPHeaderField: "User-Agent")
             request.setValue("application/json, application/xml, text/html;q=0.8", forHTTPHeaderField: "Accept")
@@ -53,16 +57,19 @@ enum OfficialArticleAPI {
 }
 
 @MainActor final class ArticleDiscoveryService {
-    private let fetcher = ArticleFetchService()
+    private let fetcher: ArticleFetchService
     private let content: ContentRepository
     private var refreshing = false
     private var lastSuccess: Date?
-    init(content: ContentRepository) { self.content = content }
+    init(content: ContentRepository, fetcher: ArticleFetchService = ArticleFetchService()) { self.content = content; self.fetcher = fetcher }
     func refresh(force: Bool = false, at now: Date = Date()) async throws -> Int {
         guard !refreshing else { return 0 }
-        if !force, let lastSuccess, now.timeIntervalSince(lastSuccess) < 3600 { return 0 }
+        let stored = try content.sourceRefreshState("wikipedia")
+        if !force, let success = stored.success ?? lastSuccess, now.timeIntervalSince(success) < 3600 { return 0 }
+        if let retry = stored.retryAfter, retry > now { if force { throw FullTextImportError.rateLimited }; return 0 }
         guard ArticleSourceRegistry.enabled("wikipedia") else { throw FullTextImportError.rights }
         refreshing = true; defer { refreshing = false }
+        try content.recordSourceRefresh("wikipedia", beginning: true, at: now)
         do {
             let endpoint = try OfficialArticleAPI.url(host: "en.wikipedia.org", fields: ["action": "query", "format": "json", "formatversion": "2", "generator": "categorymembers", "gcmtitle": "Category:Featured_articles", "gcmlimit": "3", "gcmnamespace": "0", "prop": "info", "inprop": "url"])
             let candidates = try OfficialArticleAPI.discovery(await fetcher.fetch(endpoint, allowedHost: "en.wikipedia.org"))
@@ -86,10 +93,15 @@ enum OfficialArticleAPI {
                 catch { failures += 1 /* Candidate discarded; no URL, title or body in diagnostics. */ }
             }
             if failures > 0 && count == 0 { throw FullTextImportError.incomplete }
+            try content.recordSourceRefresh("wikipedia", beginning: false, at: now)
             lastSuccess = now
             return count
         } catch is CancellationError { throw CancellationError() }
-        catch { throw FullTextImportError.transport }
+        catch {
+            let code = (error as? FullTextImportError)?.rawValue ?? FullTextImportError.transport.rawValue
+            try content.recordSourceRefresh("wikipedia", beginning: false, errorCode: code, at: now)
+            throw (error as? FullTextImportError) ?? .transport
+        }
     }
 }
 

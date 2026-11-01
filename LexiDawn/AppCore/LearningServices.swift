@@ -5,7 +5,7 @@ import Combine
 @MainActor final class LearningServices: ObservableObject {
     let content: ContentRepository
     let acquisition: ArticleAcquisitionService
-    let discovery: ArticleDiscoveryService
+    private(set) var discovery: ArticleDiscoveryService
     var productionNetworking = false
     let dictionary: DictionaryLookupService
     let vocabulary: VocabularyRepository
@@ -26,6 +26,9 @@ import Combine
         reader = ReaderProgressService(context: context, content: content, cycles: cycles)
         review = ReviewQueueService(context: context, cycles: cycles, dictionary: dictionary)
     }
+    #if DEBUG && targetEnvironment(simulator)
+    func setDiscoveryForUITesting(_ service: ArticleDiscoveryService) { discovery = service }
+    #endif
     func changed() { revision += 1 }
     func statistics(timeZone: TimeZone, at now: Date) throws -> LearningStatistics {
         let cycles = try cycles.fetchAll()

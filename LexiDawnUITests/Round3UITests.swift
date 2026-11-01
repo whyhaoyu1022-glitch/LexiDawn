@@ -102,6 +102,61 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["cycle-completed"].waitForExistence(timeout: 20))
         capture("R3-C08", app: app, feature: "cycle", state: "real-process-restart-restores-completion", origin: origin)
     }
+    private func openLibrary(_ app: XCUIApplication) {
+        let button = app.buttons["article-library"]
+        XCTAssertTrue(button.waitForExistence(timeout: 10))
+        for _ in 0..<6 { if button.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(button.isHittable); button.tap()
+        XCTAssertTrue(app.navigationBars["文章库与历史"].waitForExistence(timeout: 10))
+    }
+    func testInjectedImportFailureMatrixDiscardsEveryCandidate() throws {
+        let cases = [("offline", "R3-A10"), ("403", "R3-A11"), ("429", "R3-A12"), ("503", "R3-A13"), ("rights", "R3-A14"), ("parse", "R3-A15"), ("truncated", "R3-A16"), ("summary", "R3-A17")]
+        for (mode, id) in cases {
+            let app = launch("round3-import-" + mode); openLibrary(app)
+            app.buttons["发现完整文章"].tap()
+            let error = app.staticTexts["无法导入完整文章，未添加到本地文章库。"]
+            XCTAssertTrue(error.waitForExistence(timeout: 25))
+            XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 0)
+            XCTAssertFalse(app.staticTexts["Explicit fixture article (not production)"].exists)
+            capture(id, app: app, feature: "article", state: "discarded-" + mode, origin: "URLProtocol-injected-fault-not-production-network")
+            app.terminate()
+        }
+    }
+    func testImportRetryDedupSearchFavoritesAndLocalRestart() throws {
+        let app = launch("round3-import-retry"); openLibrary(app)
+        capture("R3-L01", app: app, feature: "library", state: "empty-before-import", origin: "explicit-original-fixture-URLProtocol")
+        app.buttons["发现完整文章"].tap()
+        XCTAssertTrue(app.staticTexts["article-notice"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.staticTexts["article-notice"].label.contains("已导入 1"))
+        capture("R3-A18", app: app, feature: "article", state: "503-retry-success-full-import", origin: "URLProtocol-retry-with-original-test-text")
+        app.buttons["发现完整文章"].tap()
+        XCTAssertTrue(app.staticTexts["article-notice"].waitForExistence(timeout: 10))
+        let notice = app.staticTexts["article-notice"]
+        let noNew = NSPredicate(format: "label CONTAINS '没有新文章'")
+        expectation(for: noNew, evaluatedWith: notice); waitForExpectations(timeout: 15)
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 1)
+        capture("R3-A19", app: app, feature: "article", state: "deduplicated-no-new-article", origin: "explicit-original-fixture-URLProtocol")
+        let search = app.searchFields.firstMatch; search.tap(); search.typeText("Explicit fixture")
+        capture("R3-L02", app: app, feature: "library", state: "title-search-hit", origin: "explicit-original-fixture-URLProtocol")
+        search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "Explicit fixture".count)); search.typeText("zzzzunfindable")
+        XCTAssertTrue(app.staticTexts["没有匹配的完整文章"].waitForExistence(timeout: 10))
+        capture("R3-L03", app: app, feature: "library", state: "title-search-no-result", origin: "explicit-original-fixture-URLProtocol")
+        search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "zzzzunfindable".count))
+        if app.buttons["Cancel"].exists { app.buttons["Cancel"].tap() } else if app.buttons["取消"].exists { app.buttons["取消"].tap() }
+        let favorite = app.buttons["收藏"]
+        for _ in 0..<6 { if favorite.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(favorite.isHittable); favorite.tap()
+        app.buttons["稍后阅读"].tap()
+        XCTAssertTrue(app.buttons["取消收藏"].exists); XCTAssertTrue(app.buttons["移出稍后阅读"].exists)
+        capture("R3-L04", app: app, feature: "library", state: "favorite-and-later-saved", origin: "explicit-original-fixture-URLProtocol")
+        app.terminate(); app.launchEnvironment["LEXIDAWN_UI_SCENARIO"] = "round3-import-offline"; app.launch()
+        openLibrary(app)
+        XCTAssertTrue(app.buttons["取消收藏"].waitForExistence(timeout: 10)); XCTAssertTrue(app.buttons["移出稍后阅读"].exists)
+        capture("R3-L05", app: app, feature: "library", state: "restart-retains-flags-network-unavailable", origin: "URLProtocol-offline-original-fixture")
+        app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).firstMatch.tap()
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'word-'")).firstMatch.waitForExistence(timeout: 10))
+        capture("R3-R05", app: app, feature: "reader", state: "local-fulltext-with-failing-network", origin: "URLProtocol-offline-original-fixture")
+    }
     /// Sample only the middle of the board's gap. Button text/icons cannot satisfy this assertion.
     private func greenLinePixels(app: XCUIApplication) -> Int {
         let board = app.otherElements["matching-board"].firstMatch

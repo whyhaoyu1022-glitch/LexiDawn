@@ -233,6 +233,9 @@ struct DictionaryResultContent: View {
     let result: DictionaryResult
     var body: some View {
         Section("词典义项与来源") {
+            if let pronunciation = result.senses.compactMap(\.ipa).first { Text(pronunciation).font(.headline.monospaced()).accessibilityIdentifier("dictionary-ipa-summary") }
+            let providers = Array(Set(result.senses.flatMap { $0.sources ?? ["CC-CEDICT"] })).sorted()
+            if !providers.isEmpty { Text("已合并：" + providers.joined(separator: " · ")).font(.caption).accessibilityIdentifier("dictionary-providers") }
             if result.senses.isEmpty { Text("暂无可验证的释义。可以继续阅读，或在生词本添加明确标记的个人释义。") }
             ForEach(result.senses) { sense in
                 VStack(alignment: .leading, spacing: 6) {

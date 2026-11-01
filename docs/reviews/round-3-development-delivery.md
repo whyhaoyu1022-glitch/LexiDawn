@@ -45,9 +45,10 @@
 | 17e2c49042ea81c479b6d8e0033810fee1a50c1f | https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41266228017 | app编译失败：合并声明多个@State；测试未运行，无截图 |
 | 4c1eeda4d256071e9ba9e3f873661d0097208f99 | https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41266394553 | app编译失败：catch中error遮蔽；测试未运行，无截图 |
 | 3890b64021bdb2299e3e829d4123a797b58e2a5b | https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41266560236 | app编译失败：反馈方法误重复至快照适配器；测试未运行，无截图 |
-| f1a7f3ec41bfb0f0cb24b760e9958f907876a86e | 以对应SHA Actions实际状态为准 | 已修正上述作用域；未预填通过 |
+| f1a7f3ec41bfb0f0cb24b760e9958f907876a86e | https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41266764773 | 构建、测试编译、unit步骤已观察success；UI当时仍运行，最终结果待核对 |
+| a05402fc7ef68d371d5ff5af802fcc2e360b8da3 | https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41267424498 | 应用构建通过；新冻结schema测试文件漏@testable import，test编译失败，已定位修正 |
 
-当前源码方法清单为133 XCTest、23 XCUITest，含原93/20；数量不是运行结果。新增真实网络测试与URLProtocol故障/fixture解析严格分开。本地Linux没有Swift/Xcode/Simulator；没有本地iOS编译、真实PNG或xcresult。截图manifest在原生UI附件产生前保持空，不能当截图包交付。
+当前源码方法清单为133 XCTest、25 XCUITest，含原93/20；数量不是运行结果。新增真实网络测试与URLProtocol故障/fixture解析严格分开。本地Linux没有Swift/Xcode/Simulator；没有本地iOS编译、真实PNG或xcresult。截图manifest在原生UI附件产生前保持空，不能当截图包交付。
 
 ## 尚未完成的硬门槛
 

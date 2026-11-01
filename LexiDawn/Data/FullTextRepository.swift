@@ -2,6 +2,27 @@ import Foundation
 import SwiftData
 
 extension ContentRepository {
+    func sourceRefreshState(_ sourceID: String) throws -> (success: Date?, error: String?, retryAfter: Date?) {
+        try writer.read { context in
+            let records = try context.fetch(FetchDescriptor<SourceAcquisitionRecord>()).filter { $0.sourceID == sourceID }
+            guard records.count <= 1 else { throw PersistenceError.integrity("来源刷新状态重复") }
+            return (records.first?.lastSuccess, records.first?.lastError, records.first?.retryAfter)
+        }
+    }
+    func recordSourceRefresh(_ sourceID: String, beginning: Bool, errorCode: String? = nil, at now: Date) throws {
+        guard ArticleSourceRegistry.enabled(sourceID) else { throw FullTextImportError.rights }
+        try writer.write {
+            let context = writer.context
+            let state = try context.fetch(FetchDescriptor<SourceAcquisitionRecord>()).first { $0.sourceID == sourceID } ?? SourceAcquisitionRecord(sourceID: sourceID)
+            if state.modelContext == nil { context.insert(state) }
+            if beginning { state.lastAttempt = now }
+            else {
+                state.lastError = errorCode
+                if errorCode == nil { state.lastSuccess = now; state.retryAfter = nil }
+                else { state.retryAfter = now.addingTimeInterval(errorCode == FullTextImportError.rateLimited.rawValue ? 3600 : 60) }
+            }
+        }
+    }
     /// Admission is repeated at the persistence boundary. Candidate fields never reach disk first.
     @discardableResult func importFullText(_ item: FullTextArticleImport, at now: Date) throws -> Bool {
         guard ArticleSourceRegistry.enabled(item.sourceID), item.rights == ArticleSourceRegistry.wikipediaRights else { throw FullTextImportError.rights }

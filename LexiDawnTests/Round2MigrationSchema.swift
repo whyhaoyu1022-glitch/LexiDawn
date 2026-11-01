@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+@testable import LexiDawn
 
 // Frozen stored properties and constructors from remote main 93b4253, before Round 3.
 // Used only to create a real historical disk store, never as production data.
