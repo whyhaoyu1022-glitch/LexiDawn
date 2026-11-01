@@ -148,7 +148,14 @@ enum OfficialArticleAPI {
         case .links: candidates = try ArticleWebPageExtractor.links(data, source: source)
         }
         var count = 0, failures = 0
-        for candidate in candidates.filter({ URL(string: $0.url).map { ArticleWebPageExtractor.accepts($0, source: source) } ?? false }).prefix(3) {
+        let eligible = candidates.compactMap { candidate -> ArticleDiscoveryItem? in
+            guard var components = URLComponents(string: candidate.url) else { return nil }
+            if components.scheme == "http" { components.scheme = "https" }
+            guard let url = components.url, ArticleWebPageExtractor.accepts(url, source: source) else { return nil }
+            return ArticleDiscoveryItem(sourceID: candidate.sourceID, title: candidate.title, url: url.absoluteString, revision: candidate.revision)
+        }
+        print("ARTICLE_DISCOVERY_DIAGNOSTIC sourceID=\(source.id) candidates=\(candidates.count) eligible=\(eligible.count)")
+        for candidate in eligible.prefix(3) {
             try Task.checkCancellation()
             do {
                 guard let url = URL(string: candidate.url) else { throw FullTextImportError.transport }

@@ -47,6 +47,13 @@ final class AppDependencies: ObservableObject {
         try dependencies.learning?.content.migrateRound3(at: Date())
         try dependencies.learning?.content.archiveLegacyIncompleteArticles(at: Date())
         dependencies.learning?.productionNetworking = true
+        #if DEBUG
+        // The XCTest host must not race explicit live integration tests with unrelated home refreshes.
+        // Named testLive methods still use the production adapters and real external services.
+        if Bundle.allBundles.contains(where: { $0.bundleURL.lastPathComponent == "LexiDawnTests.xctest" }) {
+            dependencies.learning?.productionNetworking = false
+        }
+        #endif
         dependencies.learning?.dictionary.enableOnlineProviders()
         if try !dependencies.articleRepository.allArticleIDs().contains(SourceRegistry.rfc.id) { try dependencies.learning?.content.installBundledRFC(at: Date()) }
         return dependencies

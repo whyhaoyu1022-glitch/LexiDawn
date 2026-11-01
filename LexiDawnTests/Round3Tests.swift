@@ -71,6 +71,13 @@ import SwiftData
         XCTAssertEqual(document.blocks.map(\.kind), [.quotation, .listItem, .listItem])
         XCTAssertEqual(document.blocks[1].listOrdinal, 1); XCTAssertEqual(document.blocks[2].listOrdinal, 2)
     }
+    func testWiktionaryRichFieldsStayWithinEnglishAndExamplesAreNotDefinitions() throws {
+        let html = "<h2 id=\"English\">English</h2><h3>Etymology</h3><p>Explicit etymology fixture.</p><h3>Pronunciation</h3><span class=\"IPA\">/bʊk/</span><h3>Noun</h3><p class=\"headword-line\">book (plural books)</p><ol><li>A fixture collection.<ul><li>An explicit fixture example.</li></ul></li></ol><h2 id=\"French\">French</h2><h3>Noun</h3><ol><li>Excluded other language.</li></ol>"
+        let senses = try WiktionaryDictionaryProvider.parseEnglishHTML(html)
+        XCTAssertEqual(senses.count, 1); XCTAssertEqual(senses.first?.en, "A fixture collection.")
+        XCTAssertEqual(senses.first?.ipa, "/bʊk/"); XCTAssertEqual(senses.first?.examples, ["An explicit fixture example."])
+        XCTAssertEqual(senses.first?.forms, ["book (plural books)"]); XCTAssertEqual(senses.first?.etymology, "Explicit etymology fixture.")
+    }
     func testRecommendationUsesPreferencesAndCannotReuseAssignedCandidate() throws {
         let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)
         let prefs = try app.preferencesRepository.load(); prefs.interestTopics = ["科学"]; try app.preferencesRepository.save(prefs)

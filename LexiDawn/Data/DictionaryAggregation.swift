@@ -35,36 +35,51 @@ struct FreeDictionaryProvider: DictionaryProvider {
 }
 struct WiktionaryDictionaryProvider: DictionaryProvider {
     func lookup(_ headword: String) async throws -> [DictionarySense] {
+        let transport = ArticleFetchService()
         let url = URL(string: "https://en.wiktionary.org/api/rest_v1/page/definition/")!.appendingPathComponent(headword)
+        var senses: [DictionarySense] = []
+        do { senses = try Self.parse(await transport.fetch(url, allowedHost: "en.wiktionary.org")) }
+        catch is CancellationError { throw CancellationError() }
+        catch { /* The official Action API is independently attempted below. */ }
         do {
-            let data = try await ArticleFetchService().fetch(url, allowedHost: "en.wiktionary.org")
-            return try Self.parse(data).map { value in
-                var sense = value; sense.line += " · " + URL(string: "https://en.wiktionary.org/wiki/")!.appendingPathComponent(headword).absoluteString; return sense
-            }
-        } catch is CancellationError { throw CancellationError() }
-        catch {
-            // The official Action API remains available when the older REST route is unavailable.
             let api = try OfficialArticleAPI.url(host: "en.wiktionary.org", fields: ["action": "parse", "page": headword, "prop": "text", "format": "json", "formatversion": "2", "disableeditsection": "1"])
-            let data = try await ArticleFetchService().fetch(api, allowedHost: "en.wiktionary.org")
+            let data = try await transport.fetch(api, allowedHost: "en.wiktionary.org")
             struct Response: Decodable { struct Page: Decodable { let text: String }; let parse: Page }
-            return try Self.parseEnglishHTML(JSONDecoder().decode(Response.self, from: data).parse.text).map { value in
-                var sense = value; sense.line += " · " + URL(string: "https://en.wiktionary.org/wiki/")!.appendingPathComponent(headword).absoluteString; return sense
-            }
+            let rich = try Self.parseEnglishHTML(JSONDecoder().decode(Response.self, from: data).parse.text)
+            senses = DictionaryAggregator.merge(senses + rich)
+        } catch is CancellationError { throw CancellationError() }
+        catch { if senses.isEmpty { throw error } }
+        return senses.map { value in
+            var sense = value; sense.line += " · " + URL(string: "https://en.wiktionary.org/wiki/")!.appendingPathComponent(headword).absoluteString; return sense
         }
     }
     static func parseEnglishHTML(_ html: String) throws -> [DictionarySense] {
         guard let marker = html.range(of: "id=\"English\""),
               let start = html.range(of: "<h2", options: .backwards, range: html.startIndex..<marker.lowerBound) else { return [] }
         let end = html.range(of: "<h2", range: marker.upperBound..<html.endIndex)?.lowerBound ?? html.endIndex
-        let document = try ArticleHTMLExtractor.extract(String(html[start.lowerBound..<end]))
+        let englishHTML = String(html[start.lowerBound..<end])
+        let document = try ArticleHTMLExtractor.extract(englishHTML)
+        func sourceFragments(_ pattern: String) throws -> [String] {
+            let regex = try NSRegularExpression(pattern: pattern, options: [.caseInsensitive, .dotMatchesLineSeparators])
+            let ns = englishHTML as NSString
+            return try regex.matches(in: englishHTML, range: NSRange(location: 0, length: ns.length)).map { try ArticleHTMLExtractor.extract(ns.substring(with: $0.range(at: 1))).text }
+        }
+        let ipa = try sourceFragments(#"<span\b[^>]*class=["'][^"']*\bIPA\b[^"']*["'][^>]*>(.*?)</span>"#).first
+        let forms = try sourceFragments(#"<(?:p|span)\b[^>]*class=["'][^"']*(?:headword-line|form-of)[^"']*["'][^>]*>(.*?)</(?:p|span)>"#)
         let parts: Set<String> = ["noun", "verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "interjection", "determiner", "phrase"]
-        var pos: String?, senses: [DictionarySense] = []
+        var pos: String?, section = "", etymology: [String] = [], senses: [DictionarySense] = []
         for block in document.blocks {
             if block.kind == .heading {
-                let heading = block.text.lowercased().trimmingCharacters(in: .whitespaces)
+                section = block.text.lowercased().trimmingCharacters(in: .whitespaces)
+                let heading = section.split(separator: " ").first.map(String.init) ?? section
                 pos = parts.contains(heading) ? heading : nil
-            } else if block.kind == .listItem, let pos {
-                senses.append(DictionarySense(id: "wiktionary|" + fingerprint(pos + block.text), en: block.text, zh: "", line: "English Wiktionary contributors · CC BY-SA 4.0", partOfSpeech: pos, sources: ["Wiktionary"]))
+                if heading == "etymology" { etymology = [] }
+            } else if section.hasPrefix("etymology"), block.kind == .paragraph { etymology.append(block.text) }
+            else if block.kind == .listItem, block.listOrdinal != nil, let pos {
+                senses.append(DictionarySense(id: "wiktionary|" + fingerprint(pos + block.text), en: block.text, zh: "", line: "English Wiktionary contributors · CC BY-SA 4.0", partOfSpeech: pos,
+                    ipa: ipa, forms: forms.isEmpty ? nil : forms, etymology: etymology.isEmpty ? nil : etymology.joined(separator: "\n\n"), sources: ["Wiktionary"]))
+            } else if block.kind == .listItem, block.listOrdinal == nil, pos != nil, !senses.isEmpty {
+                var last = senses.removeLast(); last.examples = (last.examples ?? []) + [block.text]; senses.append(last)
             }
         }
         return senses
@@ -84,7 +99,7 @@ struct WiktionaryDictionaryProvider: DictionaryProvider {
 }
 
 actor DictionaryAggregator {
-    static let versions = ["Free Dictionary API": "api-v2-schema-2", "Wiktionary": "rest-or-action-schema-2"]
+    static let versions = ["Free Dictionary API": "api-v2-schema-2", "Wiktionary": "rest-and-action-schema-3"]
     private let providers: [(String, any DictionaryProvider)]
     init(providers: [(String, any DictionaryProvider)] = [("Free Dictionary API", FreeDictionaryProvider()), ("Wiktionary", WiktionaryDictionaryProvider())]) { self.providers = providers }
     func lookup(_ lemma: String) async -> DictionaryProviderOutcome {

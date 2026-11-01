@@ -86,6 +86,7 @@ enum ArticleWebPageExtractor {
             result.append(.init(sourceID: source.id, title: title, url: url.absoluteString, revision: nil))
             if result.count == 20 { break }
         }
+        print("ARTICLE_DISCOVERY_DIAGNOSTIC sourceID=\(source.id) code=link-scan nodes=\((try? elements(page).count) ?? 0) articles=\(result.count)")
         return result
     }
     static func accepts(_ url: URL, source: PublisherArticleSource) -> Bool {
@@ -94,7 +95,10 @@ enum ArticleWebPageExtractor {
     }
     static func extract(_ data: Data, candidate: ArticleDiscoveryItem, source: PublisherArticleSource) throws -> Result {
         guard data.count <= 4_000_000, let html = String(data: data, encoding: .utf8),
-              html.range(of: "</html", options: .caseInsensitive) != nil else { throw FullTextImportError.incomplete }
+              html.range(of: "</html", options: .caseInsensitive) != nil else {
+            print("ARTICLE_EXTRACTION_DIAGNOSTIC sourceID=\(source.id) code=missing-complete-html bytes=\(data.count)")
+            throw FullTextImportError.incomplete
+        }
         let (page, articles) = try cleanPage(html)
         let lower = page.lowercased()
         guard !["verify you are human", "complete the captcha", "enable javascript and cookies to continue", "subscribe to continue reading", "sign in to continue reading", "please enable js and disable any ad blocker"].contains(where: lower.contains) else { throw FullTextImportError.incomplete }
@@ -106,7 +110,7 @@ enum ArticleWebPageExtractor {
         var selected = Set<Int>(), blocks: [ArticleDocument.Block] = []
         for (index, node) in nodes.enumerated() {
             let values = [node.attributes["class"], node.attributes["id"], node.attributes["data-component"], node.attributes["data-testid"], node.attributes["data-gu-name"], node.attributes["itemprop"]].compactMap { $0 }
-            let matches = values.contains { value in source.bodyMarkers.contains { marker in value.split(whereSeparator: \.isWhitespace).contains { String($0).caseInsensitiveCompare(marker) == .orderedSame || (marker.count > 4 && $0.lowercased().hasPrefix(marker.lowercased() + "__")) } } }
+            let matches = (source.id == "nasa" && node.name == "article") || node.attributes["itemprop"] == "articleBody" || values.contains { value in source.bodyMarkers.contains { marker in value.split(whereSeparator: \.isWhitespace).contains { String($0).caseInsensitiveCompare(marker) == .orderedSame || (marker.count > 4 && $0.lowercased().hasPrefix(marker.lowercased() + "__")) } } }
             guard matches else { continue }
             var parent = node.parent, nested = false
             while let current = parent { if selected.contains(current) { nested = true; break }; parent = nodes[current].parent }
@@ -123,6 +127,7 @@ enum ArticleWebPageExtractor {
             if jsonDocument.text.count > document.text.count { document = jsonDocument }
         }
         let words = document.text.split(whereSeparator: \.isWhitespace).count
+        print("ARTICLE_EXTRACTION_DIAGNOSTIC sourceID=\(source.id) code=body-check roots=\(selected.count) blocks=\(document.blocks.count) words=\(words) jsonArticles=\(articles.count)")
         guard words >= 80, document.blocks.count >= 2 else { throw FullTextImportError.incomplete }
         if let expected = article?["wordCount"] as? Int, expected > 0, words < Int(Double(expected) * 0.90) { throw FullTextImportError.truncated }
         let title = article?["headline"] as? String ?? metadata["og:title"] ?? candidate.title

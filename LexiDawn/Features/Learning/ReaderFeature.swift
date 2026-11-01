@@ -204,6 +204,7 @@ struct WordLookupSheet: View {
     var body: some View {
         NavigationStack {
             List {
+                if model.loading { ProgressView("正在查询词典…").accessibilityIdentifier("dictionary-loading") }
                 Section { Text(model.token.surface).font(.largeTitle.bold()); Text("标准词形：\(EnglishTokenizer.lemma(model.token.surface))"); Text(model.token.sentence).font(.body.italic()) }
                 if model.depth < 3 {
                     let phrases = EnglishPhraseRecognizer.phrases(around: model.token.surface, sentence: model.token.sentence)
@@ -227,7 +228,6 @@ struct WordLookupSheet: View {
                 #if DEBUG && targetEnvironment(simulator)
                 if ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"]?.hasPrefix("round3-dictionary-") == true { Text("明确测试夹具：词典 Provider 状态注入，非生产词典数据。").font(.caption).accessibilityIdentifier("dictionary-fixture-label") }
                 #endif
-                if model.loading { ProgressView("正在查询词典…").accessibilityIdentifier("dictionary-loading") }
                 if let result = model.result {
                     DictionaryResultContent(result: result)
                     NavigationLink("查看详细释义") { DictionaryDetailView(result: result, context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth) }
@@ -259,6 +259,7 @@ struct DictionaryResultContent: View {
                     ForEach(sense.examples ?? [], id: \.self) { Text($0).italic() }
                     if let synonyms = sense.synonyms, !synonyms.isEmpty { Text("同义词：" + synonyms.joined(separator: " · ")).font(.footnote) }
                     if let antonyms = sense.antonyms, !antonyms.isEmpty { Text("反义词：" + antonyms.joined(separator: " · ")).font(.footnote) }
+                    if let forms = sense.forms, !forms.isEmpty { Text("词形原文：" + forms.joined(separator: " · ")).font(.footnote) }
                     if let etymology = sense.etymology { Text("词源：" + etymology).font(.footnote) }
                     Text((sense.sources ?? ["CC-CEDICT reverse index"]).joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
                 }.padding(.vertical, 4)
@@ -290,6 +291,15 @@ struct DictionaryDetailView: View {
                 if let error { Text(error).foregroundStyle(.red) }
             }
             DictionaryResultContent(result: result)
+            let synonyms = Array(Set(result.senses.flatMap { $0.synonyms ?? [] })).filter { $0.lowercased() != result.headword.lowercased() }.sorted()
+            if !synonyms.isEmpty {
+                Section("同义词对照") {
+                    Text("对照真实词典义项、词性和例句，判断当前语境中的差别。").font(.caption)
+                    ForEach(synonyms, id: \.self) { synonym in
+                        NavigationLink(result.headword + " / " + synonym) { DictionaryComparisonView(original: result, synonym: synonym, context: context, learning: learning) }
+                    }
+                }
+            }
             Section("可点击的英文释义") {
                 ForEach(result.senses) { sense in english(sense.en); ForEach(sense.examples ?? [], id: \.self) { english($0) } }
             }
@@ -336,3 +346,36 @@ struct DictionaryDetailView: View {
     }
 }
 
+
+@MainActor final class DictionaryComparisonModel: ObservableObject {
+    @Published var result: DictionaryResult?
+    @Published var error: String?
+    @Published var loading = false
+    private var generation = UUID()
+    func load(_ word: String, context: String, learning: LearningServices) async {
+        let current = UUID(); generation = current; loading = true; error = nil
+        defer { if generation == current { loading = false } }
+        do {
+            let value = try await learning.dictionary.lookup(word, context: context)
+            guard generation == current, !Task.isCancelled else { return }; result = value
+        } catch is CancellationError { }
+        catch { if generation == current { self.error = error.localizedDescription } }
+    }
+}
+struct DictionaryComparisonView: View {
+    let original: DictionaryResult
+    let synonym: String, context: String
+    @ObservedObject var learning: LearningServices
+    @StateObject private var model = DictionaryComparisonModel()
+    var body: some View {
+        List {
+            Section("当前文章语境") { Text(context) }
+            Text(original.headword).font(.title2.bold())
+            DictionaryResultContent(result: original)
+            Text(synonym).font(.title2.bold())
+            if model.loading { ProgressView("正在查询对照词…") }
+            if let result = model.result { DictionaryResultContent(result: result) }
+            if let error = model.error { Text(error).foregroundStyle(.red); Button("重试对照查词") { Task { await model.load(synonym, context: context, learning: learning) } } }
+        }.navigationTitle("同义词对照").task { await model.load(synonym, context: context, learning: learning) }
+    }
+}

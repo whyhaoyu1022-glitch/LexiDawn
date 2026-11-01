@@ -93,3 +93,6 @@ Round 3继续：原生小屏截图已逐张检查R3-R02/R3-M06/R3-R08，横屏�
 
 
 新增真实Repository保存故障UI证据：DEBUG Simulator仅在明确round3-storage-vocabulary场景对下一次实际save抛错，验证没有成功状态、无撤销入口，重试成功后在持久生词本出现；Release不包含该配置。CI UI步骤在测试编译成功后独立执行，即使网络单元测试失败仍采集UI与xcresult，整个job仍保留失败结论。当前源码146 XCTest、31 XCUITest，均待对应最终SHA执行。
+
+
+继续修复公开来源：RSS候选http仅升级为同站https后再抓取，绝不降级HTTPS；添加仅来源ID/计数/诊断码的发现与提取诊断，无候选URL、标题或正文。NASA补充article语义根，仍要求完整闭合和全文验证。Wiktionary按英文节补充原始IPA/词形/词源/例句，例句不作为独立义项，缓存schema升级3；提供同义词真实义项/例句对照页面及独立加载失败重试，不生成词义解释。新增确定性英文节测试。当前源码147单元/31 UI，待新SHA验证。

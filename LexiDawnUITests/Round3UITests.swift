@@ -216,6 +216,9 @@ final class Round3UITests: XCTestCase {
             else if mode == "all-failed" { XCTAssertTrue(app.staticTexts["词典来源暂时不可用；本地没有缓存，请联网后重试。"].waitForExistence(timeout: 15)) }
             else if mode == "empty" { XCTAssertTrue(app.staticTexts["暂无可验证的释义。可以继续阅读，或在生词本添加明确标记的个人释义。"].waitForExistence(timeout: 15)) }
             else {
+                let providers = app.staticTexts["dictionary-providers"]
+                for _ in 0..<5 { if providers.exists { break }; app.swipeUp() }
+                XCTAssertTrue(providers.waitForExistence(timeout: 15))
                 let detail = app.buttons["查看详细释义"]
                 for _ in 0..<5 { if detail.isHittable { break }; app.swipeUp() }
                 XCTAssertTrue(detail.waitForExistence(timeout: 15)); detail.tap()
