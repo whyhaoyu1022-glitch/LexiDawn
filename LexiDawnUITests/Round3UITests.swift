@@ -291,7 +291,10 @@ final class Round3UITests: XCTestCase {
         let error = app.staticTexts["明确故障注入：数据库保存失败，未加入生词本。"]
         XCTAssertTrue(error.waitForExistence(timeout: 10)); XCTAssertFalse(app.buttons["undo-word"].exists)
         capture("R3-V01", app: app, feature: "vocabulary", state: "save-failed-no-success", origin: "explicit-one-shot-Repository-save-fault-bundled-RFC")
-        app.buttons["重试保存生词"].tap(); XCTAssertTrue(app.buttons["undo-word"].waitForExistence(timeout: 10))
+        app.buttons["重试保存生词"].tap()
+        let undo = app.buttons["undo-word"]
+        for _ in 0..<5 { if undo.exists && undo.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(undo.waitForExistence(timeout: 10)); XCTAssertTrue(undo.isHittable); XCTAssertFalse(error.exists)
         capture("R3-V02", app: app, feature: "vocabulary", state: "safe-retry-save-success", origin: "explicit-one-shot-Repository-save-fault-bundled-RFC")
         app.buttons["close-word"].tap(); app.buttons["返回今日"].tap(); app.tabBars.buttons["词汇"].tap()
         XCTAssertTrue(app.buttons["vocabulary-entry-internet"].waitForExistence(timeout: 10))

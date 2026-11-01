@@ -77,7 +77,7 @@ struct VocabularyDetailView: View {
             Section { Button("手动移除词条", role: .destructive) { removeConfirmation = true } }
             if let error { Text(error).foregroundStyle(.red) }
             if let dictionaryError { Text(dictionaryError).foregroundStyle(.red); Button("重试词典") { Task { await lookup() } } }
-        }.scrollDismissesKeyboard(.interactively).navigationTitle(item.lemma)
+        }.scrollDismissesKeyboard(.interactively).navigationTitle(item.lemma).navigationBarTitleDisplayMode(.inline)
             .onChange(of: meaning) { _, _ in saved = false }.onChange(of: notes) { _, _ in saved = false }
             .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { editing = false } } }
             .task {

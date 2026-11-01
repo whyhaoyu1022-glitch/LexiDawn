@@ -252,7 +252,7 @@ struct WordLookupSheet: View {
                 }
             }
             .scrollContentBackground(.hidden).background(sheetBackground)
-            .navigationTitle("查词").toolbarBackground(sheetBackground, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar).toolbar {
+            .navigationTitle("查词").navigationBarTitleDisplayMode(.inline).toolbarBackground(sheetBackground, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar).toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if let result = model.result {
                         NavigationLink { DictionaryDetailView(result: result, context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth) }
@@ -341,7 +341,7 @@ struct DictionaryDetailView: View {
                 Text("原始义项")
                 ForEach(result.senses) { Text($0.line).font(.caption) }
             }
-        }.navigationTitle("详细释义").task { refresh() }.onReceive(learning.$revision) { _ in refresh() }
+        }.navigationTitle("详细释义").navigationBarTitleDisplayMode(.inline).task { refresh() }.onReceive(learning.$revision) { _ in refresh() }
             .sheet(item: $selection) { selected in WordLookupSheet(model: selected) }
             .alert("确认移除词条", isPresented: $removeConfirmation) {
                 Button("取消", role: .cancel) { }
@@ -406,6 +406,6 @@ struct DictionaryComparisonView: View {
             if model.loading { ProgressView("正在查询对照词…") }
             if let result = model.result { DictionaryResultContent(result: result) }
             if let error = model.error { Text(error).foregroundStyle(.red); Button("重试对照查词") { Task { await model.load(synonym, context: context, learning: learning) } } }
-        }.navigationTitle("同义词对照").task { await model.load(synonym, context: context, learning: learning) }
+        }.navigationTitle("同义词对照").navigationBarTitleDisplayMode(.inline).task { await model.load(synonym, context: context, learning: learning) }
     }
 }
