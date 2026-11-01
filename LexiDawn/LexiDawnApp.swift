@@ -98,10 +98,14 @@ final class AppStartup: ObservableObject {
                 }
                 return dependencies
             }
-            if scenario == "round3-storage-vocabulary", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
+            if ["round3-storage-vocabulary", "round3-storage-note"].contains(scenario), let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
                 let url = FileManager.default.temporaryDirectory.appendingPathComponent("round3-storage-\(storeID.uuidString).store")
                 let dependencies = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
-                if let learning = dependencies.learning { try learning.content.installBundledRFC(at: Date()); learning.injectVocabularySaveFailureForEvidence() }
+                if let learning = dependencies.learning {
+                    try learning.content.installBundledRFC(at: Date())
+                    if scenario == "round3-storage-note" { learning.injectVocabularySaveFailureForEvidence(allowSuccessfulWrites: 2, message: "明确故障注入：释义与笔记保存失败，草稿已保留。") }
+                    else { learning.injectVocabularySaveFailureForEvidence() }
+                }
                 return dependencies
             }
             if scenario.hasPrefix("round3-dictionary-"), let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {

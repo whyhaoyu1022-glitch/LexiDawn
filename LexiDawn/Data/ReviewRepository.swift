@@ -51,6 +51,7 @@ struct ReviewSessionView: Equatable {
     }
     func pendingCount(at now: Date) throws -> Int { try writer.read { try eligible(in: $0, at: now).count } }
     func prepare(cycleID: UUID, dailyLimit: Int, pairCount: Int, clozeCount: Int, at now: Date) async throws -> ReviewSessionView? {
+        try snapshotLegacyContexts(cycleID: cycleID)
         if let saved = try session(cycleID: cycleID) { return saved }
         let cycle = try writer.read { try cycleInContext(cycleID, context: $0) }
         if cycle.reviewEvidence != nil { return nil }
@@ -86,13 +87,18 @@ struct ReviewSessionView: Equatable {
             }
             let session = ReviewSessionRecord(cycleID: cycleID, entries: chosen.map(\.entryID), at: max(now, cycle.createdAtUTC), limit: dailyLimit)
             context.insert(session)
+            let sourceContexts = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).sorted { ($0.createdAt, $0.contextID) < ($1.createdAt, $1.contextID) }
             for (position, value) in resolved.enumerated() {
                 let (entry, meaning, senseID) = value
                 context.insert(ReviewExerciseRecord(sessionID: session.sessionID, entryID: entry.entryID, stage: "matching", position: position,
                     prompt: entry.lemma, answer: meaning, senseID: senseID))
                 if position < clozeCount {
-                    context.insert(ReviewExerciseRecord(sessionID: session.sessionID, entryID: entry.entryID, stage: "cloze", position: position,
-                        prompt: BasicReviewScheduler.mask(entry.lemma), answer: entry.lemma, senseID: senseID))
+                    let source = sourceContexts.first { $0.entryID == entry.entryID }
+                    let projection = ClozeContext.make(lemma: entry.lemma, surfaces: source.map { [$0.surface] + entry.surfaceForms } ?? entry.surfaceForms, sentence: source?.sentence)
+                    let question = ReviewExerciseRecord(sessionID: session.sessionID, entryID: entry.entryID, stage: "cloze", position: position,
+                        prompt: BasicReviewScheduler.mask(projection.answer), answer: projection.answer, senseID: senseID)
+                    question.sourceContext = projection.sentence
+                    context.insert(question)
                 }
             }
         }
@@ -104,15 +110,31 @@ struct ReviewSessionView: Equatable {
             guard records.count <= 1 else { throw PersistenceError.integrity("一个周期存在多个必做复习会话") }
             guard let session = records.first else { return nil }
             let exercises = try validatedExercises(session, context: context)
-            let contexts = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>())
             func questions(_ stage: String) -> [ReviewQuestion] {
                 exercises.filter { $0.stage == stage }.sorted { $0.position < $1.position }.map { exercise in
                     ReviewQuestion(id: exercise.exerciseID, entryID: exercise.entryID, stage: stage, prompt: exercise.prompt, answer: exercise.answer, senseID: exercise.senseID,
                                    attempts: exercise.attempts, usedHint: exercise.usedHint, completed: exercise.completedAt != nil,
-                                   context: contexts.first(where: { $0.entryID == exercise.entryID })?.sentence)
+                                   context: exercise.sourceContext)
                 }
             }
             return ReviewSessionView(id: session.sessionID, matching: questions("matching"), cloze: questions("cloze"), completedAt: session.completedAt)
+        }
+    }
+    /// Freeze legacy context once without changing answers, attempts, completion or scheduling.
+    private func snapshotLegacyContexts(cycleID: UUID) throws {
+        let needed = try writer.read { context in
+            let ids = Set(try context.fetch(FetchDescriptor<ReviewSessionRecord>()).filter { $0.cycleID == cycleID.uuidString }.map(\.sessionID))
+            return try context.fetch(FetchDescriptor<ReviewExerciseRecord>()).contains { ids.contains($0.sessionID) && $0.contextSnapshotVersion == nil }
+        }
+        guard needed else { return }
+        try writer.write {
+            let context = writer.context
+            let ids = Set(try context.fetch(FetchDescriptor<ReviewSessionRecord>()).filter { $0.cycleID == cycleID.uuidString }.map(\.sessionID))
+            let sources = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).sorted { ($0.createdAt, $0.contextID) < ($1.createdAt, $1.contextID) }
+            for question in try context.fetch(FetchDescriptor<ReviewExerciseRecord>()) where ids.contains(question.sessionID) && question.contextSnapshotVersion == nil {
+                question.sourceContext = question.stage == "cloze" ? sources.filter { $0.entryID == question.entryID }.compactMap { ClozeContext.safeSentence($0.sentence, answer: question.answer) }.first : nil
+                question.contextSnapshotVersion = 1
+            }
         }
     }
     @discardableResult func submit(cycleID: UUID, questionID: String, answer: String, reveal: Bool = false, hint: Bool = false, at now: Date) throws -> Bool {

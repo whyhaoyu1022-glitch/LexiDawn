@@ -5,6 +5,36 @@ import SwiftData
 @MainActor final class Round3Tests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 1793534400)
     private var webBody: String { (1...3).map { "<p>Paragraph \($0) is explicit original fixture writing. Science helps people understand nature and share discoveries. Every sentence in this complete document is preserved for a deterministic parser test, including the final sentence.</p>" }.joined() }
+    func testContextSpellingKeepsIrregularGrammarAndMasksEntirePhrase() throws {
+        let word = ClozeContext.make(lemma: "take", surfaces: ["taken"], sentence: "I took what I had taken.")
+        XCTAssertEqual(word.answer, "taken"); XCTAssertEqual(ClozeContext.mask(try XCTUnwrap(word.sentence), answer: word.answer), "I took what I had _____.")
+        let phrase = ClozeContext.make(lemma: "play a role in", surfaces: ["played a role in"], sentence: "Careful reviews played a role in learning.")
+        XCTAssertEqual(phrase.answer, "played a role in")
+        XCTAssertEqual(ClozeContext.mask(try XCTUnwrap(phrase.sentence), answer: phrase.answer), "Careful reviews ______ _ ____ __ learning.")
+        XCTAssertNil(ClozeContext.make(lemma: "take", surfaces: ["took"], sentence: "No verified target occurs here.").sentence)
+    }
+    func testReviewContextIsFrozenAndLegacyBackfillKeepsAnswerAttemptsAndHint() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let id = try learning.content.importArticle(.init(title: "Explicit original context fixture", body: "I took a book home.", source: "Fixture author", rightsConfirmed: true), at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected real cycle assignment") }
+        let addition = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "took", range: NSRange(location: 2, length: 4), sentence: "I took a book home."), articleID: id, autoAdd: true, at: now))
+        try learning.vocabulary.annotate(entryID: addition.entryID, meaning: "拿走（明确个人释义）", notes: "", at: now)
+        let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        let original = try XCTUnwrap(prepared)
+        XCTAssertEqual(original.cloze.first?.answer, "took"); XCTAssertEqual(original.cloze.first?.context, "I took a book home.")
+        let context = ModelContext(app.modelContainer), source = try XCTUnwrap(context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).first)
+        source.sentence = "This later source change cannot rewrite a saved question."; try context.save()
+        XCTAssertEqual(try learning.review.session(cycleID: cycle.cycleID)?.cloze.first?.context, "I took a book home.")
+        try learning.review.submit(cycleID: cycle.cycleID, questionID: original.matching[0].id, answer: original.matching[0].senseID, at: now)
+        try learning.review.submit(cycleID: cycle.cycleID, questionID: original.cloze[0].id, answer: "wrong", at: now)
+        try learning.review.submit(cycleID: cycle.cycleID, questionID: original.cloze[0].id, answer: "", hint: true, at: now)
+        let legacyContext = ModelContext(app.modelContainer), legacy = try XCTUnwrap(legacyContext.fetch(FetchDescriptor<ReviewExerciseRecord>()).first { $0.stage == "cloze" })
+        legacy.answer = "take"; legacy.prompt = "ta__"; legacy.sourceContext = nil; legacy.contextSnapshotVersion = nil; try legacyContext.save()
+        let resumed = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 99, pairCount: 9, clozeCount: 9, at: now)
+        let restored = try XCTUnwrap(resumed)
+        XCTAssertEqual(restored.cloze[0].answer, "take"); XCTAssertEqual(restored.cloze[0].attempts, 1); XCTAssertTrue(restored.cloze[0].usedHint)
+        XCTAssertNil(restored.cloze[0].context); XCTAssertEqual(restored.id, original.id)
+    }
     func testPersonalSourceInstructionNeverMasqueradesAsPublisherLicense() throws {
         XCTAssertFalse(ArticleSourceRegistry.enabled("bbc")); XCTAssertTrue(ArticleSourceRegistry.canAttempt("bbc"))
         let proof = try XCTUnwrap(ArticleSourceRegistry.evidence(for: "bbc"))

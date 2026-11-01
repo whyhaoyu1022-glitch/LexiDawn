@@ -73,11 +73,7 @@ struct ReviewPracticeContent: View {
         }
     }
     private func maskedContext(_ sentence: String, answer: String) -> String {
-        var value = sentence
-        for token in EnglishTokenizer.tokens(in: sentence).reversed() where EnglishTokenizer.lemma(token.surface) == EnglishTokenizer.lemma(answer) {
-            if let range = Range(token.range, in: value) { value.replaceSubrange(range, with: String(repeating: "_", count: token.surface.count)) }
-        }
-        return value
+        ClozeContext.mask(sentence, answer: answer)
     }
     private func load() async {
         let generation = UUID(); loadGeneration = generation
@@ -101,6 +97,7 @@ struct ReviewPracticeContent: View {
     }
     @discardableResult private func submit(questionID: String, answer: String, reveal: Bool = false, hint: Bool = false) -> Bool {
         guard let cycleID else { return false }
+        feedback = nil
         do {
             let correct = try learning.review.submit(cycleID: cycleID, questionID: questionID, answer: answer, reveal: reveal, hint: hint, at: Date())
             session = try learning.review.session(cycleID: cycleID)

@@ -34,6 +34,26 @@ private final class Round3FaultURLProtocol: URLProtocol, @unchecked Sendable {
         do { _ = try await client(status: 403).fetch(URL(string: "https://fixture.invalid/api")!, allowedHost: "fixture.invalid"); XCTFail("403 must fail") }
         catch { XCTAssertEqual(error.localizedDescription, FullTextImportError.transport.localizedDescription); XCTAssertFalse(error.localizedDescription.contains("fixture.invalid")) }
     }
+    func testInjectedDictionary404IsARevalidatedEmptyResultNotFabricatedDefinition() async throws {
+        let provider = FreeDictionaryProvider(fetcher: client(status: 404))
+        let result = try await provider.lookup("explicit-unknown-fixture")
+        XCTAssertTrue(result.isEmpty)
+    }
+    func testConcurrentRefreshJoinsOneOperationAndReportsSameCommittedImport() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)
+        Round3FaultURLProtocol.handler = { request in
+            let action = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "action" }?.value
+            let object: [String: Any] = action == "query" ? ["query": ["pages": [["title": "Explicit concurrent fixture", "fullurl": "https://en.wikipedia.org/wiki/Explicit_concurrent_fixture", "lastrevid": 1]]]] : ["parse": ["revid": 1, "text": "<div class='mw-parser-output'><p>Complete original fixture writing for a concurrent import test.</p><p>The final paragraph remains preserved.</p></div>"]]
+            return (HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"])!, try JSONSerialization.data(withJSONObject: object))
+        }
+        let configuration = URLSessionConfiguration.ephemeral; configuration.protocolClasses = [Round3FaultURLProtocol.self]
+        let service = ArticleDiscoveryService(content: content, fetcher: ArticleFetchService(configuration: configuration), sourceIDs: ["wikipedia"])
+        async let first = service.refresh(force: true)
+        async let second = service.refresh(force: true)
+        let values = try await (first, second)
+        XCTAssertEqual(values.0, 1); XCTAssertEqual(values.1, 1)
+        XCTAssertEqual(try content.library().count, 1)
+    }
     func testInjected429RetryIsBoundedAndStillFails() async {
         let transport = client(status: 429)
         do { _ = try await transport.fetch(URL(string: "https://fixture.invalid/api")!, allowedHost: "fixture.invalid"); XCTFail("429 must not return success") }

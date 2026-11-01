@@ -77,7 +77,8 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["英文阅读"].waitForExistence(timeout: 10))
         let body = app.otherElements["reader-body"].firstMatch; XCTAssertTrue(body.exists); body.swipeUp()
         let token = visibleWord(in: app)
-        XCTAssertTrue(token.waitForExistence(timeout: 10)); XCTAssertTrue(token.isHittable); token.tap()
+        XCTAssertTrue(token.waitForExistence(timeout: 10)); XCTAssertTrue(token.isHittable)
+        let actualSurface = token.label; XCTAssertFalse(actualSurface.isEmpty); token.tap()
         XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10))
         capture("R3-C03", app: app, feature: "dictionary", state: "live-word-lookup-new-vocabulary", origin: origin)
         app.buttons["close-word"].tap(); app.buttons["返回今日"].tap(); app.tabBars.buttons["词汇"].tap()
@@ -100,7 +101,8 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(meaning.waitForExistence(timeout: 10)); meaning.tap()
         let spelling = app.textFields["cloze-answer"]; XCTAssertTrue(spelling.waitForExistence(timeout: 10))
         capture("R3-C05", app: app, feature: "review", state: "live-import-derived-spelling", origin: origin)
-        spelling.tap(); spelling.typeText(lemma); app.buttons["submit-spelling"].tap()
+        XCTAssertTrue(app.staticTexts["cloze-context"].label.contains("_"))
+        spelling.tap(); spelling.typeText(actualSurface); app.buttons["submit-spelling"].tap()
         XCTAssertTrue(app.staticTexts["本次复习已保存"].waitForExistence(timeout: 10))
         capture("R3-C06", app: app, feature: "review", state: "review-and-fsrs-saved", origin: origin)
         app.tabBars.buttons["今日"].tap(); XCTAssertTrue(app.staticTexts["cycle-completed"].waitForExistence(timeout: 10))
@@ -118,7 +120,7 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["文章库与历史"].waitForExistence(timeout: 10))
     }
     func testInjectedImportFailureMatrixDiscardsEveryCandidate() throws {
-        let cases = [("offline", "R3-A10"), ("403", "R3-A11"), ("429", "R3-A12"), ("503", "R3-A13"), ("rights", "R3-A14"), ("parse", "R3-A15"), ("truncated", "R3-A16"), ("summary", "R3-A17")]
+        let cases = [("offline", "R3-A10"), ("403", "R3-A11"), ("429", "R3-A12"), ("503", "R3-A13"), ("rights", "R3-A14"), ("parse", "R3-A15"), ("truncated", "R3-A16"), ("summary", "R3-A17"), ("404", "R3-A22")]
         for (mode, id) in cases {
             let app = launch("round3-import-" + mode); openLibrary(app)
             app.buttons["发现完整文章"].tap()
@@ -353,6 +355,29 @@ final class Round3UITests: XCTestCase {
         app.terminate(); app.launch(); app.tabBars.buttons["复习"].tap()
         XCTAssertTrue(hard.waitForExistence(timeout: 10)); XCTAssertTrue(good.exists)
         capture("R3-G02", app: app, feature: "review", state: "persisted-grade-and-schedule-after-restart", origin: "explicit-review-seed-real-RFC-and-personal-meanings")
+    }
+    func testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel() throws {
+        let app = launch("round3-storage-note")
+        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
+        XCTAssertTrue(app.buttons["word-Internet"].firstMatch.waitForExistence(timeout: 10)); app.buttons["word-Internet"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10)); app.buttons["close-word"].tap(); app.buttons["返回今日"].tap(); app.tabBars.buttons["词汇"].tap()
+        let entry = app.buttons["vocabulary-entry-internet"]; XCTAssertTrue(entry.waitForExistence(timeout: 10)); entry.tap()
+        let meaning = app.textFields["personal-meaning"]; XCTAssertTrue(meaning.waitForExistence(timeout: 10)); meaning.tap(); meaning.typeText("明确的个人释义")
+        app.buttons["保存个人释义与笔记"].tap(); XCTAssertTrue(app.staticTexts["已保存"].waitForExistence(timeout: 10))
+        capture("R3-V04", app: app, feature: "vocabulary", state: "initial-personal-meaning-save-success", origin: "explicit-Repository-third-save-fault-original-note-draft")
+        let notes = app.descendants(matching: .any)["vocabulary-notes"].firstMatch
+        XCTAssertTrue(notes.exists); notes.tap(); notes.typeText("Second note draft")
+        if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+        XCTAssertFalse(app.staticTexts["已保存"].exists); app.buttons["保存个人释义与笔记"].tap()
+        XCTAssertTrue(app.staticTexts["明确故障注入：释义与笔记保存失败，草稿已保留。"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["已保存"].exists); XCTAssertTrue((notes.value as? String)?.contains("Second note draft") == true)
+        capture("R3-V05", app: app, feature: "vocabulary", state: "note-save-failed-draft-kept-no-stale-success", origin: "explicit-Repository-third-save-fault-original-note-draft")
+        app.buttons["重试保存释义与笔记"].tap(); XCTAssertTrue(app.staticTexts["已保存"].waitForExistence(timeout: 10))
+        capture("R3-V06", app: app, feature: "vocabulary", state: "note-safe-retry-success", origin: "explicit-Repository-third-save-fault-original-note-draft")
+        app.terminate(); app.launch(); app.tabBars.buttons["词汇"].tap(); XCTAssertTrue(entry.waitForExistence(timeout: 10)); entry.tap()
+        let persisted = NSPredicate(format: "value CONTAINS %@", "Second note draft")
+        expectation(for: persisted, evaluatedWith: notes); waitForExpectations(timeout: 10)
+        capture("R3-V07", app: app, feature: "vocabulary", state: "note-retry-result-after-process-restart", origin: "explicit-Repository-third-save-fault-original-note-draft")
     }
     /// Scrolling can retain offscreen accessibility elements. Exercise a word in the visible viewport.
     private func visibleWord(in app: XCUIApplication) -> XCUIElement {

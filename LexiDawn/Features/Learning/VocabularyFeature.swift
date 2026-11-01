@@ -42,6 +42,8 @@ struct VocabularyDetailView: View {
     @State private var result: DictionaryResult?
     @State private var error: String?
     @State private var saved = false
+    @State private var saveError: String?
+    @State private var dictionaryError: String?
     @State private var removeConfirmation = false
     @State private var source: ArticleLibraryItem?
     @FocusState private var editing: Bool
@@ -51,11 +53,9 @@ struct VocabularyDetailView: View {
             Section { Text(item.lemma).font(.largeTitle.bold()); Text(item.surfaces.joined(separator: " · ")) }
             Section("你的释义与笔记") {
                 TextField("个人中文释义（非词典原文）", text: $meaning).focused($editing).submitLabel(.done).onSubmit { editing = false }.accessibilityIdentifier("personal-meaning")
-                TextField("笔记", text: $notes, axis: .vertical).focused($editing)
-                Button("保存个人释义与笔记") {
-                    do { try learning.vocabulary.annotate(entryID: item.id, meaning: meaning, notes: notes, at: Date()); saved = true; editing = false; learning.changed(); error = nil }
-                    catch { self.error = error.localizedDescription }
-                }
+                TextField("笔记", text: $notes, axis: .vertical).focused($editing).accessibilityIdentifier("vocabulary-notes")
+                Button("保存个人释义与笔记", action: save)
+                if let saveError { Text(saveError).foregroundStyle(.red); Button("重试保存释义与笔记", action: save) }
                 if saved { Label("已保存", systemImage: "checkmark.circle") }
                 Text("来源没有可用中文对应词时，可填写自己的释义用于复习。个人内容与开放词典数据明确区分。").font(.caption).foregroundStyle(.secondary)
             }
@@ -75,8 +75,10 @@ struct VocabularyDetailView: View {
                 }
             }
             Section { Button("手动移除词条", role: .destructive) { removeConfirmation = true } }
-            if let error { Text(error).foregroundStyle(.red); Button("重试词典") { Task { await lookup() } } }
+            if let error { Text(error).foregroundStyle(.red) }
+            if let dictionaryError { Text(dictionaryError).foregroundStyle(.red); Button("重试词典") { Task { await lookup() } } }
         }.scrollDismissesKeyboard(.interactively).navigationTitle(item.lemma)
+            .onChange(of: meaning) { _, _ in saved = false }.onChange(of: notes) { _, _ in saved = false }
             .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { editing = false } } }
             .task {
                 meaning = item.meaning ?? ""; notes = item.notes ?? ""
@@ -88,6 +90,11 @@ struct VocabularyDetailView: View {
                 Button("确认移除", role: .destructive) { do { try learning.vocabulary.remove(entryID: item.id, at: Date()); learning.changed(); dismiss() } catch { self.error = error.localizedDescription } }
             } message: { Text("仅由本次明确操作移除，复习状态和历史日志保留。") }
     }
-    private func lookup() async { do { result = try await learning.dictionary.lookup(item.lemma); error = nil } catch { self.error = error.localizedDescription } }
+    private func save() {
+        saved = false
+        do { try learning.vocabulary.annotate(entryID: item.id, meaning: meaning, notes: notes, at: Date()); saved = true; saveError = nil; editing = false; learning.changed() }
+        catch { saveError = error.localizedDescription }
+    }
+    private func lookup() async { do { result = try await learning.dictionary.lookup(item.lemma); dictionaryError = nil } catch { self.dictionaryError = error.localizedDescription } }
 }
 

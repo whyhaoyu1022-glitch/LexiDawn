@@ -161,8 +161,11 @@ import SwiftData
     var revealed: Bool
     var firstTryCorrect: Bool
     var completedAt: Date?
+    var sourceContext: String?
+    var contextSnapshotVersion: Int?
     init(sessionID: String, entryID: String, stage: String, position: Int, prompt: String, answer: String, senseID: String) {
         exerciseID = "\(sessionID)|\(stage)|\(entryID)"; self.sessionID = sessionID; self.entryID = entryID
+        sourceContext = nil; contextSnapshotVersion = 1
         self.stage = stage; self.position = position; self.prompt = prompt; self.answer = answer; self.senseID = senseID
         attempts = 0; usedHint = false; revealed = false; firstTryCorrect = false
     }

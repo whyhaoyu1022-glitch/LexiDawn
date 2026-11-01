@@ -8,10 +8,21 @@ struct DictionaryProviderOutcome: Sendable {
     let successful: [String]
 }
 struct FreeDictionaryProvider: DictionaryProvider {
+    private let fetcher: ArticleFetchService
+    init(fetcher: ArticleFetchService = ArticleFetchService()) { self.fetcher = fetcher }
     func lookup(_ headword: String) async throws -> [DictionarySense] {
         let url = URL(string: "https://api.dictionaryapi.dev/api/v2/entries/en/")!.appendingPathComponent(headword)
-        let data = try await ArticleFetchService().fetch(url, allowedHost: "api.dictionaryapi.dev")
-        return try Self.parse(data)
+        let transport = fetcher
+        // A negative lookup is distinct from an unavailable provider. Revalidate transient CDN negatives
+        // using the same documented endpoint, without changing hosts, credentials or request identity.
+        for attempt in 0..<3 {
+            do { return try Self.parse(await transport.fetch(url, allowedHost: "api.dictionaryapi.dev")) }
+            catch FullTextImportError.notFound {
+                if attempt == 2 { return [] }
+                try await Task.sleep(for: .seconds(Double(attempt + 1)))
+            }
+        }
+        return []
     }
     static func parse(_ data: Data) throws -> [DictionarySense] {
         struct Entry: Decodable {

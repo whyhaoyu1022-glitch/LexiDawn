@@ -38,7 +38,7 @@ enum ArticleDocumentNormalizer {
 }
 
 enum FullTextImportError: String, Error, LocalizedError, Sendable {
-    case rights, incomplete, truncated, parsing, transport, rateLimited, storage, duplicate
+    case rights, incomplete, truncated, parsing, transport, rateLimited, storage, duplicate, notFound
     var errorDescription: String? { "无法导入完整文章，未添加到本地文章库。" }
 }
 

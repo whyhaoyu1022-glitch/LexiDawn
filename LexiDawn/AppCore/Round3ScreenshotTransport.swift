@@ -38,7 +38,7 @@ final class Round3ScreenshotTransport: URLProtocol, @unchecked Sendable {
         let mode = scenario.replacingOccurrences(of: "round3-import-", with: "")
         Self.lock.lock(); Self.requests += 1; let count = Self.requests; Self.lock.unlock()
         if mode == "offline" { client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet)); return }
-        let status = mode == "429" ? 429 : mode == "503" ? 503 : mode == "403" ? 403 : mode == "retry" && count == 1 ? 503 : 200
+        let status = mode == "429" ? 429 : mode == "503" ? 503 : mode == "403" ? 403 : mode == "404" ? 404 : mode == "retry" && count == 1 ? 503 : 200
         let action = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "action" }?.value
         let payload: [String: Any]
         if action == "query" {

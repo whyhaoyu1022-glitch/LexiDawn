@@ -28,10 +28,13 @@ import Combine
     }
     #if DEBUG && targetEnvironment(simulator)
     func setDiscoveryForUITesting(_ service: ArticleDiscoveryService) { discovery = service }
-    func injectVocabularySaveFailureForEvidence() {
-        let fault = EvidenceSaveFault()
+    func injectVocabularySaveFailureForEvidence(allowSuccessfulWrites: Int = 0, message: String = "明确故障注入：数据库保存失败，未加入生词本。") {
+        let fault = EvidenceSaveFault(allowSuccessfulWrites: allowSuccessfulWrites)
         vocabulary = VocabularyRepository(context: ModelContext(writer.context.container)) { context in
-            if fault.remaining > 0 { fault.remaining -= 1; throw LearningError.invalid("明确故障注入：数据库保存失败，未加入生词本。") }
+            if fault.remaining > 0 {
+                if fault.allowSuccessfulWrites > 0 { fault.allowSuccessfulWrites -= 1 }
+                else { fault.remaining -= 1; throw LearningError.invalid(message) }
+            }
             try context.save()
         }
     }
@@ -79,6 +82,10 @@ import Combine
 struct LearningStatistics { let articles: Int, studyDays: Int, streak: Int, vocabulary: Int, pending: Int, recentDays: Int }
 
 #if DEBUG && targetEnvironment(simulator)
-@MainActor private final class EvidenceSaveFault { var remaining = 1 }
+@MainActor private final class EvidenceSaveFault {
+    var remaining = 1
+    var allowSuccessfulWrites: Int
+    init(allowSuccessfulWrites: Int) { self.allowSuccessfulWrites = allowSuccessfulWrites }
+}
 #endif
 

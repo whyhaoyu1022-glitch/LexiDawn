@@ -34,7 +34,7 @@ actor ArticleFetchService {
                 guard http.statusCode == 200 else {
                     let sourceID = ArticleSourceRegistry.personalSources.first { $0.hosts.contains(url.host ?? "") }?.id ?? (url.host ?? "unknown")
                     print("ARTICLE_HTTP_DIAGNOSTIC sourceID=\(sourceID) status=\(http.statusCode) attempt=\(attempt + 1)")
-                    throw http.statusCode == 429 ? FullTextImportError.rateLimited : FullTextImportError.transport
+                    throw http.statusCode == 429 ? FullTextImportError.rateLimited : http.statusCode == 404 ? FullTextImportError.notFound : FullTextImportError.transport
                 }
                 guard data.count <= 4_000_000, !data.isEmpty else { throw FullTextImportError.incomplete }
                 return data
@@ -71,12 +71,19 @@ enum OfficialArticleAPI {
     private let content: ContentRepository
     private let sourceIDs: [String]
     private var refreshing = false
+    private var operation: Task<Int, Error>?
     init(content: ContentRepository, fetcher: ArticleFetchService = ArticleFetchService(), sourceIDs: [String]? = nil) {
         self.content = content; self.fetcher = fetcher
         self.sourceIDs = sourceIDs ?? (["wikipedia", "wikinews"] + ArticleSourceRegistry.personalSources.map(\.id))
     }
     private struct Outcome: Sendable { let sourceID: String, count: Int, succeeded: Bool, error: FullTextImportError? }
     func refresh(force: Bool = false, at now: Date = Date(), onImport: (@MainActor () -> Void)? = nil) async throws -> Int {
+        if let operation { return try await withTaskCancellationHandler { try await operation.value } onCancel: { operation.cancel() } }
+        let task = Task { @MainActor [self] in try await performRefresh(force: force, at: now, onImport: onImport) }
+        operation = task; defer { operation = nil }
+        return try await withTaskCancellationHandler { try await task.value } onCancel: { task.cancel() }
+    }
+    private func performRefresh(force: Bool, at now: Date, onImport: (@MainActor () -> Void)?) async throws -> Int {
         guard !refreshing else { return 0 }
         refreshing = true; defer { refreshing = false }
         let ids = sourceIDs.filter(ArticleSourceRegistry.canAttempt)
@@ -145,6 +152,7 @@ enum OfficialArticleAPI {
                 let document = try ArticleHTMLExtractor.extract(page.text)
                 let item = FullTextArticleImport(sourceID: id, canonicalURL: candidate.url, title: candidate.title, author: ArticleSourceRegistry.name(id) + " contributors", publishedAt: createdAt,
                     rawContent: document.text, document: document, topics: id == "wikinews" ? ["新闻"] : ["知识"], rights: rights, completeDocument: true, expectedHash: nil, verifiedAt: now)
+                try Task.checkCancellation()
                 if try content.importFullText(item, at: now) { count += 1; onImport?() }
             } catch is CancellationError { throw CancellationError() }
             catch { failures += 1 }
@@ -176,6 +184,7 @@ enum OfficialArticleAPI {
                 let result = try ArticleWebPageExtractor.extract(bytes, candidate: candidate, source: source)
                 let item = FullTextArticleImport(sourceID: source.id, canonicalURL: result.canonicalURL, title: result.title, author: result.author, publishedAt: result.publishedAt,
                     rawContent: result.document.text, document: result.document, topics: source.topics, rights: rights, completeDocument: true, expectedHash: nil, verifiedAt: now)
+                try Task.checkCancellation()
                 if try content.importFullText(item, at: now) { count += 1; onImport?() }
             } catch is CancellationError { throw CancellationError() }
             catch { failures += 1 }
