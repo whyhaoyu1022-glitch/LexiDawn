@@ -89,6 +89,12 @@ final class AppStartup: ObservableObject {
                 }
                 return dependencies
             }
+            if scenario == "round3-storage-vocabulary", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
+                let url = FileManager.default.temporaryDirectory.appendingPathComponent("round3-storage-\(storeID.uuidString).store")
+                let dependencies = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
+                if let learning = dependencies.learning { try learning.content.installBundledRFC(at: Date()); learning.injectVocabularySaveFailureForEvidence() }
+                return dependencies
+            }
             if scenario.hasPrefix("round3-dictionary-"), let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
                 let url = FileManager.default.temporaryDirectory.appendingPathComponent("round3-dictionary-\(storeID.uuidString).store")
                 let dependencies = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)

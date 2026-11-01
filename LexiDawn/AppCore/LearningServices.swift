@@ -8,9 +8,9 @@ import Combine
     private(set) var discovery: ArticleDiscoveryService
     var productionNetworking = false
     let dictionary: DictionaryLookupService
-    let vocabulary: VocabularyRepository
-    let reader: ReaderProgressService
-    let review: ReviewQueueService
+    private(set) var vocabulary: VocabularyRepository
+    private(set) var reader: ReaderProgressService
+    private(set) var review: ReviewQueueService
     let cycles: StudyCycleRepository
     private let writer: RepositoryWriter
     @Published private(set) var revision = 0
@@ -28,6 +28,13 @@ import Combine
     }
     #if DEBUG && targetEnvironment(simulator)
     func setDiscoveryForUITesting(_ service: ArticleDiscoveryService) { discovery = service }
+    func injectVocabularySaveFailureForEvidence() {
+        let fault = EvidenceSaveFault()
+        vocabulary = VocabularyRepository(context: ModelContext(writer.context.container)) { context in
+            if fault.remaining > 0 { fault.remaining -= 1; throw LearningError.invalid("明确故障注入：数据库保存失败，未加入生词本。") }
+            try context.save()
+        }
+    }
     #endif
     func changed() { revision += 1 }
     func statistics(timeZone: TimeZone, at now: Date) throws -> LearningStatistics {
@@ -70,4 +77,8 @@ import Combine
     }
 }
 struct LearningStatistics { let articles: Int, studyDays: Int, streak: Int, vocabulary: Int, pending: Int, recentDays: Int }
+
+#if DEBUG && targetEnvironment(simulator)
+@MainActor private final class EvidenceSaveFault { var remaining = 1 }
+#endif
 

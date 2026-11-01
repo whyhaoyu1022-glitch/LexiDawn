@@ -272,6 +272,19 @@ final class Round3UITests: XCTestCase {
         }
         XCTAssertGreaterThanOrEqual(inspected, 5, "At least five real imported source readers must be inspected")
     }
+    func testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists() throws {
+        let app = launch("round3-storage-vocabulary")
+        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
+        XCTAssertTrue(app.buttons["word-Internet"].firstMatch.waitForExistence(timeout: 10)); app.buttons["word-Internet"].firstMatch.tap()
+        let error = app.staticTexts["明确故障注入：数据库保存失败，未加入生词本。"]
+        XCTAssertTrue(error.waitForExistence(timeout: 10)); XCTAssertFalse(app.buttons["undo-word"].exists)
+        capture("R3-V01", app: app, feature: "vocabulary", state: "save-failed-no-success", origin: "explicit-one-shot-Repository-save-fault-bundled-RFC")
+        app.buttons["重试保存生词"].tap(); XCTAssertTrue(app.buttons["undo-word"].waitForExistence(timeout: 10))
+        capture("R3-V02", app: app, feature: "vocabulary", state: "safe-retry-save-success", origin: "explicit-one-shot-Repository-save-fault-bundled-RFC")
+        app.buttons["close-word"].tap(); app.buttons["返回今日"].tap(); app.tabBars.buttons["词汇"].tap()
+        XCTAssertTrue(app.buttons["vocabulary-entry-internet"].waitForExistence(timeout: 10))
+        capture("R3-V03", app: app, feature: "vocabulary", state: "retry-result-in-persistent-notebook", origin: "explicit-one-shot-Repository-save-fault-bundled-RFC")
+    }
     /// Scrolling can retain offscreen accessibility elements. Exercise a word in the visible viewport.
     private func visibleWord(in app: XCUIApplication) -> XCUIElement {
         let words = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'word-'"))

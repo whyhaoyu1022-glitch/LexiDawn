@@ -72,6 +72,7 @@ jobs:
           print("Native launch screen and scene manifest present")
           PYINFO
       - name: Compile test targets before booting a simulator
+        id: compile_tests
         shell: bash
         run: |
           set -euo pipefail
@@ -131,6 +132,7 @@ jobs:
             -resultBundlePath "${RUNNER_TEMP}/LexiDawn-unit.xcresult" \
             -only-testing:LexiDawnTests test 2>&1 | tee "${RUNNER_TEMP}/LexiDawn-unit.log"
       - name: Run UI tests on concrete simulator
+        if: ${{ !cancelled() && steps.compile_tests.outcome == 'success' }}
         timeout-minutes: 45
         shell: bash
         run: |

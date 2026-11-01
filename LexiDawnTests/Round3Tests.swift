@@ -56,6 +56,9 @@ import SwiftData
         XCTAssertTrue(try content.importFullText(item, at: now)); XCTAssertEqual(try content.read(articleID: item.articleID, at: now).body, raw)
         let record = try XCTUnwrap(ModelContext(app.modelContainer).fetch(FetchDescriptor<ArticleRecord>()).first)
         XCTAssertEqual(try JSONDecoder().decode(FullTextRightsEvidence.self, from: XCTUnwrap(record.fullTextRightsEvidenceData)).importBasis, proof.importBasis)
+        var forged = proof; forged.importBasis = nil
+        let invalid = FullTextArticleImport(sourceID: "bbc", canonicalURL: "https://www.bbc.com/news/articles/forged-fixture", title: "Invalid proof", author: "Fixture", publishedAt: nil, rawContent: raw, document: item.document, topics: ["test"], rights: forged, completeDocument: true, expectedHash: nil, verifiedAt: now)
+        XCTAssertThrowsError(try content.importFullText(invalid, at: now)); XCTAssertEqual(try content.library(at: now).count, 1)
     }
     func testWikinewsLegacyDateCannotUseNewLicense() throws {
         let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content), raw = "Full original text."
