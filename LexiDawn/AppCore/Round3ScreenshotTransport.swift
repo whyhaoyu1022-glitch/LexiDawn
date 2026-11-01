@@ -38,7 +38,7 @@ final class Round3ScreenshotTransport: URLProtocol, @unchecked Sendable {
     override func stopLoading() { }
     @MainActor static func install(in learning: LearningServices) {
         let configuration = URLSessionConfiguration.ephemeral; configuration.protocolClasses = [Round3ScreenshotTransport.self]
-        learning.setDiscoveryForUITesting(ArticleDiscoveryService(content: learning.content, fetcher: ArticleFetchService(configuration: configuration)))
+        learning.setDiscoveryForUITesting(ArticleDiscoveryService(content: learning.content, fetcher: ArticleFetchService(configuration: configuration), sourceIDs: ["wikipedia"]))
     }
 }
 #endif

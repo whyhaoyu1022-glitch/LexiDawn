@@ -20,6 +20,15 @@ struct SourceLicensesView: View {
                 }.padding(.vertical, 6)
                 Text("个人导入只在本地使用；需要你确认全文完整及合法保存权限。文章只有完整入库后才会出现，不提供网址或摘要阅读。").font(.footnote)
             }
+            Section("个人使用的官网全文来源") {
+                Text("按负责人2026-11-01个人使用指示尝试公开全文；这是导入依据，不表示取得出版社授权。登录、付费墙、验证码和不完整正文跳过。")
+                    .font(.footnote)
+                ForEach(ArticleSourceRegistry.personalSources, id: \.id) { source in
+                    Label(source.name, systemImage: "doc.text").accessibilityIdentifier("source-" + source.id)
+                }
+                Text("Wikinews：仅导入2024-12-17之后创建的已发布原文，保留贡献者署名与CC BY 4.0声明。 ")
+                    .font(.footnote)
+            }
             Section("开放词典与个人释义") {
                 Text("CC-CEDICT · MDBG与贡献者 · CC BY-SA 4.0；反向索引提供可能中文对应词。").font(.subheadline)
                 Link("CC-CEDICT来源与许可", destination: URL(string: "https://www.mdbg.net/chinese/dictionary?page=cc-cedict")!)

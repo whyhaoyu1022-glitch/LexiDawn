@@ -50,6 +50,18 @@ private final class Round3FaultURLProtocol: URLProtocol, @unchecked Sendable {
         do { _ = try await task.value; XCTFail("Cancelled task must throw") } catch { XCTAssertTrue(error is CancellationError) }
     }
     // These tests use real external services, separately named from injected/fixture tests.
+    func testLivePublisherAdaptersImportAtLeastFiveCompleteSources() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)
+        let count = try await ArticleDiscoveryService(content: content).refresh(force: true)
+        let rows = try content.library(), sources = Set(rows.map(\.sourceID))
+        print("LIVE_FULLTEXT_AUDIT sourceIDs=\(sources.sorted().joined(separator: ",")) imported=\(count)")
+        XCTAssertEqual(rows.count, count)
+        XCTAssertGreaterThanOrEqual(sources.count, 5, "Five real complete source imports are required; blocked candidates cannot be counted")
+        for row in rows {
+            let article = try content.read(articleID: row.id, at: Date())
+            XCTAssertFalse(article.body.isBlank); XCTAssertTrue(ArticleDocumentNormalizer.preservesOriginal(article.body, document: try XCTUnwrap(article.document)))
+        }
+    }
     func testLiveFreeDictionaryEnglishDefinition() async throws {
         let senses = try await FreeDictionaryProvider().lookup("book")
         XCTAssertTrue(senses.contains { $0.partOfSpeech == "noun" && !$0.en.isBlank })
@@ -60,7 +72,7 @@ private final class Round3FaultURLProtocol: URLProtocol, @unchecked Sendable {
     }
     func testLiveWikipediaDiscoveryImportsCompleteOriginalIntoEmptyDatabase() async throws {
         let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)
-        let count = try await ArticleDiscoveryService(content: content).refresh(force: true)
+        let count = try await ArticleDiscoveryService(content: content, sourceIDs: ["wikipedia"]).refresh(force: true)
         XCTAssertGreaterThan(count, 0)
         let rows = try content.library()
         XCTAssertTrue(rows.allSatisfy(\.readable)); XCTAssertEqual(rows.count, count)

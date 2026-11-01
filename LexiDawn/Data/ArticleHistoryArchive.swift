@@ -52,7 +52,7 @@ extension ContentRepository {
                 let permitted = ArticleAccessPolicy.permits(candidate: try article.candidate(), storedHash: article.bodyHash ?? "", grantSource: grant?.sourceID,
                     grantHash: grant?.bodyHash, scope: grant?.scope, now: now, highWater: grant?.accessHighWater ?? now)
                 let auditedRightsValid: Bool
-                if grant?.scope == "audited-full-text" {
+                if ["audited-full-text", "personal-full-text"].contains(grant?.scope ?? "") {
                     auditedRightsValid = article.fullTextRightsEvidenceData.flatMap { try? JSONDecoder().decode(FullTextRightsEvidence.self, from: $0) }?.valid(sourceID: article.sourceID, at: now) ?? false
                 } else { auditedRightsValid = true }
                 if validBody && permitted && auditedRightsValid { continue }

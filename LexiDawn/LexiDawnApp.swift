@@ -99,6 +99,7 @@ final class AppStartup: ObservableObject {
                 let url = FileManager.default.temporaryDirectory.appendingPathComponent("round3-network-\(storeID.uuidString).store")
                 let dependencies = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
                 dependencies.learning?.productionNetworking = true
+                if let learning = dependencies.learning { learning.setDiscoveryForUITesting(ArticleDiscoveryService(content: learning.content, sourceIDs: ["wikipedia"])) }
                 dependencies.learning?.dictionary.enableOnlineProviders()
                 return dependencies
             }

@@ -46,6 +46,8 @@ struct FullTextRightsEvidence: Codable, Equatable, Sendable {
     let checkedAt: Date
     let acquisitionAllowed: Bool, persistenceAllowed: Bool, offlineAllowed: Bool, displayAllowed: Bool
     var validUntil: Date? = nil
+    /// Nil on historical licensed imports. Personal instruction is never represented as publisher licensing.
+    var importBasis: String? = nil
     func valid(sourceID: String, at now: Date) -> Bool {
         self.sourceID == sourceID && !id.isBlank && ArticleCandidate.isWebURL(termsURL) && !attribution.isBlank &&
         acquisitionAllowed && persistenceAllowed && offlineAllowed && displayAllowed &&

@@ -4,6 +4,64 @@ import SwiftData
 
 @MainActor final class Round3Tests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 1793534400)
+    private var webBody: String { (1...3).map { "<p>Paragraph \($0) is explicit original fixture writing. Science helps people understand nature and share discoveries. Every sentence in this complete document is preserved for a deterministic parser test, including the final sentence.</p>" }.joined() }
+    func testPersonalSourceInstructionNeverMasqueradesAsPublisherLicense() throws {
+        XCTAssertFalse(ArticleSourceRegistry.enabled("bbc")); XCTAssertTrue(ArticleSourceRegistry.canAttempt("bbc"))
+        let proof = try XCTUnwrap(ArticleSourceRegistry.evidence(for: "bbc"))
+        XCTAssertEqual(proof.importBasis, "owner-directed-personal-use-2026-11-01")
+        XCTAssertTrue(proof.license.contains("未声明出版社授权")); XCTAssertNil(ArticleSourceRegistry.evidence(for: "unknown"))
+    }
+    func testPublisherSubtreeRetainsFinalParagraphAndRejectsPageNavigation() throws {
+        let source = try XCTUnwrap(ArticleSourceRegistry.personalSource("nasa"))
+        let candidate = ArticleDiscoveryItem(sourceID: source.id, title: "Fixture", url: "https://www.nasa.gov/news-release/fixture/", revision: nil)
+        let html = "<html><head><meta property='og:title' content='Original title'></head><body><nav>Do not import navigation.</nav><div class='entry-content'>" + webBody + "</div><footer>Do not import footer.</footer></body></html>"
+        let result = try ArticleWebPageExtractor.extract(Data(html.utf8), candidate: candidate, source: source)
+        XCTAssertEqual(result.title, "Original title"); XCTAssertEqual(result.document.blocks.count, 3)
+        XCTAssertTrue(result.document.text.hasSuffix("including the final sentence.")); XCTAssertFalse(result.document.text.contains("navigation")); XCTAssertFalse(result.document.text.contains("footer"))
+    }
+    func testPublisherMissingClosingBodyAndTruncatedPageAreRejected() throws {
+        let source = try XCTUnwrap(ArticleSourceRegistry.personalSource("nasa"))
+        let candidate = ArticleDiscoveryItem(sourceID: source.id, title: "Fixture", url: "https://www.nasa.gov/news-release/fixture/", revision: nil)
+        for html in ["<html><div class='entry-content'>" + webBody, "<html><div class='entry-content'><p>Summary only.</p></div></html>", "<html><div class='entry-content'>" + webBody + "</html>"] {
+            XCTAssertThrowsError(try ArticleWebPageExtractor.extract(Data(html.utf8), candidate: candidate, source: source))
+        }
+    }
+    func testPublisherLoginCaptchaAndPaywallNeverBecomeArticle() throws {
+        let source = try XCTUnwrap(ArticleSourceRegistry.personalSource("nasa"))
+        let candidate = ArticleDiscoveryItem(sourceID: source.id, title: "Fixture", url: "https://www.nasa.gov/news-release/fixture/", revision: nil)
+        for marker in ["Verify you are human", "Sign in to continue reading", "Subscribe to continue reading"] {
+            let html = "<html><div class='entry-content'>" + webBody + "<p>" + marker + "</p></div></html>"
+            XCTAssertThrowsError(try ArticleWebPageExtractor.extract(Data(html.utf8), candidate: candidate, source: source))
+        }
+        let html = "<html><script type='application/ld+json'>{\"@type\":\"NewsArticle\",\"isAccessibleForFree\":false}</script><div class='entry-content'>" + webBody + "</div></html>"
+        XCTAssertThrowsError(try ArticleWebPageExtractor.extract(Data(html.utf8), candidate: candidate, source: source))
+    }
+    func testBBCMultipleBodyBlocksKeepEveryParagraphInOrder() throws {
+        let source = try XCTUnwrap(ArticleSourceRegistry.personalSource("bbc"))
+        let candidate = ArticleDiscoveryItem(sourceID: source.id, title: "Fixture", url: "https://www.bbc.com/news/articles/fixture", revision: nil)
+        let html = "<html>" + (1...3).map { "<div data-component='text-block'><p>Block \($0). This original fixture paragraph discusses science and education. Reading each full paragraph provides a meaningful context for learning English words and expressions without substituting a summary for the original article.</p></div>" }.joined() + "</html>"
+        let result = try ArticleWebPageExtractor.extract(Data(html.utf8), candidate: candidate, source: source)
+        XCTAssertEqual(result.document.blocks.count, 3); XCTAssertTrue(result.document.blocks[0].text.hasPrefix("Block 1.")); XCTAssertTrue(result.document.blocks[2].text.hasPrefix("Block 3."))
+    }
+    func testPublisherDiscoveryRejectsExternalAndNonArticleLinks() throws {
+        let source = try XCTUnwrap(ArticleSourceRegistry.personalSource("voa"))
+        let html = "<html><a href='/a/original/1234567.html'>Original title</a><a href='/a/original/1234567.html'>Duplicate</a><a href='https://evil.invalid/a/leak/123.html'>External</a><a href='/login'>Login</a></html>"
+        let items = try ArticleWebPageExtractor.links(Data(html.utf8), source: source)
+        XCTAssertEqual(items.count, 1); XCTAssertEqual(items.first?.title, "Original title")
+    }
+    func testPersonalFullTextImportPersistsExplicitBasisAndRejectsForgedEvidence() throws {
+        let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)
+        let proof = try XCTUnwrap(ArticleSourceRegistry.evidence(for: "bbc")), raw = "Original complete personal article.\n\nThe final paragraph remains preserved."
+        let item = FullTextArticleImport(sourceID: "bbc", canonicalURL: "https://www.bbc.com/news/articles/explicit-fixture", title: "Explicit fixture", author: "Fixture author", publishedAt: nil, rawContent: raw, document: ArticleDocumentNormalizer.plainText(raw), topics: ["test"], rights: proof, completeDocument: true, expectedHash: fingerprint(raw), verifiedAt: now)
+        XCTAssertTrue(try content.importFullText(item, at: now)); XCTAssertEqual(try content.read(articleID: item.articleID, at: now).body, raw)
+        let record = try XCTUnwrap(ModelContext(app.modelContainer).fetch(FetchDescriptor<ArticleRecord>()).first)
+        XCTAssertEqual(try JSONDecoder().decode(FullTextRightsEvidence.self, from: XCTUnwrap(record.fullTextRightsEvidenceData)).importBasis, proof.importBasis)
+    }
+    func testWikinewsLegacyDateCannotUseNewLicense() throws {
+        let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content), raw = "Full original text."
+        let item = FullTextArticleImport(sourceID: "wikinews", canonicalURL: "https://en.wikinews.org/wiki/Explicit_fixture", title: "Explicit fixture", author: "Wikinews", publishedAt: Date(timeIntervalSince1970: 1700000000), rawContent: raw, document: ArticleDocumentNormalizer.plainText(raw), topics: ["test"], rights: ArticleSourceRegistry.wikinewsRights, completeDocument: true, expectedHash: nil, verifiedAt: now)
+        XCTAssertThrowsError(try content.importFullText(item, at: now)); XCTAssertTrue(try content.library().isEmpty)
+    }
     private func item(raw: String = "The original full article begins here.\n\nThe final paragraph is preserved.", complete: Bool = true, hash: String? = nil) -> FullTextArticleImport {
         FullTextArticleImport(sourceID: "wikipedia", canonicalURL: "https://en.wikipedia.org/wiki/Explicit_test_fixture", title: "Isolated original fixture", author: "Test author", publishedAt: nil, rawContent: raw,
             document: ArticleDocumentNormalizer.plainText(raw), topics: ["test"], rights: ArticleSourceRegistry.wikipediaRights,

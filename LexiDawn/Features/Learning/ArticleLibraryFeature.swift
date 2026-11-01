@@ -21,7 +21,7 @@ struct ArticleLibraryView: View {
     var body: some View {
         List {
             Section {
-                Picker("来源", selection: $source) { Text("全部来源").tag("all"); ForEach(Array(Set(items.filter(\.readable).map(\.sourceID))).sorted(), id: \.self) { Text($0).tag($0) } }
+                Picker("来源", selection: $source) { Text("全部来源").tag("all"); ForEach(Array(Set(items.filter(\.readable).map(\.sourceID))).sorted(), id: \.self) { Text(ArticleSourceRegistry.name($0)).tag($0) } }
                 Picker("分类", selection: $topic) { Text("全部分类").tag("all"); ForEach(Array(Set(items.flatMap(\.topics))).sorted(), id: \.self) { Text($0).tag($0) } }
                 Picker("阅读内容", selection: $mode) { Text("全部").tag("all"); Text("收藏").tag("favorite"); Text("稍后阅读").tag("later"); Text("历史").tag("history") }
                 Toggle("最新导入优先", isOn: $newestFirst)
@@ -32,7 +32,7 @@ struct ArticleLibraryView: View {
             ForEach(visible) { item in
                 VStack(alignment: .leading, spacing: 10) {
                     Text(item.title).font(.headline)
-                    Text(item.sourceID == "wikipedia" ? "Wikipedia" : item.sourceID == SourceRegistry.rfc.id ? SourceRegistry.rfc.name : item.source).font(.caption).lineLimit(2)
+                    Text(ArticleSourceRegistry.name(item.sourceID)).font(.caption).lineLimit(2)
                     Text("\(item.topics.joined(separator: " · ")) · \(item.minutes) 分钟").font(.caption)
                     Label("完整原文 · 本地离线可读", systemImage: "checkmark.icloud").font(.caption).foregroundStyle(.secondary)
                     Text(item.completed ? "已完成 · 可重读" : item.started ? "进行中 \(Int(item.percent * 100))%" : item.cycleID != nil ? "每日必做" : "未读").font(.subheadline)

@@ -11,7 +11,7 @@ extension ContentRepository {
                 .union(try context.fetch(FetchDescriptor<ArticleProgressRecord>()).map(\.articleID))
                 .union(try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).map(\.articleID))
             let records = try context.fetch(FetchDescriptor<ArticleRecord>()).filter {
-                ["wikipedia", SourceRegistry.rfc.id].contains($0.sourceID) && !protected.contains($0.articleID) && !$0.isFavorite && !$0.readLater
+                (ArticleSourceRegistry.canAttempt($0.sourceID) || $0.sourceID == SourceRegistry.rfc.id) && !protected.contains($0.articleID) && !$0.isFavorite && !$0.readLater
             }
             let ids = Set(records.map(\.articleID))
             for grant in try context.fetch(FetchDescriptor<ContentGrantRecord>()) where ids.contains(grant.articleID) { context.delete(grant) }
@@ -27,7 +27,7 @@ extension ContentRepository {
         }
     }
     func recordSourceRefresh(_ sourceID: String, beginning: Bool, errorCode: String? = nil, at now: Date) throws {
-        guard ArticleSourceRegistry.enabled(sourceID) else { throw FullTextImportError.rights }
+        guard ArticleSourceRegistry.canAttempt(sourceID) else { throw FullTextImportError.rights }
         try writer.write {
             let context = writer.context
             let state = try context.fetch(FetchDescriptor<SourceAcquisitionRecord>()).first { $0.sourceID == sourceID } ?? SourceAcquisitionRecord(sourceID: sourceID)
@@ -42,7 +42,11 @@ extension ContentRepository {
     }
     /// Admission is repeated at the persistence boundary. Candidate fields never reach disk first.
     @discardableResult func importFullText(_ item: FullTextArticleImport, at now: Date) throws -> Bool {
-        guard ArticleSourceRegistry.enabled(item.sourceID), item.rights == ArticleSourceRegistry.wikipediaRights else { throw FullTextImportError.rights }
+        guard ArticleSourceRegistry.canAttempt(item.sourceID), item.rights == ArticleSourceRegistry.evidence(for: item.sourceID) else { throw FullTextImportError.rights }
+        if let source = ArticleSourceRegistry.personalSource(item.sourceID) {
+            guard let url = URL(string: item.canonicalURL), ArticleWebPageExtractor.accepts(url, source: source) else { throw FullTextImportError.incomplete }
+        }
+        if item.sourceID == "wikinews" { guard let date = item.publishedAt, date >= Date(timeIntervalSince1970: 1734393600) else { throw FullTextImportError.rights } }
         try ArticleQualityValidator.validate(item, at: now)
         return try writer.write {
             let context = writer.context
@@ -59,7 +63,7 @@ extension ContentRepository {
             record.completenessVerifiedAt = item.verifiedAt
             context.insert(record)
             context.insert(ContentGrantRecord(articleID: item.articleID, sourceID: item.sourceID, bodyHash: hash,
-                scope: "audited-full-text", evidenceURL: item.rights.termsURL, originalURL: canonical, acceptedAt: now, eligibleForDaily: true))
+                scope: item.rights.importBasis == nil ? "audited-full-text" : "personal-full-text", evidenceURL: item.rights.termsURL, originalURL: canonical, acceptedAt: now, eligibleForDaily: true))
             return true
         }
     }

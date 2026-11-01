@@ -76,7 +76,7 @@ struct LiveTodayView: View {
             .task {
                 reload()
                 if learning.productionNetworking {
-                    do { _ = try await learning.discovery.refresh(); learning.changed() }
+                    do { _ = try await learning.discovery.refresh(onImport: { learning.changed() }); learning.changed() }
                     catch is CancellationError { }
                     catch { sourceMessage = FullTextImportError.transport.localizedDescription }
                 }

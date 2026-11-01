@@ -156,7 +156,7 @@ struct ArticleAccessError: LocalizedError {
             guard grants.count == 1, let grant = grants.first else { throw ArticleAccessError(originalURL: ArticleCandidate.isWebURL(article.canonicalURL) ? article.canonicalURL : nil) }
             grant.accessHighWater = max(now, grant.accessHighWater)
             let candidate = try article.candidate()
-            if grant.scope == "audited-full-text" {
+            if ["audited-full-text", "personal-full-text"].contains(grant.scope) {
                 guard let data = article.fullTextRightsEvidenceData, let structured = article.structuredBody,
                       let proof = try? JSONDecoder().decode(FullTextRightsEvidence.self, from: data), proof.valid(sourceID: article.sourceID, at: max(now, grant.accessHighWater)),
                       let document = try? JSONDecoder().decode(ArticleDocument.self, from: structured),

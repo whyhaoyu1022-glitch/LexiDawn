@@ -122,7 +122,7 @@ struct ArticleAccessPolicy {
     static func permits(candidate: ArticleCandidate, storedHash: String, grantSource: String?, grantHash: String?, scope: String?, now: Date, highWater: Date) -> Bool {
         guard now.timeIntervalSince1970.isFinite, highWater.timeIntervalSince1970.isFinite,
               candidate.bodyHash == storedHash, grantHash == storedHash, grantSource == candidate.sourceID,
-              ["user-local", "ietf-full-unmodified", "audited-full-text"].contains(scope ?? "") else { return false }
+              ["user-local", "ietf-full-unmodified", "audited-full-text", "personal-full-text"].contains(scope ?? "") else { return false }
         return (try? candidate.validate(at: max(now, highWater))) != nil
     }
 }

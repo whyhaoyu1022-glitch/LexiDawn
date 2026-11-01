@@ -7,7 +7,7 @@ enum ArticleHTMLExtractor {
         guard html.utf8.count <= 4_000_000 else { throw FullTextImportError.parsing }
         var cursor = html.startIndex, buffer = "", blocks: [ArticleDocument.Block] = []
         var kind = ArticleDocument.Block.Kind.paragraph, level = 0, suppressed: [String] = []
-        let excluded: Set<String> = ["script", "style", "nav", "footer", "header", "aside", "button"]
+        let excluded: Set<String> = ["script", "style", "nav", "button"]
         let boundaries: Set<String> = ["p", "div", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote", "figcaption", "tr", "section", "article", "main", "pre"]
         func flush() throws {
             let value = try decodeEntities(buffer).split(whereSeparator: \.isWhitespace).joined(separator: " ")
