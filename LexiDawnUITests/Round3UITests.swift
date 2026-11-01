@@ -70,6 +70,53 @@ final class Round3UITests: XCTestCase {
         app.tabBars.buttons["探索"].tap(); XCTAssertFalse(app.staticTexts["先完成必做，再自由探索"].exists)
         capture("R3-E04", app: app, feature: "extra-review", state: "daily-unlock-unchanged-after-extra-session", origin: "explicit-extra-review-fixture-real-domain-evidence")
     }
+    func testExploreCardsFavoritesAndConfirmedResetPreserveNativeReadingFlow() throws {
+        let app = launch("round3-explore-catalog"); app.tabBars.buttons["探索"].tap()
+        let open = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'explore-open-'")).firstMatch
+        XCTAssertTrue(open.waitForExistence(timeout: 10)); let identity = open.identifier
+        capture("R3-X01", app: app, feature: "explore", state: "ranked-native-fulltext-cards", origin: "explicit-original-catalog-fixture-real-domain-evidence")
+        open.tap(); XCTAssertTrue(app.navigationBars["英文阅读"].waitForExistence(timeout: 10)); app.buttons["关闭"].tap()
+        XCTAssertFalse(app.buttons[identity].exists)
+        app.buttons["explore-library"].tap()
+        let reset = app.buttons["重新标记为未开始"].firstMatch
+        for _ in 0..<8 { if reset.exists && reset.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(reset.isHittable); reset.tap()
+        capture("R3-X02", app: app, feature: "explore", state: "explicit-reset-confirmation-keeps-history", origin: "explicit-original-catalog-fixture-real-domain-evidence")
+        app.buttons["确认重新标记"].tap()
+        app.navigationBars.buttons["探索"].tap()
+        XCTAssertTrue(app.buttons[identity].waitForExistence(timeout: 10))
+        capture("R3-X03", app: app, feature: "explore", state: "confirmed-reset-restores-unstarted-recommendation", origin: "explicit-original-catalog-fixture-real-domain-evidence")
+    }
+    func testVocabularyRecommendationsLockAndRequireExplicitAddAfterDetail() throws {
+        var app = launch("gallery-reader"); app.tabBars.buttons["词汇"].tap(); app.buttons["vocabulary-recommendations"].tap()
+        XCTAssertTrue(app.staticTexts["完成必做后，开启词汇推荐"].waitForExistence(timeout: 10))
+        capture("R3-N01", app: app, feature: "word-recommendation", state: "locked-with-current-task", origin: "explicit-isolated-RFC-learning-state")
+        app.terminate(); app = launch("round3-recommendations-many"); app.tabBars.buttons["词汇"].tap(); app.buttons["vocabulary-recommendations"].tap()
+        let add = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'recommendation-add-'")).firstMatch
+        XCTAssertTrue(add.waitForExistence(timeout: 20)); XCTAssertEqual(add.label, "加入生词本")
+        capture("R3-N02", app: app, feature: "word-recommendation", state: "real-article-candidates-with-explicit-fixture-definitions", origin: "explicit-original-article-and-provider-fixture")
+        let detail = app.buttons["查看详细释义"].firstMatch
+        for _ in 0..<4 { if detail.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(detail.isHittable); detail.tap()
+        XCTAssertTrue(app.navigationBars["详细释义"].waitForExistence(timeout: 10)); XCTAssertTrue(app.buttons["加入生词本"].exists)
+        capture("R3-N03", app: app, feature: "word-recommendation", state: "detail-does-not-auto-add", origin: "explicit-original-article-and-provider-fixture")
+        app.navigationBars.buttons["词汇推荐"].tap()
+        XCTAssertTrue(add.exists); XCTAssertEqual(add.label, "加入生词本"); add.tap()
+        XCTAssertEqual(add.label, "已加入生词本")
+        capture("R3-N04", app: app, feature: "word-recommendation", state: "explicit-add-persisted", origin: "explicit-original-article-and-provider-fixture")
+        app.navigationBars.buttons["生词本"].tap()
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'vocabulary-entry-'")).count, 1)
+    }
+    func testVocabularyRecommendationLoadingEmptyAndFailureStates() throws {
+        for (index, mode) in ["loading", "empty", "all-failed"].enumerated() {
+            let app = launch("round3-recommendations-" + mode); app.tabBars.buttons["词汇"].tap(); app.buttons["vocabulary-recommendations"].tap()
+            if mode == "loading" { XCTAssertTrue(app.descendants(matching: .any)["recommendation-loading"].firstMatch.waitForExistence(timeout: 10)) }
+            else if mode == "empty" { XCTAssertTrue(app.staticTexts["暂无新的推荐词条"].waitForExistence(timeout: 15)) }
+            else { XCTAssertTrue(app.staticTexts["推荐词典暂时不可用；生词本与学习记录保留，请重试。"].waitForExistence(timeout: 15)) }
+            capture("R3-N\(index + 5)", app: app, feature: "word-recommendation", state: mode, origin: "explicit-original-provider-fault-fixture")
+            app.terminate()
+        }
+    }
     func testReaderBodySurvivesTenRotationsAndWordRemainsTappable() throws {
         let app = launch("gallery-reader")
         XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()

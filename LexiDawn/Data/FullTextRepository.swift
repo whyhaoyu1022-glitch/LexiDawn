@@ -2,6 +2,25 @@ import Foundation
 import SwiftData
 
 extension ContentRepository {
+    func exploreRecommendations(at now: Date = Date()) throws -> [ArticleLibraryItem] {
+        let interests = try writer.read { context in Set(try context.fetch(FetchDescriptor<UserPreferencesRecord>()).first?.interestTopics ?? []) }
+        return try library(at: now).filter { $0.readable && $0.cycleID == nil && !$0.started }.sorted { a, b in
+            let left = ArticleRecommendationService.score(title: a.title, topics: a.topics, interests: interests, publishedAt: a.publishedAt, wordCount: a.wordCount, at: now, sourceID: a.sourceID)
+            let right = ArticleRecommendationService.score(title: b.title, topics: b.topics, interests: interests, publishedAt: b.publishedAt, wordCount: b.wordCount, at: now, sourceID: b.sourceID)
+            return left == right ? a.id < b.id : left > right
+        }
+    }
+    func resetExploration(articleID: String, at now: Date) throws {
+        try writer.write {
+            let context = writer.context
+            let cycles = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>()).map { try $0.domain() }
+            let access = try articleLearningAccess(cycles: cycles, context: context, at: now)
+            guard access.permits(articleID: articleID, cycleID: nil) else { throw LearningError.invalid("请先完成当前任务；每日文章不能重置为探索内容。") }
+            for progress in try context.fetch(FetchDescriptor<ArticleProgressRecord>()) where progress.articleID == articleID && progress.cycleID == nil && progress.archivedAt == nil {
+                progress.archivedAt = now; progress.progressID += "|archive|" + UUID().uuidString
+            }
+        }
+    }
     /// Only unreferenced, unmarked, re-downloadable official text is cache data.
     /// Every cycle, progress and vocabulary context protects its article, regardless of completion.
     func clearUnusedArticleCache() throws -> Int {

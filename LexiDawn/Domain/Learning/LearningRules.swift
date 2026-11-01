@@ -40,7 +40,7 @@ struct EnglishTokenizer {
     }
     static func normalized(_ surface: String) -> String {
         surface.precomposedStringWithCanonicalMapping.lowercased().replacingOccurrences(of: "’", with: "'")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
     static func lemma(_ surface: String) -> String {
         var key = normalized(surface)
@@ -52,7 +52,14 @@ struct EnglishTokenizer {
         // Explicit English irregular forms; avoid destructive generic suffix stripping.
         let irregular = ["took": "take", "taken": "take", "takes": "take", "carried out": "carry out", "taking into account": "take into account", "looked into": "look into", "played a role in": "play a role in", "ran": "run", "running": "run", "runs": "run", "went": "go", "gone": "go", "children": "child", "mice": "mouse"]
         if let lemma = irregular[key] { return lemma }
-        guard !key.contains("-"), !key.contains(" "), !key.isEmpty else { return key }
+        if key.contains(" ") {
+            var words = key.split(separator: " ").map(String.init)
+            words[0] = lemma(words[0])
+            let phrase = words.joined(separator: " ")
+            if EnglishPhraseRecognizer.patterns.contains(phrase) { return phrase }
+            return key
+        }
+        guard !key.contains("-"), !key.isEmpty else { return key }
         let tagger = NLTagger(tagSchemes: [.lemma]); tagger.string = key
         tagger.setLanguage(.english, range: key.startIndex..<key.endIndex)
         let (tag, _) = tagger.tag(at: key.startIndex, unit: .word, scheme: .lemma)
@@ -142,3 +149,32 @@ struct ArticleLearningAccess {
     }
 }
 
+
+struct VocabularyRecommendationCandidate: Identifiable {
+    var id: String { lemma }
+    let lemma: String, surface: String, sentence: String, articleID: String, topic: String
+    let score: Int
+    let range: NSRange
+}
+enum VocabularyRecommendationRules {
+    static func candidates(in articles: [ReadableArticle], excluding saved: Set<String>, limit: Int = 16) -> [VocabularyRecommendationCandidate] {
+        var result: [String: VocabularyRecommendationCandidate] = [:]
+        let phraseStarts: Set<String> = ["take", "carry", "look", "play", "term", "result", "learning"]
+        for article in articles {
+            let tokens = EnglishTokenizer.tokens(in: article.body)
+            for token in tokens.prefix(2500) {
+                let lemma = EnglishTokenizer.lemma(token.surface)
+                var forms = lemma.count >= 7 && lemma.count <= 28 ? [lemma] : []
+                if phraseStarts.contains(lemma) { forms += EnglishPhraseRecognizer.phrases(around: token.surface, sentence: token.sentence) }
+                for form in forms {
+                    let key = EnglishTokenizer.lemma(form)
+                    guard !saved.contains(key), result[key] == nil else { continue }
+                    let surface = form == lemma ? token.surface : form
+                    let span = (article.body as NSString).range(of: surface, options: .caseInsensitive)
+                    result[key] = VocabularyRecommendationCandidate(lemma: key, surface: surface, sentence: token.sentence, articleID: article.id, topic: article.topics.first ?? "本地阅读", score: min(form.count, 20) + (form.contains(" ") ? 12 : 0), range: span.location == NSNotFound ? token.range : span)
+                }
+            }
+        }
+        return Array(result.values.sorted { $0.score == $1.score ? $0.lemma < $1.lemma : $0.score > $1.score }.prefix(max(0, limit)))
+    }
+}

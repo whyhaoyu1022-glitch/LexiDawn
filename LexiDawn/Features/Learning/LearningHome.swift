@@ -8,7 +8,7 @@ struct LearningRootView: View {
         TabView(selection: $tab) {
             LiveTodayView(dependencies: dependencies, learning: learning).tabItem { Label("今日", systemImage: "sun.max") }.tag(0)
             LiveExploreView(learning: learning, continueToday: { tab = 0 }).tabItem { Label("探索", systemImage: "safari") }.tag(1)
-            VocabularyListView(learning: learning).tabItem { Label("词汇", systemImage: "text.book.closed") }.tag(2)
+            VocabularyListView(learning: learning, continueToday: { tab = 0 }).tabItem { Label("词汇", systemImage: "text.book.closed") }.tag(2)
             ReviewPracticeView(learning: learning).tabItem { Label("复习", systemImage: "rectangle.stack") }.tag(3)
             LearningSettingsView(learning: learning).tabItem { Label("我的", systemImage: "person") }.tag(4)
         }.tint(LexiDawnColor.dawn500)
@@ -194,13 +194,18 @@ struct LiveExploreView: View {
     @State private var allowed = false
     @State private var cycles: [DailyStudyCycle] = []
     @State private var articles: [ArticleLibraryItem] = []
+    @State private var topic = "all"
     @State private var reader: ReaderRoute?
     @State private var error: String?
+    @State private var loading = false
+    @State private var refreshTask: Task<Void, Never>?
+    private var visible: [ArticleLibraryItem] { articles.filter { topic == "all" || $0.topics.contains(topic) } }
     var body: some View {
         NavigationStack {
             List {
                 if !allowed {
-                    Section { Label("先完成必做，再自由探索", systemImage: "lock.fill").font(.title3.bold())
+                    Section {
+                        Label("先完成必做，再自由探索", systemImage: "lock.fill").font(.title3.bold())
                         ForEach(cycles.filter(\.hasOutstandingWork), id: \.cycleID) { cycle in
                             Text("原周期：\(cycle.assignedLocalDate)")
                             if cycle.articleTaskStatus != .completed { Text("还需完成阅读") }
@@ -211,20 +216,65 @@ struct LiveExploreView: View {
                     }
                 } else {
                     Section("已解锁 · 本地合法文章") {
-                        if articles.isEmpty { Text("暂无合法探索内容，可先导入文章。") }
-                        ForEach(articles) { article in
-                            Button {
-                                do { _ = try learning.openExplore(articleID: article.id, at: Date()); reader = ReaderRoute(articleID: article.id, cycleID: nil) }
-                                catch { self.error = error.localizedDescription }
-                            } label: { VStack(alignment: .leading, spacing: 6) { Text(article.title).font(.headline); Text("\(article.topics.joined(separator: " · ")) · \(article.minutes) 分钟").font(.caption); Text(article.source).font(.caption).foregroundStyle(.secondary) } }
+                        Text("按兴趣、内容完整性、长文价值与新鲜度推荐。已开始的文章在阅读历史继续。").font(.caption).foregroundStyle(.secondary)
+                        Picker("主题", selection: $topic) { Text("所有主题").tag("all"); ForEach(Array(Set(articles.flatMap(\.topics))).sorted(), id: \.self) { Text($0).tag($0) } }.accessibilityIdentifier("explore-topic-filter")
+                        if visible.isEmpty { ContentUnavailableView("正在寻找新文章", systemImage: "sparkle.magnifyingglass", description: Text("没有符合当前筛选的未学习全文。可以调整主题或发现新文章。")); Button("发现新完整文章", action: discover).disabled(loading) }
+                        ForEach(Array(visible.enumerated()), id: \.element.id) { index, article in
+                            VStack(alignment: .leading, spacing: 10) {
+                                Button {
+                                    do { _ = try learning.openExplore(articleID: article.id, at: Date()); reader = ReaderRoute(articleID: article.id, cycleID: nil) }
+                                    catch { self.error = error.localizedDescription }
+                                } label: { ExploreArticleCard(article: article, prominent: index == 0) }.buttonStyle(.plain).accessibilityIdentifier("explore-open-" + article.id)
+                                HStack {
+                                    Button(article.favorite ? "取消收藏" : "收藏", systemImage: article.favorite ? "star.fill" : "star") { flags(article, favorite: !article.favorite) }
+                                    Button(article.readLater ? "移出稍后阅读" : "稍后阅读", systemImage: article.readLater ? "bookmark.fill" : "bookmark") { flags(article, later: !article.readLater) }
+                                }.font(.caption).buttonStyle(.bordered)
+                            }.padding(.vertical, 8)
                         }
                     }
                 }
-                if let error { Text(error).foregroundStyle(.red) }
+                if loading { ProgressView("正在发现并导入完整文章…"); Button("停止发现") { refreshTask?.cancel() } }
+                if let error { Text(error).foregroundStyle(.red); Button("重新读取", action: load) }
             }.navigationTitle("探索").task { load() }.onReceive(learning.$revision) { _ in load() }
-                .fullScreenCover(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { reader = nil } } } } }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in load() }
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) { NavigationLink { ArticleLibraryView(learning: learning) } label: { Label("文章库与历史", systemImage: "books.vertical") }.accessibilityIdentifier("explore-library") }
+                    ToolbarItem(placement: .primaryAction) { Button("发现完整文章", systemImage: "arrow.clockwise", action: discover).disabled(!allowed || loading) }
+                }
+                .onDisappear { refreshTask?.cancel() }
+                .fullScreenCover(item: $reader, onDismiss: load) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { reader = nil } } } } }
         }
     }
-    private func load() { do { cycles = try learning.cycles.fetchAll(); allowed = try learning.explorationAllowed(); articles = allowed ? try learning.content.library().filter { $0.readable && $0.cycleID == nil && !$0.started } : []; error = nil } catch { self.error = error.localizedDescription; allowed = false } }
+    private func load() { do { cycles = try learning.cycles.fetchAll(); allowed = try learning.explorationAllowed(); articles = allowed ? try learning.content.exploreRecommendations() : []; error = nil } catch { self.error = error.localizedDescription; allowed = false } }
+    private func flags(_ article: ArticleLibraryItem, favorite: Bool? = nil, later: Bool? = nil) {
+        do { try learning.content.setLibraryFlags(articleID: article.id, favorite: favorite, readLater: later); learning.changed(); load() } catch { self.error = error.localizedDescription }
+    }
+    private func discover() {
+        refreshTask?.cancel(); refreshTask = Task {
+            loading = true; defer { loading = false }
+            do { _ = try await learning.discovery.refresh(force: true, onImport: { learning.changed() }); try Task.checkCancellation(); learning.changed(); load() }
+            catch is CancellationError { load() }
+            catch { self.error = FullTextImportError.transport.localizedDescription }
+        }
+    }
 }
 
+struct ExploreArticleCard: View {
+    let article: ArticleLibraryItem
+    let prominent: Bool
+    private var science: Bool { article.topics.joined().lowercased().contains("science") }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ZStack(alignment: .bottomLeading) {
+                LinearGradient(colors: science ? [.indigo.opacity(0.85), .cyan.opacity(0.45)] : [.orange.opacity(0.85), .pink.opacity(0.35)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                HStack { Image(systemName: science ? "atom" : "globe.americas.fill").font(.system(size: prominent ? 44 : 28)); Spacer(); Text(article.topics.joined(separator: " · ")).font(.caption.bold()) }.foregroundStyle(.white).padding(18)
+            }.frame(height: prominent ? 115 : 75).clipShape(RoundedRectangle(cornerRadius: 16)).accessibilityHidden(true)
+            Text(article.title).font(prominent ? .title2.bold() : .headline).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
+            Text(article.topics.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
+            Text(ArticleSourceRegistry.name(article.sourceID)).font(.caption.weight(.semibold))
+            if let date = article.publishedAt { Text(date.formatted(date: .abbreviated, time: .omitted)).font(.caption).foregroundStyle(.secondary) }
+            Text("\(article.minutes) 分钟 · \(article.wordCount) 词 · 未开始").font(.caption)
+            Label("完整原文已在本地 · 离线可读", systemImage: "checkmark.icloud").font(.caption).foregroundStyle(.secondary)
+        }.padding(14).background(Color.accentColor.opacity(0.04), in: RoundedRectangle(cornerRadius: 20))
+    }
+}

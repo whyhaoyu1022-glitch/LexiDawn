@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 struct VocabularyListView: View {
     @ObservedObject var learning: LearningServices
+    var continueToday: () -> Void = { }
     @State private var allItems: [VocabularyItem] = []
     @State private var search = ""
     @State private var filter = "all"
@@ -19,6 +20,7 @@ struct VocabularyListView: View {
         NavigationStack {
             List {
                 Picker("词条类型", selection: $filter) { Text("全部").tag("all"); Text("单词").tag("word"); Text("短语").tag("phrase") }.pickerStyle(.segmented)
+                NavigationLink("高级词汇与短语推荐", systemImage: "sparkles") { VocabularyRecommendationView(learning: learning, continueToday: continueToday) }.accessibilityIdentifier("vocabulary-recommendations")
                 Section {
                     Text("共 \(allItems.count) 条 · 待复习 \(allItems.filter { $0.dueAt.map { $0 <= now } ?? false }.count) · 逾期 \(allItems.filter { $0.dueAt.map { $0 < Calendar.current.startOfDay(for: now) } ?? false }.count)").font(.caption).foregroundStyle(.secondary)
                     Picker("复习状态", selection: $status) { ForEach(VocabularyStatusFilter.allCases, id: \.self) { Text($0.rawValue).tag($0) } }.accessibilityIdentifier("vocabulary-status-filter")
@@ -44,7 +46,7 @@ struct VocabularyListView: View {
                 .navigationTitle("生词本").task { load() }.onReceive(learning.$revision) { _ in load() }
                 .onChange(of: search) { _, _ in load() }.onChange(of: filter) { _, _ in load() }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in load() }
-                .toolbar { Menu("导出生词", systemImage: "square.and.arrow.up") { Button("导出 JSON（完整学习数据）") { prepareExport(.json) }; Button("导出 CSV") { prepareExport(.csv) } }
+                .toolbar { Menu("导出生词", systemImage: "square.and.arrow.up") { Button("导出 JSON（完整学习数据）") { prepareExport(.json) }; Button("导出 CSV") { prepareExport(.csv) } } }
                 .fileExporter(isPresented: $exporting, document: exportDocument, contentType: exportType, defaultFilename: "LexiDawn-vocabulary") { result in
                     if case let .failure(failure) = result { error = failure.localizedDescription }
                 }

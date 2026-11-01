@@ -26,6 +26,8 @@ struct ArticleLibraryItem: Identifiable {
     var readLater: Bool = false
     var sourceID: String = ""
     var fetchedAt: Date = .distantPast
+    var publishedAt: Date? = nil
+    var wordCount: Int = 0
 }
 
 struct ArticleAccessError: LocalizedError {
@@ -118,7 +120,7 @@ struct ArticleAccessError: LocalizedError {
     func candidates(excluding articleIDs: Set<String>) throws -> [ArticleCandidate] {
         try writer.read { context in
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
-            let started = Set(try context.fetch(FetchDescriptor<ArticleProgressRecord>()).filter { $0.mode == "explore" }.map(\.articleID))
+            let started = Set(try context.fetch(FetchDescriptor<ArticleProgressRecord>()).filter { $0.mode == "explore" && $0.archivedAt == nil }.map(\.articleID))
             let interests = Set(try context.fetch(FetchDescriptor<UserPreferencesRecord>()).first?.interestTopics ?? [])
             let now = Date()
             let eligible: [ArticleCandidate] = try context.fetch(FetchDescriptor<ArticleRecord>()).sorted { $0.createdAt > $1.createdAt }.compactMap { record in
@@ -132,8 +134,8 @@ struct ArticleAccessError: LocalizedError {
                 return candidate
             }
             return eligible.sorted {
-                let left = ArticleRecommendationService.score(title: $0.title, topics: $0.topicTags, interests: interests, publishedAt: $0.publishedAt, wordCount: $0.wordCount, at: now)
-                let right = ArticleRecommendationService.score(title: $1.title, topics: $1.topicTags, interests: interests, publishedAt: $1.publishedAt, wordCount: $1.wordCount, at: now)
+                let left = ArticleRecommendationService.score(title: $0.title, topics: $0.topicTags, interests: interests, publishedAt: $0.publishedAt, wordCount: $0.wordCount, at: now, sourceID: $0.sourceID)
+                let right = ArticleRecommendationService.score(title: $1.title, topics: $1.topicTags, interests: interests, publishedAt: $1.publishedAt, wordCount: $1.wordCount, at: now, sourceID: $1.sourceID)
                 return left == right ? $0.id < $1.id : left > right
             }
         }
@@ -146,7 +148,7 @@ struct ArticleAccessError: LocalizedError {
         try writer.read { context in
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
             let cycles = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>())
-            let progresses = try context.fetch(FetchDescriptor<ArticleProgressRecord>())
+            let progresses = try context.fetch(FetchDescriptor<ArticleProgressRecord>()).filter { $0.archivedAt == nil }
             let expiredIDs = Set(try context.fetch(FetchDescriptor<ArticleHistoryArchiveRecord>()).filter { $0.reasonCode == "cache-expired-body-removed" }.map(\.articleID))
             return try historicalArticleMetadata(in: context).filter { $0.modelContext != nil || expiredIDs.contains($0.articleID) }.sorted { $0.createdAt > $1.createdAt }.map { article in
                 try article.validateStoredMetadata()
@@ -159,7 +161,7 @@ struct ArticleAccessError: LocalizedError {
                 return ArticleLibraryItem(id: article.articleID, title: article.originalTitle, source: article.sourceAttribution ?? article.sourceID,
                     topics: article.topicTags, minutes: article.estimatedReadMinutes, originalURL: grant?.originalURL,
                     cycleID: cycle.flatMap { UUID(uuidString: $0.cycleID) }, percent: progress?.readingPercent ?? 0,
-                    completed: progress?.completedAt != nil || cycle?.articleTaskStatusRaw == "completed", started: progress != nil, readable: readable, favorite: article.isFavorite, readLater: article.readLater, sourceID: article.sourceID, fetchedAt: article.fetchedAt)
+                    completed: progress?.completedAt != nil || cycle?.articleTaskStatusRaw == "completed", started: progress != nil, readable: readable, favorite: article.isFavorite, readLater: article.readLater, sourceID: article.sourceID, fetchedAt: article.fetchedAt, publishedAt: article.publishedAt, wordCount: article.wordCount)
             }
         }
     }

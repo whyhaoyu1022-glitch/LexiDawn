@@ -49,12 +49,12 @@ final class AppStartup: ObservableObject {
         #if DEBUG && targetEnvironment(simulator)
         // Explicit opt-in UI fixture, isolated from the production disk store. Never used in Release.
         if let scenario = ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"] {
-            if ["round3-history-gate", "round3-extra-review"].contains(scenario), let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
+            if (["round3-history-gate", "round3-extra-review", "round3-explore-catalog"].contains(scenario) || scenario.hasPrefix("round3-recommendations-")), let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
                 // Explicit gate fixture, distinct from the genuinely empty live cold-start test.
                 let url = FileManager.default.temporaryDirectory.appendingPathComponent("round3-gate-\(storeID).store")
                 let app = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
                 if try app.articleRepository.allArticleIDs().isEmpty, let learning = app.learning {
-                    let previous = scenario == "round3-extra-review" ? Date() : Date().addingTimeInterval(-86400)
+                    let previous = scenario == "round3-history-gate" ? Date().addingTimeInterval(-86400) : Date()
                     try learning.content.installBundledRFC(at: previous)
                     if case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: previous, timeZone: .current, calendar: .current) {
                         // Seed a historical completed cycle with auditable domain evidence, never fake raw statuses.
@@ -69,9 +69,13 @@ final class AppStartup: ObservableObject {
                             let addition = try learning.vocabulary.add(token: .init(surface: surface, range: NSRange(location: 0, length: surface.count), sentence: "Explicit original context fixture: the \(surface) supports learning."), articleID: SourceRegistry.rfc.id, autoAdd: true, at: Date())
                             if let addition { try learning.vocabulary.annotate(entryID: addition.entryID, meaning: meaning, notes: "Explicit extra-review fixture, not a live cold start.", at: Date()) }
                         }
-                    } else {
+                    } else if scenario == "round3-history-gate" {
                         _ = try learning.content.importArticle(.init(title: "Explicit original current-task fixture", body: "A new original task remains unfinished. Only this task article can be opened until its cycle is complete.", source: "Explicit UI fixture author", rightsConfirmed: true), at: Date())
                         _ = try app.cycleService.ensureCurrentCycle(now: Date(), timeZone: .current, calendar: .current)
+                    } else {
+                        _ = try learning.content.importArticle(.init(title: "Explicit science exploration fixture", body: "Cooperation and architecture support thoughtful investigation. This complete original fixture discusses scientific collaboration and responsible communication. The final original sentence remains available in the native reader.", source: "Explicit original UI fixture author", topic: "Science", rightsConfirmed: true, eligibleForDaily: false), at: Date())
+                        _ = try learning.content.importArticle(.init(title: "Explicit city exploration fixture", body: "Transportation and administration shape communities. This complete original fixture discusses city planning and practical education. The final original paragraph is preserved for native exploration testing.", source: "Explicit original UI fixture author", topic: "Cities", rightsConfirmed: true, eligibleForDaily: false), at: Date())
+                        if scenario.hasPrefix("round3-recommendations-") { try DictionaryEvidenceProvider.install(mode: scenario.replacingOccurrences(of: "round3-recommendations-", with: ""), learning: learning) }
                     }
                 }
                 return app

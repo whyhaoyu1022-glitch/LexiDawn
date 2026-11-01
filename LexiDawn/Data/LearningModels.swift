@@ -31,6 +31,7 @@ import SwiftData
 }
 
 @Model final class ArticleProgressRecord {
+    var archivedAt: Date?
     @Attribute(.unique) var progressID: String
     var articleID: String
     var cycleID: String?

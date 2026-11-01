@@ -17,6 +17,7 @@ struct ArticleLibraryView: View {
     @State private var explorationAllowed = false
     @State private var access = ArticleLearningAccess(cycles: [], localDate: "")
     @State private var importFailed = false
+    @State private var resetting: ArticleLibraryItem?
     private var visible: [ArticleLibraryItem] {
         items.filter { $0.readable && (query.isEmpty || $0.title.localizedCaseInsensitiveContains(query)) &&
             (source == "all" || $0.sourceID == source) && (topic == "all" || $0.topics.contains(topic)) &&
@@ -52,6 +53,7 @@ struct ArticleLibraryView: View {
                         Button(item.favorite ? "取消收藏" : "收藏", systemImage: item.favorite ? "star.fill" : "star") { flags(item, favorite: !item.favorite) }
                         Button(item.readLater ? "移出稍后阅读" : "稍后阅读", systemImage: item.readLater ? "bookmark.fill" : "bookmark") { flags(item, later: !item.readLater) }
                     }.buttonStyle(.bordered).font(.caption)
+                    if item.cycleID == nil && item.started { Button("重新标记为未开始") { resetting = item }.font(.caption).disabled(!explorationAllowed) }
                 }.padding(.vertical, 8)
             }
             if visible.isEmpty, !loading { ContentUnavailableView("没有匹配的完整文章", systemImage: "books.vertical", description: Text("调整筛选，或导入有权在本地保存的完整英文原文。")) }
@@ -66,6 +68,13 @@ struct ArticleLibraryView: View {
         .refreshable { await beginRefresh().value }
         .task { load() }.onReceive(learning.$revision) { _ in load() }
         .onDisappear { refreshTask?.cancel() }
+        .confirmationDialog("重新标记为未开始？", isPresented: Binding(get: { resetting != nil }, set: { if !$0 { resetting = nil } })) {
+            Button("确认重新标记") {
+                if let item = resetting { do { try learning.content.resetExploration(articleID: item.id, at: Date()); learning.changed(); load() } catch { self.error = error.localizedDescription } }
+                resetting = nil
+            }
+            Button("取消", role: .cancel) { resetting = nil }
+        } message: { Text("保留原阅读与完成历史，仅为本篇探索文章建立新的阅读进度。每日任务文章不能这样重置。") }
         .fullScreenCover(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭文章") { reader = nil } } } } }
     }
     private func load() { do { items = try learning.content.library(); access = try learning.articleAccess(); explorationAllowed = access.mayExplore; error = nil } catch { access = ArticleLearningAccess(cycles: [], localDate: ""); importFailed = false; self.error = error.localizedDescription } }

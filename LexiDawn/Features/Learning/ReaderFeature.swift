@@ -17,6 +17,7 @@ import AVFoundation
         do {
             let article = try learning.openArticle(articleID: articleID, cycleID: cycleID, at: Date())
             position = try learning.reader.position(article: article, cycleID: cycleID)
+            try learning.reader.save(articleID: articleID, cycleID: cycleID, position: position, at: Date())
             if position.contentChanged { notice = "正文版本已变化。已尝试匹配原段落；不能匹配时从开头恢复，完成记录不会伪造。" }
             self.article = article; sourceURL = article.originalURL; error = nil
         } catch { self.article = nil; sourceURL = (error as? ArticleAccessError)?.originalURL; self.error = error.localizedDescription }
@@ -275,7 +276,7 @@ struct WordLookupSheet: View {
             .fullScreenCover(isPresented: $showDetails) {
                 NavigationStack {
                     if let result = model.result {
-                        DictionaryDetailView(result: result, context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth, theme: theme)
+                        DictionaryDetailView(result: result, context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth, theme: theme, automaticAdditionAllowed: model.autoAdd)
                             .toolbar { ToolbarItem(placement: .topBarLeading) { Button("查词") { showDetails = false } } }
                     }
                 }.preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
@@ -341,6 +342,7 @@ struct DictionaryDetailView: View {
     let articleID: String?
     var depth: Int = 0
     var theme: String = "system"
+    var automaticAdditionAllowed = true
     @EnvironmentObject private var dependencies: AppDependencies
     @State private var speech = AVSpeechSynthesizer()
     @State private var entry: VocabularyItem?
@@ -393,7 +395,7 @@ struct DictionaryDetailView: View {
         if let articleID, !text.isEmpty, depth < 3 {
             InlineEnglishText(text: text, onWord: { token in
                 do {
-                    let auto = try dependencies.preferencesRepository.load().autoAddOnWordTap
+                    let auto = try automaticAdditionAllowed && dependencies.preferencesRepository.load().autoAddOnWordTap
                     let model = WordLookupModel(token: token, articleID: articleID, autoAdd: auto, learning: learning, depth: depth + 1)
                     model.startAddition(); selection = model
                 } catch { self.error = error.localizedDescription }

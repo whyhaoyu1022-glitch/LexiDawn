@@ -13,6 +13,53 @@ private actor CacheRequestProbe: DictionaryProvider {
 @MainActor final class Round3Tests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 1793534400)
     private var webBody: String { (1...3).map { "<p>Paragraph \($0) is explicit original fixture writing. Science helps people understand nature and share discoveries. Every sentence in this complete document is preserved for a deterministic parser test, including the final sentence.</p>" }.joined() }
+    func testRecommendationCandidatesKeepOriginalInflectedPhraseAndRealOffset() throws {
+        let body = "The team carried out an investigation and took into account the evidence."
+        let article = ReadableArticle(id: "explicit-original-fixture", title: "Explicit original fixture", source: "Fixture author", body: body, bodyHash: fingerprint(body), topics: ["Science"], minutes: 1, publishedAt: nil, originalURL: nil)
+        let candidates = VocabularyRecommendationRules.candidates(in: [article], excluding: ["carry out"])
+        XCTAssertFalse(candidates.contains { $0.id == "carry out" })
+        let phrase = try XCTUnwrap(candidates.first { $0.id == "take into account" })
+        XCTAssertEqual(phrase.surface, "took into account")
+        XCTAssertEqual((body as NSString).substring(with: phrase.range), phrase.surface)
+        XCTAssertEqual(EnglishTokenizer.lemma("  LOOKED  into  "), "look into")
+        XCTAssertTrue(VocabularyRecommendationRules.candidates(in: [article], excluding: [], limit: 0).isEmpty)
+    }
+    func testExploreResetArchivesOriginalProgressAndCannotResetDailyTask() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let first = try learning.content.importArticle(.init(title: "Explicit daily fixture", body: "A complete original daily article.", source: "Fixture author", rightsConfirmed: true), at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        let extra = try learning.content.importArticle(.init(title: "Explicit explore fixture", body: "A complete original exploration article.", source: "Fixture author", rightsConfirmed: true, eligibleForDaily: false), at: now)
+        XCTAssertThrowsError(try learning.content.resetExploration(articleID: extra, at: now))
+        _ = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        try learning.reader.complete(articleID: first, cycleID: cycle.cycleID, manualConfirmation: true, at: now)
+        try learning.reader.save(articleID: extra, cycleID: nil, position: .init(percent: 0.7, offset: 10), at: now)
+        XCTAssertFalse(try learning.content.exploreRecommendations(at: now).contains { $0.id == extra })
+        try learning.content.resetExploration(articleID: extra, at: now)
+        XCTAssertTrue(try learning.content.exploreRecommendations(at: now).contains { $0.id == extra })
+        let archived = try XCTUnwrap(ModelContext(app.modelContainer).fetch(FetchDescriptor<ArticleProgressRecord>()).first { $0.articleID == extra })
+        XCTAssertEqual(archived.readingPercent, 0.7); XCTAssertEqual(archived.archivedAt, now)
+        XCTAssertThrowsError(try learning.content.resetExploration(articleID: first, at: now))
+        let article = try learning.openExplore(articleID: extra, at: now)
+        XCTAssertEqual(try learning.reader.position(article: article, cycleID: nil).percent, 0)
+        XCTAssertEqual(ArticleRecommendationService.weights.values.reduce(0, +), 100)
+    }
+    func testVocabularyRecommendationsRequireUnlockAndDoNotAddUntilExplicitAction() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let id = try learning.content.importArticle(.init(title: "Explicit recommendation fixture", body: "Cooperation and architecture support thoughtful learning.", source: "Fixture author", rightsConfirmed: true), at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        var received: [RecommendedVocabulary] = []
+        do { _ = try await learning.recommendationService().discover { received.append($0) }; XCTFail("Recommendations must remain locked") } catch { }
+        _ = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        try learning.reader.complete(articleID: id, cycleID: cycle.cycleID, manualConfirmation: true, at: now)
+        let providers = Array(DictionaryAggregator.versions.keys).map { ($0, DictionaryEvidenceProvider(mode: "many", source: $0) as any DictionaryProvider) }
+        try learning.dictionary.configureDictionaryEvidence(providers: providers)
+        _ = try await learning.recommendationService().discover(limit: 2) { received.append($0) }
+        XCTAssertEqual(received.count, 2); XCTAssertTrue(try learning.vocabulary.entries().isEmpty)
+        let candidate = try XCTUnwrap(received.first).candidate
+        _ = try learning.vocabulary.add(token: .init(surface: candidate.lemma, range: NSRange(location: 0, length: candidate.lemma.count), sentence: candidate.sentence), articleID: candidate.articleID, autoAdd: false, explicit: true, at: Date())
+        received = []; _ = try await learning.recommendationService().discover(limit: 2) { received.append($0) }
+        XCTAssertFalse(received.contains { $0.id == candidate.lemma }); XCTAssertEqual(try learning.vocabulary.entries().count, 1)
+    }
     func testExtraReviewRestoresFixedSessionSchedulesOnceAndNeverChangesDailyCycle() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
         let articleID = try learning.content.importArticle(.init(title: "Explicit extra review fixture", body: "A book helps readers learn.", source: "Fixture author", rightsConfirmed: true), at: now)

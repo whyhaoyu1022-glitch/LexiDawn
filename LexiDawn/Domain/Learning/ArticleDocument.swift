@@ -88,9 +88,18 @@ enum ArticleQualityValidator {
 }
 
 enum ArticleRecommendationService {
-    static func score(title: String, topics: [String], interests: Set<String>, publishedAt: Date?, wordCount: Int, at now: Date) -> Double {
+    static let weights: [String: Double] = ["topic": 25, "completeness": 20, "source": 20, "freshness": 15, "learning": 10, "presentation": 5, "preference": 5]
+    static func score(title: String, topics: [String], interests: Set<String>, publishedAt: Date?, wordCount: Int, at now: Date, sourceID: String? = nil) -> Double {
         let age = max(0, now.timeIntervalSince(publishedAt ?? .distantPast) / 86400)
-        return Double(Set(topics).intersection(interests).count) * 10 + 5 / (1 + age) + (1200...2500).contains(wordCount).doubleValue
+        let tags = Set(topics.map { $0.lowercased() }), preferences = Set(interests.map { $0.lowercased() })
+        let matched = !tags.intersection(preferences).isEmpty
+        let topical = preferences.isEmpty ? 0.6 : matched ? 1.0 : 0.2
+        let longValue = (1200...2500).contains(wordCount) ? 1.0 : (400...6000).contains(wordCount) ? 0.8 : 0.5
+        let evergreen = tags.contains { ["science", "technology", "computing", "history", "education"].contains($0) }
+        let freshness = max(1 / (1 + age / 7), evergreen ? 0.65 : 0)
+        let reliable = sourceID.map { ArticleSourceRegistry.canAttempt($0) || $0 == SourceRegistry.rfc.id ? 1.0 : 0.6 } ?? 0.6
+        // This score runs only after the Repository's complete-local-text admission filters.
+        return weights["topic"]! * topical + weights["completeness"]! * (0.75 + longValue * 0.25) + weights["source"]! * reliable + weights["freshness"]! * freshness + weights["learning"]! * longValue + weights["presentation"]! * 0.8 + weights["preference"]! * (matched ? 1 : 0)
     }
 }
 private extension Bool { var doubleValue: Double { self ? 3 : 0 } }
