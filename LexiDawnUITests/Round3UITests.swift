@@ -36,7 +36,7 @@ final class Round3UITests: XCTestCase {
         let body = app.otherElements["reader-body"].firstMatch
         XCTAssertTrue(body.exists); body.swipeUp()
         capture("R3-R03", app: app, feature: "reader", state: "scrolled-after-ten-rotations")
-        let token = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'word-'")).firstMatch
+        let token = visibleWord(in: app)
         XCTAssertTrue(token.isHittable); token.tap()
         XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10))
         capture("R3-R04", app: app, feature: "dictionary", state: "word-tap-after-rotation")
@@ -76,7 +76,7 @@ final class Round3UITests: XCTestCase {
         app.buttons["open-reader"].tap()
         XCTAssertTrue(app.navigationBars["英文阅读"].waitForExistence(timeout: 10))
         let body = app.otherElements["reader-body"].firstMatch; XCTAssertTrue(body.exists); body.swipeUp()
-        let token = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'word-'")).firstMatch
+        let token = visibleWord(in: app)
         XCTAssertTrue(token.waitForExistence(timeout: 10)); XCTAssertTrue(token.isHittable); token.tap()
         XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10))
         capture("R3-C03", app: app, feature: "dictionary", state: "live-word-lookup-new-vocabulary", origin: origin)
@@ -143,7 +143,10 @@ final class Round3UITests: XCTestCase {
         expectation(for: noNew, evaluatedWith: notice); waitForExpectations(timeout: 15)
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 1)
         capture("R3-A19", app: app, feature: "article", state: "deduplicated-no-new-article", origin: "explicit-original-fixture-URLProtocol")
-        let search = app.searchFields.firstMatch; search.tap(); search.typeText("Explicit fixture")
+        let search = app.searchFields.firstMatch
+        for _ in 0..<4 { if search.exists && search.isHittable { break }; app.swipeDown() }
+        XCTAssertTrue(search.waitForExistence(timeout: 10)); XCTAssertTrue(search.isHittable)
+        search.tap(); search.typeText("Explicit fixture")
         capture("R3-L02", app: app, feature: "library", state: "title-search-hit", origin: "explicit-original-fixture-URLProtocol")
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "Explicit fixture".count)); search.typeText("zzzzunfindable")
         XCTAssertTrue(app.staticTexts["没有匹配的完整文章"].waitForExistence(timeout: 10))
@@ -189,7 +192,7 @@ final class Round3UITests: XCTestCase {
             for _ in 0..<4 { body.swipeUp() }
             for _ in 0..<4 { body.swipeDown() }
         }
-        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'word-'")).firstMatch.isHittable)
+        XCTAssertTrue(visibleWord(in: app).isHittable)
         capture("R3-P01", app: app, feature: "performance", state: "real-rfc-long-scroll-measured-no-fps-claim")
     }
     func testMatchingEquivalentAccessibilityActionsAndLabels() throws {
@@ -202,6 +205,13 @@ final class Round3UITests: XCTestCase {
         XCTAssertEqual(word.value as? String, "已配对"); XCTAssertEqual(meaning.value as? String, "已配对")
         XCTAssertFalse(word.isEnabled); XCTAssertFalse(meaning.isEnabled)
         capture("R3-M10", app: app, feature: "matching", state: "accessibility-completed-both-ends-disabled")
+    }
+    /// Scrolling can retain offscreen accessibility elements. Exercise a word in the visible viewport.
+    private func visibleWord(in app: XCUIApplication) -> XCUIElement {
+        let words = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'word-'"))
+        let token = words.allElementsBoundByIndex.first { $0.isHittable && app.windows.firstMatch.frame.intersects($0.frame) }
+        XCTAssertNotNil(token, "The scrolled reader must expose a real, visible, tappable word")
+        return token ?? words.firstMatch
     }
     /// Sample only the middle of the board's gap. Button text/icons cannot satisfy this assertion.
     private func greenLinePixels(app: XCUIApplication) -> Int {

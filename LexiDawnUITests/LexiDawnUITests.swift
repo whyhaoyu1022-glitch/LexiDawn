@@ -1,8 +1,10 @@
 import XCTest
 
 final class LexiDawnUITests: XCTestCase {
+    private var evidenceTheme = "system"
     override func setUpWithError() throws {
         continueAfterFailure = false
+        evidenceTheme = "system"
         XCUIDevice.shared.orientation = .portrait
     }
 
@@ -111,10 +113,20 @@ final class LexiDawnUITests: XCTestCase {
 
     /// User-review evidence from the actual running simulator, retained even when assertions pass.
     private func capture(_ name: String, in app: XCUIApplication) {
-        let attachment = XCTAttachment(screenshot: app.screenshot())
-        attachment.name = name
+        let device = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? "CI-simulator"
+        let identifier = "R3-legacy-" + name + "-" + device.replacingOccurrences(of: ",", with: "-")
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        attachment.name = identifier
         attachment.lifetime = .keepAlways
         add(attachment)
+        let scenario = app.launchEnvironment["LEXIDAWN_UI_SCENARIO"] ?? "production"
+        let metadata: [String: String] = ["screenshotID": identifier, "featureID": "retained-regression", "screenName": name,
+            "state": name, "device": device, "orientation": XCUIDevice.shared.orientation.isLandscape ? "landscape" : "portrait",
+            "theme": evidenceTheme, "testName": self.name, "fixtureOrProduction": scenario == "production" ? "production-bundled-rfc" : "explicit-test-scenario-" + scenario,
+            "fileName": identifier + ".png", "notes": "Original retained regression capture; native Simulator pixels. Fixture scenarios are explicitly identified; methods and assertions retained."]
+        if let data = try? JSONSerialization.data(withJSONObject: metadata, options: [.sortedKeys]) {
+            let json = XCTAttachment(data: data, uniformTypeIdentifier: "public.json"); json.name = identifier + "-metadata"; json.lifetime = .keepAlways; add(json)
+        }
     }
 
     private func launch(_ scenario: String) -> XCUIApplication {
@@ -422,6 +434,7 @@ extension LexiDawnUITests {
         for (index, theme) in ["浅色", "深色", "暖纸色"].enumerated() {
             try openReaderAppearance(app)
             XCTAssertTrue(app.buttons[theme].waitForExistence(timeout: 5)); app.buttons[theme].tap()
+            evidenceTheme = ["light", "dark", "paper"][index]
             capture("P2\(index)-real-rfc-theme-\(index)", in: app)
         }
         try openReaderAppearance(app)
@@ -638,3 +651,4 @@ extension LexiDawnUITests {
         XCTAssertTrue(menu.waitForExistence(timeout: 5)); menu.tap()
     }
 }
+

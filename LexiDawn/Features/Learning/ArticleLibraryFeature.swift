@@ -50,7 +50,7 @@ struct ArticleLibraryView: View {
             }
             if visible.isEmpty, !loading { ContentUnavailableView("没有匹配的完整文章", systemImage: "books.vertical", description: Text("调整筛选，或导入有权在本地保存的完整英文原文。")) }
         }
-        .searchable(text: $query, prompt: "搜索完整文章标题")
+        .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索完整文章标题")
         .navigationTitle("文章库与历史")
         .toolbar { Button("发现完整文章", systemImage: "arrow.clockwise") { Task { await refresh() } }.disabled(loading) }
         .refreshable { await refresh() }
