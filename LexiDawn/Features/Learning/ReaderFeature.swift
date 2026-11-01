@@ -209,9 +209,20 @@ struct WordLookupSheet: View {
     var body: some View {
         NavigationStack {
             List {
+                #if DEBUG && targetEnvironment(simulator)
+                if ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"]?.hasPrefix("round3-dictionary-") == true { Text("明确测试夹具：词典 Provider 状态注入，非生产词典数据。").font(.caption).accessibilityIdentifier("dictionary-fixture-label") }
+                #endif
                 if model.loading { ProgressView("正在查询词典…").accessibilityIdentifier("dictionary-loading") }
                 if let error = model.vocabularyError {
                     Section { Text(error).foregroundStyle(.red); Button("重试保存生词") { model.add(explicit: true) } }
+                }
+                if let error = model.error { Section { Text(error).foregroundStyle(.red); Button("重试词典查询") { Task { await model.lookup() } } } }
+                if !model.loading, model.error == nil, let result = model.result, result.senses.isEmpty {
+                    Text("暂无可验证的释义。可以继续阅读，或在生词本添加明确标记的个人释义。")
+                }
+                if let result = model.result, !result.senses.isEmpty {
+                    if result.cached { Label("正在使用本地缓存", systemImage: "internaldrive").font(.caption) }
+                    if !result.failedProviders.isEmpty { Label("某些词典来源暂不可用，已显示可用结果", systemImage: "exclamationmark.triangle").font(.caption) }
                 }
                 Section { Text(model.token.surface).font(.largeTitle.bold()); Text("标准词形：\(EnglishTokenizer.lemma(model.token.surface))") }
                 if model.depth < 3 {
@@ -236,13 +247,9 @@ struct WordLookupSheet: View {
                     Text(model.token.sentence).font(.body.italic()).lineLimit(3)
                     DisclosureGroup("完整句子语境") { Text(model.token.sentence).textSelection(.enabled) }
                 }
-                #if DEBUG && targetEnvironment(simulator)
-                if ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"]?.hasPrefix("round3-dictionary-") == true { Text("明确测试夹具：词典 Provider 状态注入，非生产词典数据。").font(.caption).accessibilityIdentifier("dictionary-fixture-label") }
-                #endif
-                if let result = model.result {
+                if let result = model.result, !result.senses.isEmpty {
                     DictionaryResultContent(result: result)
                 }
-                if let error = model.error { Text(error).foregroundStyle(.red); Button("重试词典查询") { Task { await model.lookup() } } }
             }
             .scrollContentBackground(.hidden).background(sheetBackground)
             .navigationTitle("查词").toolbarBackground(sheetBackground, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar).toolbar {
@@ -251,6 +258,7 @@ struct WordLookupSheet: View {
                         NavigationLink { DictionaryDetailView(result: result, context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth) }
                         label: { Label("查看详细释义", systemImage: "book").labelStyle(.iconOnly) }
                         .accessibilityLabel("查看详细释义")
+                        .disabled(result.senses.isEmpty)
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() }.accessibilityIdentifier("close-word") }
