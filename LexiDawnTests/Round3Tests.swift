@@ -222,6 +222,47 @@ private actor CacheRequestProbe: DictionaryProvider {
         XCTAssertThrowsError(try learning.openArticle(articleID: id, cycleID: cycle.cycleID, at: tomorrow))
         XCTAssertEqual(try learning.cycles.fetchAll().count, 1, "Checking a gate cannot fabricate a new daily cycle")
     }
+    func testPhraseSourceSpanIncludesFirstWordAcrossHardBreakAndRejectsUnrelatedRepeatedWord() throws {
+        let text = "Earlier original sentence. We take\n  into account every result, then inspect the account."
+        let source = text as NSString, first = source.range(of: "account"), last = source.range(of: "account", options: .backwards)
+        let tapped = EnglishToken(surface: "account", range: first, sentence: "We take into account every result, then inspect the account.")
+        let phrase = try XCTUnwrap(EnglishPhraseRecognizer.token(for: "take into account", around: tapped, sourceText: text))
+        XCTAssertEqual(phrase.range.location, source.range(of: "take").location)
+        XCTAssertEqual(phrase.surface, "take\n  into account"); XCTAssertEqual(EnglishTokenizer.lemma(phrase.surface), "take into account")
+        XCTAssertEqual(source.substring(with: phrase.range), phrase.surface)
+        XCTAssertNil(EnglishPhraseRecognizer.token(for: "take into account", around: .init(surface: "account", range: last, sentence: tapped.sentence), sourceText: text))
+        let definition = "An original definition. We carry out the study.", ns = definition as NSString
+        let nested = try XCTUnwrap(EnglishPhraseRecognizer.token(for: "carry out", around: .init(surface: "out", range: ns.range(of: "out"), sentence: "We carry out the study."), sourceText: definition))
+        XCTAssertEqual(nested.range.location, ns.range(of: "carry").location)
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let id = try learning.content.importArticle(.init(title: "Explicit source-position fixture", body: text, source: "Fixture author", rightsConfirmed: true), at: now)
+        let model = WordLookupModel(token: .init(surface: "account", range: NSRange(location: NSNotFound, length: 7), sentence: tapped.sentence), articleID: id, autoAdd: true, learning: learning)
+        XCTAssertNil(model.phraseLookup("take into account")); XCTAssertNotNil(model.phraseError); XCTAssertNil(model.vocabularyError)
+        XCTAssertTrue(try learning.vocabulary.entries().isEmpty)
+    }
+    func testDictionaryNestedContextKeepsItsRealEvidenceAndCannotMasqueradeAsArticleSentence() throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let id = try learning.content.importArticle(.init(title: "Explicit original source fixture", body: "A book explains science.", source: "Original fixture author", originalURL: "https://fixture.invalid/complete-original", rightsConfirmed: true), at: now)
+        let token = EnglishToken(surface: "science", range: NSRange(location: 16, length: 7), sentence: "A book explains science.")
+        let original = try XCTUnwrap(learning.vocabulary.add(token: token, articleID: id, autoAdd: true, at: now))
+        let evidence = "Explicit original dictionary-source evidence fixture; not production dictionary data."
+        let nested = try XCTUnwrap(learning.vocabulary.add(token: token, articleID: id, autoAdd: true, origin: .dictionary(headword: "book", evidence: evidence), at: now))
+        XCTAssertFalse(nested.created); XCTAssertThrowsError(try learning.vocabulary.undo(nested, at: now))
+        XCTAssertThrowsError(try learning.vocabulary.add(token: token, articleID: id, autoAdd: true, origin: .dictionary(headword: "book", evidence: ""), at: now))
+        let item = try XCTUnwrap(learning.vocabulary.find(surface: "science"))
+        XCTAssertEqual(item.id, original.entryID); XCTAssertEqual(item.sourceContexts.count, 2)
+        let dictionary = try XCTUnwrap(item.sourceContexts.first { $0.originKind == "dictionary" })
+        XCTAssertEqual(dictionary.title, "词典释义：book"); XCTAssertEqual(dictionary.attribution, evidence); XCTAssertNil(dictionary.originalURL)
+        XCTAssertEqual(item.sourceContexts.first { $0.originKind == "reader" }?.originalURL, "https://fixture.invalid/complete-original")
+        let exported = String(decoding: try learning.vocabulary.export(.json, at: now), as: UTF8.self)
+        XCTAssertTrue(exported.contains(evidence)); XCTAssertTrue(exported.contains("dictionary"))
+        let context = ModelContext(app.modelContainer)
+        let historical = try XCTUnwrap(context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).first { $0.contextKind == "reader" })
+        historical.contextKind = nil; try context.save()
+        let reloaded = try XCTUnwrap(learning.vocabulary.find(surface: "science"))
+        XCTAssertEqual(reloaded.sourceContexts.first { $0.originKind == nil }?.lookupOrigin.kind, "historical")
+        XCTAssertEqual(reloaded.sourceContexts.count, 2)
+    }
     func testPhraseMembershipAndUndoNeverMistakeExistingPhraseForWord() throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
         let id = try learning.content.importArticle(.init(title: "Explicit original phrase fixture", body: "We look into the issue.", source: "Fixture author", rightsConfirmed: true), at: now)
@@ -414,6 +455,29 @@ private actor CacheRequestProbe: DictionaryProvider {
             document: ArticleDocumentNormalizer.plainText(raw), topics: ["test"], rights: ArticleSourceRegistry.wikipediaRights,
             completeDocument: complete, expectedHash: hash, verifiedAt: now)
     }
+    func testTenThousandRSSCandidatesStayCompleteAndRecordParserClockAndMemory() {
+        let data = Data(("<rss><channel>" + (0..<10_000).map { "<item><title>Explicit large feed fixture \($0)</title><link>https://fixture.invalid/articles/\($0)</link><description>Explicit summary must never become a body.</description></item>" }.joined() + "</channel></rss>").utf8)
+        let options = XCTMeasureOptions(); options.iterationCount = 3
+        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()], options: options) {
+            do {
+                let candidates = try ArticleFeedParser(sourceID: "explicit-large-feed-fixture").parse(data)
+                XCTAssertEqual(candidates.count, 10_000); XCTAssertEqual(candidates.last?.title, "Explicit large feed fixture 9999")
+                XCTAssertEqual(candidates.last?.url, "https://fixture.invalid/articles/9999")
+            } catch { XCTFail("Original fixture feed must parse completely: \(error)") }
+        }
+    }
+    func testLongOriginalHTMLExtractionRetainsEveryParagraphAndRecordsClockAndMemory() {
+        let html = "<article><h2>Explicit original long extraction fixture</h2>" + (0..<1_000).map { "<p>Explicit original paragraph \($0). Complete original sentences remain preserved through extraction, including every paragraph and the final sentence.</p>" }.joined() + "</article>"
+        let options = XCTMeasureOptions(); options.iterationCount = 3
+        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()], options: options) {
+            do {
+                let document = try ArticleHTMLExtractor.extract(html)
+                XCTAssertEqual(document.blocks.filter { $0.kind == .paragraph }.count, 1_000)
+                XCTAssertTrue(document.text.hasSuffix("Explicit original paragraph 999. Complete original sentences remain preserved through extraction, including every paragraph and the final sentence."))
+                XCTAssertTrue(ArticleDocumentNormalizer.preservesOriginal(document.text, document: document))
+            } catch { XCTFail("Original fixture document must remain complete: \(error)") }
+        }
+    }
     func testRSSDescriptionRemainsInMemoryAndCannotBecomeBody() throws {
         let data = Data("<rss><channel><item><title>Fixture &amp; text</title><link>https://example.invalid/a</link><description>Summary only</description></item></channel></rss>".utf8)
         let values = try ArticleFeedParser(sourceID: "disabled-test").parse(data)
@@ -588,6 +652,23 @@ private actor CacheRequestProbe: DictionaryProvider {
         let row = try XCTUnwrap(context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).first)
         row.sourceVersion = "obsolete"; try context.save()
         XCTAssertTrue(try cache.load("book", at: now).senses.isEmpty)
+    }
+    func testNewReviewStateAndFirstAgainPersistLearningWithoutPretendingPriorMastery() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let id = try learning.content.importArticle(.init(title: "Explicit new-card fixture", body: "A book helps people learn.", source: "Fixture author", rightsConfirmed: true), at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected actual cycle") }
+        let word = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "book", range: NSRange(location: 2, length: 4), sentence: "A book helps people learn."), articleID: id, autoAdd: true, at: now))
+        try learning.vocabulary.annotate(entryID: word.entryID, meaning: "书（明确个人释义）", notes: "", at: now)
+        let initial = try XCTUnwrap(ModelContext(app.modelContainer).fetch(FetchDescriptor<ReviewStateRecord>()).first)
+        XCTAssertEqual(initial.cardState, "new"); XCTAssertEqual(initial.successfulReviews, 0)
+        let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        let session = try XCTUnwrap(prepared), matching = try XCTUnwrap(session.matching.first), cloze = try XCTUnwrap(session.cloze.first)
+        XCTAssertTrue(try learning.review.submit(cycleID: cycle.cycleID, questionID: matching.id, answer: matching.senseID, at: now))
+        XCTAssertTrue(try learning.review.submit(cycleID: cycle.cycleID, questionID: cloze.id, answer: "", reveal: true, at: now))
+        let saved = try XCTUnwrap(ModelContext(app.modelContainer).fetch(FetchDescriptor<ReviewStateRecord>()).first)
+        XCTAssertEqual(saved.cardState, "learning"); XCTAssertEqual(saved.againCount, 1); XCTAssertEqual(saved.successfulReviews, 0)
+        XCTAssertEqual(saved.repetitions, 1); XCTAssertGreaterThan(saved.dueAt, now)
+        XCTAssertEqual(try learning.vocabulary.entries().count, 1)
     }
     func testFSRSInitialPublishedVectorsAndForgettingCurve() throws {
         let good = try FSRSScheduler.schedule(stability: nil, difficulty: nil, elapsedDays: 0, grade: .good)

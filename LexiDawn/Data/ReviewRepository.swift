@@ -244,7 +244,8 @@ struct ReviewSessionView: Equatable {
                         elapsedDays: max(0, timestamp.timeIntervalSince(state.lastReviewedAt ?? timestamp) / 86400), grade: grade)
                     let interval = memory.intervalDays
                     state.stability = memory.stability; state.difficulty = memory.difficulty; state.retrievability = memory.retrievability
-                    state.algorithmVersion = FSRSScheduler.version; state.cardState = grade == .again ? "relearning" : "review"
+                    state.algorithmVersion = FSRSScheduler.version
+                    state.cardState = grade == .again ? (state.repetitions == 0 || state.cardState == "learning" ? "learning" : "relearning") : "review"
                     state.againCount = (state.againCount ?? 0) + (grade == .again ? 1 : 0)
                     state.hardCount = (state.hardCount ?? 0) + (grade == .hard ? 1 : 0)
                     state.goodCount = (state.goodCount ?? 0) + (grade == .good ? 1 : 0)

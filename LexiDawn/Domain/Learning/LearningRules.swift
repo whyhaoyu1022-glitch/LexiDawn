@@ -8,6 +8,19 @@ enum LearningError: Error, LocalizedError, Equatable {
 }
 func fingerprint(_ text: String) -> String { SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined() }
 
+enum VocabularyContextOrigin: Equatable, Sendable {
+    case reader
+    case dictionary(headword: String, evidence: String, text: String? = nil)
+    case historical(title: String, evidence: String, text: String)
+    var kind: String { switch self { case .reader: return "reader"; case .dictionary: return "dictionary"; case .historical: return "historical" } }
+    var title: String? { switch self { case .reader: return nil; case let .dictionary(headword, _, _): return "词典释义：" + headword; case let .historical(title, _, _): return title } }
+    var evidence: String? { switch self { case .reader: return nil; case let .dictionary(_, evidence, _), let .historical(_, evidence, _): return evidence } }
+    var sourceText: String? { switch self { case .reader: return nil; case let .dictionary(_, _, text): return text; case let .historical(_, _, text): return text } }
+    func withText(_ text: String) -> VocabularyContextOrigin {
+        switch self { case .reader: return .reader; case let .dictionary(headword, evidence, _): return .dictionary(headword: headword, evidence: evidence, text: text); case let .historical(title, evidence, _): return .historical(title: title, evidence: evidence, text: text) }
+    }
+}
+
 struct EnglishToken: Equatable, Identifiable {
     var id: Int { range.location }
     let surface: String

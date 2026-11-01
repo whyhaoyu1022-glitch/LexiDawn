@@ -36,6 +36,9 @@ MatchingBoard用AnchorPreference/Canvas画Bezier线；双端禁用，ReviewQueue
 
 以下保留历史架构演进记录；旧“未接入”和旧basic排程叙述仅表示当时状态。
 
+
+生词语境新增nullable contextKind/contextTitle/contextAttribution，reader/dictionary/historical分别表示原文、实际词典文本、历史未知类型。词典语境保存原词/原始来源行，关联文章仅作为阅读会话关联；导出保留kind与证据。未知旧类型不推断，显式新点词才补证。短语的完整源范围由Domain在原始全文/词典文本中核验，WordLookupModel协调读取与创建子查词，错误与生词提交错误分离。新ReviewState写入new及零评分计数，首次Again为learning，已复习失败为relearning；旧日志不改写。
+
 ---
 
 # 架构

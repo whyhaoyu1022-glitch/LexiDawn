@@ -85,6 +85,9 @@ import SwiftData
     var sentence: String
     var tokenLocation: Int
     var createdAt: Date
+    var contextKind: String?
+    var contextTitle: String?
+    var contextAttribution: String?
     init(entryID: String, articleID: String, surface: String, sentence: String, tokenLocation: Int, at: Date) {
         contextID = "\(entryID)|\(articleID)|\(tokenLocation)"; self.entryID = entryID; self.articleID = articleID
         self.surface = surface; self.sentence = sentence; self.tokenLocation = tokenLocation; createdAt = at
@@ -134,7 +137,10 @@ import SwiftData
     init(entryID: String, at: Date) {
         self.entryID = entryID; dueAt = at; intervalDays = 0; repetitions = 0; lapses = 0
         algorithmVersion = FSRSScheduler.version
+        cardState = "new"; againCount = 0; hardCount = 0; goodCount = 0
     }
+    // Counts are backed by persisted grade counters. Unknown legacy counters stay unknown.
+    var successfulReviews: Int? { guard let hardCount, let goodCount else { return nil }; return hardCount + goodCount }
 }
 @Model final class ReviewSessionRecord {
     @Attribute(.unique) var sessionID: String

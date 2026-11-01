@@ -798,6 +798,12 @@
       "feature": "global",
       "state": "探索重置确认",
       "screenshotIDPattern": "^R3-X02-"
+    },
+    {
+      "requirementID": "dictionary-context-01",
+      "feature": "dictionary-context",
+      "state": "嵌套词的词典语境证据与关联文章分开",
+      "screenshotIDPattern": "^R3-D67-"
     }
   ],
   "additionalChecks": [

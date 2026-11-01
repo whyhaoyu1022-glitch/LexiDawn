@@ -4,6 +4,12 @@ import SwiftData
 struct VocabularyContextItem: Identifiable, Equatable, Codable {
     let id: String, articleID: String, sentence: String, title: String, attribution: String
     let originalURL: String?
+    var originKind: String? = nil
+    var lookupOrigin: VocabularyContextOrigin {
+        if originKind == "dictionary" { return .dictionary(headword: title.replacingOccurrences(of: "词典释义：", with: ""), evidence: attribution, text: sentence) }
+        if originKind == "reader" { return .reader }
+        return .historical(title: title, evidence: attribution, text: sentence)
+    }
 }
 struct VocabularyItem: Identifiable, Equatable, Codable {
     let id: String, lemma: String, type: String
@@ -79,9 +85,11 @@ struct VocabularyAddition {
                 let definitions = senses.filter { $0.entryID == "cedict-reverse-v1|\(record.lemma)" }.sorted { $0.senseID < $1.senseID }.map(\.chinese)
                 let sourceItems: [VocabularyContextItem] = attached.map { source in
                     let article = articles.first { $0.articleID == source.articleID }
+                    let dictionaryContext = source.contextKind == "dictionary"
                     return VocabularyContextItem(id: source.contextID, articleID: source.articleID, sentence: source.sentence,
-                        title: article?.originalTitle ?? source.articleID, attribution: article?.sourceAttribution ?? article?.sourceID ?? "来源元数据不可用",
-                        originalURL: grants.first { $0.articleID == source.articleID }?.originalURL)
+                        title: dictionaryContext ? source.contextTitle ?? "词典释义" : article?.originalTitle ?? source.articleID,
+                        attribution: dictionaryContext ? source.contextAttribution ?? "词典来源证据不可用" : article?.sourceAttribution ?? article?.sourceID ?? "来源元数据不可用",
+                        originalURL: dictionaryContext ? nil : grants.first { $0.articleID == source.articleID }?.originalURL, originKind: source.contextKind)
                 }
                 var value = VocabularyItem(id: record.entryID, lemma: record.lemma, type: record.entryType, surfaces: record.surfaceForms,
                     addedAt: record.addedAt, meaning: record.userMeaning, notes: record.notes,
@@ -127,8 +135,9 @@ struct VocabularyAddition {
         }
         return Data((rows.map { $0.map(quote).joined(separator: ",") }.joined(separator: "\r\n") + "\r\n").utf8)
     }
-    func add(token: EnglishToken, articleID: String, autoAdd: Bool, explicit: Bool = false, at now: Date) throws -> VocabularyAddition? {
+    func add(token: EnglishToken, articleID: String, autoAdd: Bool, explicit: Bool = false, origin: VocabularyContextOrigin = .reader, at now: Date) throws -> VocabularyAddition? {
         guard autoAdd || explicit else { return nil }
+        if case let .dictionary(headword, evidence, _) = origin, headword.isBlank || evidence.isBlank { throw LearningError.invalid("词典语境缺少真实词条或来源证据，未加入生词本。") }
         let lemma = EnglishTokenizer.lemma(token.surface)
         let type = lemma.contains(" ") ? "phrase" : "word"
         guard !lemma.isBlank, lemma.count <= 100, !EnglishTokenizer.tokens(in: lemma).isEmpty else { throw LearningError.invalid("不是有效英文词条。") }
@@ -154,7 +163,12 @@ struct VocabularyAddition {
             if created, let state = states.first { state.dueAt = min(state.dueAt, now) }
             let source = VocabularySourceContextRecord(entryID: record.entryID, articleID: articleID, surface: token.surface, sentence: token.sentence, tokenLocation: token.range.location, at: now)
             source.contextID += "|\(fingerprint(token.sentence))"
-            if try !context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).contains(where: { $0.contextID == source.contextID }) { context.insert(source) }
+            if origin.kind == "dictionary" { source.contextID += "|dictionary|" + fingerprint((origin.title ?? "") + (origin.evidence ?? "")) }
+            source.contextKind = origin.kind; source.contextTitle = origin.title; source.contextAttribution = origin.evidence
+            if let existing = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).first(where: { $0.contextID == source.contextID }) {
+                // This explicit new lookup supplies provenance; legacy rows are never guessed in migration.
+                if existing.contextKind == nil { existing.contextKind = source.contextKind; existing.contextTitle = source.contextTitle; existing.contextAttribution = source.contextAttribution }
+            } else { context.insert(source) }
             return VocabularyAddition(entryID: record.entryID, created: created, token: created ? nonce : nil, revision: record.revision)
         }
     }

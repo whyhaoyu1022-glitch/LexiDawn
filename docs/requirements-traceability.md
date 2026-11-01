@@ -1,6 +1,6 @@
 # CURRENT · Round 3 需求追踪
 
-功能存在、持久化、测试、真实截图和 CI 都必须有同一代码证据才能标记完成。当前仍在验证；175 XCTest / 48 UI 为源码清单。20 项 R2-A01–A20 的逐项实现及证据缺口见 [本轮矩阵](reviews/round-3-development-delivery.md)。
+功能存在、持久化、测试、真实截图和 CI 都必须有同一代码证据才能标记完成。当前仍在验证；180 XCTest / 49 UI 为源码清单。20 项 R2-A01–A20 的逐项实现及证据缺口见 [本轮矩阵](reviews/round-3-development-delivery.md)。
 
 | 需求 | 当前实现 | 主要验证 | 剩余验收 |
 |---|---|---|---|

@@ -102,26 +102,30 @@ struct VocabularyDetailView: View {
                     if let selected = chosenMeaningText { Text("已确认：" + selected).font(.subheadline) }
                     Text("可明确选择词典中的中文义项用于以后新题组。修改个人释义后改用个人释义；已保存题组保持原答案。").font(.caption).foregroundStyle(.secondary)
                     if selectedMeaningSaved { Label("复习义项已保存", systemImage: "checkmark.circle") }
-                    DisclosureGroup("选择词典中文义项", isExpanded: $choosingMeaning) {
+                    Button { choosingMeaning.toggle() } label: { Label("选择词典中文义项", systemImage: choosingMeaning ? "chevron.up" : "chevron.down") }
+                        .accessibilityIdentifier("choose-review-meaning").accessibilityValue(choosingMeaning ? "已展开" : "已收起")
+                    if choosingMeaning {
                         ForEach(result.senses.filter { !$0.zh.isEmpty }) { sense in
                             Button(sense.zh) {
                                 do { try learning.vocabulary.confirmReviewMeaning(entryID: item.id, sourceSenseID: sense.id); selectedMeaningSaved = true; choosingMeaning = false; chosenMeaningText = sense.zh; selectedMeaningError = nil; learning.changed() }
                                 catch { selectedMeaningSaved = false; selectedMeaningError = error.localizedDescription }
                             }.accessibilityIdentifier("review-meaning-" + sense.id)
                         }
-                    }.accessibilityIdentifier("choose-review-meaning")
+                    }
                     if let selectedMeaningError { Text(selectedMeaningError).foregroundStyle(.red) }
                 }
                 DictionaryResultContent(result: result)
-                NavigationLink("详细词典") { DictionaryDetailView(result: result, context: item.contexts.first ?? "", learning: learning, articleID: item.sourceArticleID) }
+                NavigationLink("详细词典") { DictionaryDetailView(result: result, context: item.contexts.first ?? "", learning: learning, articleID: item.sourceArticleID, contextOrigin: item.sourceContexts.first?.lookupOrigin ?? .reader) }
             }
             Section("来源上下文") {
                 if let source {
+                    if item.sourceContexts.first?.originKind == "dictionary" { Text("关联的阅读文章").font(.caption).foregroundStyle(.secondary) }
                     Text(source.title).font(.headline); Text(source.source).font(.caption).foregroundStyle(.secondary)
                     if let attribution = source.originalURL { Text(attribution).font(.caption).textSelection(.enabled) }
                 }
                 ForEach(item.sourceContexts) { context in
                     VStack(alignment: .leading, spacing: 6) {
+                        if context.originKind == nil || context.originKind == "historical" { Text("历史上下文 · 来源类型未记录").font(.caption).foregroundStyle(.secondary) }
                         Text(context.title).font(.headline)
                         Text(context.attribution).font(.caption).foregroundStyle(.secondary)
                         Text(context.sentence)

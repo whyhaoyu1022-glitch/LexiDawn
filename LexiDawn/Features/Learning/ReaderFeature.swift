@@ -167,10 +167,12 @@ struct ReaderView: View {
     @Published var existing = false
     @Published var loading = false
     @Published var vocabularyError: String?
+    @Published private(set) var phraseError: String?
     private var started = false
     private var lookupGeneration = UUID()
     let token: EnglishToken, articleID: String, autoAdd: Bool, learning: LearningServices
-    init(token: EnglishToken, articleID: String, autoAdd: Bool, learning: LearningServices, depth: Int = 0) { self.token = token; self.articleID = articleID; self.autoAdd = autoAdd; self.learning = learning; self.depth = depth }
+    let origin: VocabularyContextOrigin
+    init(token: EnglishToken, articleID: String, autoAdd: Bool, learning: LearningServices, depth: Int = 0, origin: VocabularyContextOrigin = .reader) { self.token = token; self.articleID = articleID; self.autoAdd = autoAdd; self.learning = learning; self.depth = depth; self.origin = origin }
     func begin() async {
         startAddition()
         await lookup()
@@ -195,10 +197,20 @@ struct ReaderView: View {
     }
     func add(explicit: Bool) {
         do {
-            if let addition = try learning.vocabulary.add(token: token, articleID: articleID, autoAdd: autoAdd, explicit: explicit, at: Date()) { self.addition = addition; existing = !addition.created; learning.changed() }
+            if let addition = try learning.vocabulary.add(token: token, articleID: articleID, autoAdd: autoAdd, explicit: explicit, origin: origin, at: Date()) { self.addition = addition; existing = !addition.created; learning.changed() }
             else { existing = try learning.vocabulary.find(surface: token.surface) != nil }
             vocabularyError = nil
         } catch { self.vocabularyError = error.localizedDescription }
+    }
+    func phraseLookup(_ phrase: String) -> WordLookupModel? {
+        phraseError = nil
+        do {
+            let text: String?
+            if origin.kind == "reader" { text = try learning.content.read(articleID: articleID, at: Date()).body }
+            else { text = origin.sourceText }
+            guard let text, let phraseToken = EnglishPhraseRecognizer.token(for: phrase, around: token, sourceText: text) else { throw LearningError.invalid("无法核验本次短语的原始位置，请返回原文或释义重新点词。") }
+            return WordLookupModel(token: phraseToken, articleID: articleID, autoAdd: autoAdd, learning: learning, depth: depth + 1, origin: origin)
+        } catch { phraseError = error.localizedDescription; return nil }
     }
     func undo() {
         guard let addition else { return }
@@ -257,15 +269,16 @@ struct WordLookupSheet: View {
                         Section("语境短语") {
                             ForEach(Array(phrases.prefix(3)), id: \.self) { phrase in
                                 Button(phrase) {
-                                    let token = EnglishToken(surface: phrase, range: NSRange(location: model.token.range.location, length: (phrase as NSString).length), sentence: model.token.sentence)
-                                    phraseSelection = WordLookupModel(token: token, articleID: model.articleID, autoAdd: model.autoAdd, learning: model.learning, depth: model.depth + 1)
+                                    phraseSelection = model.phraseLookup(phrase)
                                 }
                             }
+                            if let phraseError = model.phraseError { Text(phraseError).foregroundStyle(.red).accessibilityIdentifier("dictionary-phrase-error") }
                         }
                     }
                 }
                 if let result = model.result, !result.senses.isEmpty { DictionaryQuickMeaning(result: result) }
                 Section("句子语境") {
+                    if model.origin.kind == "dictionary" { Text(model.origin.title ?? "词典语境").font(.caption); Text(model.origin.evidence ?? "").font(.caption).foregroundStyle(.secondary) }
                     DisclosureGroup("完整句子语境") { Text(model.token.sentence).textSelection(.enabled) }
                 }
             }
@@ -289,7 +302,7 @@ struct WordLookupSheet: View {
             .fullScreenCover(isPresented: $showDetails) {
                 NavigationStack {
                     if let result = model.result {
-                        DictionaryDetailView(result: result, context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth, theme: theme, automaticAdditionAllowed: model.autoAdd)
+                        DictionaryDetailView(result: result, context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth, theme: theme, automaticAdditionAllowed: model.autoAdd, contextOrigin: model.origin)
                             .toolbar { ToolbarItem(placement: .topBarLeading) { Button("查词") { showDetails = false } } }
                     }
                 }.preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
@@ -362,10 +375,12 @@ struct DictionaryDetailView: View {
     var depth: Int = 0
     var theme: String = "system"
     var automaticAdditionAllowed = true
+    var contextOrigin: VocabularyContextOrigin = .reader
     @EnvironmentObject private var dependencies: AppDependencies
     @State private var speech = AVSpeechSynthesizer()
     @State private var entry: VocabularyItem?
     @State private var removeConfirmation = false
+    @State private var showingSynonyms = false
     @State private var selection: WordLookupModel?
     @State private var error: String?
     var body: some View {
@@ -379,20 +394,26 @@ struct DictionaryDetailView: View {
             let synonyms = Array(Set(result.senses.flatMap { $0.synonyms ?? [] })).filter { $0.lowercased() != result.headword.lowercased() }.sorted()
             if !synonyms.isEmpty {
                 Section("同义词对照") {
-                    DisclosureGroup("对照同义词（\(synonyms.count)）") {
+                    Button { showingSynonyms.toggle() } label: {
+                        Label("对照同义词（\(synonyms.count)）", systemImage: showingSynonyms ? "chevron.up" : "chevron.down")
+                    }.accessibilityIdentifier("dictionary-synonym-comparison").accessibilityValue(showingSynonyms ? "已展开" : "已收起")
+                    if showingSynonyms {
                         Text("对照原始词典义项、词性和例句，判断当前语境中的差别。").font(.caption)
                         ForEach(synonyms, id: \.self) { synonym in
                             NavigationLink { DictionaryComparisonView(original: result, synonym: synonym, context: context, learning: learning, theme: theme) } label: { Text(result.headword + " / " + synonym) }
                                 .accessibilityIdentifier("dictionary-compare-" + synonym)
                         }
-                    }.accessibilityIdentifier("dictionary-synonym-comparison")
+                    }
                 }
             }
             DictionaryResultContent(result: result)
             Section("可点击的英文释义") {
-                ForEach(result.senses) { sense in english(sense.en); ForEach(sense.examples ?? [], id: \.self) { english($0) } }
+                ForEach(result.senses) { sense in
+                    let origin = VocabularyContextOrigin.dictionary(headword: result.headword, evidence: sense.line)
+                    english(sense.en, origin: origin); ForEach(sense.examples ?? [], id: \.self) { english($0, origin: origin) }
+                }
             }
-            Section("当前文章语境（并非词典例句）") { english(context) }
+            Section(contextOrigin.kind == "reader" ? "当前文章语境（并非词典例句）" : "当前查词语境") { english(context) }
             Section("数据来源") {
                 if let url = URL(string: result.sourceURL) { Link("词典数据来源", destination: url) }
                 if let url = URL(string: result.licenseURL) { Link("CC BY-SA 4.0 · 派生索引使用同一许可", destination: url) }
@@ -414,12 +435,13 @@ struct DictionaryDetailView: View {
             } message: { Text("复习日志保留，仅本次明确操作移除生词。") }
             .onDisappear { speech.stopSpeaking(at: .immediate) }
     }
-    @ViewBuilder private func english(_ text: String) -> some View {
+    @ViewBuilder private func english(_ text: String, origin: VocabularyContextOrigin? = nil) -> some View {
         if let articleID, !text.isEmpty, depth < 3 {
             InlineEnglishText(text: text, onWord: { token in
                 do {
                     let auto = try automaticAdditionAllowed && dependencies.preferencesRepository.load().autoAddOnWordTap
-                    let model = WordLookupModel(token: token, articleID: articleID, autoAdd: auto, learning: learning, depth: depth + 1)
+                    let lookupOrigin = (origin ?? contextOrigin).withText(text)
+                    let model = WordLookupModel(token: token, articleID: articleID, autoAdd: auto, learning: learning, depth: depth + 1, origin: lookupOrigin)
                     model.startAddition(); selection = model
                 } catch { self.error = error.localizedDescription }
             })
@@ -432,7 +454,7 @@ struct DictionaryDetailView: View {
     private func add() {
         guard let articleID else { return }
         do {
-            _ = try learning.vocabulary.add(token: EnglishToken(surface: result.headword, range: NSRange(location: 0, length: (result.headword as NSString).length), sentence: context), articleID: articleID, autoAdd: false, explicit: true, at: Date())
+            _ = try learning.vocabulary.add(token: EnglishToken(surface: result.headword, range: NSRange(location: 0, length: (result.headword as NSString).length), sentence: context), articleID: articleID, autoAdd: false, explicit: true, origin: contextOrigin, at: Date())
             learning.changed(); refresh(); error = nil
         } catch { self.error = error.localizedDescription }
     }
@@ -462,7 +484,7 @@ struct DictionaryComparisonView: View {
     @StateObject private var model = DictionaryComparisonModel()
     var body: some View {
         List {
-            Section("当前文章语境") { Text(context) }
+            Section("当前查词语境") { Text(context) }
             Section("对照词：" + synonym) {
                 if model.loading { ProgressView("正在查询对照词…").accessibilityIdentifier("dictionary-comparison-loading") }
                 if let error = model.error { Text(error).foregroundStyle(.red); Button("重试对照查词") { Task { await model.load(synonym, context: context, learning: learning) } }.accessibilityIdentifier("dictionary-comparison-retry") }

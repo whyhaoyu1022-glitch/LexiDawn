@@ -1,45 +1,40 @@
 # CURRENT · Round 3 开发与验证中（2026-11-01）
 
-尚未达到统一验收条件，不能标为完成。当前源码有 **175 XCTest / 48 XCUITest**，包含原 93 / 20；新增清单不是运行结果。所有远端开发直接在 main，没有新建分支。
+尚未达到统一验收条件。**本次源码清单为 180 XCTest / 49 XCUITest，包含原 93 / 20；新增清单不是通过结果。** 所有远端开发直接提交 main，没有新建分支。本次修复将由新的 Actions 验证，准确 SHA 与运行链接见 GitHub main/Actions。
 
-## 当前真实验证
+## 最近已核验结果
 
 | 代码 SHA | Actions | 实际结果 |
 |---|---|---|
-| d37b9aa65aebd6bc010de57294ee243c1a95d825 | [41295662878](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41295662878) | Debug、Release、169 单元/网络测试通过；大屏 3/0。full-4 为 12/4 失败，其余分组取消，整次失败。 |
-| c96015ab68827df96572a25236345c7cd972dda5 | [41309801722](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41309801722) | 第一次 Debug/Release 通过；170 测试中 169 通过，Free Dictionary 对 book 连续 404 导致 1 失败。个人原文版本回归通过。第二次关卡 Debug/Release、170测试/0失败；Free Dictionary 真实 noun 释义通过，10源29篇；UI尚未完成。 |
+| 747d7c322e5d11bc1aae9a94ec7d2a47723140ae | [41314198717](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41314198717) | Debug/Release、175 XCTest/0失败，真实10源29篇；UI full-3为13/1失败，其他组取消，整次失败。 |
+| d7f402025d87cd90ca35bff658b23eeda0ecf4da | [41312535622](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41312535622) | Debug/Release、174 XCTest/0失败；大屏3/1失败，其余未完成；整次失败。 |
 
-最近真实来源测试已从 10 个来源导入完整正文：BBC、Guardian、NPR、DW、VOA、NASA、Wikipedia、Wikinews、ScienceDaily、Phys.org。Reuters 401、AP 403 和 Smithsonian 不完整正文被舍弃。运行级精确数量/HTTP 结果留在相应日志，不能把 13 个配置写成 13 个成功来源。
+最新 UI 失败已从原始 AX 附件定位：同义词 DisclosureGroup 的父标识覆盖内部导航入口标识，实际入口 label 为 internet / network。改为独立展开按钮及独立选项；中文义项选择采用同样隔离方式，保留实际点击和导航断言。此前完成连线容器标识及嵌套父/子关闭按钮问题已有对应修复，仍需全量复核。
 
-## 已写入的产品实现
+## 本次实际修改
 
-全文发现与准入、双正文原子持久化及去重；本地文章库/搜索/筛选/收藏/稍后/历史；多 Provider 词典及版本缓存；真实 Canvas 连线和双端禁用；三主题/动态字体原生阅读器；FSRS 4.5、原句拼写及排程反馈；统一全入口学习门禁；独立额外复习；真实全文词汇推荐；生词高级管理与导出；个人全文版本更新和历史保留。实现细节、20 项 Round 2 矩阵与证据缺口见 [开发记录](docs/reviews/round-3-development-delivery.md)。
+- 生词上下文分为 reader、dictionary、historical：词典句子保存原词和原始来源证据，关联文章单独显示；旧记录缺类型时保持未知，不在迁移中猜测。
+- 短语按原始全文或原始词典文本核验完整 UTF16 范围，包含首词及原有硬换行；同句其他相同单词不能冒充当前短语位置。位置核验失败与生词保存错误分开，不会用“重试保存”错误地保存另一个词。
+- 新词明确写入 new 状态，首次 Again 保持 learning；既有 review 失败才进入 relearning。成功次数由已保存 Hard/Good 计数派生，历史未知计数不伪造。
+- 新增一万条 RSS 候选和千段 HTML 的实际解析时钟/内存测量，同时断言完整性；原长文原生滚动/内存 UI 保留，不作真机帧率承诺。
+- 补充嵌套词典词→生词本真实来源 UI 与 D66/D67 原生截图点；共134项实际PNG状态覆盖要求，逐源首/中/末及SE/大屏主题横屏仍是最终合并关卡。
 
-本次补充：结构化原创全文入库一致性/事务回归及 UI，个人原文更新/版本恢复 UI，分类/时间/历史 UI，确认义项/原生导出 UI，刷新失败仍可阅读本地全文。待新提交执行。
+## 已实装范围与业务保护
 
-## 正在处理
+六大模块主体已写入：多源全文发现/准入/原子入库、文章库/搜索/收藏/稍后/历史、多词典/离线缓存、真实连线、三主题原生阅读器、FSRS原句复习与学习闭环。另有额外复习、完整探索、词汇推荐、导出及个人全文版本保留。实现和20项Round 2矩阵见[开发记录](docs/reviews/round-3-development-delivery.md)。
 
-1. 原始失败附件确认：导入 Form 被向下拖动关闭；查词 medium 浮窗中生词状态/短语被义项列表推到屏外。已加显式取消并禁止意外拖动关闭，将状态/短语提前且初始展开，保留旧测试断言，待真实回归。
-2. Free Dictionary 真实外网间歇 404；同端点有界重试仍保留非空释义测试，不能用其他来源冒充该 Provider 成功。
-3. 最终同一代码提交的全量 UI、双尺寸/主题、所有必需状态原始 PNG、manifest/CSV/ZIP/xcresult 和逐图审阅。
-4. 补充同义词对照加载/空/失败/重试成功、文章导入实际提交失败、复习作答实际提交失败及重启截图；损坏单个词典缓存不再阻断其他Provider，新增可修复回归，待新提交运行。
-5. 真实设备/iOS 27、完整 VoiceOver 听读和 Instruments 不在当前 Linux/兼容模拟器能力内，尚无对应通过证据；不作真机帧率承诺。
+最早未完成周期优先；每日分配原子且不重复；阅读/复习独立；库/历史/收藏/稍后/探索及Reader打开/save/complete共用门禁；收藏不建周期。Repository独立context/save/rollback，失败无成功提示或孤儿记录。撤销只针对本次创建，复习和缓存清理不删除用户生词、个人内容或日志。
 
-## 业务不变量
+按负责人批准的个人模式，13个候选适配器中最近实际成功10源：BBC、Guardian、NPR、DW、VOA、NASA、Wikipedia、Wikinews、ScienceDaily、Phys.org。Reuters401、AP403、Smithsonian不完整被舍弃；不绕过登录/验证码/付费墙，无摘要/URL/浏览器阅读降级。详见[来源审查](docs/article-source-eligibility-audit.md)。
 
-最早未完成周期优先；每日文章原子分配并去重；阅读/复习独立；所有正文打开和进度写入执行同一门禁；收藏不创建周期。Repository 使用独立 context/统一 save/rollback；失败无成功提示或孤儿记录。生词仅用户明确移除，撤销只影响本次创建；缓存清理不删学习数据。历史 schema 磁盘升级与旧 93/20 测试保留。
+## 仍待完成的验收
 
-## 历史记录
+1. 本次代码的完整构建、180单元/网络/迁移测试、49主UI及SE/大屏专项。
+2. 全部134项状态对应的真实PNG核对与逐图审阅，同一代码的完整ZIP、manifest、CSV、索引和xcresult。
+3. 最终报告、真实main SHA及运行结果回填。尚未取得iOS27/真机、完整VoiceOver听读或Instruments通过证据；现有CI是已批准Xcode26.6/iOS26.5兼容模拟器。
 
-[Round 2 独立审核](docs/reviews/round-2-independent-acceptance-and-91-screenshot-audit-2026-10-31.md) 与 [Round 2 交付](docs/reviews/round-2-development-delivery.md) 保留原文。旧 STATUS 的时间顺序记录可从 [main 在本次整理前的版本](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/c96015ab68827df96572a25236345c7cd972dda5/STATUS.md) 查阅；旧测试计数和“未接入”描述不代表当前实现。
+CI已采用一次编译共享产物、4主UI分组+设备专项、fail-fast、旧main运行清理和PNG打包去重复压缩。没有删除旧测试或降低断言；不能用历史绿色关卡或部分截图代替最终验收。
 
+## 历史
 
-补齐截图覆盖：今日原文卡片优先每源一篇，全部仍来自本地完整库；真实多源UI返回今日采集R3-S01。连线全部完成后可展开查看已保存全部连接，进入拼写不删除线条证据；新增M08全部双端禁用/实线和M11滚动后锚点实线PNG断言，主用例数量不变。新增截图仍待当前代码运行。
-
-
-验收补强：133项状态→实际PNG检查与逐源首/中/末、SE/大屏主题横屏检查加入最终合并关卡，缺图会失败但仍上传已有证据/COVERAGE.md；不把截图调用数当真实产物数。补充生词搜索无结果V13、嵌套短语返回D62–65。损坏可丢弃Provider缓存不能阻断生词读取/导出或可靠个人释义复习，新增真实SwiftData回归；数据库fetch错误仍抛出。当前175 XCTest/48主UI清单，新增待当前代码执行。
-
-
-已核验d7f4020运行41312535622：Debug/Release、174 XCTest/0失败，10源29篇；大屏3 UI/1失败。原始AX层级证实：DisclosureGroup父标识覆盖了内部matching-board标识，实际三端已禁用；改为独立展开按钮和独立连线容器，保留实线像素断言且增加词端存在断言。另发现旧嵌套查词用例同时看到父/子两个close-word；展示详情/子浮窗时隐藏背景无障碍节点及父关闭按钮，不用firstMatch弱化旧测试。最新源码175 XCTest/48 UI待执行。
-
-CI打包优化：实际旧附件含约52MB MP4，PNG ZIP只收原始PNG/JSON，视频仍保留在原始附件和xcresult；真实41张索引PNG重导出SHA全部一致。UI/汇总artifact关闭对既有压缩数据的重复压缩。取消时没有完成的xcresult不再调用导出器报二次错误，日志保留且不当作成功截图证据。
+[Round 2独立审核](docs/reviews/round-2-independent-acceptance-and-91-screenshot-audit-2026-10-31.md)、[Round 2交付](docs/reviews/round-2-development-delivery.md)保留原文。旧STATUS记录可从[本次整理前版本](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/747d7c322e5d11bc1aae9a94ec7d2a47723140ae/STATUS.md)追溯，旧计数和待运行描述不代表CURRENT。

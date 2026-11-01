@@ -419,6 +419,29 @@ final class Round3UITests: XCTestCase {
         XCTAssertFalse(word.isEnabled); XCTAssertFalse(meaning.isEnabled)
         capture("R3-M10", app: app, feature: "matching", state: "accessibility-completed-both-ends-disabled")
     }
+    func testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary() throws {
+        let app = launch("round3-dictionary-single-failed")
+        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
+        let word = app.buttons["word-Internet"].firstMatch; XCTAssertTrue(word.waitForExistence(timeout: 10)); word.tap()
+        let detail = app.buttons["查看详细释义"]; XCTAssertTrue(detail.waitForExistence(timeout: 10))
+        for _ in 0..<15 { if detail.isEnabled { break }; _ = app.staticTexts["dictionary-providers"].waitForExistence(timeout: 1) }
+        XCTAssertTrue(detail.isEnabled); detail.tap()
+        let nested = app.links["networks"].firstMatch
+        for _ in 0..<12 { if nested.exists && nested.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(nested.isHittable); nested.tap()
+        XCTAssertTrue(app.staticTexts["标准词形：network"].waitForExistence(timeout: 10))
+        capture("R3-D66", app: app, feature: "dictionary-context", state: "nested-word-from-provider-definition", origin: "explicit-original-provider-fixture-not-production-network")
+        app.buttons["close-word"].tap(); XCTAssertTrue(app.navigationBars["详细释义"].waitForExistence(timeout: 10))
+        app.navigationBars.buttons["查词"].tap(); app.buttons["close-word"].tap(); app.buttons["返回今日"].tap()
+        app.tabBars.buttons["词汇"].tap()
+        let entry = app.buttons["vocabulary-entry-network"]
+        for _ in 0..<6 { if entry.exists && entry.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(entry.isHittable); entry.tap()
+        let provenance = app.staticTexts["词典释义：internet"]
+        for _ in 0..<12 { if provenance.exists && provenance.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(provenance.isHittable)
+        capture("R3-D67", app: app, feature: "vocabulary-context", state: "dictionary-context-retains-real-provider-evidence-separate-from-associated-article", origin: "explicit-original-provider-fixture-real-Repository-context")
+    }
     func testSynonymComparisonHasOriginalDefinitionsLoadingEmptyFailureAndSafeRetry() throws {
         for (index, mode) in ["loading", "empty", "failed", "retry"].enumerated() {
             let app = launch("round3-dictionary-comparison-" + mode)
@@ -499,7 +522,9 @@ final class Round3UITests: XCTestCase {
             for _ in 0..<12 { if filter.isHittable { break }; app.swipeDown() }
             XCTAssertTrue(filter.isHittable); filter.tap()
             let choice = app.buttons[title]
-            guard choice.exists else { app.tap(); continue }
+            guard choice.exists else {
+                let all = app.buttons["全部来源"]; XCTAssertTrue(all.exists); XCTAssertTrue(all.isHittable); all.tap(); continue
+            }
             choice.tap()
             let open = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).firstMatch
             for _ in 0..<10 { if open.exists && open.isHittable { break }; app.swipeUp() }
