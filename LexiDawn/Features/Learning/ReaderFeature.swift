@@ -204,6 +204,7 @@ struct WordLookupSheet: View {
     @State private var phraseSelection: WordLookupModel?
     @State private var showDetails = false
     @State private var speech = AVSpeechSynthesizer()
+    @State private var detent: PresentationDetent = .large
     @State private var theme = "system"
     init(token: EnglishToken, articleID: String, autoAdd: Bool, learning: LearningServices) {
         _model = StateObject(wrappedValue: WordLookupModel(token: token, articleID: articleID, autoAdd: autoAdd, learning: learning))
@@ -223,6 +224,13 @@ struct WordLookupSheet: View {
                 if !model.loading, model.error == nil, let result = model.result, result.senses.isEmpty {
                     Text("暂无可验证的释义。可以继续阅读，或在生词本添加明确标记的个人释义。")
                 }
+                Section("生词本") {
+                    HStack {
+                        if model.addition?.created == true { Label("刚刚加入", systemImage: "checkmark.circle"); Spacer(); Button("撤销本次加入") { model.undo() }.accessibilityIdentifier("undo-word") }
+                        else if model.existing { Label("此前已加入", systemImage: "bookmark.fill") }
+                        else { Button("加入生词本") { model.add(explicit: true) }.accessibilityIdentifier("add-word") }
+                    }
+                }
                 if let result = model.result, !result.senses.isEmpty {
                     if result.cached { Label("正在使用本地缓存", systemImage: "internaldrive").font(.caption) }
                     if !result.failedProviders.isEmpty { Label("某些词典来源暂不可用，已显示可用结果", systemImage: "exclamationmark.triangle").font(.caption) }
@@ -234,7 +242,6 @@ struct WordLookupSheet: View {
                         Button("英语朗读", systemImage: "speaker.wave.2") { let utterance = AVSpeechUtterance(string: model.token.surface); utterance.voice = AVSpeechSynthesisVoice(language: "en-US"); speech.speak(utterance) }.labelStyle(.iconOnly)
                     }
                 }
-                if let result = model.result, !result.senses.isEmpty { DictionaryQuickMeaning(result: result) }
                 if model.depth < 3 {
                     let phrases = EnglishPhraseRecognizer.phrases(around: model.token.surface, sentence: model.token.sentence)
                     if !phrases.isEmpty {
@@ -248,11 +255,7 @@ struct WordLookupSheet: View {
                         }
                     }
                 }
-                Section("生词本") {
-                    if model.addition?.created == true { Label("刚刚加入", systemImage: "checkmark.circle"); Button("撤销本次加入") { model.undo() }.accessibilityIdentifier("undo-word") }
-                    else if model.existing { Label("此前已加入", systemImage: "bookmark.fill") }
-                    else { Button("加入生词本") { model.add(explicit: true) }.accessibilityIdentifier("add-word") }
-                }
+                if let result = model.result, !result.senses.isEmpty { DictionaryQuickMeaning(result: result) }
                 Section("句子语境") {
                     DisclosureGroup("完整句子语境") { Text(model.token.sentence).textSelection(.enabled) }
                 }
@@ -270,7 +273,7 @@ struct WordLookupSheet: View {
             }
             .task { if let preferences = try? dependencies.preferencesRepository.load() { theme = preferences.readerTheme }; await model.begin() }
             .onReceive(model.learning.$revision) { _ in model.refreshMembership() }
-        }.presentationDetents([.medium, .large]).presentationBackground(sheetBackground)
+        }.presentationDetents([.medium, .large], selection: $detent).presentationBackground(sheetBackground)
             .preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
             .sheet(item: $phraseSelection) { WordLookupSheet(model: $0) }
             .fullScreenCover(isPresented: $showDetails) {

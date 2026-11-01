@@ -184,6 +184,7 @@ struct ArticleImportView: View {
                     } catch { self.error = error.localizedDescription }
                 }.disabled(!rights).accessibilityIdentifier("save-import")
             }.scrollDismissesKeyboard(.interactively).navigationTitle("合法导入文章").toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } } }
+                .interactiveDismissDisabled()
         }
     }
 }
