@@ -4,6 +4,16 @@ import SwiftData
 @Model
 final class ArticleRecord {
     @Attribute(.unique) var articleID: String
+    // Additive Round 3 columns; optional only to permit historical schema migration.
+    var author: String?
+    var structuredBody: Data?
+    var fullTextRightsEvidenceID: String?
+    var fullTextRightsEvidenceData: Data?
+    var extractionVersion: String?
+    var completenessVerifiedAt: Date?
+    var isFavorite: Bool = false
+    var readLater: Bool = false
+    var rawContent: String { bodyText ?? "" }
     var canonicalURL: String
     var originalTitle: String
     var displayTitle: String?
@@ -445,3 +455,4 @@ extension UserPreferencesRecord {
         lastUpdatedAt = other.lastUpdatedAt
     }
 }
+

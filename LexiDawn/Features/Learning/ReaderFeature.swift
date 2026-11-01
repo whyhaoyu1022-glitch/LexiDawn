@@ -49,16 +49,16 @@ struct ReaderView: View {
     @State private var fontSize: Double = 19
     @State private var lineSpacing: Double = 1.5
     @State private var theme = "system"
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     init(route: ReaderRoute, learning: LearningServices) { _model = StateObject(wrappedValue: ReaderViewModel(articleID: route.articleID, cycleID: route.cycleID, learning: learning)) }
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let article = model.article {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(article.title).font(.title3.bold()).lineLimit(3)
+                    Text(article.title).font(.title3.bold()).lineLimit(verticalSizeClass == .compact ? 1 : 2)
                     Text("\(article.topics.joined(separator: " · ")) · \(article.minutes) 分钟").font(.caption).foregroundStyle(.secondary)
-                    if let published = article.publishedAt { Text("发布：\(published.formatted(date: .abbreviated, time: .omitted))").font(.caption) }
-                    if let url = article.originalURL.flatMap(URL.init(string:)) { Link("原文与来源", destination: url).font(.caption) }
-                    DisclosureGroup("来源与许可") { Text(article.source).font(.caption); Text("全文授权在每次访问及保存时重新检查。导入内容仅限本地使用。").font(.caption) }
+                    if verticalSizeClass != .compact, let published = article.publishedAt { Text("发布：\(published.formatted(date: .abbreviated, time: .omitted))").font(.caption) }
+                    if verticalSizeClass != .compact { DisclosureGroup("来源与许可") { Text(article.source).font(.caption).textSelection(.enabled); Text("全文授权在每次访问及保存时重新检查。导入内容仅限本地使用。").font(.caption) } }
                     HStack { ProgressView(value: model.position.percent); Text("\(Int(model.position.percent * 100))%").font(.caption.monospacedDigit()).accessibilityIdentifier("reader-progress") }
                 }.padding(.horizontal)
                 if let notice = model.notice { Text(notice).font(.caption).padding(.horizontal) }
@@ -71,7 +71,8 @@ struct ReaderView: View {
                             lookup.startAddition(); selection = lookup
                         }
                         catch { model.error = error.localizedDescription }
-                    })
+                    }, document: article.document)
+                .frame(maxWidth: .infinity, minHeight: 80, maxHeight: .infinity).layoutPriority(1)
                 if model.position.completedAt != nil { Label("阅读已完成", systemImage: "checkmark.circle.fill").foregroundStyle(.green).padding(.horizontal).accessibilityIdentifier("reading-completed") }
                 else {
                     Button(model.position.percent >= 0.9 ? "确认完成阅读" : "我已读完，手动确认") {
@@ -80,11 +81,15 @@ struct ReaderView: View {
                 }
             } else {
                 ContentUnavailableView("暂时无法读取全文", systemImage: "doc.text.magnifyingglass", description: Text("学习记录保留，请检查许可、来源与存储。"))
-                if let url = model.sourceURL.flatMap(URL.init(string:)) { Link("前往原文核对授权", destination: url) }
                 Button("重新读取") { model.open() }
             }
             if let error = model.error { Text(error).font(.footnote).foregroundStyle(.red).padding(.horizontal); Button("重试保存 / 读取") { if model.article == nil { model.open() } else { model.flush() } } }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(readerBackground)
+        .toolbarBackground(readerBackground, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .preferredColorScheme(theme == "dark" ? .dark : ["paper", "light"].contains(theme) ? .light : nil)
         .navigationTitle("英文阅读").navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .secondaryAction) {
@@ -120,6 +125,9 @@ struct ReaderView: View {
             Button("确认我已读完") { model.complete(manual: true) }
         } message: { Text("适用于短文章、恢复位置不准确或已认真读完的情况。记录实际进度与本次手动确认，不会伪造 90% 进度。") }
     }
+    private var readerBackground: Color {
+        theme == "dark" ? Color(white: 0.08) : theme == "paper" ? Color(red: 0.97, green: 0.94, blue: 0.87) : theme == "light" ? .white : Color(uiColor: .systemBackground)
+    }
     private func saveAppearance(size: Double, theme: String) {
         do {
             let prefs = try dependencies.preferencesRepository.load(); prefs.readerFontSize = size; prefs.readerTheme = theme
@@ -153,7 +161,7 @@ struct ReaderView: View {
     }
     func lookup() async {
         loading = true
-        do { result = try await learning.dictionary.lookup(token.surface); error = nil }
+        do { result = try await learning.dictionary.lookup(token.surface, context: token.sentence); error = nil }
         catch { self.error = error.localizedDescription }
         loading = false
     }
@@ -203,10 +211,25 @@ struct WordLookupSheet: View {
 struct DictionaryResultContent: View {
     let result: DictionaryResult
     var body: some View {
-        Section("可能含义 · CC-CEDICT 反向检索") {
+        Section("词典义项与来源") {
             if result.senses.isEmpty { Text("暂无可验证的释义。可以继续阅读，或在生词本添加明确标记的个人释义。") }
-            ForEach(result.senses) { sense in VStack(alignment: .leading, spacing: 4) { Text(sense.zh).font(.headline); Text(sense.en); Text("词性 / 英语音标：来源未提供").font(.caption).foregroundStyle(.secondary) } }
-            Text("此来源是中英词典的反向索引，不能确定当前语境义；未将机器翻译冒充词典原文。").font(.caption).foregroundStyle(.secondary)
+            ForEach(result.senses) { sense in
+                VStack(alignment: .leading, spacing: 6) {
+                    if !sense.zh.isEmpty { Text(sense.zh).font(.headline) }
+                    else { Text("暂无可靠中文释义").font(.caption).foregroundStyle(.secondary) }
+                    if let pos = sense.partOfSpeech { Text(pos).font(.caption.bold()) }
+                    if let ipa = sense.ipa { Text(ipa).font(.body.monospaced()).accessibilityIdentifier("dictionary-ipa") }
+                    Text(sense.en)
+                    ForEach(sense.examples ?? [], id: \.self) { Text($0).italic() }
+                    if let synonyms = sense.synonyms, !synonyms.isEmpty { Text("同义词：" + synonyms.joined(separator: " · ")).font(.footnote) }
+                    if let antonyms = sense.antonyms, !antonyms.isEmpty { Text("反义词：" + antonyms.joined(separator: " · ")).font(.footnote) }
+                    if let etymology = sense.etymology { Text("词源：" + etymology).font(.footnote) }
+                    Text((sense.sources ?? ["CC-CEDICT reverse index"]).joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
+                }.padding(.vertical, 4)
+            }
+            if result.cached { Label("本地缓存 · 离线可用", systemImage: "internaldrive").font(.caption) }
+            if !result.failedProviders.isEmpty { Label("部分来源不可用：" + result.failedProviders.joined(separator: "、") + "。已保留其他真实结果。", systemImage: "exclamationmark.triangle").font(.caption) }
+            Text("中文反向索引是可能对应词；语境排序使用确定性词汇重合规则，不保证已完成语义消歧。").font(.caption).foregroundStyle(.secondary)
         }
     }
 }
@@ -232,13 +255,13 @@ struct DictionaryDetailView: View {
             }
             DictionaryResultContent(result: result)
             Section("可点击的英文释义") {
-                ForEach(result.senses) { sense in english(sense.en) }
+                ForEach(result.senses) { sense in english(sense.en); ForEach(sense.examples ?? [], id: \.self) { english($0) } }
             }
             Section("当前文章语境（并非词典例句）") { english(context) }
             Section("数据来源") {
-                if let url = URL(string: result.sourceURL) { Link("MDBG · CC-CEDICT 编辑与贡献者", destination: url) }
+                if let url = URL(string: result.sourceURL) { Link("词典数据来源", destination: url) }
                 if let url = URL(string: result.licenseURL) { Link("CC BY-SA 4.0 · 派生索引使用同一许可", destination: url) }
-                Text("数据版本：2026-10-30；缓存：\(result.updatedAt.formatted())").font(.caption)
+                Text("数据版本：\(result.versions.isEmpty ? "CEDICT 2026-10-30" : result.versions.sorted { $0.key < $1.key }.map { "\($0.key) \($0.value)" }.joined(separator: " · "))；缓存：\(result.updatedAt.formatted())").font(.caption)
                 Text("原始义项")
                 ForEach(result.senses) { Text($0.line).font(.caption) }
             }
@@ -276,3 +299,4 @@ struct DictionaryDetailView: View {
         } catch { self.error = error.localizedDescription }
     }
 }
+

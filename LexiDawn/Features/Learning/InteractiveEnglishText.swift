@@ -11,6 +11,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
     let onPosition: (ReaderPosition) -> Void
     let onWord: (EnglishToken) -> Void
     var scrollable: Bool = true
+    var document: ArticleDocument? = nil
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeUIView(context: Context) -> EnglishTextContainer {
         let container = EnglishTextContainer()
@@ -33,19 +34,23 @@ struct InteractiveEnglishText: UIViewRepresentable {
     }
     func updateUIView(_ container: EnglishTextContainer, context: Context) {
         let view = container.textView
+        container.backgroundColor = view.backgroundColor
         let coordinator = context.coordinator; coordinator.parent = self
         let key = "\(fontSize)|\(lineSpacing)|\(theme)|\(view.traitCollection.preferredContentSizeCategory.rawValue)|\(view.traitCollection.userInterfaceStyle.rawValue)"
         let width = max(20, (view.bounds.width - 720) / 2)
         view.textContainerInset = UIEdgeInsets(top: 20, left: width, bottom: 40, right: width)
         if key != coordinator.renderKey || text != coordinator.renderedText {
             let oldOffset = view.contentOffset
-            if text != coordinator.renderedText { coordinator.tokens = EnglishTokenizer.tokens(in: text); coordinator.renderedText = text }
+            if text != coordinator.renderedText {
+                coordinator.projection = ReaderTextProjection(raw: text, document: document)
+                coordinator.tokens = EnglishTokenizer.tokens(in: coordinator.projection.text); coordinator.renderedText = text
+            }
             coordinator.renderKey = key
             let font = UIFontMetrics(forTextStyle: .body).scaledFont(for: UIFont(name: "Georgia", size: CGFloat(fontSize)) ?? .systemFont(ofSize: CGFloat(fontSize)))
             let paragraph = NSMutableParagraphStyle(); paragraph.lineHeightMultiple = CGFloat(lineSpacing); paragraph.paragraphSpacing = 10
             let foreground: UIColor = theme == "dark" ? .init(white: 0.9, alpha: 1) : theme == "paper" ? .init(red: 0.19, green: 0.16, blue: 0.12, alpha: 1) : theme == "light" ? .black : .label
             view.backgroundColor = theme == "dark" ? .init(white: 0.08, alpha: 1) : theme == "paper" ? .init(red: 0.97, green: 0.94, blue: 0.87, alpha: 1) : theme == "light" ? .white : .systemBackground
-            view.attributedText = NSAttributedString(string: text, attributes: [.font: font, .paragraphStyle: paragraph, .foregroundColor: foreground])
+            view.attributedText = NSAttributedString(string: coordinator.projection.text, attributes: [.font: font, .paragraphStyle: paragraph, .foregroundColor: foreground])
             view.setContentOffset(oldOffset, animated: false)
         }
         DispatchQueue.main.async { [weak coordinator] in coordinator?.restorePosition(); coordinator?.updateAccessibility() }
@@ -59,27 +64,36 @@ struct InteractiveEnglishText: UIViewRepresentable {
         var tokens: [EnglishToken] = []
         var renderKey = ""
         var renderedText = ""
+        var projection = ReaderTextProjection(raw: "")
         var restored = false
         var lastAccessibilityUpdate = Date.distantPast
+        var lastBounds: CGSize = .zero
+        var rotationOffset: Int?
         init(_ parent: InteractiveEnglishText) { self.parent = parent }
         func restorePosition() {
+            if let view, view.bounds.size != lastBounds, view.bounds.width > 0, view.bounds.height > 0 {
+                if lastBounds != .zero, restored { rotationOffset = parent.restore.offset; restored = false }
+                lastBounds = view.bounds.size
+                let margin = max(18, (view.bounds.width - 720) / 2)
+                view.textContainerInset = UIEdgeInsets(top: 12, left: margin, bottom: 24, right: margin)
+            }
             guard !restored, !restoring, let view, view.bounds.height > 0, view.bounds.width > 0, !parent.text.isEmpty else { return }
             restoring = true
             defer { restoring = false }
             view.layoutManager.ensureLayout(for: view.textContainer)
             let length = (parent.text as NSString).length
-            var offset = min(max(0, parent.restore.offset), max(0, length - 1))
+            var offset = min(max(0, rotationOffset ?? parent.restore.offset), max(0, length - 1))
             if parent.restore.contentChanged { offset = ReadingAnchors.offset(for: parent.restore.anchor, in: parent.text) ?? 0 }
             if offset > 0 {
-                let glyph = view.layoutManager.glyphIndexForCharacter(at: offset)
+                let glyph = view.layoutManager.glyphIndexForCharacter(at: projection.displayOffset(offset))
                 let rect = view.layoutManager.boundingRect(forGlyphRange: NSRange(location: glyph, length: 1), in: view.textContainer)
                 view.setContentOffset(CGPoint(x: 0, y: max(0, min(rect.minY, view.contentSize.height - view.bounds.height))), animated: false)
             }
-            restored = true
+            rotationOffset = nil; restored = true
         }
         @objc func tap(_ recognizer: UITapGestureRecognizer) {
             guard let view, let token = token(at: recognizer.location(in: view)) else { return }
-            parent.onWord(token)
+            parent.onWord(EnglishToken(surface: token.surface, range: projection.rawRange(token.range), sentence: token.sentence))
         }
         func token(at local: CGPoint) -> EnglishToken? {
             guard let view, restored else { return nil }
@@ -96,7 +110,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
             let textLength = (parent.text as NSString).length
             guard textLength > 0, view.contentSize.height > 0 else { return }
             let point = CGPoint(x: 1, y: max(0, view.contentOffset.y))
-            let offset = min(textLength - 1, view.layoutManager.characterIndex(for: point, in: view.textContainer, fractionOfDistanceBetweenInsertionPoints: nil))
+            let offset = min(textLength - 1, projection.rawOffset(view.layoutManager.characterIndex(for: point, in: view.textContainer, fractionOfDistanceBetweenInsertionPoints: nil)))
             let range = (parent.text as NSString).paragraphRange(for: NSRange(location: offset, length: 0))
             let percent = min(1, max(0, (view.contentOffset.y + view.bounds.height - view.textContainerInset.bottom) / view.contentSize.height))
             parent.onPosition(ReaderPosition(percent: percent, anchor: fingerprint((parent.text as NSString).substring(with: range)), offset: offset))
@@ -113,12 +127,15 @@ struct InteractiveEnglishText: UIViewRepresentable {
                 let element = WordAccessibilityElement(accessibilityContainer: accessibilityContainer)
                 element.accessibilityLabel = token.surface; element.accessibilityTraits = .button
                 element.accessibilityIdentifier = "word-\(token.surface)"
-                element.accessibilityValue = "\(token.range.location)"
+                element.accessibilityValue = "\(projection.rawOffset(token.range.location))"
                 element.accessibilityHint = "查看词义；根据偏好加入生词本"
                 var rect = view.layoutManager.boundingRect(forGlyphRange: view.layoutManager.glyphRange(forCharacterRange: token.range, actualCharacterRange: nil), in: view.textContainer)
                 rect.origin.x += view.textContainerInset.left; rect.origin.y += view.textContainerInset.top
                 element.accessibilityFrameInContainerSpace = view.convert(rect, to: accessibilityContainer)
-                element.action = { [weak self] in self?.parent.onWord(token) }
+                element.action = { [weak self] in
+                    guard let self else { return }
+                    self.parent.onWord(EnglishToken(surface: token.surface, range: self.projection.rawRange(token.range), sentence: token.sentence))
+                }
                 elements.append(element)
             }
             accessibilityContainer.accessibilityElements = elements
@@ -168,3 +185,4 @@ struct InlineEnglishText: View {
             })
     }
 }
+

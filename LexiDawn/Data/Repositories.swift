@@ -233,6 +233,14 @@ final class ArticleRepository: ArticleStore {
             bodyHash: candidate.bodyHash, wordCount: candidate.wordCount, estimatedReadMinutes: candidate.estimatedReadMinutes,
             topicTags: candidate.topicTags, difficulty: candidate.difficulty, imageURL: candidate.imageURL,
             imageAttribution: candidate.imageAttribution, contentStatus: candidate.contentStatus.rawValue, createdAt: fetchedAt, updatedAt: fetchedAt)
+        if let body = candidate.bodyText, !body.isBlank {
+            let document = ArticleDocumentNormalizer.plainText(body)
+            guard ArticleDocumentNormalizer.preservesOriginal(body, document: document) else { throw FullTextImportError.incomplete }
+            record.structuredBody = try JSONEncoder().encode(document)
+            record.extractionVersion = ArticleDocument.extractionVersion
+            record.fullTextRightsEvidenceID = candidate.licenseID
+            record.completenessVerifiedAt = fetchedAt
+        }
         record.cachePermissionData = try candidate.cachePermission.map { try JSONEncoder().encode($0) }
         record.imageLicenseID = candidate.imageLicenseID
         record.sourceAttribution = candidate.sourceAttribution
@@ -331,3 +339,4 @@ struct FixtureArticleCandidateProvider: ArticleCandidateProvider {
     let fixtures: [ArticleCandidate]
     func candidates(excluding articleIDs: Set<String>) throws -> [ArticleCandidate] { fixtures.filter { !articleIDs.contains($0.id) } }
 }
+

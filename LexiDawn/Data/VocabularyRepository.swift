@@ -113,15 +113,30 @@ struct VocabularyAddition {
     }
 }
 
-struct DictionarySense: Codable, Equatable, Identifiable { let id: String, en: String, zh: String, line: String }
+struct DictionarySense: Codable, Equatable, Identifiable, Sendable {
+    let id: String, en: String, zh: String, line: String
+    var partOfSpeech: String? = nil
+    var ipa: String? = nil
+    var examples: [String]? = nil
+    var synonyms: [String]? = nil
+    var antonyms: [String]? = nil
+    var forms: [String]? = nil
+    var etymology: String? = nil
+    var audioURL: String? = nil
+    var sources: [String]? = nil
+}
+
 struct DictionaryResult: Equatable {
     let headword: String
     let senses: [DictionarySense]
     let updatedAt: Date
     let sourceURL: String
     let licenseURL: String
+    var failedProviders: [String] = []
+    var cached: Bool = false
+    var versions: [String: String] = [:]
 }
-protocol DictionaryProvider { func lookup(_ headword: String) async throws -> [DictionarySense] }
+protocol DictionaryProvider: Sendable { func lookup(_ headword: String) async throws -> [DictionarySense] }
 /// Local, source-derived, legally redistributable index. No network or personal reading history upload.
 actor CEDICTDictionaryProvider: DictionaryProvider {
     private var index: [String: [DictionarySense]]?
@@ -136,10 +151,31 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
 @MainActor final class DictionaryLookupService {
     private let writer: RepositoryWriter
     private let provider: DictionaryProvider
+    private var aggregator: DictionaryAggregator?
+    private var richCache: DictionaryCacheRepository?
+    func enableOnlineProviders() { aggregator = DictionaryAggregator(); richCache = DictionaryCacheRepository(context: writer.context) }
     init(context: ModelContext, provider: DictionaryProvider = CEDICTDictionaryProvider()) {
         writer = RepositoryWriter(context: context); self.provider = provider
     }
-    func lookup(_ surface: String, at now: Date = Date()) async throws -> DictionaryResult {
+    func lookup(_ surface: String, context: String = "", at now: Date = Date()) async throws -> DictionaryResult {
+        if let aggregator, let richCache {
+            let key = EnglishTokenizer.lemma(surface)
+            let old = try richCache.load(key, at: now)
+            if old.complete { return DictionaryResult(headword: key, senses: DictionaryAggregator.rank(old.senses, context: context), updatedAt: old.date, sourceURL: "https://dictionaryapi.dev/", licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/", cached: true, versions: DictionaryAggregator.versions) }
+            let outcome = await aggregator.lookup(key)
+            try Task.checkCancellation()
+            let local = try? await lookupLocal(surface, at: now)
+            let all = (local?.senses ?? []) + outcome.senses
+            let senses = all.isEmpty ? old.senses : all
+            guard !senses.isEmpty || outcome.failed.isEmpty else { throw LearningError.invalid("词典来源暂时不可用；本地没有缓存，请联网后重试。") }
+            if !outcome.senses.isEmpty { try richCache.save(key, senses: outcome.senses, successful: outcome.successful, at: now) }
+            return DictionaryResult(headword: key, senses: DictionaryAggregator.rank(senses, context: context), updatedAt: now,
+                sourceURL: "https://dictionaryapi.dev/", licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/", failedProviders: outcome.failed,
+                cached: all.isEmpty && !old.senses.isEmpty, versions: DictionaryAggregator.versions)
+        }
+        return try await lookupLocal(surface, at: now)
+    }
+    private func lookupLocal(_ surface: String, at now: Date) async throws -> DictionaryResult {
         let key = EnglishTokenizer.lemma(surface)
         if let cached = try cached(key) { return cached }
         let senses = try await provider.lookup(key)
@@ -166,3 +202,4 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
         }
     }
 }
+

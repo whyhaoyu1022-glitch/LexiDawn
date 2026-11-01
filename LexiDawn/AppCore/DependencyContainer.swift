@@ -44,6 +44,9 @@ final class AppDependencies: ObservableObject {
     static func makeProduction() throws -> AppDependencies {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: false)
         let dependencies = AppDependencies(modelContainer: try openPersistentStore(configuration: configuration), learningEnabled: true)
+        try dependencies.learning?.content.migrateRound3(at: Date())
+        dependencies.learning?.productionNetworking = true
+        dependencies.learning?.dictionary.enableOnlineProviders()
         if try !dependencies.articleRepository.allArticleIDs().contains(SourceRegistry.rfc.id) { try dependencies.learning?.content.installBundledRFC(at: Date()) }
         return dependencies
     }
@@ -55,6 +58,7 @@ final class AppDependencies: ObservableObject {
         try backupBeforeUpgrade(at: configuration.url)
         // Separate backup generation: the earlier before-r2 backup belongs to Round 1 remediation.
         try backupBeforeUpgrade(at: configuration.url, suffix: "before-round2-features")
+        try backupBeforeUpgrade(at: configuration.url, suffix: "before-round3")
         return try LearningSchema.container(configuration: configuration)
     }
 
@@ -88,3 +92,4 @@ final class AppDependencies: ObservableObject {
     }
 
 }
+

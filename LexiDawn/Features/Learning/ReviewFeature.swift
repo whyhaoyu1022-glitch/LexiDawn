@@ -14,12 +14,15 @@ struct ReviewPracticeContent: View {
     @State private var message: String?
     @State private var feedback: String?
     @State private var loading = false
+    @State private var schedules: [String] = []
     @State private var emptyResolved = false
+    @State private var loadGeneration = UUID()
+    @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text("把刚认识的词，变成自己的词").font(.title2.bold())
-                Text("基础间隔排程 v1 · 不是 FSRS。题组建立后固定，退出后继续原题。").font(.caption).foregroundStyle(.secondary)
+                Text("本地确定性排程 · 题组建立后固定，退出后继续原题。").font(.caption).foregroundStyle(.secondary)
                 if loading { ProgressView("正在查询完整复习队列…") }
                 else if let session {
                     if session.completedAt != nil {
@@ -28,41 +31,30 @@ struct ReviewPracticeContent: View {
                     else { cloze(session) }
                 } else if emptyResolved { Label("完整队列中没有应复习词条，已记录合法空队列结果。", systemImage: "checkmark.circle") }
                 else { Text("请先在今日页获得文章，并在阅读中积累词汇。") }
+                ForEach(schedules, id: \.self) { Text($0).font(.footnote).accessibilityIdentifier("review-next-due") }
                 if let feedback { Text(feedback).foregroundStyle(feedback == "正确，已保存" ? .green : .orange).accessibilityIdentifier("review-feedback") }
                 if let message { Text(message).foregroundStyle(.red) }
                 Button("重新读取 / 重试", action: { Task { await load() } }).disabled(loading)
             }.padding(20)
-        }.navigationTitle("复习").task { await load() }
+        }.scrollDismissesKeyboard(.interactively).navigationTitle("复习").task { await load() }
+            .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await load() } } }
     }
     private func matching(_ session: ReviewSessionView) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("1 · 连线 \(session.matching.filter(\.completed).count)/\(session.matching.count)").font(.headline)
             Text("先点英文，再点对应中文。中文来自开放词典的可能对应词或你的个人释义。")
-            HStack(alignment: .top, spacing: 16) {
-                VStack(spacing: 12) {
-                    ForEach(session.matching) { question in
-                        Button { selected = question.id } label: {
-                            Text(question.completed ? "✓ \(question.prompt)" : question.prompt).frame(maxWidth: .infinity, minHeight: 44)
-                        }.buttonStyle(.bordered).tint(selected == question.id ? .orange : .accentColor).disabled(question.completed)
-                            .accessibilityIdentifier("match-word-\(question.prompt)")
-                    }
-                }
-                VStack(spacing: 12) {
-                    ForEach(session.matching.sorted { fingerprint(session.id + $0.senseID) < fingerprint(session.id + $1.senseID) }) { option in
-                        Button {
-                            guard let selected else { feedback = "请先选择英文词条"; return }
-                            if submit(questionID: selected, answer: option.senseID) { self.selected = nil }
-                        } label: { Text(option.answer).frame(maxWidth: .infinity, minHeight: 44) }
-                        .buttonStyle(.bordered).accessibilityIdentifier("match-meaning-\(option.answer)")
-                    }
-                }
-            }
+            MatchingBoard(session: session, selected: $selected, submit: { questionID, senseID in
+                if submit(questionID: questionID, answer: senseID) { selected = nil }
+            }, noSelection: { feedback = "请先选择英文词条" })
         }
     }
     @ViewBuilder private func cloze(_ session: ReviewSessionView) -> some View {
         if let question = session.cloze.first(where: { !$0.completed }) {
             VStack(alignment: .leading, spacing: 16) {
                 Text("2 · 拼写 \(session.cloze.filter(\.completed).count)/\(session.cloze.count)").font(.headline)
+                if let sentence = question.context {
+                    Text(maskedContext(sentence, answer: question.answer)).font(.body).accessibilityIdentifier("cloze-context")
+                }
                 Text(question.prompt).font(.largeTitle.monospaced()).accessibilityIdentifier("cloze-prompt")
                 if let meaning = session.matching.first(where: { $0.entryID == question.entryID })?.answer { Text(meaning).font(.headline) }
                 Text("输入完整英文词条，大小写不影响判定。")
@@ -75,15 +67,27 @@ struct ReviewPracticeContent: View {
             }
         }
     }
+    private func maskedContext(_ sentence: String, answer: String) -> String {
+        var value = sentence
+        for token in EnglishTokenizer.tokens(in: sentence).reversed() where EnglishTokenizer.lemma(token.surface) == EnglishTokenizer.lemma(answer) {
+            if let range = Range(token.range, in: value) { value.replaceSubrange(range, with: String(repeating: "_", count: token.surface.count)) }
+        }
+        return value
+    }
     private func load() async {
-        loading = true; message = nil
+        let generation = UUID(); loadGeneration = generation
+        loading = true; message = nil; selected = nil; spelling = ""; feedback = nil; emptyResolved = false; session = nil; schedules = []
+        defer { if loadGeneration == generation { loading = false } }
         do {
             let cycles = try learning.cycles.fetchAll()
             guard let cycle = cycles.first(where: \.hasOutstandingWork) ?? cycles.last else { session = nil; loading = false; return }
             cycleID = cycle.cycleID
             let prefs = try dependencies.preferencesRepository.load()
-            session = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: prefs.dailyReviewLimit,
+            let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: prefs.dailyReviewLimit,
                 pairCount: prefs.matchingPairCount, clozeCount: prefs.clozeQuestionCount, at: Date())
+            guard generation == loadGeneration, !Task.isCancelled else { return }
+            session = prepared
+            schedules = try learning.review.scheduleFeedback(cycleID: cycle.cycleID)
             let restoredCycle = try learning.cycles.fetch(by: cycle.cycleID)
             emptyResolved = session == nil && restoredCycle?.reviewEvidence != nil
             learning.changed()
@@ -95,9 +99,11 @@ struct ReviewPracticeContent: View {
         do {
             let correct = try learning.review.submit(cycleID: cycleID, questionID: questionID, answer: answer, reveal: reveal, hint: hint, at: Date())
             session = try learning.review.session(cycleID: cycleID)
+            schedules = try learning.review.scheduleFeedback(cycleID: cycleID)
             feedback = correct ? "正确，已保存" : hint ? "提示使用已记录" : "还不正确，请再试一次（尝试次数已保存）"
             learning.changed(); message = nil
             return true
         } catch { message = error.localizedDescription; return false }
     }
 }
+

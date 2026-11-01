@@ -62,14 +62,14 @@ struct VocabularyDetailView: View {
             Section("来源上下文") {
                 if let source {
                     Text(source.title).font(.headline); Text(source.source).font(.caption).foregroundStyle(.secondary)
-                    if let url = source.originalURL.flatMap(URL.init(string:)) { Link("原文与署名", destination: url) }
+                    if let attribution = source.originalURL { Text(attribution).font(.caption).textSelection(.enabled) }
                 }
                 ForEach(item.sourceContexts) { context in
                     VStack(alignment: .leading, spacing: 6) {
                         Text(context.title).font(.headline)
                         Text(context.attribution).font(.caption).foregroundStyle(.secondary)
                         Text(context.sentence)
-                        if let url = context.originalURL.flatMap(URL.init(string:)) { Link("原文来源", destination: url) }
+                        if let attribution = context.originalURL { Text(attribution).font(.caption).textSelection(.enabled) }
                     }
                 }
             }
@@ -88,3 +88,4 @@ struct VocabularyDetailView: View {
     }
     private func lookup() async { do { result = try await learning.dictionary.lookup(item.lemma); error = nil } catch { self.error = error.localizedDescription } }
 }
+

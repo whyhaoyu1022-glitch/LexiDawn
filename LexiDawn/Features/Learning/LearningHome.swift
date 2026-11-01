@@ -73,7 +73,14 @@ struct LiveTodayView: View {
             }.accessibilityIdentifier("learning-today-scroll")
             .navigationTitle("词光").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .primaryAction) { Button("导入") { importSheet = true }.accessibilityIdentifier("import-article-toolbar") } }
-            .task { reload() }.refreshable { reload() }
+            .task {
+                reload()
+                if learning.productionNetworking {
+                    do { _ = try await learning.discovery.refresh(); learning.changed() }
+                    catch is CancellationError { }
+                    catch { sourceMessage = FullTextImportError.transport.localizedDescription }
+                }
+            }.refreshable { reload() }
             .onReceive(learning.$revision) { _ in reload() }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in reload() }
             .sheet(isPresented: $importSheet) { ArticleImportView(learning: learning) }
@@ -202,35 +209,3 @@ struct LiveExploreView: View {
     private func load() { do { cycles = try learning.cycles.fetchAll(); allowed = try learning.explorationAllowed(); articles = allowed ? try learning.content.library().filter { $0.readable && $0.cycleID == nil && !$0.started } : []; error = nil } catch { self.error = error.localizedDescription; allowed = false } }
 }
 
-struct ArticleLibraryView: View {
-    @ObservedObject var learning: LearningServices
-    @State private var items: [ArticleLibraryItem] = []
-    @State private var query = ""
-    @State private var reader: ReaderRoute?
-    @State private var error: String?
-    var body: some View {
-        List {
-            Text("每日文章和历史始终保留。未分配的文章属于探索阅读，必做未完成时仍锁定。").font(.caption).foregroundStyle(.secondary)
-            ForEach(items.filter { query.isEmpty || $0.title.localizedCaseInsensitiveContains(query) || $0.source.localizedCaseInsensitiveContains(query) }) { item in
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(item.title).font(.headline)
-                    Text("\(item.topics.joined(separator: " · ")) · \(item.minutes) 分钟").font(.caption)
-                    Text(item.completed ? "已完成 · 可重读" : item.started ? "进行中 \(Int(item.percent * 100))%" : item.cycleID != nil ? "每日必做" : "探索候选").font(.subheadline)
-                    if !item.readable { Label("全文授权不可用，记录保留", systemImage: "exclamationmark.lock").font(.caption) }
-                    Button(item.started ? "继续阅读" : "打开文章") {
-                        do {
-                            if item.cycleID == nil { _ = try learning.openExplore(articleID: item.id, at: Date()) }
-                            reader = ReaderRoute(articleID: item.id, cycleID: item.cycleID)
-                        } catch { self.error = error.localizedDescription }
-                    }.accessibilityIdentifier("library-open-\(item.id)")
-                    if let url = item.originalURL.flatMap(URL.init(string:)) { Link("原文来源", destination: url) }
-                }.padding(.vertical, 6)
-            }
-            if items.isEmpty { Text("文章库为空，可从今日页合法导入正文。") }
-            if let error { Text(error).foregroundStyle(.red); Button("重新读取", action: load) }
-        }.searchable(text: $query, prompt: "搜索标题或来源").navigationTitle("文章库与历史")
-            .task { load() }.onReceive(learning.$revision) { _ in load() }
-            .sheet(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭文章") { reader = nil } } } } }
-    }
-    private func load() { do { items = try learning.content.library(); error = nil } catch { self.error = error.localizedDescription } }
-}

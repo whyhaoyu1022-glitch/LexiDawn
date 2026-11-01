@@ -6,6 +6,7 @@ struct ReviewQuestion: Identifiable, Equatable {
     let attempts: Int
     let usedHint: Bool
     let completed: Bool
+    var context: String? = nil
 }
 struct ReviewSessionView: Equatable {
     let id: String
@@ -30,7 +31,7 @@ struct ReviewSessionView: Equatable {
         guard Set(entries.map(\.entryID)).count == entries.count, Set(states.map(\.entryID)).count == states.count else { throw PersistenceError.integrity("词汇或复习状态重复") }
         for entry in entries {
             guard let state = states.first(where: { $0.entryID == entry.entryID }), state.dueAt.timeIntervalSince1970.isFinite,
-                  state.repetitions >= 0, state.intervalDays >= 0, state.algorithmVersion == BasicReviewScheduler.version else {
+                  state.repetitions >= 0, state.intervalDays >= 0, [BasicReviewScheduler.version, FSRSScheduler.version].contains(state.algorithmVersion) else {
                 throw PersistenceError.integrity("词条 \(entry.lemma) 的复习状态缺失或不受支持，不能证明队列为空")
             }
         }
@@ -103,10 +104,12 @@ struct ReviewSessionView: Equatable {
             guard records.count <= 1 else { throw PersistenceError.integrity("一个周期存在多个必做复习会话") }
             guard let session = records.first else { return nil }
             let exercises = try validatedExercises(session, context: context)
+            let contexts = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>())
             func questions(_ stage: String) -> [ReviewQuestion] {
-                exercises.filter { $0.stage == stage }.sorted { $0.position < $1.position }.map {
-                    ReviewQuestion(id: $0.exerciseID, entryID: $0.entryID, stage: stage, prompt: $0.prompt, answer: $0.answer, senseID: $0.senseID,
-                                   attempts: $0.attempts, usedHint: $0.usedHint, completed: $0.completedAt != nil)
+                exercises.filter { $0.stage == stage }.sorted { $0.position < $1.position }.map { exercise in
+                    ReviewQuestion(id: exercise.exerciseID, entryID: exercise.entryID, stage: stage, prompt: exercise.prompt, answer: exercise.answer, senseID: exercise.senseID,
+                                   attempts: exercise.attempts, usedHint: exercise.usedHint, completed: exercise.completedAt != nil,
+                                   context: contexts.first(where: { $0.entryID == exercise.entryID })?.sentence)
                 }
             }
             return ReviewSessionView(id: session.sessionID, matching: questions("matching"), cloze: questions("cloze"), completedAt: session.completedAt)
@@ -122,6 +125,9 @@ struct ReviewSessionView: Equatable {
             guard session.completedAt == nil, question.stage == "matching" || exercises.filter({ $0.stage == "matching" }).allSatisfy({ $0.completedAt != nil }) else { throw LearningError.invalid("请先完成连线阶段。") }
             let timestamp = max(now, session.updatedAt)
             if hint { question.usedHint = true; session.revision += 1; session.updatedAt = timestamp; return false }
+            if question.stage == "matching", exercises.contains(where: { $0.stage == "matching" && $0.senseID == answer && $0.completedAt != nil }) {
+                throw LearningError.invalid("此释义已完成配对，请选择未完成的释义。")
+            }
             question.attempts += 1
             let correct = question.stage == "matching" ? answer == question.senseID : EnglishTokenizer.normalized(answer) == EnglishTokenizer.normalized(question.answer)
             question.firstTryCorrect = question.attempts == 1 && correct && !question.usedHint && !reveal
@@ -138,7 +144,16 @@ struct ReviewSessionView: Equatable {
                     guard let state = states.first(where: { $0.entryID == entryID }), !logs.contains(where: { $0.eventID == "\(session.sessionID)|\(entryID)" }) else { throw PersistenceError.integrity("复习排程状态缺失或日志重复") }
                     let entryQuestions = exercises.filter { $0.entryID == entryID }
                     let grade: BasicReviewScheduler.Grade = entryQuestions.contains(where: \.revealed) ? .again : entryQuestions.allSatisfy(\.firstTryCorrect) ? .good : .hard
-                    let interval = BasicReviewScheduler.interval(previous: state.intervalDays, grade: grade)
+                    let memory = try FSRSScheduler.schedule(stability: state.stability ?? (state.repetitions > 0 ? Double(max(1, state.intervalDays)) : nil),
+                        difficulty: state.difficulty ?? (state.repetitions > 0 ? 5 : nil),
+                        elapsedDays: max(0, timestamp.timeIntervalSince(state.lastReviewedAt ?? timestamp) / 86400), grade: grade)
+                    let interval = memory.intervalDays
+                    state.stability = memory.stability; state.difficulty = memory.difficulty; state.retrievability = memory.retrievability
+                    state.algorithmVersion = FSRSScheduler.version; state.cardState = grade == .again ? "relearning" : "review"
+                    state.againCount = (state.againCount ?? 0) + (grade == .again ? 1 : 0)
+                    state.hardCount = (state.hardCount ?? 0) + (grade == .hard ? 1 : 0)
+                    state.goodCount = (state.goodCount ?? 0) + (grade == .good ? 1 : 0)
+                    state.lastGradeSource = "matching-and-spelling"
                     let next = timestamp.addingTimeInterval(Double(interval) * 86400)
                     context.insert(ReviewLogRecord(sessionID: session.sessionID, entryID: entryID, grade: grade.rawValue, at: timestamp, previousDueAt: state.dueAt, nextDueAt: next))
                     state.dueAt = next; state.intervalDays = interval; state.repetitions += 1; state.lapses += grade == .again ? 1 : 0; state.lastReviewedAt = timestamp
@@ -147,6 +162,16 @@ struct ReviewSessionView: Equatable {
             }
             try cycles.applyInTransaction(cycle, context: context)
             return correct || reveal
+        }
+    }
+    func scheduleFeedback(cycleID: UUID) throws -> [String] {
+        try writer.read { context in
+            guard let session = try context.fetch(FetchDescriptor<ReviewSessionRecord>()).first(where: { $0.cycleID == cycleID.uuidString }) else { return [] }
+            let entries = try context.fetch(FetchDescriptor<VocabularyEntryRecord>())
+            return try context.fetch(FetchDescriptor<ReviewLogRecord>()).filter { $0.sessionID == session.sessionID }.sorted { $0.entryID < $1.entryID }.map { log in
+                let lemma = entries.first { $0.entryID == log.entryID }?.lemma ?? "词条"
+                return "\(lemma) · \(log.grade.capitalized) · 下次复习 \(log.nextDueAt.formatted(date: .abbreviated, time: .shortened)) · \(log.algorithmVersion)"
+            }
         }
     }
     func savedSession(for cycleID: UUID, at timestamp: Date) throws -> SavedReviewSessionSnapshot {
@@ -180,5 +205,16 @@ struct ReviewSessionView: Equatable {
 }
 @MainActor private struct TransactionSessionSnapshot: ReviewSessionReading {
     let snapshot: SavedReviewSessionSnapshot
+    func scheduleFeedback(cycleID: UUID) throws -> [String] {
+        try writer.read { context in
+            guard let session = try context.fetch(FetchDescriptor<ReviewSessionRecord>()).first(where: { $0.cycleID == cycleID.uuidString }) else { return [] }
+            let entries = try context.fetch(FetchDescriptor<VocabularyEntryRecord>())
+            return try context.fetch(FetchDescriptor<ReviewLogRecord>()).filter { $0.sessionID == session.sessionID }.sorted { $0.entryID < $1.entryID }.map { log in
+                let lemma = entries.first { $0.entryID == log.entryID }?.lemma ?? "词条"
+                return "\(lemma) · \(log.grade.capitalized) · 下次复习 \(log.nextDueAt.formatted(date: .abbreviated, time: .shortened)) · \(log.algorithmVersion)"
+            }
+        }
+    }
     func savedSession(for cycleID: UUID, at timestamp: Date) throws -> SavedReviewSessionSnapshot { snapshot }
 }
+

@@ -8,6 +8,8 @@ struct ReadableArticle: Identifiable {
     let publishedAt: Date?
     let originalURL: String?
     var accessExpiresAt: Date? = nil
+    var document: ArticleDocument? = nil
+    var author: String? = nil
 }
 
 struct ArticleLibraryItem: Identifiable {
@@ -19,11 +21,15 @@ struct ArticleLibraryItem: Identifiable {
     let completed: Bool
     let started: Bool
     let readable: Bool
+    var favorite: Bool = false
+    var readLater: Bool = false
+    var sourceID: String = ""
+    var fetchedAt: Date = .distantPast
 }
 
 struct ArticleAccessError: LocalizedError {
     let originalURL: String?
-    var errorDescription: String? { "全文展示或缓存许可已失效，或缺少可验证的授权。学习记录已保留；请从原文入口核对许可。" }
+    var errorDescription: String? { "全文展示或缓存许可已失效，或缺少可验证的授权。学习记录已保留。" }
 }
 
 @MainActor final class ContentRepository: ArticleCandidateProvider {
@@ -135,7 +141,7 @@ struct ArticleAccessError: LocalizedError {
                 return ArticleLibraryItem(id: article.articleID, title: article.originalTitle, source: article.sourceAttribution ?? article.sourceID,
                     topics: article.topicTags, minutes: article.estimatedReadMinutes, originalURL: grant?.originalURL,
                     cycleID: cycle.flatMap { UUID(uuidString: $0.cycleID) }, percent: progress?.readingPercent ?? 0,
-                    completed: progress?.completedAt != nil || cycle?.articleTaskStatusRaw == "completed", started: progress != nil, readable: readable)
+                    completed: progress?.completedAt != nil || cycle?.articleTaskStatusRaw == "completed", started: progress != nil, readable: readable, favorite: article.isFavorite, readLater: article.readLater, sourceID: article.sourceID, fetchedAt: article.fetchedAt)
             }
         }
     }
@@ -149,6 +155,12 @@ struct ArticleAccessError: LocalizedError {
             guard grants.count == 1, let grant = grants.first else { throw ArticleAccessError(originalURL: ArticleCandidate.isWebURL(article.canonicalURL) ? article.canonicalURL : nil) }
             grant.accessHighWater = max(now, grant.accessHighWater)
             let candidate = try article.candidate()
+            if grant.scope == "audited-full-text" {
+                guard let data = article.fullTextRightsEvidenceData, let structured = article.structuredBody,
+                      let proof = try? JSONDecoder().decode(FullTextRightsEvidence.self, from: data), proof.valid(sourceID: article.sourceID, at: max(now, grant.accessHighWater)),
+                      let document = try? JSONDecoder().decode(ArticleDocument.self, from: structured),
+                      ArticleDocumentNormalizer.preservesOriginal(article.rawContent, document: document) else { return nil }
+            }
             let permitted = ArticleAccessPolicy.permits(candidate: candidate, storedHash: article.bodyHash ?? "", grantSource: grant.sourceID,
                 grantHash: grant.bodyHash, scope: grant.scope, now: now, highWater: grant.accessHighWater)
             if !permitted {
@@ -160,6 +172,8 @@ struct ArticleAccessError: LocalizedError {
             var result = ReadableArticle(id: articleID, title: article.originalTitle, source: article.sourceAttribution ?? article.sourceID,
                 body: article.bodyText ?? "", bodyHash: article.bodyHash ?? "", topics: article.topicTags, minutes: article.estimatedReadMinutes,
                 publishedAt: article.publishedAt, originalURL: grant.originalURL)
+            if let data = article.structuredBody { result.document = try JSONDecoder().decode(ArticleDocument.self, from: data) }
+            result.author = article.author
             if case let .until(expiry)? = candidate.cachePermission { result.accessExpiresAt = expiry }
             return result
         }
@@ -225,3 +239,4 @@ struct URLSessionArticleClient: ArticleHTTPClient {
         }
     }
 }
+

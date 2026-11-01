@@ -5,6 +5,8 @@ import Combine
 @MainActor final class LearningServices: ObservableObject {
     let content: ContentRepository
     let acquisition: ArticleAcquisitionService
+    let discovery: ArticleDiscoveryService
+    var productionNetworking = false
     let dictionary: DictionaryLookupService
     let vocabulary: VocabularyRepository
     let reader: ReaderProgressService
@@ -18,6 +20,7 @@ import Combine
         writer = RepositoryWriter(context: context)
         content = ContentRepository(context: context)
         acquisition = ArticleAcquisitionService(content: content)
+        discovery = ArticleDiscoveryService(content: content)
         dictionary = DictionaryLookupService(context: context)
         vocabulary = VocabularyRepository(context: context)
         reader = ReaderProgressService(context: context, content: content, cycles: cycles)
@@ -64,3 +67,4 @@ import Combine
     }
 }
 struct LearningStatistics { let articles: Int, studyDays: Int, streak: Int, vocabulary: Int, pending: Int, recentDays: Int }
+

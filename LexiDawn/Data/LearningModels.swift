@@ -117,10 +117,18 @@ import SwiftData
     var repetitions: Int
     var lapses: Int
     var algorithmVersion: String
+    var stability: Double?
+    var difficulty: Double?
+    var retrievability: Double?
+    var cardState: String?
+    var againCount: Int?
+    var hardCount: Int?
+    var goodCount: Int?
+    var lastGradeSource: String?
     var lastReviewedAt: Date?
     init(entryID: String, at: Date) {
         self.entryID = entryID; dueAt = at; intervalDays = 0; repetitions = 0; lapses = 0
-        algorithmVersion = BasicReviewScheduler.version
+        algorithmVersion = FSRSScheduler.version
     }
 }
 @Model final class ReviewSessionRecord {
@@ -135,7 +143,7 @@ import SwiftData
     var algorithmVersion: String
     init(cycleID: UUID, entries: [String], at: Date, limit: Int) {
         sessionID = UUID().uuidString; self.cycleID = cycleID.uuidString; selectedEntryIDs = entries
-        createdAt = at; updatedAt = at; revision = 0; dailyLimit = limit; algorithmVersion = BasicReviewScheduler.version
+        createdAt = at; updatedAt = at; revision = 0; dailyLimit = limit; algorithmVersion = FSRSScheduler.version
     }
 }
 @Model final class ReviewExerciseRecord {
@@ -169,7 +177,7 @@ import SwiftData
     var algorithmVersion: String
     init(sessionID: String, entryID: String, grade: String, at: Date, previousDueAt: Date, nextDueAt: Date) {
         eventID = "\(sessionID)|\(entryID)"; self.sessionID = sessionID; self.entryID = entryID; self.grade = grade
-        reviewedAt = at; self.previousDueAt = previousDueAt; self.nextDueAt = nextDueAt; algorithmVersion = BasicReviewScheduler.version
+        reviewedAt = at; self.previousDueAt = previousDueAt; self.nextDueAt = nextDueAt; algorithmVersion = FSRSScheduler.version
     }
 }
 
@@ -177,8 +185,9 @@ import SwiftData
     static var schema: Schema { Schema([ArticleRecord.self, DailyStudyCycleRecord.self, UserPreferencesRecord.self,
         ContentGrantRecord.self, SourceAcquisitionRecord.self, ArticleProgressRecord.self, VocabularyEntryRecord.self,
         VocabularySourceContextRecord.self, DictionaryEntryRecord.self, DictionarySenseRecord.self, ReviewStateRecord.self,
-        ReviewSessionRecord.self, ReviewExerciseRecord.self, ReviewLogRecord.self]) }
+        ReviewSessionRecord.self, ReviewExerciseRecord.self, ReviewLogRecord.self, DictionaryProviderCacheRecord.self]) }
     static func container(configuration: ModelConfiguration) throws -> ModelContainer {
         try ModelContainer(for: schema, configurations: [configuration])
     }
 }
+
