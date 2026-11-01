@@ -84,7 +84,7 @@ struct LiveTodayView: View {
             .onReceive(learning.$revision) { _ in reload() }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in reload() }
             .sheet(isPresented: $importSheet) { ArticleImportView(learning: learning) }
-            .sheet(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("返回今日") { reader = nil } } } } }
+            .fullScreenCover(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("返回今日") { reader = nil } } } } }
             .sheet(isPresented: $review) { NavigationStack { ReviewPracticeContent(learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("返回今日") { review = false; reload() } } } } }
         }
     }
@@ -99,9 +99,8 @@ struct LiveTodayView: View {
             Text(snapshot.articleTitle ?? snapshot.cycle.articleID).font(.system(.title, design: .serif).bold()).fixedSize(horizontal: false, vertical: true)
             if let article = articles.first(where: { $0.id == snapshot.cycle.articleID }) {
                 Text("\(article.topics.joined(separator: " · ")) · 预计 \(article.minutes) 分钟").font(.subheadline)
-                Text(article.source).font(.caption).foregroundStyle(.secondary)
+                Text(article.sourceID == "wikipedia" ? "Wikipedia · Contributors" : article.sourceID == SourceRegistry.rfc.id ? "RFC Editor · M. Nottingham" : article.source).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 ProgressView(value: article.percent) { Text("阅读进度 \(Int(article.percent * 100))%") }.font(.caption)
-                if let url = article.originalURL.flatMap(URL.init(string:)) { Link("查看原文来源", destination: url).font(.caption) }
             }
             Text("原始分配日期 \(snapshot.cycle.assignedLocalDate) · \(snapshot.cycle.assignedTimeZoneID)").font(.caption)
             if snapshot.isOverdue { Label("已跨过 \(snapshot.cycle.carryOverCount) 个学习日期，继续原文章", systemImage: "clock").font(.footnote) }
@@ -203,7 +202,7 @@ struct LiveExploreView: View {
                 }
                 if let error { Text(error).foregroundStyle(.red) }
             }.navigationTitle("探索").task { load() }.onReceive(learning.$revision) { _ in load() }
-                .sheet(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { reader = nil } } } } }
+                .fullScreenCover(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { reader = nil } } } } }
         }
     }
     private func load() { do { cycles = try learning.cycles.fetchAll(); allowed = try learning.explorationAllowed(); articles = allowed ? try learning.content.library().filter { $0.readable && $0.cycleID == nil && !$0.started } : []; error = nil } catch { self.error = error.localizedDescription; allowed = false } }

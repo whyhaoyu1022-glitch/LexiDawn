@@ -55,7 +55,7 @@ struct ArticleLibraryView: View {
         .toolbar { Button("发现完整文章", systemImage: "arrow.clockwise") { Task { await refresh() } }.disabled(loading) }
         .refreshable { await refresh() }
         .task { load() }.onReceive(learning.$revision) { _ in load() }
-        .sheet(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭文章") { reader = nil } } } } }
+        .fullScreenCover(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭文章") { reader = nil } } } } }
     }
     private func load() { do { items = try learning.content.library(); error = nil } catch { self.error = error.localizedDescription } }
     private func flags(_ item: ArticleLibraryItem, favorite: Bool? = nil, later: Bool? = nil) {

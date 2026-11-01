@@ -19,11 +19,14 @@ struct ReviewPracticeContent: View {
     @State private var emptyResolved = false
     @State private var loadGeneration = UUID()
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text("把刚认识的词，变成自己的词").font(.title2.bold())
-                Text("FSRS 4.5 · 两阶段首次正确为 Good；错误或提示为 Hard；显示答案为 Again。题组与下次时间在本地保存。").font(.caption).foregroundStyle(.secondary)
+                if verticalSizeClass != .compact {
+                    Text("把刚认识的词，变成自己的词").font(.title2.bold())
+                    Text("FSRS 4.5 · 两阶段首次正确为 Good；错误或提示为 Hard；显示答案为 Again。题组与下次时间在本地保存。").font(.caption).foregroundStyle(.secondary)
+                }
                 if loading { ProgressView("正在查询完整复习队列…") }
                 else if let session {
                     if session.completedAt != nil {
@@ -44,7 +47,7 @@ struct ReviewPracticeContent: View {
     private func matching(_ session: ReviewSessionView) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("1 · 连线 \(session.matching.filter(\.completed).count)/\(session.matching.count)").font(.headline)
-            Text("先点英文，再点对应中文。中文来自开放词典的可能对应词或你的个人释义。")
+            Text(verticalSizeClass == .compact ? "先点英文，再点中文；完成的两端均不可再选。" : "先点英文，再点对应中文。中文来自开放词典的可能对应词或你的个人释义。")
             MatchingBoard(session: session, selected: $selected, submit: { questionID, senseID in
                 if submit(questionID: questionID, answer: senseID) { selected = nil }
             }, noSelection: { feedback = "请先选择英文词条" })

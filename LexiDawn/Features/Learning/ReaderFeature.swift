@@ -49,16 +49,18 @@ struct ReaderView: View {
     @State private var fontSize: Double = 19
     @State private var lineSpacing: Double = 1.5
     @State private var theme = "system"
+    @State private var sourceDetails = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     init(route: ReaderRoute, learning: LearningServices) { _model = StateObject(wrappedValue: ReaderViewModel(articleID: route.articleID, cycleID: route.cycleID, learning: learning)) }
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let article = model.article {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(article.title).font(.title3.bold()).lineLimit(verticalSizeClass == .compact ? 1 : 2)
+                    Text(article.title).font(.title3.bold()).lineLimit(verticalSizeClass == .compact || dynamicTypeSize.isAccessibilitySize ? 1 : 2)
                     Text("\(compactSource(article)) · \(article.minutes) 分钟").font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                    if verticalSizeClass != .compact, let published = article.publishedAt { Text("发布：\(published.formatted(date: .abbreviated, time: .omitted))").font(.caption) }
-                    if verticalSizeClass != .compact { DisclosureGroup("来源与许可") { Text(article.source).font(.caption).textSelection(.enabled); Text("全文授权在每次访问及保存时重新检查。导入内容仅限本地使用。").font(.caption) } }
+                    if verticalSizeClass != .compact && !dynamicTypeSize.isAccessibilitySize, let published = article.publishedAt { Text("发布：\(published.formatted(date: .abbreviated, time: .omitted))").font(.caption) }
+                    if verticalSizeClass != .compact && !dynamicTypeSize.isAccessibilitySize { DisclosureGroup("来源与许可") { Text(article.source).font(.caption).textSelection(.enabled); Text("全文授权在每次访问及保存时重新检查。导入内容仅限本地使用。").font(.caption) } }
                     HStack { ProgressView(value: model.position.percent); Text("\(Int(model.position.percent * 100))%").font(.caption.monospacedDigit()).accessibilityIdentifier("reader-progress") }
                 }.padding(.horizontal)
                 if let notice = model.notice { Text(notice).font(.caption).padding(.horizontal) }
@@ -92,14 +94,15 @@ struct ReaderView: View {
         .preferredColorScheme(theme == "dark" ? .dark : ["paper", "light"].contains(theme) ? .light : nil)
         .navigationTitle("英文阅读").navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .secondaryAction) {
+            ToolbarItem(placement: .topBarLeading) { Button("来源详情", systemImage: "info.circle") { sourceDetails = true }.labelStyle(.iconOnly) }
+            ToolbarItem(placement: .topBarTrailing) {
                 Menu("阅读外观", systemImage: "textformat.size") {
                     Button("增大字号") { saveAppearance(size: min(32, fontSize + 1), theme: theme) }
                     Button("减小字号") { saveAppearance(size: max(14, fontSize - 1), theme: theme) }
                     ForEach(["system", "light", "dark", "paper"], id: \.self) { value in
                         Button(["system": "跟随系统", "light": "浅色", "dark": "深色", "paper": "暖纸色"][value] ?? value) { saveAppearance(size: fontSize, theme: value) }
                     }
-                }.accessibilityIdentifier("reader-appearance")
+                }.labelStyle(.iconOnly).accessibilityLabel("阅读外观").accessibilityIdentifier("reader-appearance")
             }
         }
         .task {
@@ -119,6 +122,7 @@ struct ReaderView: View {
                 }
             } catch { }
         }
+        .sheet(isPresented: $sourceDetails) { NavigationStack { ScrollView { Text(model.article?.source ?? "来源信息不可用").font(.body).textSelection(.enabled).padding() }.navigationTitle("来源详情").toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { sourceDetails = false } } } } }
         .sheet(item: $selection) { selected in WordLookupSheet(model: selected) }
         .alert("明确确认已读完", isPresented: $manualConfirmation) {
             Button("取消", role: .cancel) { }

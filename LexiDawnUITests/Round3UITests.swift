@@ -1,5 +1,6 @@
 import XCTest
 import UIKit
+import ImageIO
 
 final class Round3UITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false; XCUIDevice.shared.orientation = .portrait }
@@ -10,7 +11,7 @@ final class Round3UITests: XCTestCase {
     private func capture(_ id: String, app: XCUIApplication, feature: String, state: String, theme: String = "system", origin: String = "fixture-real-rfc-isolated-learning-state") {
         let device = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? UIDevice.current.name
         let identifier = id + "-" + device.map { $0.isLetter || $0.isNumber || $0 == "-" ? String($0) : "-" }.joined()
-        let image = XCTAttachment(screenshot: app.screenshot()); image.name = identifier; image.lifetime = .keepAlways; add(image)
+        let image = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); image.name = identifier; image.lifetime = .keepAlways; add(image)
         let metadata: [String: String] = ["screenshotID": identifier, "featureID": feature, "screenName": feature, "state": state,
             "device": ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? UIDevice.current.name, "orientation": XCUIDevice.shared.orientation.isLandscape ? "landscape" : "portrait", "theme": theme,
             "testName": name, "fixtureOrProduction": origin, "fileName": identifier + ".png", "notes": "Native Simulator screenshot; no image generation."]
@@ -28,6 +29,8 @@ final class Round3UITests: XCTestCase {
             let token = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'word-'")).firstMatch
             XCTAssertTrue(token.waitForExistence(timeout: 8)); XCTAssertTrue(token.isHittable, "Visible text is required after rotation \(index)")
             XCTAssertGreaterThan(token.frame.width, 2); XCTAssertGreaterThan(token.frame.height, 5)
+            let body = app.otherElements["reader-body"].firstMatch
+            XCTAssertGreaterThanOrEqual(body.frame.width, app.windows.firstMatch.frame.width * 0.80, "The reader must use the rotated viewport width")
             if index == 0 { capture("R3-R02", app: app, feature: "reader", state: "landscape-body-visible") }
         }
         let body = app.otherElements["reader-body"].firstMatch
@@ -55,6 +58,8 @@ final class Round3UITests: XCTestCase {
         XCTAssertGreaterThan(greenLinePixels(app: app), 24)
         capture("R3-M05", app: app, feature: "matching", state: "two-visible-lines")
         XCUIDevice.shared.orientation = .landscapeLeft
+        let settled = NSPredicate { _, _ in app.windows.firstMatch.frame.width > app.windows.firstMatch.frame.height }
+        expectation(for: settled, evaluatedWith: app); waitForExpectations(timeout: 10)
         XCTAssertGreaterThan(greenLinePixels(app: app), 12)
         capture("R3-M06", app: app, feature: "matching", state: "landscape-lines")
         XCUIDevice.shared.orientation = .portrait
@@ -162,7 +167,10 @@ final class Round3UITests: XCTestCase {
     func testLargeDynamicTypeThreeThemesRemainReadableInLandscape() throws {
         let app = XCUIApplication(); app.launchEnvironment["LEXIDAWN_UI_SCENARIO"] = "gallery-reader"; app.launchEnvironment["LEXIDAWN_UI_STORE_ID"] = UUID().uuidString
         app.launchArguments = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]; app.launch()
-        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
+        let open = app.buttons["open-reader"]; XCTAssertTrue(open.waitForExistence(timeout: 15)); open.tap()
+        let navigation = app.navigationBars["英文阅读"]
+        if !navigation.waitForExistence(timeout: 4), open.isHittable { open.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap() }
+        XCTAssertTrue(navigation.waitForExistence(timeout: 10))
         for (theme, title, id) in [("light", "浅色", "R3-R06"), ("dark", "深色", "R3-R07"), ("paper", "暖纸色", "R3-R08")] {
             XCUIDevice.shared.orientation = .portrait
             let appearance = app.buttons["阅读外观"].firstMatch; XCTAssertTrue(appearance.waitForExistence(timeout: 10)); appearance.tap(); app.buttons[title].tap()
@@ -198,12 +206,17 @@ final class Round3UITests: XCTestCase {
     /// Sample only the middle of the board's gap. Button text/icons cannot satisfy this assertion.
     private func greenLinePixels(app: XCUIApplication) -> Int {
         let board = app.otherElements["matching-board"].firstMatch
-        guard board.waitForExistence(timeout: 5), let image = app.screenshot().image.cgImage else { return 0 }
+        guard board.waitForExistence(timeout: 5) else { return 0 }
+        let screenshot = XCUIScreen.main.screenshot()
+        guard let source = CGImageSourceCreateWithData(screenshot.pngRepresentation as CFData, nil),
+              let raw = CGImageSourceCreateImageAtIndex(source, 0, nil),
+              let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true, kCGImageSourceThumbnailMaxPixelSize: max(raw.width, raw.height)] as CFDictionary) else { return 0 }
         let width = image.width, height = image.height
         var bytes = [UInt8](repeating: 0, count: width * height * 4)
         guard let context = CGContext(data: &bytes, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return 0 }
         context.draw(image, in: CGRect(x: 0, y: 0, width: CGFloat(width), height: CGFloat(height)))
         let screen = app.windows.firstMatch.frame
+        print("Native screenshot geometry: window=\(screen), board=\(board.frame), pixels=\(width)x\(height), deviceOrientation=\(XCUIDevice.shared.orientation.rawValue)")
         let sx = Double(width) / Double(screen.width), sy = Double(height) / Double(screen.height)
         let middle = Int(Double(board.frame.midX) * sx), top = max(0, Int(Double(board.frame.minY) * sy)), bottom = min(height, Int(Double(board.frame.maxY) * sy))
         guard top < bottom, middle > 4, middle < width - 4 else { return 0 }
