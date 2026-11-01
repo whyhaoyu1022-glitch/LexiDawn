@@ -1,6 +1,11 @@
 import Foundation
 
 enum ArticleHTMLExtractor {
+    private static let standardEntities: [String: String] = {
+        guard let url = Bundle.main.url(forResource: "html-entities", withExtension: "json"), let data = try? Data(contentsOf: url),
+              let values = try? JSONDecoder().decode([String: String].self, from: data) else { return [:] }
+        return values
+    }()
     /// A bounded tokenizer with quoted-attribute and comment handling. It never executes HTML.
     /// Source adapters must independently attest that the response is a complete article.
     static func extract(_ html: String) throws -> ArticleDocument {
@@ -73,7 +78,10 @@ enum ArticleHTMLExtractor {
             if entity.hasPrefix("#") {
                 let number = entity.hasPrefix("#x") ? UInt32(entity.dropFirst(2), radix: 16) : UInt32(entity.dropFirst())
                 guard let number, let scalar = UnicodeScalar(number) else { throw FullTextImportError.parsing }; value = String(scalar)
-            } else { guard let decoded = named[entity] else { throw FullTextImportError.parsing }; value = decoded }
+            } else {
+                // Unknown named references are literal text in HTML, not permission to delete characters.
+                guard let decoded = named[entity] ?? standardEntities[entity] else { continue }; value = decoded
+            }
             guard let range = Range(match.range, in: result) else { throw FullTextImportError.parsing }; result.replaceSubrange(range, with: value)
         }
         return result

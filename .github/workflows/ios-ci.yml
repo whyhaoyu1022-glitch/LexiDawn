@@ -71,6 +71,21 @@ jobs:
           print("MinimumOSVersion:", info.get("MinimumOSVersion"))
           print("Native launch screen and scene manifest present")
           PYINFO
+      - name: Build Release without screenshot or fault fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/LexiDawn-release" -sdk iphonesimulator -configuration Release -destination 'generic/platform=iOS Simulator' IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO build
+          python3 - <<'PYRELEASE'
+          import os, pathlib, plistlib
+          app = pathlib.Path(os.environ['RUNNER_TEMP']) / 'LexiDawn-release/Build/Products/Release-iphonesimulator/LexiDawn.app'
+          with (app / 'Info.plist').open('rb') as stream:
+              name = plistlib.load(stream)['CFBundleExecutable']
+          data = (app / name).read_bytes()
+          for marker in [b'round3-dictionary-', b'round3-storage-', b'Explicit original dictionary UI fixture', b'gallery-round3-review']:
+              assert marker not in data, 'Debug evidence fixture leaked into Release'
+          print('Release built; explicit screenshot/fault fixture markers excluded.')
+          PYRELEASE
       - name: Compile test targets before booting a simulator
         id: compile_tests
         shell: bash
@@ -166,21 +181,22 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: LexiDawn-round3-evidence-${{ github.run_id }}
+          name: LexiDawn-round3-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/round-3
           if-no-files-found: error
+
       - name: Upload original screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: LexiDawn-screenshots-${{ github.run_id }}
+          name: LexiDawn-screenshots-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/LexiDawn-screenshots
           if-no-files-found: error
       - name: Upload test result bundles
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: LexiDawn-xcresults-${{ github.run_id }}
+          name: LexiDawn-xcresults-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/LexiDawn-unit.xcresult
             ${{ runner.temp }}/LexiDawn-ui.xcresult
@@ -247,12 +263,31 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: LexiDawn-round3-${{ matrix.device }}-${{ github.run_id }}
+          name: LexiDawn-round3-${{ matrix.device }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/device-evidence
             ${{ runner.temp }}/device-attachments
             ${{ runner.temp }}/device-ui.xcresult
             ${{ runner.temp }}/device-ui.log
             ${{ runner.temp }}/device-build.log
+          if-no-files-found: error
+
+  combined-native-evidence:
+    name: Combine original PNG evidence and complete index
+    needs: [build-and-test, device-ui-regressions]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: LexiDawn-round3-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: native-jobs
+      - name: Verify hashes and combine untouched native PNGs
+        run: python3 scripts/merge-round3-evidence.py native-jobs combined-round3 --commit '${{ github.sha }}' --run-url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LexiDawn-round3-complete-native-package-${{ github.run_id }}-${{ github.run_attempt }}
+          path: combined-round3
           if-no-files-found: error
 

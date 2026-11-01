@@ -67,3 +67,6 @@ GitHub Actions 先使用 `build-for-testing` 和 `generic/platform=iOS Simulator
 
 
 2026-11-01 · 负责人特别指示的公开官网全文模式：允许个人使用场景下直接尝试11个官网来源（BBC、Reuters、AP、Guardian、NPR、DW、VOA、NASA、ScienceDaily、Phys.org、Smithsonian）；旧出版社许可审核不改写为授权。FullTextRightsEvidence.importBasis=owner-directed-personal-use-2026-11-01，grant.scope=personal-full-text，与audited-full-text分开。只请求公开HTTPS页面，固定主机白名单及重定向检查，无登录、验证码处理、浏览器、代理或付费墙绕过。RSS/列表只在内存中发现候选；完整闭合正文子树或明确articleBody、正文长度/段落/原文一致性和数据库事务验证通过后才入库；任何失败不留下候选。Wikinews另按CC BY4.0及2024-12-17创建日期门槛接入。最多3条来源管线并行，首篇原文导入后更新首页，各来源独立失败/退避。新增8个确定性测试及真实网络五来源导入门槛测试，尚未执行，不把配置11源当作11源成功。
+
+
+交付基础设施：新增Release构建并验证DEBUG故障/截图夹具标记未进入二进制；新增统一证据汇总job，合并同一workflow/commit全部设备原生PNG，逐张验证SHA-256，输出完整manifest/CSV/INDEX.md和无重绘的原始PNG ZIP。合并脚本已在实际run41270145667小屏14张原始PNG上验证，不借此声称最新应用测试通过；Linux仅验证Python/YAML及真实附件打包。

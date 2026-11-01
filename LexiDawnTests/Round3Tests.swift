@@ -99,6 +99,17 @@ import SwiftData
         XCTAssertEqual(state.success, now); XCTAssertEqual(state.retryAfter, now.addingTimeInterval(3611))
         XCTAssertEqual(try restored.read(articleID: item().articleID, at: now.addingTimeInterval(12)).body, item().rawContent)
     }
+    func testStandardEntitiesDecodeUnicodeAndUnknownReferenceRemainsLiteral() throws {
+        XCTAssertEqual(try ArticleHTMLExtractor.decodeEntities("caf&eacute; &rarr; &NotEqualTilde; &unknownReference;"), "café → ≂̸ &unknownReference;")
+    }
+    func testSchemaArticleBodyHTMLIsCleanedAndPreservesFinalParagraph() throws {
+        let source = try XCTUnwrap(ArticleSourceRegistry.personalSource("bbc"))
+        let candidate = ArticleDiscoveryItem(sourceID: source.id, title: "Fixture", url: "https://www.bbc.com/news/articles/explicit-fixture", revision: nil)
+        let json = try JSONSerialization.data(withJSONObject: ["@type": "NewsArticle", "headline": "Explicit schema fixture", "articleBody": webBody])
+        let html = "<html><script type='application/ld+json'>" + String(decoding: json, as: UTF8.self) + "</script></html>"
+        let result = try ArticleWebPageExtractor.extract(Data(html.utf8), candidate: candidate, source: source)
+        XCTAssertEqual(result.document.blocks.count, 3); XCTAssertFalse(result.document.text.contains("<p>")); XCTAssertTrue(result.document.text.hasSuffix("including the final sentence."))
+    }
     func testRecommendationUsesPreferencesAndCannotReuseAssignedCandidate() throws {
         let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)
         let prefs = try app.preferencesRepository.load(); prefs.interestTopics = ["科学"]; try app.preferencesRepository.save(prefs)

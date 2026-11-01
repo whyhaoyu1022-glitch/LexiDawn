@@ -123,7 +123,9 @@ enum ArticleWebPageExtractor {
         var document = ArticleDocument(blocks: blocks)
         let article = articles.max { (($0["articleBody"] as? String)?.count ?? 0) < (($1["articleBody"] as? String)?.count ?? 0) }
         if let raw = article?["articleBody"] as? String, !raw.isBlank {
-            let jsonDocument = ArticleDocumentNormalizer.plainText(try ArticleHTMLExtractor.decodeEntities(raw))
+            let jsonDocument: ArticleDocument
+            if raw.range(of: "<(p|div|br|h[1-6])\\b", options: [.regularExpression, .caseInsensitive]) != nil { jsonDocument = try ArticleHTMLExtractor.extract(raw) }
+            else { jsonDocument = ArticleDocumentNormalizer.plainText(try ArticleHTMLExtractor.decodeEntities(raw)) }
             if jsonDocument.text.count > document.text.count { document = jsonDocument }
         }
         let words = document.text.split(whereSeparator: \.isWhitespace).count
