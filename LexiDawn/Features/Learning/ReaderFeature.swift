@@ -15,7 +15,7 @@ import AVFoundation
     init(articleID: String, cycleID: UUID?, learning: LearningServices) { self.articleID = articleID; self.cycleID = cycleID; self.learning = learning }
     func open() {
         do {
-            let article = try cycleID == nil ? learning.openExplore(articleID: articleID, at: Date()) : learning.content.read(articleID: articleID, at: Date())
+            let article = try learning.openArticle(articleID: articleID, cycleID: cycleID, at: Date())
             position = try learning.reader.position(article: article, cycleID: cycleID)
             if position.contentChanged { notice = "正文版本已变化。已尝试匹配原段落；不能匹配时从开头恢复，完成记录不会伪造。" }
             self.article = article; sourceURL = article.originalURL; error = nil
@@ -201,6 +201,8 @@ struct WordLookupSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var dependencies: AppDependencies
     @State private var phraseSelection: WordLookupModel?
+    @State private var showDetails = false
+    @State private var speech = AVSpeechSynthesizer()
     @State private var theme = "system"
     init(token: EnglishToken, articleID: String, autoAdd: Bool, learning: LearningServices) {
         _model = StateObject(wrappedValue: WordLookupModel(token: token, articleID: articleID, autoAdd: autoAdd, learning: learning))
@@ -224,12 +226,19 @@ struct WordLookupSheet: View {
                     if result.cached { Label("正在使用本地缓存", systemImage: "internaldrive").font(.caption) }
                     if !result.failedProviders.isEmpty { Label("某些词典来源暂不可用，已显示可用结果", systemImage: "exclamationmark.triangle").font(.caption) }
                 }
-                Section { Text(model.token.surface).font(.largeTitle.bold()); Text("标准词形：\(EnglishTokenizer.lemma(model.token.surface))") }
+                Section {
+                    HStack {
+                        VStack(alignment: .leading) { Text(model.token.surface).font(.title2.bold()); Text("标准词形：\(EnglishTokenizer.lemma(model.token.surface))").font(.caption).foregroundStyle(.secondary) }
+                        Spacer()
+                        Button("英语朗读", systemImage: "speaker.wave.2") { let utterance = AVSpeechUtterance(string: model.token.surface); utterance.voice = AVSpeechSynthesisVoice(language: "en-US"); speech.speak(utterance) }.labelStyle(.iconOnly)
+                    }
+                }
+                if let result = model.result, !result.senses.isEmpty { DictionaryQuickMeaning(result: result) }
                 if model.depth < 3 {
                     let phrases = EnglishPhraseRecognizer.phrases(around: model.token.surface, sentence: model.token.sentence)
                     if !phrases.isEmpty {
                         Section("语境短语") {
-                            ForEach(phrases, id: \.self) { phrase in
+                            ForEach(Array(phrases.prefix(3)), id: \.self) { phrase in
                                 Button(phrase) {
                                     let token = EnglishToken(surface: phrase, range: NSRange(location: model.token.range.location, length: (phrase as NSString).length), sentence: model.token.sentence)
                                     phraseSelection = WordLookupModel(token: token, articleID: model.articleID, autoAdd: model.autoAdd, learning: model.learning, depth: model.depth + 1)
@@ -244,19 +253,14 @@ struct WordLookupSheet: View {
                     else { Button("加入生词本") { model.add(explicit: true) }.accessibilityIdentifier("add-word") }
                 }
                 Section("句子语境") {
-                    Text(model.token.sentence).font(.body.italic()).lineLimit(3)
                     DisclosureGroup("完整句子语境") { Text(model.token.sentence).textSelection(.enabled) }
-                }
-                if let result = model.result, !result.senses.isEmpty {
-                    DictionaryResultContent(result: result)
                 }
             }
             .scrollContentBackground(.hidden).background(sheetBackground)
             .navigationTitle("查词").navigationBarTitleDisplayMode(.inline).toolbarBackground(sheetBackground, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar).toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if let result = model.result {
-                        NavigationLink { DictionaryDetailView(result: result, context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth) }
-                        label: { Label("查看详细释义", systemImage: "book").labelStyle(.iconOnly) }
+                        Button { showDetails = true } label: { Label("查看详细释义", systemImage: "book").labelStyle(.iconOnly) }
                         .accessibilityLabel("查看详细释义")
                         .disabled(result.senses.isEmpty)
                     }
@@ -268,18 +272,47 @@ struct WordLookupSheet: View {
         }.presentationDetents([.medium, .large]).presentationBackground(sheetBackground)
             .preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
             .sheet(item: $phraseSelection) { WordLookupSheet(model: $0) }
+            .fullScreenCover(isPresented: $showDetails) {
+                NavigationStack {
+                    if let result = model.result {
+                        DictionaryDetailView(result: result, context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth, theme: theme)
+                            .toolbar { ToolbarItem(placement: .topBarLeading) { Button("查词") { showDetails = false } } }
+                    }
+                }.preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
+            }
+            .onDisappear { speech.stopSpeaking(at: .immediate) }
     }
     private var sheetBackground: Color { theme == "paper" ? Color(red: 0.97, green: 0.94, blue: 0.87) : theme == "dark" ? Color(white: 0.08) : theme == "light" ? .white : Color(uiColor: .systemGroupedBackground) }
 }
+/// A bounded reading aid. All original provider senses remain in the separate detail page.
+struct DictionaryQuickMeaning: View {
+    let result: DictionaryResult
+    var body: some View {
+        Section("可能含义 · 语境优先") {
+            if let ipa = result.senses.compactMap(\.ipa).first { Text(ipa).font(.subheadline.monospaced()).accessibilityIdentifier("dictionary-ipa-summary") }
+            ForEach(Array(result.senses.prefix(2))) { sense in
+                VStack(alignment: .leading, spacing: 3) {
+                    if let pos = sense.partOfSpeech { Text(pos).font(.caption).foregroundStyle(.secondary) }
+                    Text(sense.zh.isEmpty ? sense.en : sense.zh).font(.body).lineLimit(2)
+                }.accessibilityIdentifier("dictionary-quick-sense-" + sense.id)
+            }
+            Text("已合并：" + Array(Set(result.senses.flatMap { $0.sources ?? ["CC-CEDICT"] })).sorted().joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).lineLimit(2).accessibilityIdentifier("dictionary-providers")
+            Text("共 \(result.senses.count) 条义项 · 完整释义见左上角词典").font(.caption).foregroundStyle(.secondary)
+        }
+    }
+}
 struct DictionaryResultContent: View {
     let result: DictionaryResult
+    private var parts: [String] { result.senses.reduce(into: []) { list, sense in let part = sense.partOfSpeech ?? "词性未注明"; if !list.contains(part) { list.append(part) } } }
     var body: some View {
         Section("词典义项与来源") {
             if let pronunciation = result.senses.compactMap(\.ipa).first { Text(pronunciation).font(.headline.monospaced()).accessibilityIdentifier("dictionary-ipa-summary") }
             let providers = Array(Set(result.senses.flatMap { $0.sources ?? ["CC-CEDICT"] })).sorted()
             if !providers.isEmpty { Text("已合并：" + providers.joined(separator: " · ")).font(.caption).accessibilityIdentifier("dictionary-providers") }
             if result.senses.isEmpty { Text("暂无可验证的释义。可以继续阅读，或在生词本添加明确标记的个人释义。") }
-            ForEach(result.senses) { sense in
+            ForEach(parts, id: \.self) { part in
+                Text(part).font(.title3.bold()).accessibilityAddTraits(.isHeader)
+                ForEach(result.senses.filter { ($0.partOfSpeech ?? "词性未注明") == part }) { sense in
                 VStack(alignment: .leading, spacing: 6) {
                     if !sense.zh.isEmpty { Text(sense.zh).font(.headline) }
                     else { Text("暂无可靠中文释义").font(.caption).foregroundStyle(.secondary) }
@@ -292,7 +325,8 @@ struct DictionaryResultContent: View {
                     if let forms = sense.forms, !forms.isEmpty { Text("词形原文：" + forms.joined(separator: " · ")).font(.footnote) }
                     if let etymology = sense.etymology { Text("词源：" + etymology).font(.footnote) }
                     Text((sense.sources ?? ["CC-CEDICT reverse index"]).joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
-                }.padding(.vertical, 4)
+                }.padding(.vertical, 4).accessibilityIdentifier("dictionary-full-sense-" + sense.id)
+                }
             }
             if result.cached { Label("本地缓存 · 可离线查看，可能不是最新版本", systemImage: "internaldrive").font(.caption) }
             if !result.failedProviders.isEmpty { Label("部分来源不可用：" + result.failedProviders.joined(separator: "、") + "。已保留其他真实结果。", systemImage: "exclamationmark.triangle").font(.caption) }
@@ -306,6 +340,7 @@ struct DictionaryDetailView: View {
     @ObservedObject var learning: LearningServices
     let articleID: String?
     var depth: Int = 0
+    var theme: String = "system"
     @EnvironmentObject private var dependencies: AppDependencies
     @State private var speech = AVSpeechSynthesizer()
     @State private var entry: VocabularyItem?
@@ -341,7 +376,9 @@ struct DictionaryDetailView: View {
                 Text("原始义项")
                 ForEach(result.senses) { Text($0.line).font(.caption) }
             }
-        }.navigationTitle("详细释义").navigationBarTitleDisplayMode(.inline).task { refresh() }.onReceive(learning.$revision) { _ in refresh() }
+        }.scrollContentBackground(.hidden)
+            .background(theme == "paper" ? Color(red: 0.97, green: 0.94, blue: 0.87) : theme == "dark" ? Color(white: 0.08) : Color(uiColor: .systemGroupedBackground))
+            .navigationTitle("详细释义").navigationBarTitleDisplayMode(.inline).task { refresh() }.onReceive(learning.$revision) { _ in refresh() }
             .sheet(item: $selection) { selected in WordLookupSheet(model: selected) }
             .alert("确认移除词条", isPresented: $removeConfirmation) {
                 Button("取消", role: .cancel) { }

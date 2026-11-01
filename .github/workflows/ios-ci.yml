@@ -5,57 +5,30 @@ on:
   pull_request:
     branches: [main]
 
+# A newer main commit supersedes stale verification; its complete suite is still required.
+concurrency:
+  group: lexidawn-ios-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
+    name: Build once, complete unit and network gate
     runs-on: macos-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
-      - name: Report toolchain and select approved CI target
-        shell: bash
+      - name: Verify approved compatibility toolchain
+        run: bash scripts/ci-prepare.sh
+      - name: Verify exhaustive test plan
+        id: plan
+        run: |
+          python3 scripts/ci-test-plan.py verify
+          echo "matrix=$(python3 scripts/ci-test-plan.py matrix)" >> "$GITHUB_OUTPUT"
+      - name: Compile app and every test target once
         run: |
           set -euo pipefail
-          xcodebuild -version
-          xcode-select -p
-          swift --version
-          xcodebuild -showsdks
-          XCODE_VERSION="$(xcodebuild -version | awk '/^Xcode / && !found { print $2; found=1 }')"
-          SDK_VERSION="$(xcrun --sdk iphonesimulator --show-sdk-version)"
-          echo "Detected Xcode: ${XCODE_VERSION}"
-          echo "Detected iOS Simulator SDK: ${SDK_VERSION}"
-          echo "LEXIDAWN_CI_DEPLOYMENT_TARGET=26.5" >> "$GITHUB_ENV"
-          echo "LEXIDAWN_CI_TOOLCHAIN_STATUS=approved-compatibility-26.5" >> "$GITHUB_ENV"
-          echo "CI deployment target: 26.5 (explicitly approved compatibility target)"
-      - name: Install and verify approved iOS 26.5 Simulator runtime
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! xcrun simctl list runtimes | grep -E "iOS 26\.5"; then
-            echo "iOS 26.5 Simulator runtime is missing; requesting the runner-supported iOS platform download."
-            xcodebuild -downloadPlatform iOS
-          fi
-          echo "Installed simulator runtimes:"
-          xcrun simctl list runtimes
-          if ! xcrun simctl list runtimes | grep -E "iOS 26\.5"; then
-            echo "::error::Approved iOS 26.5 Simulator runtime is unavailable on this runner."
-            exit 1
-          fi
-      - name: Apply approved CI deployment target in checkout
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path("LexiDawn.xcodeproj/project.pbxproj")
-          text = path.read_text()
-          updated = text.replace("IPHONEOS_DEPLOYMENT_TARGET = 27.0;", "IPHONEOS_DEPLOYMENT_TARGET = 26.5;")
-          if updated == text:
-              raise SystemExit("No iOS 27.0 deployment target found to override for CI")
-          path.write_text(updated)
-          PY
-          echo "CI checkout target: iOS 26.5 (product source remains iOS 27.0)"
-      - name: Build unsigned simulator app
-        run: |
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/LexiDawn-derived" -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone build
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/LexiDawn-derived" -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -configuration Debug IPHONEOS_DEPLOYMENT_TARGET=26.5 CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone -parallel-testing-enabled NO build-for-testing 2>&1 | tee "${RUNNER_TEMP}/LexiDawn-build.log"
       - name: Verify generated native launch configuration
         shell: bash
         run: |
@@ -86,205 +59,96 @@ jobs:
               assert marker not in data, 'Debug evidence fixture leaked into Release'
           print('Release built; explicit screenshot/fault fixture markers excluded.')
           PYRELEASE
-      - name: Compile test targets before booting a simulator
-        id: compile_tests
-        shell: bash
+      - name: Boot unit simulator
+        run: bash scripts/ci-simulator.sh iPhone-17-Pro
+      - name: Run every unit, migration and real network test
+        timeout-minutes: 12
         run: |
           set -euo pipefail
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/LexiDawn-derived" -sdk iphonesimulator \
-            -destination "generic/platform=iOS Simulator" \
-            -destination-timeout 120 -configuration Debug \
-            IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" \
-            CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone \
-            -parallel-testing-enabled NO build-for-testing
-      - name: Select and boot scheme-accepted iOS Simulator
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "GITHUB_REF=${GITHUB_REF} GITHUB_HEAD_REF=${GITHUB_HEAD_REF:-} GITHUB_SHA=${GITHUB_SHA}"
-          echo "Checked out commit: $(git rev-parse HEAD)"
-          DESTINATIONS_FILE="${RUNNER_TEMP}/lexidawn-destinations.txt"
-          RUNTIME_ID="com.apple.CoreSimulator.SimRuntime.iOS-26-5"
-          DEVICE_TYPE_ID="com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro"
-          if ! xcrun simctl list devicetypes | grep -F "(${DEVICE_TYPE_ID})" >/dev/null; then
-            echo "::error::Required iPhone 17 Pro Simulator device type is unavailable on the runner."
-            xcrun simctl list devicetypes
-            exit 1
-          fi
-          CREATED_SIMULATOR_ID="$(xcrun simctl create "LexiDawn CI iPhone" "${DEVICE_TYPE_ID}" "${RUNTIME_ID}")"
-          if [[ -z "${CREATED_SIMULATOR_ID}" ]]; then
-            echo "::error::Unable to create an iOS 26.5 Simulator device."
-            xcrun simctl list devices available
-            exit 1
-          fi
-          echo "Selected device type: ${DEVICE_TYPE_ID}"
-          echo "Created iOS 26.5 simulator: ${CREATED_SIMULATOR_ID}"
-          xcrun simctl boot "${CREATED_SIMULATOR_ID}"
-          xcrun simctl bootstatus "${CREATED_SIMULATOR_ID}" -b
-          # Xcode 26.6 can report only placeholder entries from
-          # -showdestinations even while the same project build lists and
-          # accepts concrete iOS simulators. Keep the diagnostics for review,
-          # but use the simulator created above after an explicit simctl check.
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/LexiDawn-derived" -sdk iphonesimulator -configuration Debug IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" -showdestinations >"${DESTINATIONS_FILE}" 2>&1 || true
-          echo "xcodebuild destination diagnostics:"
-          cat "${DESTINATIONS_FILE}"
-          if ! xcrun simctl list devices available | grep -F "(${CREATED_SIMULATOR_ID})" >/dev/null; then
-            echo "::error::Created simulator is not available after boot."
-            exit 1
-          fi
-          echo "Using the concrete simulator created and verified above: ${CREATED_SIMULATOR_ID}"
-          echo "LEXIDAWN_SIMULATOR_ID=${CREATED_SIMULATOR_ID}" >> "$GITHUB_ENV"
-      - name: Run unit tests on concrete simulator
-        shell: bash
-        run: |
-          set -euo pipefail
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/LexiDawn-derived" -sdk iphonesimulator \
-            -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" \
-            -destination-timeout 120 -configuration Debug \
-            IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" \
-            CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone \
-            -parallel-testing-enabled NO \
-            -resultBundlePath "${RUNNER_TEMP}/LexiDawn-unit.xcresult" \
-            -only-testing:LexiDawnTests test 2>&1 | tee "${RUNNER_TEMP}/LexiDawn-unit.log"
-      - name: Publish unit diagnostics before UI regressions
+          TEST_RUN_FILE="$(python3 -c 'import os,pathlib; print(next((pathlib.Path(os.environ["RUNNER_TEMP"])/"LexiDawn-derived/Build/Products").glob("*.xctestrun")))')"
+          xcodebuild test-without-building -xctestrun "$TEST_RUN_FILE" -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/LexiDawn-unit.xcresult" -only-testing:LexiDawnTests 2>&1 | tee "${RUNNER_TEMP}/LexiDawn-unit.log"
+      - name: Publish diagnostic evidence even when the gate fails
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: LexiDawn-unit-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/LexiDawn-unit.log
-          if-no-files-found: warn
-      - name: Run UI tests on concrete simulator
-        if: ${{ !cancelled() && steps.compile_tests.outcome == 'success' }}
-        timeout-minutes: 90
-        shell: bash
-        run: |
-          set -euo pipefail
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/LexiDawn-derived" -sdk iphonesimulator \
-            -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" \
-            -destination-timeout 120 -configuration Debug \
-            IPHONEOS_DEPLOYMENT_TARGET="${LEXIDAWN_CI_DEPLOYMENT_TARGET}" \
-            CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone \
-            -parallel-testing-enabled NO \
-            -resultBundlePath "${RUNNER_TEMP}/LexiDawn-ui.xcresult" \
-            -only-testing:LexiDawnUITests test 2>&1 | tee "${RUNNER_TEMP}/LexiDawn-ui.log"
-      - name: Export original UI screenshots and attachment manifest
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ -d "${RUNNER_TEMP}/LexiDawn-ui.xcresult" ]]; then
-            xcrun xcresulttool export attachments --path "${RUNNER_TEMP}/LexiDawn-ui.xcresult" --output-path "${RUNNER_TEMP}/LexiDawn-screenshots"
-          else
-            echo "::error::UI result bundle missing; screenshots cannot be exported."
-            exit 1
-          fi
-      - name: Index Round 3 native evidence and package original PNG ZIP
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/export-round3-evidence.py "${RUNNER_TEMP}/LexiDawn-screenshots" artifacts/round-3/screenshots
-      - name: Upload Round 3 screenshot index and original PNG ZIP
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: LexiDawn-round3-evidence-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/round-3
-          if-no-files-found: error
-
-      - name: Upload original screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: LexiDawn-screenshots-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/LexiDawn-screenshots
-          if-no-files-found: error
-      - name: Upload test result bundles
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: LexiDawn-xcresults-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            ${{ runner.temp }}/LexiDawn-unit.xcresult
-            ${{ runner.temp }}/LexiDawn-ui.xcresult
             ${{ runner.temp }}/LexiDawn-unit.log
-            ${{ runner.temp }}/LexiDawn-ui.log
+            ${{ runner.temp }}/LexiDawn-build.log
+            ${{ runner.temp }}/LexiDawn-unit.xcresult
           if-no-files-found: warn
+      - name: Archive reusable compiled simulator tests
+        run: |
+          set -euo pipefail
+          xcodebuild -version > "${RUNNER_TEMP}/ci-build-toolchain.txt"
+          uname -m >> "${RUNNER_TEMP}/ci-build-toolchain.txt"
+          tar -C "${RUNNER_TEMP}/LexiDawn-derived/Build" -czf "${RUNNER_TEMP}/LexiDawn-test-products.tgz" Products
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LexiDawn-compiled-tests-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/LexiDawn-test-products.tgz
+            ${{ runner.temp }}/ci-build-toolchain.txt
+          compression-level: 0
+          if-no-files-found: error
 
-  device-ui-regressions:
-    name: Reader and matching · ${{ matrix.device }}
+  ui-tests:
+    name: Native UI · ${{ matrix.suite }} · ${{ matrix.device }}
+    needs: build-and-test
     runs-on: macos-latest
     strategy:
-      fail-fast: false
-      matrix:
-        device: [iPhone-SE-3rd-generation, iPhone-17-Pro-Max]
+      fail-fast: true
+      matrix: ${{ fromJSON(needs.build-and-test.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
-      - name: Build and boot a second supported device size
-        shell: bash
+      - uses: actions/download-artifact@v8
+        with:
+          name: LexiDawn-compiled-tests-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/compiled-tests
+      - name: Verify identical toolchain and restore executable test products
         run: |
           set -euo pipefail
-          xcodebuild -version
-          xcrun simctl list runtimes
-          xcrun simctl list devicetypes
-          if ! xcrun simctl list runtimes | grep -F 'iOS 26.5'; then
-            xcodebuild -downloadPlatform iOS
-          fi
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('LexiDawn.xcodeproj/project.pbxproj')
-          path.write_text(path.read_text().replace('IPHONEOS_DEPLOYMENT_TARGET = 27.0;', 'IPHONEOS_DEPLOYMENT_TARGET = 26.5;'))
-          PY
-          DEVICE_ID="$(xcrun simctl create 'LexiDawn size regression' 'com.apple.CoreSimulator.SimDeviceType.${{ matrix.device }}' 'com.apple.CoreSimulator.SimRuntime.iOS-26-5')"
-          xcrun simctl boot "$DEVICE_ID"
-          xcrun simctl bootstatus "$DEVICE_ID" -b
-          echo "LEXIDAWN_DEVICE_UI_ID=$DEVICE_ID" >> "$GITHUB_ENV"
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/device-derived" -sdk iphonesimulator -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE_ID" IPHONEOS_DEPLOYMENT_TARGET=26.5 CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone -parallel-testing-enabled NO build-for-testing 2>&1 | tee "${RUNNER_TEMP}/device-build.log"
-      - name: Run real reader rotation, large type, themes and matching regressions
-        timeout-minutes: 30
-        shell: bash
+          xcodebuild -version > "${RUNNER_TEMP}/ci-ui-toolchain.txt"
+          uname -m >> "${RUNNER_TEMP}/ci-ui-toolchain.txt"
+          diff "${RUNNER_TEMP}/compiled-tests/ci-build-toolchain.txt" "${RUNNER_TEMP}/ci-ui-toolchain.txt"
+          mkdir -p "${RUNNER_TEMP}/LexiDawn-derived/Build"
+          tar -C "${RUNNER_TEMP}/LexiDawn-derived/Build" -xzf "${RUNNER_TEMP}/compiled-tests/LexiDawn-test-products.tgz"
+          bash scripts/ci-prepare.sh
+          bash scripts/ci-simulator.sh '${{ matrix.device }}'
+      - name: Execute complete assigned UI shard without rebuilding
+        timeout-minutes: 35
         run: |
           set -euo pipefail
-          TEST_SELECTORS=(
-            '-only-testing:LexiDawnUITests/Round3UITests/testReaderBodySurvivesTenRotationsAndWordRemainsTappable'
-            '-only-testing:LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates'
-            '-only-testing:LexiDawnUITests/Round3UITests/testLargeDynamicTypeThreeThemesRemainReadableInLandscape'
-          )
-          if [[ '${{ matrix.device }}' == 'iPhone-SE-3rd-generation' ]]; then
-            TEST_SELECTORS+=(
-              '-only-testing:LexiDawnUITests/Round3UITests/testLiveColdStartImportReadingLookupPersonalMeaningReviewAndRestart'
-              '-only-testing:LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart'
-              '-only-testing:LexiDawnUITests/Round3UITests/testDictionaryProviderFailureEmptyLoadingAndOfflineCacheEvidence'
-              '-only-testing:LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists'
-            )
-          fi
-          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/device-derived" -sdk iphonesimulator -configuration Debug -destination "platform=iOS Simulator,id=${LEXIDAWN_DEVICE_UI_ID}" IPHONEOS_DEPLOYMENT_TARGET=26.5 CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/device-ui.xcresult" \
-            "${TEST_SELECTORS[@]}" test-without-building 2>&1 | tee "${RUNNER_TEMP}/device-ui.log"
-      - name: Export native device evidence
+          python3 scripts/ci-test-plan.py selectors '${{ matrix.suite }}' > "${RUNNER_TEMP}/ci-tests.txt"
+          TEST_SELECTORS=()
+          while IFS= read -r selection; do TEST_SELECTORS+=("$selection"); done < "${RUNNER_TEMP}/ci-tests.txt"
+          test "${#TEST_SELECTORS[@]}" -gt 0
+          TEST_RUN_FILE="$(python3 -c 'import os,pathlib; print(next((pathlib.Path(os.environ["RUNNER_TEMP"])/"LexiDawn-derived/Build/Products").glob("*.xctestrun")))')"
+          xcodebuild test-without-building -xctestrun "$TEST_RUN_FILE" -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/ui.xcresult" "${TEST_SELECTORS[@]}" 2>&1 | tee "${RUNNER_TEMP}/ui.log"
+      - name: Export untouched native screenshots and metadata on success or failure
         if: always()
-        shell: bash
         run: |
           set -euo pipefail
-          if [[ -d "${RUNNER_TEMP}/device-ui.xcresult" ]]; then
-            xcrun xcresulttool export attachments --path "${RUNNER_TEMP}/device-ui.xcresult" --output-path "${RUNNER_TEMP}/device-attachments"
-            python3 scripts/export-round3-evidence.py "${RUNNER_TEMP}/device-attachments" "${RUNNER_TEMP}/device-evidence/screenshots"
+          if [[ -d "${RUNNER_TEMP}/ui.xcresult" ]]; then
+            xcrun xcresulttool export attachments --path "${RUNNER_TEMP}/ui.xcresult" --output-path "${RUNNER_TEMP}/native-attachments"
+            python3 scripts/export-round3-evidence.py "${RUNNER_TEMP}/native-attachments" "${RUNNER_TEMP}/native-evidence/screenshots"
           fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: LexiDawn-round3-${{ matrix.device }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: LexiDawn-round3-${{ matrix.suite }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            ${{ runner.temp }}/device-evidence
-            ${{ runner.temp }}/device-attachments
-            ${{ runner.temp }}/device-ui.xcresult
-            ${{ runner.temp }}/device-ui.log
-            ${{ runner.temp }}/device-build.log
+            ${{ runner.temp }}/native-evidence
+            ${{ runner.temp }}/native-attachments
+            ${{ runner.temp }}/ui.xcresult
+            ${{ runner.temp }}/ui.log
+            ${{ runner.temp }}/ci-tests.txt
           if-no-files-found: error
 
   combined-native-evidence:
     name: Combine original PNG evidence and complete index
-    needs: [build-and-test, device-ui-regressions]
-    if: always()
+    needs: [build-and-test, ui-tests]
+    if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -299,4 +163,3 @@ jobs:
           name: LexiDawn-round3-complete-native-package-${{ github.run_id }}-${{ github.run_attempt }}
           path: combined-round3
           if-no-files-found: error
-

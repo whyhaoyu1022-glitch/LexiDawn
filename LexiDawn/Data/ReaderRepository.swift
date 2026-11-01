@@ -30,7 +30,7 @@ struct ReaderPosition: Equatable {
         }
     }
     func save(articleID: String, cycleID: UUID?, position: ReaderPosition, at now: Date) throws {
-        try validateMode(articleID: articleID, cycleID: cycleID)
+        try validateMode(articleID: articleID, cycleID: cycleID, at: now)
         let article = try content.read(articleID: articleID, at: now)
         try writer.write {
             let context = writer.context
@@ -46,7 +46,7 @@ struct ReaderPosition: Equatable {
         }
     }
     func complete(articleID: String, cycleID: UUID?, manualConfirmation: Bool, at now: Date) throws {
-        try validateMode(articleID: articleID, cycleID: cycleID)
+        try validateMode(articleID: articleID, cycleID: cycleID, at: now)
         let article = try content.read(articleID: articleID, at: now)
         try writer.write {
             let context = writer.context
@@ -92,17 +92,23 @@ struct ReaderPosition: Equatable {
               (record.status == "completed") == (record.completedAt != nil),
               record.completedAt.map({ $0 >= record.startedAt && $0 <= record.lastReadAt }) ?? true else { throw PersistenceError.integrity("已存阅读进度无效") }
     }
-    private func validateMode(articleID: String, cycleID: UUID?) throws {
-        if cycleID == nil {
-            let all = try cycles.fetchAll()
-            guard !all.contains(where: \.hasOutstandingWork), !all.contains(where: { $0.articleID == articleID }) else {
-                throw LearningError.invalid("请先完成原周期；每日文章需通过原周期继续，不能改为探索模式。")
-            }
+    private func validateMode(articleID: String, cycleID: UUID?, at now: Date) throws {
+        let all = try cycles.fetchAll()
+        let access = try writer.read { try articleLearningAccess(cycles: all, context: $0, at: now) }
+        guard access.permits(articleID: articleID, cycleID: cycleID) else {
+            throw LearningError.invalid("当前仅能继续原任务文章；请先完成当前学习周期。")
         }
     }
+}
+@MainActor func articleLearningAccess(cycles: [DailyStudyCycle], context: ModelContext, at now: Date) throws -> ArticleLearningAccess {
+    let preferences = try context.fetch(FetchDescriptor<UserPreferencesRecord>()).first
+    let zone = preferences?.timeZonePolicy == "fixed" ? TimeZone(identifier: preferences?.fixedTimeZoneID ?? "") ?? .current : .current
+    var calendar = Calendar(identifier: .gregorian); calendar.timeZone = zone
+    return ArticleLearningAccess(cycles: cycles, localDate: DailyCycleService.studyDate(for: now, calendar: calendar))
 }
 @MainActor func cycleInContext(_ cycleID: UUID, context: ModelContext) throws -> DailyStudyCycle {
     let matches = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>()).filter { $0.cycleID == cycleID.uuidString }
     guard matches.count == 1, let record = matches.first else { throw DailyCycleServiceError.missingCycle(cycleID) }
     return try record.domain()
 }
+

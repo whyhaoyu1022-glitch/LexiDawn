@@ -55,7 +55,7 @@ struct LiveTodayView: View {
                     }
                     VStack(alignment: .leading, spacing: 12) {
                         Text("阅读内容").font(.title3.bold())
-                        NavigationLink("本地文章库与阅读历史") { ArticleLibraryView(learning: learning) }.accessibilityIdentifier("article-library")
+                        NavigationLink("本地文章库与阅读历史") { ArticleLibraryView(learning: learning) }.accessibilityIdentifier("article-library-body")
                         Button("合法导入文章", systemImage: "square.and.arrow.down") { importSheet = true }.accessibilityIdentifier("import-article")
                         Button("使用官方 RFC 原文", systemImage: "doc.text") { perform { try learning.content.installBundledRFC(at: Date()); learning.changed() } }
                         Button(fetching ? "正在联系 RFC Editor…" : "从官方来源刷新", systemImage: "arrow.clockwise") {
@@ -86,7 +86,10 @@ struct LiveTodayView: View {
                 }.padding(20)
             }.accessibilityIdentifier("learning-today-scroll")
             .navigationTitle("词光").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .primaryAction) { Button("导入") { importSheet = true }.accessibilityIdentifier("import-article-toolbar") } }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) { NavigationLink { ArticleLibraryView(learning: learning) } label: { Label("文章库与历史", systemImage: "books.vertical") }.accessibilityIdentifier("article-library") }
+                ToolbarItem(placement: .primaryAction) { Button("导入") { importSheet = true }.accessibilityIdentifier("import-article-toolbar") }
+            }
             .task {
                 reload()
                 await refreshDiscovered()

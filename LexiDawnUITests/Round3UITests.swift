@@ -19,6 +19,39 @@ final class Round3UITests: XCTestCase {
             let json = XCTAttachment(data: data, uniformTypeIdentifier: "public.json"); json.name = identifier + "-metadata"; json.lifetime = .keepAlways; add(json)
         }
     }
+    func testHistoricalFavoriteLaterAndHistoryStayLockedUntilCurrentTaskFinishes() throws {
+        let app = launch("round3-history-gate"); openLibrary(app)
+        let historical = app.buttons["library-open-rfc-editor-8890"]
+        for _ in 0..<5 { if historical.exists { break }; app.swipeUp() }
+        XCTAssertTrue(historical.waitForExistence(timeout: 10)); XCTAssertFalse(historical.isEnabled)
+        capture("R3-LOCK01", app: app, feature: "article-gate", state: "historical-daily-article-locked", origin: "explicit-historical-cycle-fixture-real-domain-evidence")
+        for (index, filter) in ["收藏", "稍后阅读", "历史"].enumerated() {
+            let picker = app.buttons["library-mode-filter"]
+            for _ in 0..<5 { if picker.exists && picker.isHittable { break }; app.swipeDown() }
+            XCTAssertTrue(picker.isHittable); picker.tap()
+            let option = try XCTUnwrap(app.buttons.matching(NSPredicate(format: "label == %@", filter)).allElementsBoundByIndex.first(where: \.isHittable))
+            option.tap()
+            for _ in 0..<5 { if historical.exists && historical.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(historical.exists); XCTAssertFalse(historical.isEnabled)
+            capture("R3-LOCK0\(index + 2)", app: app, feature: "article-gate", state: filter + "-cannot-open-old-daily-article", origin: "explicit-historical-cycle-fixture-real-domain-evidence")
+        }
+    }
+    func testQuickMeaningIsBoundedAndFullScreenDetailKeepsAllSenses() throws {
+        let app = launch("round3-dictionary-many")
+        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
+        XCTAssertTrue(app.buttons["word-Internet"].firstMatch.waitForExistence(timeout: 10)); app.buttons["word-Internet"].firstMatch.tap()
+        let count = app.staticTexts["共 6 条义项 · 完整释义见左上角词典"]
+        XCTAssertTrue(count.waitForExistence(timeout: 15))
+        XCTAssertFalse(app.staticTexts["Explicit original definition number 6 for the dictionary presentation test."].exists)
+        capture("R3-D40", app: app, feature: "dictionary", state: "bounded-two-sense-quick-meaning", origin: "explicit-original-six-sense-provider-fixture")
+        app.buttons["查看详细释义"].tap(); XCTAssertTrue(app.navigationBars["详细释义"].waitForExistence(timeout: 10))
+        let last = app.staticTexts["Explicit original definition number 6 for the dictionary presentation test."].firstMatch
+        for _ in 0..<10 { if last.exists && last.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(last.exists); XCTAssertTrue(last.isHittable)
+        capture("R3-D41", app: app, feature: "dictionary", state: "full-screen-all-six-senses-grouped-by-pos", origin: "explicit-original-six-sense-provider-fixture")
+        app.navigationBars.buttons["查词"].tap(); XCTAssertTrue(app.buttons["close-word"].exists)
+        capture("R3-D42", app: app, feature: "dictionary", state: "detail-returns-to-original-quick-meaning", origin: "explicit-original-six-sense-provider-fixture")
+    }
     func testReaderBodySurvivesTenRotationsAndWordRemainsTappable() throws {
         let app = launch("gallery-reader")
         XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
@@ -155,10 +188,13 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["没有匹配的完整文章"].waitForExistence(timeout: 10))
         capture("R3-L03", app: app, feature: "library", state: "title-search-no-result", origin: "explicit-original-fixture-URLProtocol")
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "zzzzunfindable".count))
-        if app.buttons["完成搜索"].exists { app.buttons["完成搜索"].tap() }
+        if app.buttons["library-finish-search"].exists { app.buttons["library-finish-search"].tap() }
+        else if app.buttons["完成搜索"].exists { app.buttons["完成搜索"].tap() }
         else if app.keyboards.buttons["Search"].exists { app.keyboards.buttons["Search"].tap() }
         else if app.keyboards.buttons["搜索"].exists { app.keyboards.buttons["搜索"].tap() }
         if app.buttons["Cancel"].exists { app.buttons["Cancel"].tap() } else if app.buttons["取消"].exists { app.buttons["取消"].tap() }
+        let keyboardGone = NSPredicate(format: "exists == false")
+        expectation(for: keyboardGone, evaluatedWith: app.keyboards.firstMatch); waitForExpectations(timeout: 10)
         let favorite = app.buttons["收藏"]
         for _ in 0..<6 { if favorite.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(favorite.isHittable); favorite.tap()

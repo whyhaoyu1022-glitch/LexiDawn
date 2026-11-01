@@ -127,3 +127,18 @@ struct ArticleAccessPolicy {
     }
 }
 
+/// SPEC §2.4/§5.2: every new article route and progress write uses the same gate.
+/// An unfinished older cycle is the current task, regardless of today's calendar date.
+struct ArticleLearningAccess {
+    let cycles: [DailyStudyCycle]
+    let localDate: String
+    var current: DailyStudyCycle? { cycles.filter(\.hasOutstandingWork).sorted { ($0.assignedLocalDate, $0.createdAtUTC) < ($1.assignedLocalDate, $1.createdAtUTC) }.first }
+    var mayExplore: Bool { current == nil && cycles.contains { $0.assignedLocalDate == localDate && $0.isComplete } }
+    func permits(articleID: String, cycleID: UUID?) -> Bool {
+        if let current { return current.cycleID == cycleID && current.articleID == articleID }
+        guard mayExplore else { return false }
+        if let cycleID { return cycles.contains { $0.cycleID == cycleID && $0.articleID == articleID } }
+        return !cycles.contains { $0.articleID == articleID }
+    }
+}
+

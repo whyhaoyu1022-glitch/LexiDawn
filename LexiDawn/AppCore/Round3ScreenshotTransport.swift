@@ -7,6 +7,9 @@ struct DictionaryEvidenceProvider: DictionaryProvider {
         if mode == "loading" { try await Task.sleep(for: .seconds(30)) }
         if ["all-failed", "offline", "single-failed"].contains(mode) && (mode != "single-failed" || source == "Wiktionary") { throw URLError(.notConnectedToInternet) }
         if mode == "empty" { return [] }
+        if mode == "many" {
+            return (1...6).map { index in DictionarySense(id: source + "|explicit-many-\(index)", en: "Explicit original definition number \(index) for the dictionary presentation test.", zh: "", line: "Explicit original fixture; not production dictionary content.", partOfSpeech: index <= 3 ? "noun" : "verb", ipa: "/ˈɪntənet/", sources: [source], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/") }
+        }
         return Self.senses(source: source)
     }
     static func senses(source: String) -> [DictionarySense] {

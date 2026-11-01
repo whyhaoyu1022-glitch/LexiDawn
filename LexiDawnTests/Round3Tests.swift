@@ -2,9 +2,59 @@ import XCTest
 import SwiftData
 @testable import LexiDawn
 
+private actor CacheRequestProbe: DictionaryProvider {
+    private(set) var requests = 0
+    func lookup(_ headword: String) async throws -> [DictionarySense] {
+        requests += 1
+        throw URLError(.notConnectedToInternet)
+    }
+}
+
 @MainActor final class Round3Tests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 1793534400)
     private var webBody: String { (1...3).map { "<p>Paragraph \($0) is explicit original fixture writing. Science helps people understand nature and share discoveries. Every sentence in this complete document is preserved for a deterministic parser test, including the final sentence.</p>" }.joined() }
+    func testHistoryFavoriteAndLaterCannotBypassCurrentCycleAtReaderBoundary() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let first = try learning.content.importArticle(.init(title: "Explicit first owned article", body: "A complete first original article.", source: "Fixture author", rightsConfirmed: true), at: now)
+        guard case let .cycle(old, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected first cycle") }
+        _ = try await learning.review.prepare(cycleID: old.cycleID, dailyLimit: 12, pairCount: 6, clozeCount: 4, at: now)
+        try learning.reader.complete(articleID: first, cycleID: old.cycleID, manualConfirmation: true, at: now)
+        let later = now.addingTimeInterval(86400)
+        let second = try learning.content.importArticle(.init(title: "Explicit next owned article", body: "A complete second original article.", source: "Fixture author", rightsConfirmed: true), at: later)
+        guard case let .cycle(current, _) = try app.cycleService.ensureCurrentCycle(now: later, timeZone: .current, calendar: .current) else { return XCTFail("Expected next cycle") }
+        try learning.content.setLibraryFlags(articleID: first, favorite: true, readLater: true)
+        XCTAssertThrowsError(try learning.openArticle(articleID: first, cycleID: old.cycleID, at: later))
+        XCTAssertThrowsError(try learning.reader.save(articleID: first, cycleID: old.cycleID, position: .init(), at: later))
+        XCTAssertThrowsError(try learning.reader.complete(articleID: first, cycleID: old.cycleID, manualConfirmation: true, at: later))
+        XCTAssertThrowsError(try learning.openArticle(articleID: first, cycleID: current.cycleID, at: later))
+        XCTAssertEqual(try learning.openArticle(articleID: second, cycleID: current.cycleID, at: later).id, second)
+        XCTAssertEqual(try learning.cycles.fetchAll().count, 2)
+        XCTAssertTrue(try XCTUnwrap(learning.content.library(at: later).first { $0.id == first }).favorite)
+        XCTAssertEqual(try learning.cycles.fetch(by: current.cycleID)?.articleTaskStatus, .ready)
+    }
+    func testDateChangeLocksHistoricalAndExploreRoutesBeforeHomeCreatesNewCycle() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let id = try learning.content.importArticle(.init(title: "Explicit original gate fixture", body: "A complete owned article for the gate.", source: "Fixture author", rightsConfirmed: true), at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        _ = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        try learning.reader.complete(articleID: id, cycleID: cycle.cycleID, manualConfirmation: true, at: now)
+        XCTAssertTrue(try learning.explorationAllowed(at: now))
+        let tomorrow = now.addingTimeInterval(86400)
+        XCTAssertFalse(try learning.explorationAllowed(at: tomorrow))
+        XCTAssertThrowsError(try learning.openArticle(articleID: id, cycleID: cycle.cycleID, at: tomorrow))
+        XCTAssertEqual(try learning.cycles.fetchAll().count, 1, "Checking a gate cannot fabricate a new daily cycle")
+    }
+    func testPhraseMembershipAndUndoNeverMistakeExistingPhraseForWord() throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let id = try learning.content.importArticle(.init(title: "Explicit original phrase fixture", body: "We look into the issue.", source: "Fixture author", rightsConfirmed: true), at: now)
+        let token = EnglishToken(surface: "look into", range: NSRange(location: 3, length: 9), sentence: "We look into the issue.")
+        let addition = try XCTUnwrap(learning.vocabulary.add(token: token, articleID: id, autoAdd: true, at: now))
+        XCTAssertEqual(try learning.vocabulary.find(surface: token.surface)?.id, addition.entryID)
+        let existing = try XCTUnwrap(learning.vocabulary.add(token: token, articleID: id, autoAdd: true, at: now))
+        XCTAssertFalse(existing.created); XCTAssertThrowsError(try learning.vocabulary.undo(existing, at: now))
+        XCTAssertEqual(try learning.vocabulary.entries().count, 1)
+        XCTAssertEqual(try learning.vocabulary.find(surface: token.surface)?.type, "phrase")
+    }
     func testContextSpellingKeepsIrregularGrammarAndMasksEntirePhrase() throws {
         let word = ClozeContext.make(lemma: "take", surfaces: ["taken"], sentence: "I took what I had taken.")
         XCTAssertEqual(word.answer, "taken"); XCTAssertEqual(ClozeContext.mask(try XCTUnwrap(word.sentence), answer: word.answer), "I took what I had _____.")
@@ -12,6 +62,21 @@ import SwiftData
         XCTAssertEqual(phrase.answer, "played a role in")
         XCTAssertEqual(ClozeContext.mask(try XCTUnwrap(phrase.sentence), answer: phrase.answer), "Careful reviews ______ _ ____ __ learning.")
         XCTAssertNil(ClozeContext.make(lemma: "take", surfaces: ["took"], sentence: "No verified target occurs here.").sentence)
+    }
+    func testFreshCacheAvoidsProviderRequestsAndOfflineFallbackKeepsRealFetchDate() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let first = CacheRequestProbe(), second = CacheRequestProbe()
+        let names = Array(DictionaryAggregator.versions.keys).sorted()
+        let senses = names.map { name in DictionarySense(id: name + "|explicit-cache-fixture", en: "Explicit original cache fixture definition.", zh: "", line: "Explicit cache fixture, not production content.", partOfSpeech: "noun", sources: [name], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/") }
+        try learning.dictionary.configureDictionaryEvidence(providers: [(names[0], first), (names[1], second)], cachedSenses: senses)
+        let date = try DictionaryCacheRepository(context: ModelContext(app.modelContainer)).load("internet", at: Date()).date
+        for _ in 0..<25 { let value = try await learning.dictionary.lookup("internet"); XCTAssertTrue(value.cached); XCTAssertFalse(value.senses.isEmpty) }
+        let initial = await (first.requests, second.requests)
+        XCTAssertEqual(initial.0, 0); XCTAssertEqual(initial.1, 0)
+        let offline = try await learning.dictionary.lookup("internet", at: Date().addingTimeInterval(31 * 86400))
+        XCTAssertTrue(offline.cached); XCTAssertEqual(offline.updatedAt, date); XCTAssertEqual(offline.failedProviders.count, 2)
+        let retried = await (first.requests, second.requests)
+        XCTAssertEqual(retried.0, 1); XCTAssertEqual(retried.1, 1)
     }
     func testReviewContextIsFrozenAndLegacyBackfillKeepsAnswerAttemptsAndHint() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)

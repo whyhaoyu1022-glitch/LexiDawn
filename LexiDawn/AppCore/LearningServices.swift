@@ -69,14 +69,21 @@ import Combine
                 studyDays: dates.count, streak: streak, vocabulary: vocabularyCount, pending: pending, recentDays: recent)
         }
     }
-    func explorationAllowed() throws -> Bool {
+    func articleAccess(at now: Date = Date()) throws -> ArticleLearningAccess {
         let all = try cycles.fetchAll()
-        return !all.isEmpty && all.allSatisfy(\.isComplete)
+        return try writer.read { try articleLearningAccess(cycles: all, context: $0, at: now) }
+    }
+    func explorationAllowed(at now: Date = Date()) throws -> Bool {
+        try articleAccess(at: now).mayExplore
+    }
+    func openArticle(articleID: String, cycleID: UUID?, at now: Date) throws -> ReadableArticle {
+        guard try articleAccess(at: now).permits(articleID: articleID, cycleID: cycleID) else {
+            throw LearningError.invalid("请先完成当前学习周期；收藏、历史和稍后阅读不会绕过任务锁定。")
+        }
+        return try content.read(articleID: articleID, at: now)
     }
     func openExplore(articleID: String, at now: Date) throws -> ReadableArticle {
-        guard try explorationAllowed() else { throw LearningError.invalid("必做任务尚未完成，请先继续原学习周期。") }
-        guard try !cycles.fetchAll().contains(where: { $0.articleID == articleID }) else { throw LearningError.invalid("此文章已属于每日任务，请从今日或阅读历史继续原任务。") }
-        return try content.read(articleID: articleID, at: now)
+        try openArticle(articleID: articleID, cycleID: nil, at: now)
     }
 }
 struct LearningStatistics { let articles: Int, studyDays: Int, streak: Int, vocabulary: Int, pending: Int, recentDays: Int }

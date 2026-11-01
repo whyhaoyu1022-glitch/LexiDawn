@@ -49,6 +49,26 @@ final class AppStartup: ObservableObject {
         #if DEBUG && targetEnvironment(simulator)
         // Explicit opt-in UI fixture, isolated from the production disk store. Never used in Release.
         if let scenario = ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"] {
+            if scenario == "round3-history-gate", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
+                // Explicit gate fixture, distinct from the genuinely empty live cold-start test.
+                let url = FileManager.default.temporaryDirectory.appendingPathComponent("round3-gate-\(storeID).store")
+                let app = AppDependencies(modelContainer: try openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
+                if try app.articleRepository.allArticleIDs().isEmpty, let learning = app.learning {
+                    let previous = Date().addingTimeInterval(-86400)
+                    try learning.content.installBundledRFC(at: previous)
+                    if case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: previous, timeZone: .current, calendar: .current) {
+                        // Seed a historical completed cycle with auditable domain evidence, never fake raw statuses.
+                        var completed = cycle
+                        try completed.resolveEmptyReview(ReviewQueueEvidence.evaluate(cycleID: cycle.cycleID, reader: learning.review, at: previous))
+                        try learning.cycles.save(completed)
+                        try learning.reader.complete(articleID: cycle.articleID, cycleID: cycle.cycleID, manualConfirmation: true, at: previous)
+                    }
+                    try learning.content.setLibraryFlags(articleID: SourceRegistry.rfc.id, favorite: true, readLater: true)
+                    _ = try learning.content.importArticle(.init(title: "Explicit original current-task fixture", body: "A new original task remains unfinished. Only this task article can be opened until its cycle is complete.", source: "Explicit UI fixture author", rightsConfirmed: true), at: Date())
+                    _ = try app.cycleService.ensureCurrentCycle(now: Date(), timeZone: .current, calendar: .current)
+                }
+                return app
+            }
             // Screenshot scenarios use the exact production RFC bytes and repositories, with a
             // separate UUID store. Only learning state / faults are seeded, never article text.
             if scenario.hasPrefix("gallery-"), let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {

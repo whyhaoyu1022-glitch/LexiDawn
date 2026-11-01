@@ -50,9 +50,9 @@ struct VocabularyAddition {
                 .sorted { $0.addedAt > $1.addedAt }
         }
     }
-    func find(surface: String, type: String = "word") throws -> VocabularyItem? {
+    func find(surface: String, type: String? = nil) throws -> VocabularyItem? {
         let lemma = EnglishTokenizer.lemma(surface)
-        return try entries(type: type).first { $0.lemma == lemma }
+        return try entries(type: type ?? (lemma.contains(" ") ? "phrase" : "word")).first { $0.lemma == lemma }
     }
     func add(token: EnglishToken, articleID: String, autoAdd: Bool, explicit: Bool = false, at now: Date) throws -> VocabularyAddition? {
         guard autoAdd || explicit else { return nil }
@@ -193,7 +193,8 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
             let senses = DictionaryAggregator.merge(all + fallback)
             guard !senses.isEmpty || outcome.failed.isEmpty else { throw LearningError.invalid("词典来源暂时不可用；本地没有缓存，请联网后重试。") }
             if !outcome.senses.isEmpty { try richCache.save(key, senses: outcome.senses, successful: outcome.successful, at: now) }
-            return DictionaryResult(headword: key, senses: DictionaryAggregator.rank(senses, context: context, surface: key), updatedAt: now,
+            let resultDate = outcome.senses.isEmpty ? (old.senses.isEmpty ? local?.updatedAt ?? now : old.date) : now
+            return DictionaryResult(headword: key, senses: DictionaryAggregator.rank(senses, context: context, surface: key), updatedAt: resultDate,
                 sourceURL: "https://dictionaryapi.dev/", licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/", failedProviders: outcome.failed,
                 cached: !fallback.isEmpty || outcome.senses.isEmpty && !(local?.senses.isEmpty ?? true), versions: DictionaryAggregator.versions)
         }

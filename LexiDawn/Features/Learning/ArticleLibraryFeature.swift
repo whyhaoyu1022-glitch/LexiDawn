@@ -15,6 +15,7 @@ struct ArticleLibraryView: View {
     @State private var refreshTask: Task<Void, Never>?
     @FocusState private var searchFocused: Bool
     @State private var explorationAllowed = false
+    @State private var access = ArticleLearningAccess(cycles: [], localDate: "")
     @State private var importFailed = false
     private var visible: [ArticleLibraryItem] {
         items.filter { $0.readable && (query.isEmpty || $0.title.localizedCaseInsensitiveContains(query)) &&
@@ -24,10 +25,11 @@ struct ArticleLibraryView: View {
     }
     var body: some View {
         List {
+            LibrarySearchCompletion { searchFocused = false }
             Section {
                 Picker("来源", selection: $source) { Text("全部来源").tag("all"); ForEach(Array(Set(items.filter(\.readable).map(\.sourceID))).sorted(), id: \.self) { Text(ArticleSourceRegistry.name($0)).tag($0) } }.accessibilityIdentifier("library-source-filter")
                 Picker("分类", selection: $topic) { Text("全部分类").tag("all"); ForEach(Array(Set(items.flatMap(\.topics))).sorted(), id: \.self) { Text($0).tag($0) } }.accessibilityIdentifier("library-topic-filter")
-                Picker("阅读内容", selection: $mode) { Text("全部").tag("all"); Text("收藏").tag("favorite"); Text("稍后阅读").tag("later"); Text("历史").tag("history") }
+                Picker("阅读内容", selection: $mode) { Text("全部").tag("all"); Text("收藏").tag("favorite"); Text("稍后阅读").tag("later"); Text("历史").tag("history") }.accessibilityIdentifier("library-mode-filter")
                 Toggle("最新导入优先", isOn: $newestFirst)
             }
             if loading { ProgressView("正在导入完整文章…").accessibilityIdentifier("article-loading"); Button("停止本次发现") { refreshTask?.cancel() }.accessibilityIdentifier("cancel-article-discovery") }
@@ -40,12 +42,12 @@ struct ArticleLibraryView: View {
                     Text("\(item.topics.joined(separator: " · ")) · \(item.minutes) 分钟").font(.caption)
                     Label("完整原文 · 本地离线可读", systemImage: "checkmark.icloud").font(.caption).foregroundStyle(.secondary)
                     Text(item.completed ? "已完成 · 可重读" : item.started ? "进行中 \(Int(item.percent * 100))%" : item.cycleID != nil ? "每日必做" : "未读").font(.subheadline)
-                    Button(item.cycleID == nil && !explorationAllowed ? "完成必做后解锁" : item.started ? "继续阅读" : "打开文章") {
+                    Button(!access.permits(articleID: item.id, cycleID: item.cycleID) ? "完成必做后解锁" : item.started ? "继续阅读" : "打开文章") {
                         do {
-                            if item.cycleID == nil { _ = try learning.openExplore(articleID: item.id, at: Date()) }
+                            _ = try learning.openArticle(articleID: item.id, cycleID: item.cycleID, at: Date())
                             reader = ReaderRoute(articleID: item.id, cycleID: item.cycleID)
                         } catch { self.error = error.localizedDescription }
-                    }.disabled(item.cycleID == nil && !explorationAllowed).accessibilityIdentifier("library-open-\(item.id)")
+                    }.disabled(!access.permits(articleID: item.id, cycleID: item.cycleID)).accessibilityIdentifier("library-open-\(item.id)")
                     HStack {
                         Button(item.favorite ? "取消收藏" : "收藏", systemImage: item.favorite ? "star.fill" : "star") { flags(item, favorite: !item.favorite) }
                         Button(item.readLater ? "移出稍后阅读" : "稍后阅读", systemImage: item.readLater ? "bookmark.fill" : "bookmark") { flags(item, later: !item.readLater) }
@@ -66,7 +68,7 @@ struct ArticleLibraryView: View {
         .onDisappear { refreshTask?.cancel() }
         .fullScreenCover(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭文章") { reader = nil } } } } }
     }
-    private func load() { do { items = try learning.content.library(); explorationAllowed = try learning.explorationAllowed(); error = nil } catch { importFailed = false; self.error = error.localizedDescription } }
+    private func load() { do { items = try learning.content.library(); access = try learning.articleAccess(); explorationAllowed = access.mayExplore; error = nil } catch { access = ArticleLearningAccess(cycles: [], localDate: ""); importFailed = false; self.error = error.localizedDescription } }
     @discardableResult private func beginRefresh() -> Task<Void, Never> {
         refreshTask?.cancel(); let task = Task { await refresh() }; refreshTask = task; return task
     }
@@ -79,5 +81,20 @@ struct ArticleLibraryView: View {
         do { let count = try await learning.discovery.refresh(force: true); try Task.checkCancellation(); learning.changed(); notice = count == 0 ? "没有新文章；本地完整版本保持可读。" : "已导入 \(count) 篇完整原文。"; error = nil }
         catch is CancellationError { load(); learning.changed(); notice = "已停止发现；已完整入库的文章保留。" }
         catch { importFailed = true; self.error = FullTextImportError.transport.localizedDescription }
+    }
+}
+
+/// Read the search environment from inside the searchable content. On small devices an
+/// empty native search submission can retain its focus; this explicit action also ends
+/// the search presentation, without changing the user's query or list filters.
+private struct LibrarySearchCompletion: View {
+    @Environment(\.dismissSearch) private var dismissSearch
+    @Environment(\.isSearching) private var isSearching
+    let finished: () -> Void
+    var body: some View {
+        if isSearching {
+            Button("完成搜索") { dismissSearch(); finished() }
+                .accessibilityIdentifier("library-finish-search")
+        }
     }
 }

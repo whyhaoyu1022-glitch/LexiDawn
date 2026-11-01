@@ -1,8 +1,6 @@
-# CURRENT · Round 3 开发与验证中
+# CURRENT · Round 3 规格复核整改中
 
-文章采用补充规范v1.1唯一模式：合法完整原文原子保存本地后才可阅读。新增Wikipedia全文API、词典聚合、真实连线、FSRS 4.5和文章库管理的源码与测试；尚未完成全部截图和统一验收。
-
-当前证据及未完成项见[Round 3开发记录](docs/reviews/round-3-development-delivery.md)；逐源结论见[来源审查](docs/article-source-eligibility-audit.md)。所有源码提交直接main。下面保留历史说明，不作为本轮验收结论。
+全文本地阅读、文章库和多词典已实现基础链路；当前重点修复全部入口门禁、简明浮窗/全屏详情、探索/生词/复习融合及CI效率。最新源码161单元/38 UI，尚未执行，不宣称统一验收通过。此前156单元0失败、36 UI中1失败的结果只对应3ce74e4。详见[当前状态](STATUS.md)和[Round 3报告](docs/reviews/round-3-development-delivery.md)。
 
 ---
 
