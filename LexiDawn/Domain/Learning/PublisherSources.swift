@@ -35,7 +35,7 @@ extension ArticleSourceRegistry {
         .init(id: "phys", name: "Phys.org", discoveryURL: "https://phys.org/rss-feed/", discovery: .feed,
               hosts: ["phys.org", "www.phys.org"], bodyMarkers: ["article-main"], articlePathPattern: #"/news/\d{4}-\d{2}-"#, topics: ["科学", "科技"]),
         .init(id: "smithsonian", name: "Smithsonian Magazine", discoveryURL: "https://www.smithsonianmag.com/rss/latest_articles/", discovery: .feed,
-              hosts: ["www.smithsonianmag.com", "smithsonianmag.com"], bodyMarkers: ["article-body", "article-text"], articlePathPattern: #"/(science-nature|history|smart-news|arts-culture|travel)/.+-\d+/"#, topics: ["文化", "科学"])
+              hosts: ["www.smithsonianmag.com", "smithsonianmag.com"], bodyMarkers: ["article-body", "article-text"], articlePathPattern: #"/[a-z-]+/[^/]+-\d+/?$"#, topics: ["文化", "科学"])
     ]
     static func personalSource(_ id: String) -> PublisherArticleSource? { personalSources.first { $0.id == id } }
     static func canAttempt(_ id: String) -> Bool { enabled(id) || id == "wikinews" || personalSource(id) != nil }

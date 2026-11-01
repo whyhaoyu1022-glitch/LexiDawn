@@ -110,7 +110,7 @@ enum ArticleWebPageExtractor {
         var selected = Set<Int>(), blocks: [ArticleDocument.Block] = []
         for (index, node) in nodes.enumerated() {
             let values = [node.attributes["class"], node.attributes["id"], node.attributes["data-component"], node.attributes["data-testid"], node.attributes["data-gu-name"], node.attributes["itemprop"]].compactMap { $0 }
-            let matches = (source.id == "nasa" && node.name == "article") || node.attributes["itemprop"] == "articleBody" || values.contains { value in source.bodyMarkers.contains { marker in value.split(whereSeparator: \.isWhitespace).contains { String($0).caseInsensitiveCompare(marker) == .orderedSame || (marker.count > 4 && $0.lowercased().hasPrefix(marker.lowercased() + "__")) } } }
+            let matches = (["nasa", "bbc"].contains(source.id) && node.name == "article") || node.attributes["itemprop"] == "articleBody" || values.contains { value in source.bodyMarkers.contains { marker in value.split(whereSeparator: \.isWhitespace).contains { String($0).caseInsensitiveCompare(marker) == .orderedSame || (marker.count > 4 && $0.lowercased().hasPrefix(marker.lowercased() + "__")) } } }
             guard matches else { continue }
             var parent = node.parent, nested = false
             while let current = parent { if selected.contains(current) { nested = true; break }; parent = nodes[current].parent }

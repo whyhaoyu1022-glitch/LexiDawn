@@ -141,11 +141,17 @@ actor DictionaryAggregator {
             tagger.setLanguage(.english, range: context.startIndex..<context.endIndex)
             grammaticalPart = tagger.tag(at: range.lowerBound, unit: .word, scheme: .lexicalClass).0?.rawValue.lowercased()
         }
-        func score(_ sense: DictionarySense) -> Int {
-            contextWords.intersection(words(sense.en + " " + (sense.examples ?? []).joined(separator: " "))).count * 10 +
-            (grammaticalPart != nil && sense.partOfSpeech == grammaticalPart ? 20 : 0) + (sense.partOfSpeech != nil ? 2 : 0)
+        let embedding = context.isBlank ? nil : NLEmbedding.sentenceEmbedding(for: .english)
+        func score(_ sense: DictionarySense) -> Double {
+            let definition = sense.en + " " + (sense.examples ?? []).joined(separator: " ")
+            let lexical = Double(contextWords.intersection(words(definition)).count * 10 +
+                (grammaticalPart != nil && sense.partOfSpeech == grammaticalPart ? 20 : 0) + (sense.partOfSpeech != nil ? 2 : 0))
+            guard let embedding else { return lexical }
+            let distance = embedding.distance(between: String(context.prefix(1200)), and: String(definition.prefix(1200)))
+            return lexical + (distance.isFinite ? max(0, 2 - distance) * 4 : 0)
         }
-        return merge(senses).sorted { score($0) == score($1) ? $0.id < $1.id : score($0) > score($1) }
+        let scored = merge(senses).map { ($0, score($0)) }
+        return scored.sorted { $0.1 == $1.1 ? $0.0.id < $1.0.id : $0.1 > $1.1 }.map(\.0)
     }
 }
 

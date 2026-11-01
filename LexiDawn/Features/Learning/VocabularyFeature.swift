@@ -44,15 +44,16 @@ struct VocabularyDetailView: View {
     @State private var saved = false
     @State private var removeConfirmation = false
     @State private var source: ArticleLibraryItem?
+    @FocusState private var editing: Bool
     @Environment(\.dismiss) private var dismiss
     var body: some View {
         Form {
             Section { Text(item.lemma).font(.largeTitle.bold()); Text(item.surfaces.joined(separator: " · ")) }
             Section("你的释义与笔记") {
-                TextField("个人中文释义（非词典原文）", text: $meaning).accessibilityIdentifier("personal-meaning")
-                TextField("笔记", text: $notes, axis: .vertical)
+                TextField("个人中文释义（非词典原文）", text: $meaning).focused($editing).submitLabel(.done).onSubmit { editing = false }.accessibilityIdentifier("personal-meaning")
+                TextField("笔记", text: $notes, axis: .vertical).focused($editing)
                 Button("保存个人释义与笔记") {
-                    do { try learning.vocabulary.annotate(entryID: item.id, meaning: meaning, notes: notes, at: Date()); saved = true; learning.changed(); error = nil }
+                    do { try learning.vocabulary.annotate(entryID: item.id, meaning: meaning, notes: notes, at: Date()); saved = true; editing = false; learning.changed(); error = nil }
                     catch { self.error = error.localizedDescription }
                 }
                 if saved { Label("已保存", systemImage: "checkmark.circle") }
@@ -75,7 +76,8 @@ struct VocabularyDetailView: View {
             }
             Section { Button("手动移除词条", role: .destructive) { removeConfirmation = true } }
             if let error { Text(error).foregroundStyle(.red); Button("重试词典") { Task { await lookup() } } }
-        }.navigationTitle(item.lemma)
+        }.scrollDismissesKeyboard(.interactively).navigationTitle(item.lemma)
+            .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { editing = false } } }
             .task {
                 meaning = item.meaning ?? ""; notes = item.notes ?? ""
                 do { source = try learning.content.library().first { $0.id == item.sourceArticleID } } catch { self.error = error.localizedDescription }

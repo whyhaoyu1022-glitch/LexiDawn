@@ -89,7 +89,8 @@ final class Round3UITests: XCTestCase {
         app.buttons["保存个人释义与笔记"].tap()
         XCTAssertTrue(app.staticTexts["已保存"].waitForExistence(timeout: 10))
         capture("R3-C04", app: app, feature: "vocabulary", state: "explicit-personal-meaning-saved", origin: origin)
-        app.tabBars.buttons["今日"].tap(); app.buttons["open-reader"].tap()
+        app.tabBars.buttons["今日"].tap()
+        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 10)); app.buttons["open-reader"].tap()
         XCTAssertTrue(app.buttons["finish-reading"].waitForExistence(timeout: 10)); app.buttons["finish-reading"].tap()
         if app.alerts.buttons["确认我已读完"].waitForExistence(timeout: 2) { app.alerts.buttons["确认我已读完"].tap() }
         XCTAssertTrue(app.staticTexts["reading-completed"].waitForExistence(timeout: 10)); app.buttons["返回今日"].tap()
@@ -212,7 +213,10 @@ final class Round3UITests: XCTestCase {
             XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
             let word = app.buttons["word-Internet"].firstMatch; XCTAssertTrue(word.waitForExistence(timeout: 10)); word.tap()
             XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10))
-            if mode == "loading" { XCTAssertTrue(app.progressIndicators["dictionary-loading"].waitForExistence(timeout: 3)) }
+            if mode == "loading" {
+                let indicator = app.descendants(matching: .any)["dictionary-loading"].firstMatch
+                XCTAssertTrue(indicator.waitForExistence(timeout: 5)); XCTAssertTrue(indicator.isHittable)
+            }
             else if mode == "all-failed" { XCTAssertTrue(app.staticTexts["词典来源暂时不可用；本地没有缓存，请联网后重试。"].waitForExistence(timeout: 15)) }
             else if mode == "empty" { XCTAssertTrue(app.staticTexts["暂无可验证的释义。可以继续阅读，或在生词本添加明确标记的个人释义。"].waitForExistence(timeout: 15)) }
             else {

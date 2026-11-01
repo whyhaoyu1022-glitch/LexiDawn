@@ -205,7 +205,10 @@ struct WordLookupSheet: View {
         NavigationStack {
             List {
                 if model.loading { ProgressView("正在查询词典…").accessibilityIdentifier("dictionary-loading") }
-                Section { Text(model.token.surface).font(.largeTitle.bold()); Text("标准词形：\(EnglishTokenizer.lemma(model.token.surface))"); Text(model.token.sentence).font(.body.italic()) }
+                if let error = model.vocabularyError {
+                    Section { Text(error).foregroundStyle(.red); Button("重试保存生词") { model.add(explicit: true) } }
+                }
+                Section { Text(model.token.surface).font(.largeTitle.bold()); Text("标准词形：\(EnglishTokenizer.lemma(model.token.surface))") }
                 if model.depth < 3 {
                     let phrases = EnglishPhraseRecognizer.phrases(around: model.token.surface, sentence: model.token.sentence)
                     if !phrases.isEmpty {
@@ -223,18 +226,29 @@ struct WordLookupSheet: View {
                     if model.addition?.created == true { Label("刚刚加入", systemImage: "checkmark.circle"); Button("撤销本次加入") { model.undo() }.accessibilityIdentifier("undo-word") }
                     else if model.existing { Label("此前已加入", systemImage: "bookmark.fill") }
                     else { Button("加入生词本") { model.add(explicit: true) }.accessibilityIdentifier("add-word") }
-                    if let error = model.vocabularyError { Text(error).foregroundStyle(.red); Button("重试保存生词") { model.add(explicit: true) } }
+                }
+                Section("句子语境") {
+                    Text(model.token.sentence).font(.body.italic()).lineLimit(3)
+                    DisclosureGroup("完整句子语境") { Text(model.token.sentence).textSelection(.enabled) }
                 }
                 #if DEBUG && targetEnvironment(simulator)
                 if ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"]?.hasPrefix("round3-dictionary-") == true { Text("明确测试夹具：词典 Provider 状态注入，非生产词典数据。").font(.caption).accessibilityIdentifier("dictionary-fixture-label") }
                 #endif
                 if let result = model.result {
                     DictionaryResultContent(result: result)
-                    NavigationLink("查看详细释义") { DictionaryDetailView(result: result, context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth) }
                 }
                 if let error = model.error { Text(error).foregroundStyle(.red); Button("重试词典查询") { Task { await model.lookup() } } }
             }
-            .navigationTitle("查词").toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() }.accessibilityIdentifier("close-word") } }
+            .navigationTitle("查词").toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if let result = model.result {
+                        NavigationLink { DictionaryDetailView(result: result, context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth) }
+                        label: { Label("查看详细释义", systemImage: "book").labelStyle(.iconOnly) }
+                        .accessibilityLabel("查看详细释义")
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() }.accessibilityIdentifier("close-word") }
+            }
             .task { await model.begin() }
             .onReceive(model.learning.$revision) { _ in model.refreshMembership() }
         }.presentationDetents([.medium, .large])
@@ -266,7 +280,7 @@ struct DictionaryResultContent: View {
             }
             if result.cached { Label("本地缓存 · 可离线查看，可能不是最新版本", systemImage: "internaldrive").font(.caption) }
             if !result.failedProviders.isEmpty { Label("部分来源不可用：" + result.failedProviders.joined(separator: "、") + "。已保留其他真实结果。", systemImage: "exclamationmark.triangle").font(.caption) }
-            Text("中文反向索引是可能对应词；语境排序使用确定性词汇重合规则，不保证已完成语义消歧。").font(.caption).foregroundStyle(.secondary)
+            Text("中文反向索引提供可能对应词。义项按当前语境排序，仍需结合原文判断；个人释义与词典原文分开保存。").font(.caption).foregroundStyle(.secondary)
         }
     }
 }

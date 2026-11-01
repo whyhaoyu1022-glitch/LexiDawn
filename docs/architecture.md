@@ -71,3 +71,6 @@ ReaderTextProjection把空白重排映射回原始UTF16偏移；原文和hash不
 
 
 修复Wikimedia批量发现请求误用只适用于单页的revisions rvlimit/rvdir：恢复info批量发现，Wikinews创建日期另发单页请求；固定revision全文和日期门槛保留。到期正文现在同事务迁出ArticleRecord到历史归档，历史引用/标题/计数仍可恢复但不可阅读推荐；已核验同版本RFC可恢复到原身份，用户学习关系不变。新增到期无partial ArticleRecord与持久刷新退避测试；原到期、时钟回拨和RFC恢复旧测试未删除或改断言。源码149 XCTest/31 UI，待对应新SHA验证。
+
+
+语境排序补充Apple公开NaturalLanguage句向量的本机语义相似度：仅在模型可用时参与，缺失时回退原词性/词汇规则；原始义项不改写不生成。排序预计算各义项分数，避免sort比较器重复模型推理。CI在UI回归前立即上传单元日志便于定位真实外网与迁移错误，完整UI测试和最终xcresult上传不变。

@@ -4,7 +4,7 @@ import Foundation
 struct DictionaryEvidenceProvider: DictionaryProvider {
     let mode: String, source: String
     func lookup(_ headword: String) async throws -> [DictionarySense] {
-        if mode == "loading" { try await Task.sleep(for: .seconds(4)) }
+        if mode == "loading" { try await Task.sleep(for: .seconds(30)) }
         if ["all-failed", "offline", "single-failed"].contains(mode) && (mode != "single-failed" || source == "Wiktionary") { throw URLError(.notConnectedToInternet) }
         if mode == "empty" { return [] }
         return Self.senses(source: source)
