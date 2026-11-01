@@ -199,7 +199,7 @@ final class ArticleRepository: ArticleStore {
     }
     func fetch(articleID: String) throws -> ArticleRecord? {
         try writer.read { context in
-            let record = try context.fetch(FetchDescriptor<ArticleRecord>()).first { $0.articleID == articleID }
+            let record = try historicalArticleMetadata(in: context).first { $0.articleID == articleID }
             if let record { try record.validateStoredMetadata() }
             return record
         }

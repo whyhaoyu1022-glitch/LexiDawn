@@ -66,23 +66,34 @@ struct LiveTodayView: View {
                                 fetching = false
                             }
                         }.disabled(fetching)
-                        Text("RFC 8890 · M. Nottingham / IETF Trust。全文连同原版权声明保留。导入内容仅在本地使用，不自动上传，也不据此抓取网页。").font(.caption).foregroundStyle(.secondary)
+                        Text("RFC 8890 · M. Nottingham / IETF Trust。全文连同原版权声明保留。导入内容仅在本地使用，不自动上传。官网完整文章可在文章库中发现。").font(.caption).foregroundStyle(.secondary)
                         if let sourceMessage { Text(sourceMessage).font(.footnote).foregroundStyle(.secondary) }
                     }.padding().background(Color.accentColor.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
+                    if !articles.filter(\.readable).isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("本地完整原文").font(.title3.bold())
+                            ForEach(Array(articles.filter(\.readable).prefix(6))) { article in
+                                NavigationLink { ArticleLibraryView(learning: learning) } label: {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text(ArticleSourceRegistry.name(article.sourceID)).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                                        Text(article.title).font(.headline).lineLimit(3)
+                                        Text("\(article.minutes) 分钟 · \(article.topics.joined(separator: " · ")) · 离线可读").font(.caption).foregroundStyle(.secondary)
+                                    }.frame(maxWidth: .infinity, alignment: .leading).padding().background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                                }.buttonStyle(.plain)
+                            }
+                        }
+                    }
                 }.padding(20)
             }.accessibilityIdentifier("learning-today-scroll")
             .navigationTitle("词光").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .primaryAction) { Button("导入") { importSheet = true }.accessibilityIdentifier("import-article-toolbar") } }
             .task {
                 reload()
-                if learning.productionNetworking {
-                    do { _ = try await learning.discovery.refresh(onImport: { learning.changed() }); learning.changed() }
-                    catch is CancellationError { }
-                    catch { sourceMessage = FullTextImportError.transport.localizedDescription }
-                }
-            }.refreshable { reload() }
+                await refreshDiscovered()
+            }.refreshable { reload(); await refreshDiscovered() }
             .onReceive(learning.$revision) { _ in reload() }
-            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in reload() }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in reload(); Task { await refreshDiscovered() } }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in reload(); Task { await refreshDiscovered() } }
             .sheet(isPresented: $importSheet) { ArticleImportView(learning: learning) }
             .fullScreenCover(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("返回今日") { reader = nil } } } } }
             .sheet(isPresented: $review) { NavigationStack { ReviewPracticeContent(learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("返回今日") { review = false; reload() } } } } }
@@ -91,6 +102,12 @@ struct LiveTodayView: View {
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
         return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"
+    }
+    private func refreshDiscovered() async {
+        guard learning.productionNetworking else { return }
+        do { _ = try await learning.discovery.refresh(onImport: { learning.changed() }); learning.changed() }
+        catch is CancellationError { }
+        catch { sourceMessage = FullTextImportError.transport.localizedDescription }
     }
     private func metric(_ label: String, _ value: Int) -> some View { VStack(alignment: .leading) { Text("\(value)").font(.title2.bold().monospacedDigit()); Text(label).font(.caption).foregroundStyle(.secondary) }.frame(maxWidth: .infinity, alignment: .leading) }
     private func hero(_ snapshot: TodayCycleSnapshot) -> some View {

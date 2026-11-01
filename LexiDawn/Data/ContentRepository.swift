@@ -66,6 +66,14 @@ struct ArticleAccessError: LocalizedError {
                 }
             }
             let records = try context.fetch(FetchDescriptor<ArticleRecord>())
+            if let archived = try context.fetch(FetchDescriptor<ArticleHistoryArchiveRecord>()).first(where: { $0.articleID == candidate.id }) {
+                let old = try archived.metadata()
+                guard candidate.sourceID == SourceRegistry.rfc.id, archived.storedHash == candidate.bodyHash,
+                      old.canonicalURL == candidate.canonicalURL, old.originalTitle == candidate.title, old.sourceID == candidate.sourceID else { throw PersistenceError.integrity("不能以新内容覆盖历史文章引用") }
+                let restored = try ArticleRepository.makeArticleRecord(candidate: candidate, fetchedAt: now)
+                restored.createdAt = archived.createdAt; restored.updatedAt = max(now, archived.updatedAt)
+                context.insert(restored); context.delete(archived)
+            } else
             if candidate.sourceID == SourceRegistry.rfc.id,
                let old = records.first(where: { $0.articleID == candidate.id }), old.bodyText == nil,
                old.bodyHash == candidate.bodyHash, old.canonicalURL == candidate.canonicalURL,
@@ -139,12 +147,13 @@ struct ArticleAccessError: LocalizedError {
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
             let cycles = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>())
             let progresses = try context.fetch(FetchDescriptor<ArticleProgressRecord>())
-            return try context.fetch(FetchDescriptor<ArticleRecord>()).sorted { $0.createdAt > $1.createdAt }.map { article in
+            return try historicalArticleMetadata(in: context).sorted { $0.createdAt > $1.createdAt }.map { article in
                 try article.validateStoredMetadata()
                 let grant = grants.first { $0.articleID == article.articleID }
                 let cycle = cycles.first { $0.articleID == article.articleID }
                 let progress = progresses.first { $0.articleID == article.articleID && $0.cycleID == cycle?.cycleID }
-                let readable = ArticleAccessPolicy.permits(candidate: try article.candidate(), storedHash: article.bodyHash ?? "",
+                let libraryCandidate = try article.candidate()
+                let readable = article.modelContext != nil && ArticleAccessPolicy.permits(candidate: libraryCandidate, storedHash: article.bodyHash ?? "",
                     grantSource: grant?.sourceID, grantHash: grant?.bodyHash, scope: grant?.scope, now: now, highWater: grant?.accessHighWater ?? now)
                 return ArticleLibraryItem(id: article.articleID, title: article.originalTitle, source: article.sourceAttribution ?? article.sourceID,
                     topics: article.topicTags, minutes: article.estimatedReadMinutes, originalURL: grant?.originalURL,
@@ -174,6 +183,10 @@ struct ArticleAccessError: LocalizedError {
             if !permitted {
                 if candidate.cachePermission?.permits(at: grant.accessHighWater) == false {
                     article.bodyText = nil; article.structuredBody = nil; article.contentStatus = ArticleContentStatus.unavailable.rawValue
+                    // Retain historical references separately; ArticleRecord never becomes a URL/title-only row.
+                    let archive = try ArticleHistoryArchiveRecord(article: article, at: now)
+                    archive.reasonCode = "cache-expired-body-removed"
+                    context.insert(archive); context.delete(article)
                 }
                 return nil
             }

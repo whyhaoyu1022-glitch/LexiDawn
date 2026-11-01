@@ -114,7 +114,8 @@ enum OfficialArticleAPI {
     }
     private func importWikimedia(_ id: String, at now: Date, onImport: (@MainActor () -> Void)?) async throws -> Int {
         let host = id == "wikinews" ? "en.wikinews.org" : "en.wikipedia.org"
-        var fields = ["action": "query", "format": "json", "formatversion": "2", "generator": "categorymembers", "gcmtitle": id == "wikinews" ? "Category:Published" : "Category:Featured_articles", "gcmlimit": "3", "gcmnamespace": "0", "prop": "info|revisions", "inprop": "url", "rvprop": "timestamp", "rvlimit": "1", "rvdir": "newer"]
+        // Revisions rvlimit/rvdir are single-page parameters; a category generator is multi-page.
+        var fields = ["action": "query", "format": "json", "formatversion": "2", "generator": "categorymembers", "gcmtitle": id == "wikinews" ? "Category:Published" : "Category:Featured_articles", "gcmlimit": "3", "gcmnamespace": "0", "prop": "info", "inprop": "url"]
         if id == "wikinews" { fields["gcmsort"] = "timestamp"; fields["gcmdir"] = "desc" }
         let endpoint = try OfficialArticleAPI.url(host: host, fields: fields)
         let candidates = try OfficialArticleAPI.discovery(await fetcher.fetch(endpoint, allowedHost: host), sourceID: id)
@@ -123,14 +124,21 @@ enum OfficialArticleAPI {
             try Task.checkCancellation()
             do {
                 guard let revision = candidate.revision, let rights = ArticleSourceRegistry.evidence(for: id) else { throw FullTextImportError.incomplete }
-                if id == "wikinews" { guard let created = candidate.createdAt, created >= Date(timeIntervalSince1970: 1734393600) else { throw FullTextImportError.rights } }
+                var createdAt = candidate.createdAt
+                if id == "wikinews" {
+                    let createdURL = try OfficialArticleAPI.url(host: host, fields: ["action": "query", "format": "json", "formatversion": "2", "titles": candidate.title, "prop": "revisions", "rvprop": "timestamp", "rvlimit": "1", "rvdir": "newer"])
+                    struct Creation: Decodable { struct Query: Decodable { struct Page: Decodable { struct Revision: Decodable { let timestamp: String }; let revisions: [Revision] }; let pages: [Page] }; let query: Query }
+                    let response = try JSONDecoder().decode(Creation.self, from: await fetcher.fetch(createdURL, allowedHost: host))
+                    createdAt = response.query.pages.first?.revisions.first.flatMap { ISO8601DateFormatter().date(from: $0.timestamp) }
+                    guard let createdAt, createdAt >= Date(timeIntervalSince1970: 1734393600) else { throw FullTextImportError.rights }
+                }
                 let url = try OfficialArticleAPI.url(host: host, fields: ["action": "parse", "format": "json", "formatversion": "2", "oldid": String(revision), "prop": "text|revid|displaytitle", "disableeditsection": "1", "disabletoc": "1"])
                 let data = try await fetcher.fetch(url, allowedHost: host)
                 struct Response: Decodable { struct Page: Decodable { let text: String; let revid: Int }; let parse: Page }
                 let page = try JSONDecoder().decode(Response.self, from: data).parse
                 guard page.revid == revision, page.text.contains("mw-parser-output"), !["copyright violation", "non-free content", "additional attribution"].contains(where: page.text.lowercased().contains) else { throw FullTextImportError.rights }
                 let document = try ArticleHTMLExtractor.extract(page.text)
-                let item = FullTextArticleImport(sourceID: id, canonicalURL: candidate.url, title: candidate.title, author: ArticleSourceRegistry.name(id) + " contributors", publishedAt: candidate.createdAt,
+                let item = FullTextArticleImport(sourceID: id, canonicalURL: candidate.url, title: candidate.title, author: ArticleSourceRegistry.name(id) + " contributors", publishedAt: createdAt,
                     rawContent: document.text, document: document, topics: id == "wikinews" ? ["新闻"] : ["知识"], rights: rights, completeDocument: true, expectedHash: nil, verifiedAt: now)
                 if try content.importFullText(item, at: now) { count += 1; onImport?() }
             } catch is CancellationError { throw CancellationError() }

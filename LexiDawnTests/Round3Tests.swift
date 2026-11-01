@@ -78,6 +78,27 @@ import SwiftData
         XCTAssertEqual(senses.first?.ipa, "/bʊk/"); XCTAssertEqual(senses.first?.examples, ["An explicit fixture example."])
         XCTAssertEqual(senses.first?.forms, ["book (plural books)"]); XCTAssertEqual(senses.first?.etymology, "Explicit etymology fixture.")
     }
+    func testExpiredFullTextMovesToHistoryAndNeverLeavesPartialArticleRecord() throws {
+        let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)
+        try content.importFullText(item(), at: now)
+        let context = ModelContext(app.modelContainer), article = try XCTUnwrap(context.fetch(FetchDescriptor<ArticleRecord>()).first)
+        article.cachePermissionData = try JSONEncoder().encode(ArticleCachePermission.until(now.addingTimeInterval(1))); try context.save()
+        XCTAssertThrowsError(try content.read(articleID: item().articleID, at: now.addingTimeInterval(2)))
+        let fresh = ModelContext(app.modelContainer)
+        XCTAssertEqual(try fresh.fetchCount(FetchDescriptor<ArticleRecord>()), 0)
+        XCTAssertEqual(try fresh.fetchCount(FetchDescriptor<ArticleHistoryArchiveRecord>()), 1)
+        XCTAssertFalse(try content.library(at: now.addingTimeInterval(2))[0].readable)
+    }
+    func testFailedSourceRefreshPersistsBackoffAndKeepsSuccessfulLocalVersion() throws {
+        let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)
+        try content.importFullText(item(), at: now)
+        try content.recordSourceRefresh("wikipedia", beginning: false, at: now)
+        try content.recordSourceRefresh("wikipedia", beginning: true, at: now.addingTimeInterval(10))
+        try content.recordSourceRefresh("wikipedia", beginning: false, errorCode: FullTextImportError.rateLimited.rawValue, at: now.addingTimeInterval(11))
+        let restored = ContentRepository(context: ModelContext(app.modelContainer)), state = try restored.sourceRefreshState("wikipedia")
+        XCTAssertEqual(state.success, now); XCTAssertEqual(state.retryAfter, now.addingTimeInterval(3611))
+        XCTAssertEqual(try restored.read(articleID: item().articleID, at: now.addingTimeInterval(12)).body, item().rawContent)
+    }
     func testRecommendationUsesPreferencesAndCannotReuseAssignedCandidate() throws {
         let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)
         let prefs = try app.preferencesRepository.load(); prefs.interestTopics = ["科学"]; try app.preferencesRepository.save(prefs)

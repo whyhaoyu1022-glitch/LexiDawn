@@ -11,10 +11,12 @@ import SwiftData
     var updatedAt: Date
     var archivedAt: Date
     var reasonCode: String
+    var archivedWordCount: Int? = nil
     init(article: ArticleRecord, at now: Date) throws {
         articleID = article.articleID; candidateData = try JSONEncoder().encode(article.candidate())
         storedHash = article.bodyHash; fetchedAt = article.fetchedAt; createdAt = article.createdAt; updatedAt = article.updatedAt
         archivedAt = now; reasonCode = "legacy-fulltext-admission-unproven"
+        archivedWordCount = article.wordCount
     }
     /// Detached metadata is used only to validate existing historical cycle references.
     func metadata() throws -> ArticleRecord {
@@ -22,7 +24,7 @@ import SwiftData
         let record = ArticleRecord(articleID: articleID, canonicalURL: value.canonicalURL, originalTitle: value.title,
             displayTitle: value.displayTitle, sourceID: value.sourceID, publishedAt: value.publishedAt, fetchedAt: fetchedAt,
             licenseID: value.licenseID, licenseVerified: value.licenseVerified, bodyText: value.bodyText, bodyHash: storedHash,
-            wordCount: value.wordCount, estimatedReadMinutes: value.estimatedReadMinutes, topicTags: value.topicTags,
+            wordCount: archivedWordCount ?? value.wordCount, estimatedReadMinutes: max(1, Int(ceil(Double(archivedWordCount ?? value.wordCount) / 200))), topicTags: value.topicTags,
             contentStatus: value.contentStatus.rawValue, createdAt: createdAt, updatedAt: updatedAt)
         record.cachePermissionData = try value.cachePermission.map { try JSONEncoder().encode($0) }
         record.sourceAttribution = value.sourceAttribution; record.fullTextDisplayAllowed = value.fullTextDisplayAllowed
