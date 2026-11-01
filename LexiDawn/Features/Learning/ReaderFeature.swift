@@ -51,6 +51,7 @@ struct ReaderView: View {
     @State private var lineSpacing: Double = 1.5
     @State private var theme = "system"
     @State private var sourceDetails = false
+    @State private var appearancePresented = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     init(route: ReaderRoute, learning: LearningServices) { _model = StateObject(wrappedValue: ReaderViewModel(articleID: route.articleID, cycleID: route.cycleID, learning: learning)) }
@@ -98,13 +99,8 @@ struct ReaderView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) { Button("来源详情", systemImage: "info.circle") { sourceDetails = true }.labelStyle(.iconOnly) }
             ToolbarItem(placement: .topBarTrailing) {
-                Menu("阅读外观", systemImage: "textformat.size") {
-                    Button("增大字号") { saveAppearance(size: min(32, fontSize + 1), theme: theme) }
-                    Button("减小字号") { saveAppearance(size: max(14, fontSize - 1), theme: theme) }
-                    ForEach(["system", "light", "dark", "paper"], id: \.self) { value in
-                        Button(["system": "跟随系统", "light": "浅色", "dark": "深色", "paper": "暖纸色"][value] ?? value) { saveAppearance(size: fontSize, theme: value) }
-                    }
-                }.labelStyle(.iconOnly).accessibilityLabel("阅读外观").accessibilityIdentifier("reader-appearance")
+                Button("阅读外观", systemImage: "textformat.size") { appearancePresented = true }
+                    .labelStyle(.iconOnly).accessibilityLabel("阅读外观").accessibilityIdentifier("reader-appearance")
             }
         }
         .task {
@@ -123,6 +119,22 @@ struct ReaderView: View {
                     try await Task.sleep(for: .seconds(min(seconds, 30)))
                 }
             } catch { }
+        }
+        .sheet(isPresented: $appearancePresented) {
+            NavigationStack {
+                List {
+                    Button("增大字号") { saveAppearance(size: min(32, fontSize + 1), theme: theme); appearancePresented = false }
+                    Button("减小字号") { saveAppearance(size: max(14, fontSize - 1), theme: theme); appearancePresented = false }
+                    ForEach(["system", "light", "dark", "paper"], id: \.self) { value in
+                        Button(["system": "跟随系统", "light": "浅色", "dark": "深色", "paper": "暖纸色"][value] ?? value) {
+                            saveAppearance(size: fontSize, theme: value); appearancePresented = false
+                        }
+                    }
+                }.scrollContentBackground(.hidden).background(readerBackground)
+                    .navigationTitle("阅读外观").navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(readerBackground, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
+                    .toolbar { ToolbarItem(placement: .cancellationAction) { Button("关闭外观设置") { appearancePresented = false } } }
+            }.presentationDetents([.large]).presentationBackground(readerBackground)
         }
         .sheet(isPresented: $sourceDetails) {
             NavigationStack {
@@ -291,7 +303,9 @@ struct WordLookupSheet: View {
                         .disabled(result.senses.isEmpty)
                     }
                 }
-                ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() }.accessibilityIdentifier("close-word").accessibilityHidden(showDetails || phraseSelection != nil) }
+                if !showDetails && phraseSelection == nil {
+                    ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() }.accessibilityIdentifier("close-word") }
+                }
             }
             .task { if let preferences = try? dependencies.preferencesRepository.load() { theme = preferences.readerTheme }; await model.begin() }
             .onReceive(model.learning.$revision) { _ in model.refreshMembership() }

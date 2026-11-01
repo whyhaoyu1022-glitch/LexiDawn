@@ -89,7 +89,14 @@ final class Round3UITests: XCTestCase {
             XCTAssertTrue(filename.waitForExistence(timeout: 15))
             capture("R3-V\(index + 14)", app: app, feature: "vocabulary-export", state: index == 0 ? "native-JSON-export-dialog" : "native-CSV-export-dialog", origin: "real-FileDocument-and-native-exporter-fixture-vocabulary")
             let cancel = app.buttons.matching(NSPredicate(format: "label IN %@", ["Cancel", "取消"])).firstMatch
-            XCTAssertTrue(cancel.exists); cancel.tap(); XCTAssertTrue(app.navigationBars["生词本"].waitForExistence(timeout: 10))
+            if cancel.exists { cancel.tap() }
+            else {
+                // iOS 26's folder-level exporter has Back/Save, without Cancel.
+                // Dismiss the native sheet by its navigation bar; never tap Save.
+                let exporterBar = app.navigationBars.firstMatch
+                XCTAssertTrue(exporterBar.exists); exporterBar.swipeDown()
+            }
+            XCTAssertTrue(app.navigationBars["生词本"].waitForExistence(timeout: 10))
         }
         let search = app.searchFields.firstMatch
         for _ in 0..<5 { if search.exists && search.isHittable { break }; app.swipeDown() }
@@ -448,6 +455,7 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(nested.isHittable); nested.tap()
         XCTAssertTrue(app.staticTexts["标准词形：network"].waitForExistence(timeout: 10))
         capture("R3-D66", app: app, feature: "dictionary-context", state: "nested-word-from-provider-definition", origin: "explicit-original-provider-fixture-not-production-network")
+        XCTAssertEqual(app.buttons.matching(identifier: "close-word").count, 1)
         app.buttons["close-word"].tap(); XCTAssertTrue(app.navigationBars["详细释义"].waitForExistence(timeout: 10))
         app.navigationBars.buttons["查词"].tap(); app.buttons["close-word"].tap(); app.buttons["返回今日"].tap()
         app.tabBars.buttons["词汇"].tap()

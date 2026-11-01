@@ -1,5 +1,7 @@
 # CURRENT · Round 3 架构与数据模型
 
+本次核查运行41323390776：180单元/0失败、真实10源29篇、SE7/0、大屏3/0；主UI仍失败。修复嵌套关闭按钮重复、重置取消入口、阅读外观菜单截图路径，并按原生导出截图适配无Cancel的文件夹窗口。新原生验证待运行；原20 UI断言保持。 [核查与规格依据](reviews/round-3-ci-41323390776-repair.md)。
+
 沿用 SwiftUI → ViewModel/Service → Domain/Repository → RepositoryWriter → SwiftData。网络不在 View，数据库操作在 Repository；UI只维护选择与草稿。每次写使用独立 context，关闭 autosave，同步 save/rollback，读取用新context，不复用失败上下文。
 
 ## 文章链路

@@ -73,7 +73,7 @@ struct ArticleLibraryView: View {
         .task { load() }.onReceive(learning.$revision) { _ in load() }
         .onDisappear { refreshTask?.cancel() }
         .sheet(item: $editing) { route in ArticleImportView(learning: learning, editingArticleID: route.articleID) }
-        .confirmationDialog("重新标记为未开始？", isPresented: Binding(get: { resetting != nil }, set: { if !$0 { resetting = nil } }), presenting: resetting) { item in
+        .alert("重新标记为未开始？", isPresented: Binding(get: { resetting != nil }, set: { if !$0 { resetting = nil } }), presenting: resetting) { item in
             Button("确认重新标记") {
                 // Capture the presented item; dismissal may clear the binding first.
                 do { try learning.content.resetExploration(articleID: item.id, at: Date()); learning.changed(); load() } catch { self.error = error.localizedDescription }
