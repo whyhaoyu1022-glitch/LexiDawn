@@ -288,6 +288,15 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.buttons["vocabulary-entry-internet"].waitForExistence(timeout: 10))
         capture("R3-V03", app: app, feature: "vocabulary", state: "retry-result-in-persistent-notebook", origin: "explicit-one-shot-Repository-save-fault-bundled-RFC")
     }
+    func testArticleLoadingCanCancelWithoutLeavingCandidateRecords() throws {
+        let app = launch("round3-import-loading"); openLibrary(app); app.buttons["发现完整文章"].tap()
+        let stop = app.buttons["cancel-article-discovery"]; XCTAssertTrue(stop.waitForExistence(timeout: 5))
+        capture("R3-A20", app: app, feature: "article", state: "fulltext-discovery-loading", origin: "explicit-delayed-URLProtocol-fixture")
+        stop.tap()
+        XCTAssertTrue(app.staticTexts["已停止发现；已完整入库的文章保留。"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 0)
+        capture("R3-A21", app: app, feature: "article", state: "cancelled-no-candidate-record", origin: "explicit-delayed-URLProtocol-fixture")
+    }
     /// Scrolling can retain offscreen accessibility elements. Exercise a word in the visible viewport.
     private func visibleWord(in app: XCUIApplication) -> XCUIElement {
         let words = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'word-'"))

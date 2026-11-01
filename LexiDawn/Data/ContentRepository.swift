@@ -147,7 +147,8 @@ struct ArticleAccessError: LocalizedError {
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
             let cycles = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>())
             let progresses = try context.fetch(FetchDescriptor<ArticleProgressRecord>())
-            return try historicalArticleMetadata(in: context).sorted { $0.createdAt > $1.createdAt }.map { article in
+            let expiredIDs = Set(try context.fetch(FetchDescriptor<ArticleHistoryArchiveRecord>()).filter { $0.reasonCode == "cache-expired-body-removed" }.map(\.articleID))
+            return try historicalArticleMetadata(in: context).filter { $0.modelContext != nil || expiredIDs.contains($0.articleID) }.sorted { $0.createdAt > $1.createdAt }.map { article in
                 try article.validateStoredMetadata()
                 let grant = grants.first { $0.articleID == article.articleID }
                 let cycle = cycles.first { $0.articleID == article.articleID }

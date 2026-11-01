@@ -60,7 +60,7 @@ struct ReaderView: View {
                     Text(article.title).font(.title3.bold()).lineLimit(verticalSizeClass == .compact || dynamicTypeSize.isAccessibilitySize ? 1 : 2)
                     Text("\(compactSource(article)) · \(article.minutes) 分钟").font(.caption).foregroundStyle(.secondary).lineLimit(1)
                     if verticalSizeClass != .compact && !dynamicTypeSize.isAccessibilitySize, let published = article.publishedAt { Text("发布：\(published.formatted(date: .abbreviated, time: .omitted))").font(.caption) }
-                    if verticalSizeClass != .compact && !dynamicTypeSize.isAccessibilitySize { DisclosureGroup("来源与许可") { Text(article.source).font(.caption).textSelection(.enabled); Text("全文授权在每次访问及保存时重新检查。导入内容仅限本地使用。").font(.caption) } }
+                    if verticalSizeClass != .compact && !dynamicTypeSize.isAccessibilitySize { DisclosureGroup("来源与许可") { Text(article.source).font(.caption).textSelection(.enabled); Text("正文完整性与导入依据在访问及保存时重新检查。导入内容仅限本地使用。").font(.caption) } }
                     HStack { ProgressView(value: model.position.percent); Text("\(Int(model.position.percent * 100))%").font(.caption.monospacedDigit()).accessibilityIdentifier("reader-progress") }
                 }.dynamicTypeSize(...DynamicTypeSize.xxxLarge).padding(.horizontal)
                 if let notice = model.notice { Text(notice).font(.caption).padding(.horizontal) }

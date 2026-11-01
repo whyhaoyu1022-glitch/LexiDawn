@@ -20,7 +20,7 @@ actor ArticleFetchService {
             if delay > 0 { try await Task.sleep(for: .seconds(delay)) }
             var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
             request.setValue("LexiDawn/0.3 (personal offline reader; https://github.com/whyhaoyu1022-glitch/LexiDawn)", forHTTPHeaderField: "User-Agent")
-            request.setValue("application/json, application/xml, text/html;q=0.8", forHTTPHeaderField: "Accept")
+            request.setValue("application/json, application/rss+xml, application/atom+xml, application/xml, text/html;q=0.9, */*;q=0.1", forHTTPHeaderField: "Accept")
             do {
                 let (data, response) = try await session.data(for: request, delegate: ArticleRedirectGuard(hosts: allowedHosts))
                 try Task.checkCancellation()
@@ -56,6 +56,11 @@ enum OfficialArticleAPI {
         guard let url = components.url else { throw FullTextImportError.transport }; return url
     }
     static func discovery(_ data: Data, sourceID: String = "wikipedia") throws -> [ArticleDiscoveryItem] {
+        if let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let error = object["error"] as? [String: Any], let code = error["code"] as? String {
+            let safe = code.filter { $0.isASCII && ($0.isLetter || $0 == "-" || $0 == "_") }.prefix(64)
+            print("ARTICLE_API_DIAGNOSTIC sourceID=\(sourceID) code=\(safe)")
+            throw FullTextImportError.parsing
+        }
         struct Response: Decodable { struct Query: Decodable { let pages: [Page] }; struct Page: Decodable { let title: String; let fullurl: String; let lastrevid: Int; let revisions: [Revision]?; struct Revision: Decodable { let timestamp: String } }; let query: Query }
         return try JSONDecoder().decode(Response.self, from: data).query.pages.map { .init(sourceID: sourceID, title: $0.title, url: $0.fullurl, revision: $0.lastrevid, createdAt: $0.revisions?.first.flatMap { ISO8601DateFormatter().date(from: $0.timestamp) }) }
     }

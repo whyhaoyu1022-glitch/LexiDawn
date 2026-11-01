@@ -26,7 +26,7 @@ extension ArticleSourceRegistry {
               hosts: ["www.npr.org", "npr.org"], bodyMarkers: ["storytext"], articlePathPattern: #"/\d{4}/\d{2}/\d{2}/"#, topics: ["新闻", "文化"]),
         .init(id: "dw", name: "Deutsche Welle", discoveryURL: "https://rss.dw.com/rdf/rss-en-all", discovery: .feed,
               hosts: ["www.dw.com", "dw.com", "amp.dw.com"], bodyMarkers: ["longText", "rich-text", "RichText"], articlePathPattern: #"/en/.+/a-\d+"#, topics: ["新闻", "世界"]),
-        .init(id: "voa", name: "VOA Learning English", discoveryURL: "https://learningenglish.voanews.com/z/3521", discovery: .links,
+        .init(id: "voa", name: "VOA Learning English", discoveryURL: "https://learningenglish.voanews.com/api/zkm-ql-vomx-tpej-rqi", discovery: .feed,
               hosts: ["learningenglish.voanews.com", "www.learningenglish.voanews.com"], bodyMarkers: ["wsw", "body-container"], articlePathPattern: #"/a/.+/\d+\.html"#, topics: ["英语学习", "文化"]),
         .init(id: "nasa", name: "NASA", discoveryURL: "https://www.nasa.gov/news-release/feed/", discovery: .feed,
               hosts: ["www.nasa.gov", "nasa.gov", "science.nasa.gov"], bodyMarkers: ["entry-content", "article-body"], articlePathPattern: #"/(news-release|missions|science-research|general)/"#, topics: ["科学", "太空"]),

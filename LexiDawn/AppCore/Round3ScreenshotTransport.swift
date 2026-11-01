@@ -23,9 +23,17 @@ struct DictionaryEvidenceProvider: DictionaryProvider {
 final class Round3ScreenshotTransport: URLProtocol, @unchecked Sendable {
     private static let lock = NSLock()
     private static var requests = 0
+    private let stateLock = NSLock()
+    private var stopped = false
     override class func canInit(with request: URLRequest) -> Bool { request.url?.host == "en.wikipedia.org" }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func startLoading() {
+        if ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"] == "round3-import-loading" {
+            DispatchQueue.global().asyncAfter(deadline: .now() + 8) { [weak self] in self?.deliver() }
+        } else { deliver() }
+    }
+    private func deliver() {
+        stateLock.lock(); let active = !stopped; stateLock.unlock(); guard active else { return }
         let scenario = ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"] ?? ""
         let mode = scenario.replacingOccurrences(of: "round3-import-", with: "")
         Self.lock.lock(); Self.requests += 1; let count = Self.requests; Self.lock.unlock()
@@ -53,7 +61,7 @@ final class Round3ScreenshotTransport: URLProtocol, @unchecked Sendable {
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: data); client?.urlProtocolDidFinishLoading(self)
     }
-    override func stopLoading() { }
+    override func stopLoading() { stateLock.lock(); stopped = true; stateLock.unlock() }
     @MainActor static func install(in learning: LearningServices) {
         let configuration = URLSessionConfiguration.ephemeral; configuration.protocolClasses = [Round3ScreenshotTransport.self]
         learning.setDiscoveryForUITesting(ArticleDiscoveryService(content: learning.content, fetcher: ArticleFetchService(configuration: configuration), sourceIDs: ["wikipedia"]))

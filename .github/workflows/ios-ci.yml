@@ -222,10 +222,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          EXTRA_TESTS=()
+          if [[ '${{ matrix.device }}' == 'iPhone-SE-3rd-generation' ]]; then
+            EXTRA_TESTS+=(
+              '-only-testing:LexiDawnUITests/Round3UITests/testLiveColdStartImportReadingLookupPersonalMeaningReviewAndRestart'
+              '-only-testing:LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart'
+              '-only-testing:LexiDawnUITests/Round3UITests/testDictionaryProviderFailureEmptyLoadingAndOfflineCacheEvidence'
+              '-only-testing:LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists'
+            )
+          fi
           xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/device-derived" -sdk iphonesimulator -configuration Debug -destination "platform=iOS Simulator,id=${LEXIDAWN_DEVICE_UI_ID}" IPHONEOS_DEPLOYMENT_TARGET=26.5 CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/device-ui.xcresult" \
             -only-testing:LexiDawnUITests/Round3UITests/testReaderBodySurvivesTenRotationsAndWordRemainsTappable \
             -only-testing:LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates \
-            -only-testing:LexiDawnUITests/Round3UITests/testLargeDynamicTypeThreeThemesRemainReadableInLandscape test-without-building 2>&1 | tee "${RUNNER_TEMP}/device-ui.log"
+            -only-testing:LexiDawnUITests/Round3UITests/testLargeDynamicTypeThreeThemesRemainReadableInLandscape "${EXTRA_TESTS[@]}" test-without-building 2>&1 | tee "${RUNNER_TEMP}/device-ui.log"
       - name: Export native device evidence
         if: always()
         shell: bash

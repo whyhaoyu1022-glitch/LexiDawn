@@ -12,6 +12,7 @@ struct ArticleLibraryView: View {
     @State private var error: String?
     @State private var notice: String?
     @State private var loading = false
+    @State private var refreshTask: Task<Void, Never>?
     private var visible: [ArticleLibraryItem] {
         items.filter { $0.readable && (query.isEmpty || $0.title.localizedCaseInsensitiveContains(query)) &&
             (source == "all" || $0.sourceID == source) && (topic == "all" || $0.topics.contains(topic)) &&
@@ -26,9 +27,9 @@ struct ArticleLibraryView: View {
                 Picker("阅读内容", selection: $mode) { Text("全部").tag("all"); Text("收藏").tag("favorite"); Text("稍后阅读").tag("later"); Text("历史").tag("history") }
                 Toggle("最新导入优先", isOn: $newestFirst)
             }
-            if loading { ProgressView("正在导入完整文章…").accessibilityIdentifier("article-loading") }
+            if loading { ProgressView("正在导入完整文章…").accessibilityIdentifier("article-loading"); Button("停止本次发现") { refreshTask?.cancel() }.accessibilityIdentifier("cancel-article-discovery") }
             if let notice { Text(notice).font(.footnote).accessibilityIdentifier("article-notice") }
-            if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red); Button("重试导入") { Task { await refresh() } } }.accessibilityIdentifier("article-import-error") }
+            if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red); Button("重试导入") { beginRefresh() } }.accessibilityIdentifier("article-import-error") }
             ForEach(visible) { item in
                 VStack(alignment: .leading, spacing: 10) {
                     Text(item.title).font(.headline)
@@ -52,20 +53,24 @@ struct ArticleLibraryView: View {
         }
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索完整文章标题")
         .navigationTitle("文章库与历史")
-        .toolbar { Button("发现完整文章", systemImage: "arrow.clockwise") { Task { await refresh() } }.disabled(loading) }
-        .refreshable { await refresh() }
+        .toolbar { Button("发现完整文章", systemImage: "arrow.clockwise") { beginRefresh() }.disabled(loading) }
+        .refreshable { await beginRefresh().value }
         .task { load() }.onReceive(learning.$revision) { _ in load() }
+        .onDisappear { refreshTask?.cancel() }
         .fullScreenCover(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭文章") { reader = nil } } } } }
     }
     private func load() { do { items = try learning.content.library(); error = nil } catch { self.error = error.localizedDescription } }
+    @discardableResult private func beginRefresh() -> Task<Void, Never> {
+        refreshTask?.cancel(); let task = Task { await refresh() }; refreshTask = task; return task
+    }
     private func flags(_ item: ArticleLibraryItem, favorite: Bool? = nil, later: Bool? = nil) {
         do { try learning.content.setLibraryFlags(articleID: item.id, favorite: favorite, readLater: later); load(); error = nil }
         catch { self.error = error.localizedDescription }
     }
     private func refresh() async {
-        guard !loading else { return }; loading = true; defer { loading = false }
+        guard !loading else { return }; loading = true; notice = nil; error = nil; defer { loading = false }
         do { let count = try await learning.discovery.refresh(force: true); try Task.checkCancellation(); learning.changed(); notice = count == 0 ? "没有新文章；本地完整版本保持可读。" : "已导入 \(count) 篇完整原文。"; error = nil }
-        catch is CancellationError { }
+        catch is CancellationError { load(); learning.changed(); notice = "已停止发现；已完整入库的文章保留。" }
         catch { self.error = FullTextImportError.transport.localizedDescription }
     }
 }

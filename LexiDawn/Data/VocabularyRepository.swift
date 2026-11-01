@@ -31,7 +31,7 @@ struct VocabularyAddition {
             guard Set(all.map(\.normalizedKey)).count == all.count else { throw PersistenceError.integrity("重复生词身份") }
             let contexts = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>())
             let senses = try context.fetch(FetchDescriptor<DictionarySenseRecord>())
-            let articles = try context.fetch(FetchDescriptor<ArticleRecord>())
+            let articles = try historicalArticleMetadata(in: context)
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
             return all.filter { $0.deletedAt == nil && (type == nil || $0.entryType == type) }.map { record in
                 let attached = contexts.filter { $0.entryID == record.entryID }
