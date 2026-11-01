@@ -49,7 +49,18 @@ final class AppStartup: ObservableObject {
         #if DEBUG && targetEnvironment(simulator)
         // Explicit opt-in UI fixture, isolated from the production disk store. Never used in Release.
         if let scenario = ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"] {
-            if (["round3-history-gate", "round3-extra-review", "round3-explore-catalog"].contains(scenario) || scenario.hasPrefix("round3-recommendations-")), let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
+            if scenario == "round3-reader-structure", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
+                let url = FileManager.default.temporaryDirectory.appendingPathComponent("round3-structure-\(storeID).store")
+                let app = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
+                if try app.articleRepository.allArticleIDs().isEmpty, let learning = app.learning {
+                    let paragraphs = (1...8).map { "<p>Original fixture paragraph \($0). Reading complete documents helps people understand complicated ideas. Every original sentence and the final paragraph remain preserved in this structured local article.</p>" }.joined()
+                    let html = "<article><h1>Original structured fixture</h1><h2>Headings and quotation</h2><blockquote><p>This quotation is explicit original fixture writing.</p></blockquote><h2>An ordered list</h2><ol><li>First original list item.</li><li>Second original list item.</li></ol>" + paragraphs + "</article>"
+                    let document = try ArticleHTMLExtractor.extract(html)
+                    _ = try learning.content.importArticle(.init(title: "明确原创夹具：标题、引用与列表", body: document.text, source: "Explicit original UI fixture author", rightsConfirmed: true), document: document, at: Date())
+                }
+                return app
+            }
+            if (["round3-history-gate", "round3-extra-review", "round3-explore-catalog", "round3-version-change"].contains(scenario) || scenario.hasPrefix("round3-recommendations-")), let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
                 // Explicit gate fixture, distinct from the genuinely empty live cold-start test.
                 let url = FileManager.default.temporaryDirectory.appendingPathComponent("round3-gate-\(storeID).store")
                 let app = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
@@ -73,9 +84,14 @@ final class AppStartup: ObservableObject {
                         _ = try learning.content.importArticle(.init(title: "Explicit original current-task fixture", body: "A new original task remains unfinished. Only this task article can be opened until its cycle is complete.", source: "Explicit UI fixture author", rightsConfirmed: true), at: Date())
                         _ = try app.cycleService.ensureCurrentCycle(now: Date(), timeZone: .current, calendar: .current)
                     } else {
-                        _ = try learning.content.importArticle(.init(title: "Explicit science exploration fixture", body: "Cooperation and architecture support thoughtful investigation. This complete original fixture discusses scientific collaboration and responsible communication. The final original sentence remains available in the native reader.", source: "Explicit original UI fixture author", topic: "Science", rightsConfirmed: true, eligibleForDaily: false), at: Date())
+                        let scienceID = try learning.content.importArticle(.init(title: "Explicit science exploration fixture", body: "Cooperation and architecture support thoughtful investigation. This complete original fixture discusses scientific collaboration and responsible communication. The final original sentence remains available in the native reader.", source: "Explicit original UI fixture author", topic: "Science", rightsConfirmed: true, eligibleForDaily: false), at: Date())
                         _ = try learning.content.importArticle(.init(title: "Explicit city exploration fixture", body: "Transportation and administration shape communities. This complete original fixture discusses city planning and practical education. The final original paragraph is preserved for native exploration testing.", source: "Explicit original UI fixture author", topic: "Cities", rightsConfirmed: true, eligibleForDaily: false), at: Date())
                         if scenario.hasPrefix("round3-recommendations-") { try DictionaryEvidenceProvider.install(mode: scenario.replacingOccurrences(of: "round3-recommendations-", with: ""), learning: learning) }
+                        if scenario == "round3-version-change" {
+                            let old = try learning.content.read(articleID: scienceID, at: Date())
+                            try learning.reader.save(articleID: scienceID, cycleID: nil, position: .init(percent: 0.4, anchor: fingerprint(old.body), offset: 12), at: Date())
+                            try learning.content.updateOriginal(articleID: scienceID, draft: .init(title: "Explicit updated science fixture", body: "An explicit new original introduction.\n\n" + old.body, source: "Explicit original UI fixture author", topic: "Science", rightsConfirmed: true, eligibleForDaily: false), at: Date())
+                        }
                     }
                 }
                 return app

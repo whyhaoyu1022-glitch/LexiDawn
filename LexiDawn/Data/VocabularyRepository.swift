@@ -119,11 +119,11 @@ struct VocabularyAddition {
         }
         let date = ISO8601DateFormatter()
         func quote(_ text: String) -> String { "\"" + text.replacingOccurrences(of: "\"", with: "\"\"") + "\"" }
-        var rows = [["entryID", "lemma", "surfaceForms", "type", "personalMeaning", "dictionaryMeanings", "notes", "sourceContextsJSON", "addedAt", "lastReviewedAt", "nextDueAt", "algorithmVersion", "repetitions", "lapses", "stability", "difficulty", "dictionarySensesJSON", "reviewLogsJSON"]]
+        var rows = [["entryID", "lemma", "surfaceForms", "type", "personalMeaning", "dictionaryMeanings", "notes", "sourceContextsJSON", "addedAt", "lastReviewedAt", "nextDueAt", "algorithmVersion", "repetitions", "lapses", "stability", "difficulty", "dictionarySensesJSON", "reviewLogsJSON", "reviewMeaningSenseID", "reviewMeaningText", "reviewMeaningEvidence"]]
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601; encoder.outputFormatting = .sortedKeys
         for item in items {
             rows.append([item.id, item.lemma, item.surfaces.joined(separator: " | "), item.type, item.meaning ?? "", item.dictionaryMeanings.joined(separator: " | "), item.notes ?? "",
-                String(decoding: try encoder.encode(item.sourceContexts), as: UTF8.self), date.string(from: item.addedAt), item.lastReviewedAt.map { date.string(from: $0) } ?? "", item.dueAt.map { date.string(from: $0) } ?? "", item.algorithmVersion ?? "", String(item.repetitions), String(item.lapses), item.stability.map { String($0) } ?? "", item.difficulty.map { String($0) } ?? "", String(decoding: try encoder.encode(item.dictionarySenses), as: UTF8.self), String(decoding: try encoder.encode(logs.filter { $0.entryID == item.id }), as: UTF8.self)])
+                String(decoding: try encoder.encode(item.sourceContexts), as: UTF8.self), date.string(from: item.addedAt), item.lastReviewedAt.map { date.string(from: $0) } ?? "", item.dueAt.map { date.string(from: $0) } ?? "", item.algorithmVersion ?? "", String(item.repetitions), String(item.lapses), item.stability.map { String($0) } ?? "", item.difficulty.map { String($0) } ?? "", String(decoding: try encoder.encode(item.dictionarySenses), as: UTF8.self), String(decoding: try encoder.encode(logs.filter { $0.entryID == item.id }), as: UTF8.self), item.reviewMeaningSenseID ?? "", item.reviewMeaningText ?? "", item.reviewMeaningEvidence ?? ""])
         }
         return Data((rows.map { $0.map(quote).joined(separator: ",") }.joined(separator: "\r\n") + "\r\n").utf8)
     }

@@ -1,70 +1,34 @@
-# CURRENT · Round 3 规格复核整改中
-
-全文本地阅读、文章库和多词典已实现基础链路；当前重点修复全部入口门禁、简明浮窗/全屏详情、探索/生词/复习融合及CI效率。最新源码161单元/38 UI，尚未执行，不宣称统一验收通过。此前156单元0失败、36 UI中1失败的结果只对应3ce74e4。详见[当前状态](STATUS.md)和[Round 3报告](docs/reviews/round-3-development-delivery.md)。
-
----
-
 # 词光 LexiDawn
 
-个人使用的原生 iOS 英语阅读、词典与间隔复习应用。产品行为以 [SPEC.md](SPEC.md) 为准，当前正在推进 Round 2 功能交付。
+原生 iOS 英文全文阅读、查词、生词管理和间隔复习应用。使用 SwiftUI、SwiftData、Domain、Service 和 Repository，不依赖网页阅读器或大型 UI 框架。
 
-## 开发环境
+**CURRENT · Round 3 仍在开发验证，尚未统一验收通过。** 当前源码清单为 173 XCTest / 46 XCUITest，包含原 93 / 20。已核验的代码和失败详情见 [STATUS](STATUS.md) 与 [Round 3 开发记录](docs/reviews/round-3-development-delivery.md)，清单数量不代表通过数量。
 
-工程使用 SwiftUI 和原生 Xcode 项目，不引入第三方 UI 框架。应用 target 的 bundle identifier 是 `com.lexidawn.app`，版本为 `0.1.0 (1)`，常规 Debug/Release 产品配置的最低系统版本为 iOS 27.0。CI 在 runner checkout 中临时把该目标替换为已批准的 iOS 26.5 兼容目标，再使用 Debug 配置构建和测试；工程中没有独立的 `CI` build configuration。兼容构建不替代 iOS 27.0 规格验收。
+## 使用入口与任务融合
 
-## 构建与测试
+- **今日**：继续最早未完成周期，明确区分阅读、连线和拼写状态。新文章不会覆盖旧周期；已指派文章不重复分配。顶部书库图标进入“文章库与历史”，导入按钮粘贴个人完整原文。
+- **文章库与历史**：发现完整文章、标题搜索、来源/分类筛选、时间排序、收藏、稍后阅读和历史。标记收藏不会创建每日周期。任务完成前，所有库、历史、收藏及稍后入口均只能打开当前任务文章；Reader 打开和进度写入再次执行同一门禁。
+- **探索**：完成当前学习日全部必做任务后解锁。完整本地文章按兴趣等因素排序，支持分类、收藏、稍后和发现；打开即记录开始。重新标记为未开始需确认，原进度归档。每日文章不能重置。
+- **阅读器**：全文离线阅读、标题/段落/引用/列表、词级点击、位置恢复、横竖屏、动态字体、浅色/深色/暖纸色。查词浮窗展示最多两条原始简明释义，工具栏词典进入含全部原始义项的独立详情，支持有限深度嵌套查词。
+- **词汇**：生词本搜索、类型/复习状态筛选、排序、个人释义/笔记、明确选择词典中文义项、确认移除、JSON/CSV 导出。上方“高级词汇与短语推荐”在完成任务后开放，从真实本地全文提取并查询词典，只有主动加入才写入生词本。
+- **复习**：真实双列连线与持久化拼写。拼写固定原句实际词形，遮住整词或整段短语；没有可靠中文答案时阻止生成。FSRS 4.5 保存排程、反馈和下次时间；额外复习使用独立会话，不新增每日周期或重新锁定探索。
+- **个人原文更新**：解锁后可在库中更新未指派的个人原文，必须重新确认完整原文。旧全文与署名保留；新正文按唯一原段落恢复位置，无法定位时回到开头。每日已指派原文禁止更新。
+
+## 内容与词典
+
+按负责人 2026-11-01 的特别指示，个人模式尝试公开官网完整正文。BBC、Reuters、AP、Guardian、NPR、DW、VOA、NASA、ScienceDaily、Phys.org、Smithsonian 加上 Wikipedia/Wikinews 共 13 个候选适配器；可尝试不代表成功或出版社授权。登录、验证码、付费墙、403 和不完整正文均丢弃，无摘要、URL 或浏览器降级。实际已验证来源与许可调查分别记录在 [来源审查](docs/article-source-eligibility-audit.md)。
+
+词典接入 Wiktionary、Free Dictionary API 和本地 CC-CEDICT，保留原始来源及许可。某来源失败时保留其他真实结果；缺失字段不编造。词典缓存按 Provider/版本管理，清缓存不删除生词、个人释义、确认义项或复习数据。
+
+## 构建和验证
+
+产品 Debug/Release 目标保持 iOS 27.0；当前 Actions 在 checkout 中临时采用已批准的 iOS 26.5 兼容环境与 Xcode 26.6，不能替代 iOS 27 或真机验收。本地开发容器没有 Swift/Xcode/Simulator，原生运行证据来自 Actions。
 
 ```sh
-xcodebuild -list -project LexiDawn.xcodeproj
 xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
+python3 scripts/ci-test-plan.py verify
 ```
 
-GitHub Actions 先使用 `build-for-testing` 和 `generic/platform=iOS Simulator` 编译应用及测试 target；这一步失败时不会启动具体 simulator。编译通过后才创建并校验具体 iOS Simulator，保留 `xcodebuild -showdestinations` 诊断后使用该设备 ID 执行单元测试和 UI 测试，并上传 `.xcresult` 结果包。workflow 只在 `main` push 和面向 `main` 的 pull request 上触发。当前开发容器没有 Xcode，不能把本地命令结果写成 iOS 验收证据。
+CI 一次编译所有测试，完整单元/真实网络/Release 关卡通过后，4 个穷尽 UI 分组与 SE/大屏专项共享相同编译产物；新 main 提交取消旧运行，任一分组失败取消其余分组。失败日志、原生截图和 xcresult 仍保留。完整 PNG 包由同一次运行合并并核验 SHA，含 manifest、CSV 和逐张索引。尚未完成的最终证据不以历史绿色运行代替。
 
-## 交付边界
-
-模拟器/未签名构建与可安装签名 IPA 分开记录。Windows + AltServer/AltStore 路径和免费 Apple ID 限制见 [docs/signing.md](docs/signing.md)。
-
-
-## Round 1 第二次整改状态
-
-代码 `309afe81aecfbfd84e5a9f52251c59f8e32c0575` 的 [run 41170754181](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41170754181) **success**：XCTest 61/0、XCUITest 8/0；UI用例合计 321.466 秒。artifact [13031277540](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41170754181/artifacts/13031277540)。
-
-已实施领域证据、严格状态恢复、隔离事务上下文、真实磁盘故障/重开、两版旧schema升级和UI禁用/错误/启动恢复回归。UI长循环已排查，补齐原生启动配置并改为有界定向定位；未减少业务断言。CI固定iPhone17Pro/iOS26.5，共享derivedData，保留完整日志与xcresult。
-
-此段为 Round 1 历史验证；兼容模拟器结果不等于iOS27、真机、IPA或完整产品验收。准确边界见 [STATUS.md](STATUS.md)、[测试计划](docs/test-plan.md) 和 [本轮整改报告](docs/reviews/round-1-second-remediation-report-2026-10-31.md)。后续文档提交的Actions与上述代码运行分别记录。
-
-## Round 2 当前交付范围（2026-10-31）
-
-生产入口现使用真实 LearningServices；此前“生产未接入”的 Round 1 文字仅说明历史状态。已提供：合法粘贴导入、随附 RFC 8890 原文与官方刷新、原生词级点击阅读器、节流进度和重启恢复、明确阅读确认、CC-CEDICT 本地反向查词与详情、生词搜索/笔记/安全撤销/确认删除、持久化连线与拼写、确定性基础排程、真实设置、事件统计、文章库/历史和探索门禁。
-
-来源的全文/缓存权利以 IETF TLP 5 §3(c)(i) 为依据，原文完整保留并核对 SHA-256。词典派生索引使用 CC BY-SA 4.0，可能对应词不冒称已消歧的语境义；来源不提供英语音标、词性或例句时如实说明。用户导入仅限本地，不代表取得公开版权。探索与每日指派分离；文章库保留历史与授权失效元数据。
-
-排程为 `lexidawn-basic-1`，不是 FSRS。M4 的语境消歧、丰富短语、可靠英语词性/IPA，M5 的额外复习、M6 的高级词汇推荐和 M7/M9 尚未交付。没有通知/AI/账号/上传/付费服务或签名 IPA。iOS 27 产品目标保留；CI 仅验证已批准 iOS 26.5 模拟器。
-
-本批功能及验证状态以 [Round 2 开发交付自述](docs/reviews/round-2-development-delivery.md) 为准；独立验收尚未执行。
-
-### 如何体验
-
-1. 在 Xcode 打开工程，使用与产品版本匹配的工具链运行；兼容模拟器验证不代表 iOS 27 或真机安装。
-2. 生产首次启动安装官方 RFC 原文，可立即开始阅读；也可从导航栏“导入”粘贴有权使用的正文，确认本地使用和是否允许未来每日分配。旧周期不会被替换。
-3. 今日 → 开始/继续阅读；滚动、退出、重开可恢复。点击英文词看可能含义并自动保存；关闭自动添加后需手动加入。
-4. 词汇页搜索、编辑个人释义、查词、确认移除；未知词没有可靠中文时可自行填写明确标为个人释义的内容供复习。
-5. 阅读后明确完成；复习页点击英文和对应中文配对，再输入完整拼写。作答、排程和周期更新同一事务提交。
-6. 必做全部完成才解锁探索；已分配/已开始文章从探索候选移除，历史可从今日页“文章库与历史”继续。
-
-
-## Round 2 已核验的应用代码结果
-
-应用代码 `fcac01b3d40b311b51c7a0fea4e6329d0300ca92` 的 [Actions 41194434948](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41194434948) 已结束 **success**：**93 XCTest/0失败、13 UI/0失败**，逐项匹配106个测试方法，无遗漏。artifact [13040631627](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41194434948/artifacts/13040631627) 包含unit/UI xcresult、完整日志及原生截图。最小“真实文章→阅读→查词→生词→连线→拼写→周期完成→探索解锁”场景已通过模拟器UI；磁盘重开与两版旧schema升级在同一套回归中通过。UI共615.006秒，3504词微基准平均0.024秒，波动较大，不能作为真机帧率承诺。
-
-后续测试定位增强提交 `1b2e26b39c33aff434298ab141eff426725caf24` 仅增加重启后foreground/hittable等待和一次真实坐标触摸，保留恢复百分比与可见词元位置断言。最终文档提交的SHA/Actions以GitHub History和交付答复为准；本节不冒用应用代码的绿色运行作为其他SHA的证明。
-
-这是 iOS26.5兼容模拟器/Xcode26.6 结果，不代表iOS27、真机、签名IPA、全量无障碍或独立验收通过。详细范围、全部失败及未完成项见 Round 2 开发交付自述。
-
-
-
-2026-11-01 · 负责人特别指示的公开官网全文模式：允许个人使用场景下直接尝试11个官网来源（BBC、Reuters、AP、Guardian、NPR、DW、VOA、NASA、ScienceDaily、Phys.org、Smithsonian）；旧出版社许可审核不改写为授权。FullTextRightsEvidence.importBasis=owner-directed-personal-use-2026-11-01，grant.scope=personal-full-text，与audited-full-text分开。只请求公开HTTPS页面，固定主机白名单及重定向检查，无登录、验证码处理、浏览器、代理或付费墙绕过。RSS/列表只在内存中发现候选；完整闭合正文子树或明确articleBody、正文长度/段落/原文一致性和数据库事务验证通过后才入库；任何失败不留下候选。Wikinews另按CC BY4.0及2024-12-17创建日期门槛接入。最多3条来源管线并行，首篇原文导入后更新首页，各来源独立失败/退避。新增8个确定性测试及真实网络五来源导入门槛测试，尚未执行，不把配置11源当作11源成功。
-
-
-交付基础设施：新增Release构建并验证DEBUG故障/截图夹具标记未进入二进制；新增统一证据汇总job，合并同一workflow/commit全部设备原生PNG，逐张验证SHA-256，输出完整manifest/CSV/INDEX.md和无重绘的原始PNG ZIP。合并脚本已在实际run41270145667小屏14张原始PNG上验证，不借此声称最新应用测试通过；Linux仅验证Python/YAML及真实附件打包。
+规范：[SPEC](SPEC.md)、[补充规范](docs/spec-addendum-content-and-dictionary.md)、[本轮计划](docs/plans/round-3-development-plan.md)、[需求追踪](docs/requirements-traceability.md)、[测试计划](docs/test-plan.md)、[架构](docs/architecture.md)。Round 2 历史结果保留在原始独立审核和交付报告中，不作为当前提交结果。

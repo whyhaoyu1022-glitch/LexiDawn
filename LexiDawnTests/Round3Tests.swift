@@ -12,6 +12,19 @@ private actor CacheRequestProbe: DictionaryProvider {
 
 @MainActor final class Round3Tests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 1793534400)
+    func testOwnedStructuredOriginalAndDocumentAreAtomicAndCannotDiverge() throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let document = try ArticleHTMLExtractor.extract("<h2>Original heading</h2><blockquote><p>Original quotation.</p></blockquote><ol><li>First original list item.</li></ol>")
+        let draft = ArticleImportDraft(title: "Explicit structured fixture", body: document.text, source: "Fixture author", rightsConfirmed: true)
+        let id = try learning.content.importArticle(draft, document: document, at: now)
+        XCTAssertEqual(try learning.content.read(articleID: id, at: now).document, document)
+        XCTAssertThrowsError(try learning.content.importArticle(draft, document: .init(blocks: [.init(kind: .paragraph, text: "A replacement excerpt.")]), at: now))
+        let failing = ContentRepository(context: ModelContext(app.modelContainer), saveContext: { _ in throw LearningError.invalid("Explicit fixture save fault") })
+        let body = "A different complete original document."
+        XCTAssertThrowsError(try failing.importArticle(.init(title: "Another explicit fixture", body: body, source: "Fixture author", rightsConfirmed: true), document: ArticleDocumentNormalizer.plainText(body), at: now))
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ArticleRecord>()), 1)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ContentGrantRecord>()), 1)
+    }
     func testPersonalOriginalUpdateKeepsVersionRestoresAnchorAndRollsBackSaveFailure() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
         let dailyID = try learning.content.importArticle(.init(title: "Explicit daily fixture", body: "A complete daily original article.", source: "Fixture author", rightsConfirmed: true), at: now)

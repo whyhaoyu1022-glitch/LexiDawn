@@ -291,10 +291,16 @@ struct WordLookupSheet: View {
 /// A bounded reading aid. All original provider senses remain in the separate detail page.
 struct DictionaryQuickMeaning: View {
     let result: DictionaryResult
+    // Prefer available original Chinese senses for this Chinese reading aid, keeping context order.
+    // English-only results remain useful; the separate detail retains every provider sense.
+    private var quickSenses: [DictionarySense] {
+        let chinese = result.senses.filter { !$0.zh.isBlank }
+        return Array((chinese.isEmpty ? result.senses : chinese).prefix(2))
+    }
     var body: some View {
         Section("可能含义 · 语境优先") {
             if let ipa = result.senses.compactMap(\.ipa).first { Text(ipa).font(.subheadline.monospaced()).accessibilityIdentifier("dictionary-ipa-summary") }
-            ForEach(Array(result.senses.prefix(2))) { sense in
+            ForEach(quickSenses) { sense in
                 VStack(alignment: .leading, spacing: 3) {
                     if let pos = sense.partOfSpeech { Text(pos).font(.caption).foregroundStyle(.secondary) }
                     Text(sense.zh.isEmpty ? sense.en : sense.zh).font(.body).lineLimit(2)

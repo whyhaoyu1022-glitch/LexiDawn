@@ -1,16 +1,24 @@
-# CURRENT · Round 3追踪
+# CURRENT · Round 3 需求追踪
 
-| 需求与逐字依据 | 实现 | 依赖与证据 | 当前边界 |
+功能存在、持久化、测试、真实截图和 CI 都必须有同一代码证据才能标记完成。当前仍在验证；173 XCTest / 46 UI 为源码清单。20 项 R2-A01–A20 的逐项实现及证据缺口见 [本轮矩阵](reviews/round-3-development-delivery.md)。
+
+| 需求 | 当前实现 | 主要验证 | 剩余验收 |
 |---|---|---|---|
-| v1.1 E：“rawContent 和 structuredBody 必须原子写入” | ArticleQualityValidator、FullTextRepository、ArticleDocument | 来源权利证据；事务失败、缺正文、截断、双正文/去重测试 | 新测试运行结果单独核对，不能用fixture冒充真网络 |
-| v1.1 D：“不得将候选写入磁盘缓存” | 内存ArticleDiscoveryItem、ephemeral HTTP、未入库不进UI | RSS/Atom/API解析及LiveWikipedia测试 | 其余候选禁用，不展示摘要或外链 |
-| v1.1 G：“不提供原站阅读按钮、外部 URL 跳转或 WebView” | Reader/Library/Vocabulary移除文章Link | 原生阅读器；canonical仅出处文本 | 许可/词典来源链接不是文章阅读入口 |
-| SPEC §10.1：“FSRS…或经审查的等价间隔复习实现” | 独立FSRS 4.5 DSR、固定参数与不可变日志 | 初始向量、R(S)=0.9、遗忘/非法状态及旧闭环 | 不宣称最新FSRS/Anki分钟步骤或个性优化器 |
-| SPEC §10.5：“已配对的条目应保持可见” | MatchingBoard双列随机、Canvas、双端禁用 | 真实线像素/旋转UI、重复消费事务 | 多设备/完整VO仍待执行 |
-| SPEC §19.10：“数据迁移与一致性” | 冷备份、可选列回填、历史归档 | FrozenRound2Schema磁盘升级及既有两版旧schema | 损坏/未知schema失败保留，不自动清库 |
-| 用户功能六：收藏不创建周期 | 标题/分类/来源/时间、收藏/稍后/历史 | 独立标记写入与无周期断言 | 完整UI截图矩阵仍待运行 |
+| 只在 main、保留旧测试 | 直接 main 提交、原93/20保留 | Git history、源码/测试计划完整性 | 最终真实 main SHA 与 compare清单 |
+| 完整原文唯一本地模式 | Registry/Audit/内存发现/HTTPS抓取/HTML/Normalizer/Quality/Repository；无阅读降级 | 全文准入、截断/部分/URL/原子回滚/失败刷新/去重；Live10源 | 最终源列表/完整UI与PNG |
+| 负责人个人模式特别指示 | personal-full-text 与 audited-full-text 分开，不伪造出版社授权 | importBasis/伪造证据拒绝；官方源真实运行 | Reuters401/AP403/Smithsonian不完整如实舍弃 |
+| 所有入口仅当前任务 | ArticleLearningAccess；Reader打开/save/complete均检查 | 历史/收藏/稍后/跨日门禁Domain及UI | 最新全量UI |
+| 双正文原子保存 | rawContent物理旧列+structuredBody+证据/哈希同事务 | failure/rollback/no孤儿/结构不一致拒绝 | 最新构建/173测试 |
+| 多词典/离线/简明+详情 | Free/Wiktionary/CEDICT，版本缓存，最多两条简明义项、独立完整详情 | 多Provider/缓存/英文节POS/IPA/词形/失败UI | Free真实间歇404与最终截图 |
+| 真正连线 | 锚点Canvas、多线、错误重试、两端禁用、Domain拒绝重复 | 像素/布局/旋转/会话恢复/AX等价 | 最新双尺寸及逐图审阅 |
+| 阅读器/主题/结构/恢复 | TextKit、原文投影、三主题、大字/横屏、位置/版本恢复 | 十次旋转实际正文/点词；原创HTML结构和版本UI | 最新三主题/双尺寸PNG |
+| SPEC §10 FSRS与复习闭环 | FSRS4.5、原句词形/短语遮空、固定语境/明确变体、排程解释 | 向量/非法状态/题组冻结/Again-Hard-Good/重启 | 全量UI；不冒称最新FSRS/分钟步骤 |
+| 生词安全/管理/导出 | 安全撤销、明确移除、个人笔记/确认义项、筛选/排序、完整JSON/CSV | 原测试+事务故障/确认义项/原生导出UI | 最新PNG/重启证据 |
+| 探索/推荐/额外复习 | 解锁排序卡片、归档重置、全文词汇推荐仅明确加入、独立额外会话 | 无自动入本/无新增周期/无重新锁定/恢复 | 最新主要与失败状态UI |
+| 迁移/历史保护 | 冷备份、optional轻量字段、分离历史归档、完整个人旧版本 | 三套旧schema磁盘、原文/学习关系保存及失败回滚 | 当前原生运行对应准确计数 |
+| 全状态截图与CI效率 | 原生PNG+元数据+SHA合并、compile-once+4UI组+2设备、fail-fast | 自动选择器完整核对；实际下载原始附件审查 | 同一最终代码完整ZIP/CSV/manifest/xcresult/逐图索引 |
 
-原93 XCTest/20 UI保留；Round2-A01至A20逐项状态见[Round 3记录](reviews/round-3-development-delivery.md)。以下为历史基线。
+完整 VoiceOver 听读、iOS27/真机/Instruments 仍无通过证据；不能用模拟器按钮存在或静态文档代替。以下保留历史记录，CURRENT与本轮报告优先。
 
 ---
 

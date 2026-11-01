@@ -45,7 +45,7 @@ struct VocabularyListView: View {
             }.searchable(text: $search, prompt: "搜索词形、lemma 或已缓存中文释义")
                 .navigationTitle("生词本").task { load() }.onReceive(learning.$revision) { _ in load() }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in load() }
-                .toolbar { Menu("导出生词", systemImage: "square.and.arrow.up") { Button("导出 JSON（完整学习数据）") { prepareExport(.json) }; Button("导出 CSV") { prepareExport(.csv) } } }
+                .toolbar { Menu("导出生词", systemImage: "square.and.arrow.up") { Button("导出 JSON（完整学习数据）") { prepareExport(.json) }; Button("导出 CSV") { prepareExport(.csv) } }.accessibilityIdentifier("vocabulary-export") }
                 .fileExporter(isPresented: $exporting, document: exportDocument, contentType: exportType, defaultFilename: "LexiDawn-vocabulary") { result in
                     if case let .failure(failure) = result { error = failure.localizedDescription }
                 }
@@ -80,6 +80,8 @@ struct VocabularyDetailView: View {
     @State private var dictionaryError: String?
     @State private var selectedMeaningSaved = false
     @State private var selectedMeaningError: String?
+    @State private var choosingMeaning = false
+    @State private var chosenMeaningText: String?
     @State private var removeConfirmation = false
     @State private var source: ArticleLibraryItem?
     @FocusState private var editing: Bool
@@ -97,17 +99,17 @@ struct VocabularyDetailView: View {
             }
             if let result {
                 Section("复习用义项") {
-                    if let selected = item.reviewMeaningText { Text("已确认：" + selected).font(.subheadline) }
+                    if let selected = chosenMeaningText { Text("已确认：" + selected).font(.subheadline) }
                     Text("可明确选择词典中的中文义项用于以后新题组。修改个人释义后改用个人释义；已保存题组保持原答案。").font(.caption).foregroundStyle(.secondary)
-                    DisclosureGroup("选择词典中文义项") {
+                    if selectedMeaningSaved { Label("复习义项已保存", systemImage: "checkmark.circle") }
+                    DisclosureGroup("选择词典中文义项", isExpanded: $choosingMeaning) {
                         ForEach(result.senses.filter { !$0.zh.isEmpty }) { sense in
                             Button(sense.zh) {
-                                do { try learning.vocabulary.confirmReviewMeaning(entryID: item.id, sourceSenseID: sense.id); selectedMeaningSaved = true; selectedMeaningError = nil; learning.changed() }
+                                do { try learning.vocabulary.confirmReviewMeaning(entryID: item.id, sourceSenseID: sense.id); selectedMeaningSaved = true; choosingMeaning = false; chosenMeaningText = sense.zh; selectedMeaningError = nil; learning.changed() }
                                 catch { selectedMeaningSaved = false; selectedMeaningError = error.localizedDescription }
-                            }
+                            }.accessibilityIdentifier("review-meaning-" + sense.id)
                         }
-                    }
-                    if selectedMeaningSaved { Label("复习义项已保存", systemImage: "checkmark.circle") }
+                    }.accessibilityIdentifier("choose-review-meaning")
                     if let selectedMeaningError { Text(selectedMeaningError).foregroundStyle(.red) }
                 }
                 DictionaryResultContent(result: result)
@@ -131,10 +133,10 @@ struct VocabularyDetailView: View {
             if let error { Text(error).foregroundStyle(.red) }
             if let dictionaryError { Text(dictionaryError).foregroundStyle(.red); Button("重试词典") { Task { await lookup() } } }
         }.scrollDismissesKeyboard(.interactively).navigationTitle(item.lemma).navigationBarTitleDisplayMode(.inline)
-            .onChange(of: meaning) { _, _ in saved = false }.onChange(of: notes) { _, _ in saved = false }
+            .onChange(of: meaning) { _, _ in saved = false; selectedMeaningSaved = false }.onChange(of: notes) { _, _ in saved = false }
             .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { editing = false } } }
             .task {
-                meaning = item.meaning ?? ""; notes = item.notes ?? ""
+                meaning = item.meaning ?? ""; notes = item.notes ?? ""; chosenMeaningText = item.reviewMeaningText
                 do { source = try learning.content.library().first { $0.id == item.sourceArticleID } } catch { self.error = error.localizedDescription }
                 await lookup()
             }
@@ -145,7 +147,7 @@ struct VocabularyDetailView: View {
     }
     private func save() {
         saved = false
-        do { try learning.vocabulary.annotate(entryID: item.id, meaning: meaning, notes: notes, at: Date()); saved = true; saveError = nil; editing = false; learning.changed() }
+        do { try learning.vocabulary.annotate(entryID: item.id, meaning: meaning, notes: notes, at: Date()); chosenMeaningText = try learning.vocabulary.find(surface: item.lemma)?.reviewMeaningText; saved = true; saveError = nil; editing = false; learning.changed() }
         catch { saveError = error.localizedDescription }
     }
     private func lookup() async { do { result = try await learning.dictionary.lookup(item.lemma); dictionaryError = nil } catch { self.dictionaryError = error.localizedDescription } }

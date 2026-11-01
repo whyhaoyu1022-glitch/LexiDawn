@@ -69,6 +69,34 @@ private final class Round3FaultURLProtocol: URLProtocol, @unchecked Sendable {
         task.cancel()
         do { _ = try await task.value; XCTFail("Cancelled task must throw") } catch { XCTAssertTrue(error is CancellationError) }
     }
+    func testInjectedEveryConfiguredSourceDiscardsTransportAndMalformedDiscoveryWithoutResidue() async throws {
+        let ids = ["wikipedia", "wikinews"] + ArticleSourceRegistry.personalSources.map(\.id)
+        for id in ids {
+            for (status, bytes) in [(403, Data("Forbidden explicit fixture".utf8)), (404, Data("Missing explicit fixture".utf8)), (200, Data("<rss><channel><item>Explicit malformed fixture".utf8))] {
+                let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)
+                let service = ArticleDiscoveryService(content: content, fetcher: client(status: status, data: bytes), sourceIDs: [id])
+                do { let count = try await service.refresh(force: true); XCTAssertEqual(count, 0); if status != 200 { XCTFail("Injected transport fault must not claim success: \(id) / \(status)") } }
+                catch { XCTAssertEqual(error.localizedDescription, "无法导入完整文章，未添加到本地文章库。") }
+                XCTAssertTrue(try content.library().isEmpty, "Rejected source must not leave any visible candidate: " + id)
+                XCTAssertTrue(try app.articleRepository.allArticleIDs().isEmpty, "Rejected source must not create ArticleRecord: " + id)
+            }
+            // A genuine empty official discovery response is not a partially imported article.
+            let empty = ["wikipedia", "wikinews"].contains(id) ? Data(#"{"query":{"pages":[]}}"#.utf8) : Data("<html><body></body></html>".utf8)
+            let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)
+            let service = ArticleDiscoveryService(content: content, fetcher: client(data: empty), sourceIDs: [id])
+            let count = try await service.refresh(force: true)
+            XCTAssertEqual(count, 0); XCTAssertTrue(try app.articleRepository.allArticleIDs().isEmpty)
+        }
+    }
+    func testInjected503AndTimeoutRemainFailuresAfterBoundedRetry() async {
+        let unavailable = client(status: 503)
+        do { _ = try await unavailable.fetch(URL(string: "https://fixture.invalid/api")!, allowedHost: "fixture.invalid"); XCTFail("503 must never become success") }
+        catch { XCTAssertEqual(error as? FullTextImportError, .transport) }
+        let timeout = client()
+        Round3FaultURLProtocol.handler = { _ in throw URLError(.timedOut) }
+        do { _ = try await timeout.fetch(URL(string: "https://fixture.invalid/api")!, allowedHost: "fixture.invalid"); XCTFail("Timeout must never become success") }
+        catch { XCTAssertEqual(error as? FullTextImportError, .transport) }
+    }
     // These tests use real external services, separately named from injected/fixture tests.
     func testLivePublisherAdaptersImportAtLeastFiveCompleteSources() async throws {
         let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)

@@ -40,18 +40,19 @@ struct ArticleAccessError: LocalizedError {
     init(context: ModelContext, saveContext: @escaping (ModelContext) throws -> Void = { try $0.save() }) {
         writer = RepositoryWriter(context: context, saveContext: saveContext)
     }
-    @discardableResult func importArticle(_ draft: ArticleImportDraft, at now: Date) throws -> String {
+    @discardableResult func importArticle(_ draft: ArticleImportDraft, document: ArticleDocument? = nil, at now: Date) throws -> String {
         try draft.validate()
+        if let document, !ArticleDocumentNormalizer.preservesOriginal(draft.body, document: document) { throw FullTextImportError.incomplete }
         let id = UUID().uuidString
         let candidate = ArticleCandidate(id: id, canonicalURL: "lexidawn-local://article/\(id)", title: draft.title,
             sourceID: "user-import", licenseID: "user-declared-local-use", licenseVerified: true, bodyText: draft.body,
             contentStatus: .available, topicTags: [draft.topic], cachePermission: .persistent,
             sourceAttribution: draft.source, fullTextDisplayAllowed: true)
         try save(candidate, scope: "user-local", evidenceURL: "local-user-confirmation", originalURL: draft.originalURL.isBlank ? nil : draft.originalURL,
-                 eligible: draft.eligibleForDaily, at: now)
+                 eligible: draft.eligibleForDaily, document: document, at: now)
         return id
     }
-    private func save(_ candidate: ArticleCandidate, scope: String, evidenceURL: String, originalURL: String?, eligible: Bool, at now: Date) throws {
+    private func save(_ candidate: ArticleCandidate, scope: String, evidenceURL: String, originalURL: String?, eligible: Bool, document: ArticleDocument? = nil, at now: Date) throws {
         try candidate.validate(at: now)
         guard (candidate.sourceID == "user-import" && scope == "user-local" && evidenceURL == "local-user-confirmation") ||
                 (candidate.sourceID == SourceRegistry.rfc.id && scope == "ietf-full-unmodified" && evidenceURL == SourceRegistry.rfc.licenseURL &&
@@ -96,6 +97,10 @@ struct ArticleAccessError: LocalizedError {
             } else {
                 context.insert(ContentGrantRecord(articleID: candidate.id, sourceID: candidate.sourceID, bodyHash: candidate.bodyHash ?? "",
                     scope: scope, evidenceURL: evidenceURL, originalURL: originalURL, acceptedAt: now, eligibleForDaily: eligible))
+            }
+            if let document {
+                guard ArticleDocumentNormalizer.preservesOriginal(candidate.bodyText ?? "", document: document), let record = try context.fetch(FetchDescriptor<ArticleRecord>()).first(where: { $0.articleID == candidate.id }) else { throw FullTextImportError.incomplete }
+                record.structuredBody = try JSONEncoder().encode(document)
             }
         }
     }

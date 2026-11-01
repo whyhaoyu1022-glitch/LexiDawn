@@ -1,14 +1,40 @@
-# CURRENT · Round 3 架构增量
+# CURRENT · Round 3 架构与数据模型
 
-生产继续使用SwiftUI/SwiftData/RepositoryWriter。ArticleDiscoveryService只持有内存候选；ArticleFetchService使用ephemeral会话、有限重试和HTTPS host核对；ArticleHTMLExtractor与ArticleDocumentNormalizer只调整结构/空白；ArticleQualityValidator与ContentRepository.importFullText在事务前后保护完整正文。canonicalURL和SHA均用于去重，不是阅读入口。
+沿用 SwiftUI → ViewModel/Service → Domain/Repository → RepositoryWriter → SwiftData。网络不在 View，数据库操作在 Repository；UI只维护选择与草稿。每次写使用独立 context，关闭 autosave，同步 save/rollback，读取用新context，不复用失败上下文。
 
-ArticleRecord保留旧bodyText列作为rawContent的原始存储，新增structuredBody、author、rights evidence、extractionVersion、completenessVerifiedAt及收藏/稍后标记。新增可选列用于轻量迁移，不删除原始学习数据。生产启动先冷备份、回填，再将不完整旧记录移入ArticleHistoryArchiveRecord；周期校验可读取分离的历史元数据，但文章库/候选/阅读器不可从归档取正文。迁移失败不清库。真实冻结Round 2 schema升级测试与旧两版schema测试均保留，运行结果待核对。
+## 文章链路
 
-DictionaryAggregator独立并发调用两英语Provider；Local CEDICT保留；DictionaryCacheRepository按语言/lemma/provider/version保存允许缓存的真实义项。个人释义、生词和复习实体独立，清缓存不删用户数据。WordLookupModel用generation丢弃过期UI结果。
+`ArticleSourceRegistry/Audit → ArticleDiscoveryService → ArticleFetchService → ArticleWebPageExtractor/ArticleHTMLExtractor → ArticleDocumentNormalizer/QualityValidator → ContentRepository.importFullText`。候选只在内存，ephemeral URLSession无cookie/磁盘缓存、固定HTTPS白名单重定向、有限重试/退避、最多3来源并行。并发refresh加入同一Task；取消在持久化前检查。失败日志仅来源/诊断码/时间/计数。
 
-MatchingBoard用AnchorPreference与Canvas绘线，两个端点同时禁用；ReviewQueueService在独立事务拒绝复用已完成sense。FSRSScheduler保存S/D/R、计数与算法版本；旧basic日志保持原版本，下一次真实复习事件才转换记忆状态；不把新公式描述为历史用户已经运行过。
+ArticleRecord旧bodyText物理列为rawContent，新增structuredBody、author、rights evidence、extractionVersion、completenessVerifiedAt、favorite/readLater等optional列。正文与结构/证据同事务，canonical和SHA去重；失败不覆盖旧有效版本。个人模式importBasis与出版社授权scope分开。新增 `ArticleContentVersionRecord` 原样保存个人原文旧版本；只解锁后未指派user-local可显式更新，旧完成进度归档，不更改每日原文。
 
-ReaderTextProjection把空白重排映射回原始UTF16偏移；原文和hash不改。TextKit负责点击、结构样式、动态字体；稳定的可见词元AX对象减少布局重建。实际横屏、性能、VoiceOver仍需原生运行验证。
+启动先before-round3冷备份、幂等回填；不完整或授权不可证明旧文章迁入 `ArticleHistoryArchiveRecord`，保留周期/生词/日志引用，不回流推荐/阅读。未知schema/迁移失败保留原库报错，不清库。
+
+## 门禁与阅读器
+
+ArticleLearningAccess以最早未完成周期为current，所有库/历史/收藏/稍后/探索及Reader打开/save/complete复用；全部必做完成且当前学习日有完成周期才允许自由阅读。收藏只改标记。探索开始写真实进度，重置需确认并归档；不会建每日周期。
+
+ReaderTextProjection维护显示重排到原始UTF16映射，raw/hash不变；TextKit渲染原结构、动态字体、点击及复用可见词元AX。版本变化仅按唯一原段落恢复，否则回首并提示。Reader全页/导航/浮窗共用主题。简明词典仅最多2条原始义项（有中文时优先），详情保留全部；嵌套最多3层。
+
+## 词典与生词
+
+DictionaryAggregator并发隔离两英语Provider；本地CEDICT由actor加载。义项按原始POS/内容/来源合并，NL词性与词汇重合、可用时本机句向量排序，不生成或改写词义。DictionaryCacheRepository按语言/lemma/provider/version，30日新鲜；离线旧缓存保留实际获取日期。WordLookupModel generation丢弃过期UI结果。Provider失败不抹掉其他成功结果。
+
+VocabularyEntry保留词形/语境/个人释义/笔记及安全撤销凭据。确认的中文义项ID/原文/证据独立持久化；清缓存不丢用户选择，修改个人释义后切换，固定旧题不变。查询基于一次快照，不逐搜索字符重读数据库。JSON/CSV只由用户主动原生导出，不上传。
+
+VocabularyRecommendationService从真实完整正文提取实际词形与偏移、排除本中lemma，再查真实词典；锁定时拒绝，无结果不补造；详情/嵌套关闭自动加入，仅明确加入写本。
+
+## 复习
+
+MatchingBoard用AnchorPreference/Canvas画Bezier线；双端禁用，ReviewQueueService事务拒绝重复消费。FSRSScheduler为FSRS4.5固定参数DSR实现，保存版本/S/D/间隔/计数/日志。旧basic日志不改写；下次真实复习才转换状态。
+
+题组持久化原句、实际surface答案、整词/短语遮空与明确原文拼写变体，旧题语境安全回填不改变答案/尝试/提示/完成。缺可靠中文阻止出题。回答、反馈、排程、日志和周期同事务；重新载入清理旧输入/反馈。额外复习purpose=extra、extra|sessionID命名空间，不建DailyStudyCycle或重锁探索。
+
+## CI与支持范围
+
+一次Debug test-products编译后，全单元/真实网络/Release关卡，通过才在同工具链/架构4主UI组与2设备专项test-without-building；原始PNG和xcresult失败也上传。旧计数不作当前证明，准确结果见STATUS。产品iOS27保持，当前验证仅已批准iOS26.5/Xcode26.6。单应用单容器MainActor串行写受支持；不承诺跨进程多容器竞争。真机/iOS27/Instruments/完整VoiceOver尚无通过证据。
+
+以下保留历史架构演进记录；旧“未接入”和旧basic排程叙述仅表示当时状态。
 
 ---
 

@@ -1,12 +1,27 @@
-# CURRENT · Round 3验证计划与事实
+# CURRENT · Round 3 验证计划与事实
 
-本轮保留原93 XCTest与20 XCUITest，新增解析、全文准入/丢弃/回滚、版本缓存、多Provider、FSRS、真实冻结Round2磁盘迁移和归档引用测试。另有真实网络Free Dictionary、Wiktionary、Wikipedia空库全文导入测试，名称以testLive开头；URLProtocol故障测试以testInjected标注，不相互替代。
+当前源码 **173 XCTest / 46 XCUITest**，包含原 93 / 20。完整主 UI 自动发现并分为 4 组，每个方法恰好一次；SE 专项 7，大屏专项 3。源码数量不是运行通过数量。对应 SHA、实际失败与重跑结果以 [STATUS](../STATUS.md) 和 [本轮开发记录](reviews/round-3-development-delivery.md) 为准。
 
-UI新增十次旋转正文可见/点词、中央列间隙真实线像素/双端禁用和真实网络空库完整闭环，原20方法不改。冷启动UI通过实际点词和用户填写个人释义建立可靠答案，无预置词条或完成状态。所有新用例执行与失败情况以对应main SHA Actions日志为准。
+## 分层验证
 
-原生截图通过XCTAttachment保留PNG和JSON元数据；export-round3-evidence.py仅复制实际xcresult PNG、核对唯一映射及SHA，导出manifest/CSV/完整ZIP。空manifest或历史截图不算Round 3完整证据。完整功能/失败矩阵、双尺寸、三主题、最大动态字体、VO及Instruments仍需逐项核验。
+| 层级 | 覆盖 | 证据边界 |
+|---|---|---|
+| 原 93 XCTest | 周期证据/分配/唯一性/旧迁移/事务/撤销/阅读/复习/统计/偏好 | 文件与断言保留，不以删除旧测试解决兼容问题 |
+| Round3 确定性 | RSS/Atom/API、URL/SHA、HTML/JSON-LD/实体/结构、全文准入/拒绝/原子回滚/去重、缓存版本/Provider 合并/词形/语境、FSRS 向量、语境拼写/变体、独立额外复习、跨入口/跨日门禁、探索/推荐/导出/确认义项、全文版本保留 | 使用真实 SwiftData/Domain；原创解析数据明确为 fixture |
+| URLProtocol 故障 | 每个配置来源的 403/404/不合格发现/空发现无文章残留；公共抓取的 429/503/超时/取消/主机拒绝；并发加入同一发现事务 | 注入结果不冒称真实官网当次返回该故障 |
+| Live 外网 | >=5 个实际完整来源入库、Wikipedia 空库完整导入、Free Dictionary 和 Wiktionary 真实 noun 英文释义 | 非空断言保留；服务不通会失败，不用 mock/其他 Provider 代替 |
+| 磁盘迁移 | 两版既有旧 schema、冻结 Round2 schema、关系/旧题/进度/词条/日志和全文保留；损坏库备份/重试/真实只读保存故障 | 同模型重开不能冒充迁移；未知 schema 不清库 |
+| 原生 UI | 原20 + 新26：真冷启动闭环、10次旋转正文/点词、真实线像素/双端禁用、全尺寸主题大字、词典/文章失败/保存失败、搜索收藏历史、额外复习、推荐、确认义项与导出、结构/版本变化恢复 | fixture 与生产网络标明；完整 VoiceOver 听读仍待实测 |
 
-已发生的三次编译失败和修正详见[Round 3记录](reviews/round-3-development-delivery.md)。f1a7f3e的Actions已观察到app构建、测试编译和unit步骤success；UI当时仍运行，不把它写成整次CI通过，精确计数待完整日志。
+## 截图和产物
+
+`XCUIScreen.main.screenshot()` 原始 PNG 和 JSON 元数据使用 keepAlways 附件，必须保留 screenshotID、featureID、screenName、state、device、orientation、theme、testName、fixtureOrProduction、fileName、notes。`export-round3-evidence.py` 仅复制真实附件，`merge-round3-evidence.py` 逐张验证 SHA，并生成 manifest/CSV/INDEX.md/原始 ZIP。最终必须来自同一代码运行；不混入旧运行截图或录像重建帧。空 manifest 不能作为交付。
+
+阅读器、连线、词典、库、导入失败、生词/笔记、Again/Hard/Good、锁定/解锁等状态由独立 captureID 对应；新增结构/版本 R10–13、库 L06/L10–12、生词 V10–12/V14–15 补充主要状态。最终覆盖和逐张文件名应从实际产物索引核查，不凭写了截图调用就认定存在。
+
+CI 一次编译所有 Debug 测试产物，Release 另检 fixture 排除；所有单元/真实网络通过后共享原始 test products。4 主分组 + 2 设备专项保留全部方法，分组失败后 fail-fast 取消其余任务，新 main 取消旧运行。失败日志/xcresult/已产生截图仍上传。iOS27 产品目标保持；Actions 使用已批准 Xcode26.6/iOS26.5 兼容模拟器，不等于真机/iOS27/Instruments 验收。
+
+以下是历史时间顺序记录，仅用于追溯；旧“待运行”或测试计数不表示当前状态。
 
 ---
 

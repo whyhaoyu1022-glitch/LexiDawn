@@ -8,6 +8,90 @@ final class Round3UITests: XCTestCase {
         let app = XCUIApplication(); app.launchEnvironment["LEXIDAWN_UI_SCENARIO"] = scenario
         app.launchEnvironment["LEXIDAWN_UI_STORE_ID"] = UUID().uuidString; app.launch(); return app
     }
+    private func choose(_ identifier: String, option: String, app: XCUIApplication) throws {
+        let picker = app.buttons[identifier]
+        for _ in 0..<7 { if picker.exists && picker.isHittable { break }; app.swipeDown() }
+        XCTAssertTrue(picker.isHittable); picker.tap()
+        let value = try XCTUnwrap(app.buttons.matching(NSPredicate(format: "label == %@", option)).allElementsBoundByIndex.first(where: \.isHittable)); value.tap()
+    }
+    func testStructuredOriginalReaderShowsHeadingsQuoteAndList() throws {
+        let app = launch("round3-reader-structure")
+        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
+        let body = app.otherElements["reader-body"].firstMatch; XCTAssertTrue(body.exists)
+        XCTAssertTrue(app.buttons["word-Original"].firstMatch.waitForExistence(timeout: 10))
+        capture("R3-R10", app: app, feature: "reader", state: "structured-original-headings-and-quotation", origin: "explicit-original-HTML-through-real-extractor-and-Repository")
+        let listItem = app.buttons["word-First"].firstMatch
+        for _ in 0..<6 {
+            if listItem.exists && listItem.isHittable { break }
+            let start = body.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
+            start.press(forDuration: 0.05, thenDragTo: body.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45)))
+        }
+        XCTAssertTrue(listItem.isHittable)
+        capture("R3-R11", app: app, feature: "reader", state: "original-list-and-natural-paragraphs", origin: "explicit-original-HTML-through-real-extractor-and-Repository")
+    }
+    func testPersonalOriginalUpdateFormAndChangedVersionRestoreNativeReader() throws {
+        let app = launch("round3-version-change"); openLibrary(app)
+        let edit = app.buttons["更新个人原文"].firstMatch
+        for _ in 0..<7 { if edit.exists && edit.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(edit.isHittable); edit.tap(); XCTAssertTrue(app.navigationBars["更新个人原文"].waitForExistence(timeout: 10))
+        let title = app.textFields["import-title"]; XCTAssertTrue(title.exists); title.tap(); title.typeText(" verified")
+        let rights = app.switches["import-rights"]
+        for _ in 0..<7 { if rights.exists && rights.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(rights.isHittable); let toggle = rights.switches.firstMatch; if toggle.exists { toggle.tap() } else { rights.tap() }
+        capture("R3-R12", app: app, feature: "reader-version", state: "explicit-owned-original-update-confirmation", origin: "explicit-original-version-fixture-real-Repository-update")
+        let save = app.buttons["save-import"]
+        for _ in 0..<5 { if save.exists && save.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(save.isEnabled); XCTAssertTrue(save.isHittable); save.tap()
+        XCTAssertTrue(app.navigationBars["文章库与历史"].waitForExistence(timeout: 10))
+        let read = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).firstMatch
+        for _ in 0..<8 { if read.isHittable { break }; app.swipeDown() }
+        XCTAssertTrue(read.isHittable); read.tap()
+        let notice = app.staticTexts.matching(NSPredicate(format: "label CONTAINS '正文版本已变化'")).firstMatch
+        XCTAssertTrue(notice.waitForExistence(timeout: 10)); XCTAssertTrue(visibleWord(in: app).isHittable)
+        capture("R3-R13", app: app, feature: "reader-version", state: "new-complete-original-restores-unique-old-paragraph", origin: "explicit-original-version-fixture-real-Repository-update")
+    }
+    func testLibraryCategoryTimeSortAndCompletedHistory() throws {
+        let app = launch("round3-explore-catalog"); openLibrary(app)
+        try choose("library-topic-filter", option: "Science", app: app)
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 1)
+        capture("R3-L10", app: app, feature: "library", state: "category-filter-science", origin: "explicit-original-catalog-fixture-real-domain-evidence")
+        try choose("library-topic-filter", option: "全部分类", app: app)
+        let order = app.switches["最新导入优先"]; XCTAssertTrue(order.exists)
+        let toggle = order.switches.firstMatch; if toggle.exists { toggle.tap() } else { order.tap() }
+        capture("R3-L11", app: app, feature: "library", state: "oldest-import-first", origin: "explicit-original-catalog-fixture-real-domain-evidence")
+        try choose("library-mode-filter", option: "历史", app: app)
+        let completed = app.staticTexts["已完成 · 可重读"]
+        for _ in 0..<5 { if completed.exists && completed.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(completed.exists)
+        capture("R3-L12", app: app, feature: "library", state: "completed-article-in-local-history", origin: "explicit-original-catalog-fixture-real-domain-evidence")
+    }
+    func testVocabularyStatusSortConfirmedMeaningAndNativeExportDialogs() throws {
+        let app = launch("gallery-review"); app.tabBars.buttons["词汇"].tap()
+        try choose("vocabulary-status-filter", option: "待复习", app: app)
+        capture("R3-V10", app: app, feature: "vocabulary", state: "due-status-filter", origin: "real-RFC-explicit-personal-vocabulary-fixture")
+        try choose("vocabulary-sort", option: "字母顺序", app: app)
+        capture("R3-V11", app: app, feature: "vocabulary", state: "alphabetical-sort-with-due-dates", origin: "real-RFC-explicit-personal-vocabulary-fixture")
+        let entry = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'vocabulary-entry-'")).firstMatch
+        for _ in 0..<6 { if entry.exists && entry.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(entry.isHittable); entry.tap()
+        let picker = app.buttons["choose-review-meaning"]
+        for _ in 0..<7 { if picker.exists && picker.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(picker.isHittable); picker.tap()
+        let sense = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'review-meaning-'")).firstMatch
+        for _ in 0..<5 { if sense.exists && sense.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(sense.isHittable); sense.tap()
+        XCTAssertTrue(app.staticTexts["复习义项已保存"].waitForExistence(timeout: 10))
+        capture("R3-V12", app: app, feature: "vocabulary", state: "explicit-source-meaning-saved", origin: "real-local-CEDICT-with-explicit-user-selection")
+        app.navigationBars.buttons["生词本"].tap()
+        for (index, title) in ["导出 JSON（完整学习数据）", "导出 CSV"].enumerated() {
+            app.buttons["vocabulary-export"].tap(); app.buttons[title].tap()
+            let filename = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS 'LexiDawn-vocabulary' OR value CONTAINS 'LexiDawn-vocabulary'")).firstMatch
+            XCTAssertTrue(filename.waitForExistence(timeout: 15))
+            capture("R3-V\(index + 14)", app: app, feature: "vocabulary-export", state: index == 0 ? "native-JSON-export-dialog" : "native-CSV-export-dialog", origin: "real-FileDocument-and-native-exporter-fixture-vocabulary")
+            let cancel = app.buttons.matching(NSPredicate(format: "label IN %@", ["Cancel", "取消"])).firstMatch
+            XCTAssertTrue(cancel.exists); cancel.tap(); XCTAssertTrue(app.navigationBars["生词本"].waitForExistence(timeout: 10))
+        }
+    }
     private func capture(_ id: String, app: XCUIApplication, feature: String, state: String, theme: String = "system", origin: String = "fixture-real-rfc-isolated-learning-state") {
         let device = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? UIDevice.current.name
         let identifier = id + "-" + device.map { $0.isLetter || $0.isNumber || $0 == "-" ? String($0) : "-" }.joined()
@@ -270,7 +354,13 @@ final class Round3UITests: XCTestCase {
         openLibrary(app)
         XCTAssertTrue(app.buttons["取消收藏"].waitForExistence(timeout: 10)); XCTAssertTrue(app.buttons["移出稍后阅读"].exists)
         capture("R3-L05", app: app, feature: "library", state: "restart-retains-flags-network-unavailable", origin: "URLProtocol-offline-original-fixture")
-        app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).firstMatch.tap()
+        app.buttons["发现完整文章"].tap()
+        XCTAssertTrue(app.staticTexts["无法导入完整文章，未添加到本地文章库。"].waitForExistence(timeout: 15))
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 1)
+        capture("R3-L06", app: app, feature: "library", state: "refresh-failed-existing-complete-local-version-preserved", origin: "URLProtocol-offline-original-fixture")
+        let local = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).firstMatch
+        for _ in 0..<6 { if local.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(local.isHittable); local.tap()
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'word-'")).firstMatch.waitForExistence(timeout: 10))
         capture("R3-R05", app: app, feature: "reader", state: "local-fulltext-with-failing-network", origin: "URLProtocol-offline-original-fixture")
     }
