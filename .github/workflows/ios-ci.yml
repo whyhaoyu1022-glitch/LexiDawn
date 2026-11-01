@@ -154,6 +154,19 @@ jobs:
             echo "::error::UI result bundle missing; screenshots cannot be exported."
             exit 1
           fi
+      - name: Index Round 3 native evidence and package original PNG ZIP
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/export-round3-evidence.py "${RUNNER_TEMP}/LexiDawn-screenshots" artifacts/round-3/screenshots
+      - name: Upload Round 3 screenshot index and original PNG ZIP
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LexiDawn-round3-evidence-${{ github.run_id }}
+          path: artifacts/round-3
+          if-no-files-found: error
       - name: Upload original screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -172,3 +185,4 @@ jobs:
             ${{ runner.temp }}/LexiDawn-unit.log
             ${{ runner.temp }}/LexiDawn-ui.log
           if-no-files-found: warn
+

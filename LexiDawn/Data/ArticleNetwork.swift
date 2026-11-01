@@ -2,8 +2,8 @@ import Foundation
 
 actor ArticleFetchService {
     private let session: URLSession
-    init() {
-        let configuration = URLSessionConfiguration.ephemeral
+    init(configuration supplied: URLSessionConfiguration? = nil) {
+        let configuration = supplied ?? URLSessionConfiguration.ephemeral
         configuration.urlCache = nil; configuration.httpCookieStorage = nil
         configuration.timeoutIntervalForRequest = 20; configuration.timeoutIntervalForResource = 45
         configuration.httpMaximumConnectionsPerHost = 2
@@ -66,7 +66,7 @@ enum OfficialArticleAPI {
         do {
             let endpoint = try OfficialArticleAPI.url(host: "en.wikipedia.org", fields: ["action": "query", "format": "json", "formatversion": "2", "generator": "categorymembers", "gcmtitle": "Category:Featured_articles", "gcmlimit": "3", "gcmnamespace": "0", "prop": "info", "inprop": "url"])
             let candidates = try OfficialArticleAPI.discovery(await fetcher.fetch(endpoint, allowedHost: "en.wikipedia.org"))
-            var count = 0
+            var count = 0, failures = 0
             for candidate in candidates {
                 try Task.checkCancellation()
                 guard let revision = candidate.revision else { continue }
@@ -83,8 +83,9 @@ enum OfficialArticleAPI {
                         rights: ArticleSourceRegistry.wikipediaRights, completeDocument: true, expectedHash: nil, verifiedAt: now)
                     if try content.importFullText(item, at: now) { count += 1 }
                 } catch is CancellationError { throw CancellationError() }
-                catch { /* Candidate is discarded. Never log its URL, title or body. */ }
+                catch { failures += 1 /* Candidate discarded; no URL, title or body in diagnostics. */ }
             }
+            if failures > 0 && count == 0 { throw FullTextImportError.incomplete }
             lastSuccess = now
             return count
         } catch is CancellationError { throw CancellationError() }

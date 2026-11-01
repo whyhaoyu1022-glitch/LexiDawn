@@ -45,12 +45,30 @@ struct InteractiveEnglishText: UIViewRepresentable {
                 coordinator.projection = ReaderTextProjection(raw: text, document: document)
                 coordinator.tokens = EnglishTokenizer.tokens(in: coordinator.projection.text); coordinator.renderedText = text
             }
+            coordinator.restored = false
             coordinator.renderKey = key
             let font = UIFontMetrics(forTextStyle: .body).scaledFont(for: UIFont(name: "Georgia", size: CGFloat(fontSize)) ?? .systemFont(ofSize: CGFloat(fontSize)))
             let paragraph = NSMutableParagraphStyle(); paragraph.lineHeightMultiple = CGFloat(lineSpacing); paragraph.paragraphSpacing = 10
             let foreground: UIColor = theme == "dark" ? .init(white: 0.9, alpha: 1) : theme == "paper" ? .init(red: 0.19, green: 0.16, blue: 0.12, alpha: 1) : theme == "light" ? .black : .label
             view.backgroundColor = theme == "dark" ? .init(white: 0.08, alpha: 1) : theme == "paper" ? .init(red: 0.97, green: 0.94, blue: 0.87, alpha: 1) : theme == "light" ? .white : .systemBackground
-            view.attributedText = NSAttributedString(string: coordinator.projection.text, attributes: [.font: font, .paragraphStyle: paragraph, .foregroundColor: foreground])
+            let attributed = NSMutableAttributedString(string: coordinator.projection.text, attributes: [.font: font, .paragraphStyle: paragraph, .foregroundColor: foreground])
+            if let document, coordinator.projection.text == document.text {
+                let ns = document.text as NSString
+                var cursor = 0
+                for block in document.blocks {
+                    let range = ns.range(of: block.text, range: NSRange(location: cursor, length: ns.length - cursor))
+                    guard range.location != NSNotFound else { continue }
+                    if block.kind == .heading {
+                        attributed.addAttribute(.font, value: UIFontMetrics(forTextStyle: .headline).scaledFont(for: .systemFont(ofSize: CGFloat(fontSize + 3), weight: .bold)), range: range)
+                    } else if block.kind == .quotation || block.kind == .listItem {
+                        let indented = paragraph.mutableCopy() as! NSMutableParagraphStyle
+                        indented.headIndent = 16; indented.firstLineHeadIndent = 16
+                        attributed.addAttribute(.paragraphStyle, value: indented, range: range)
+                    }
+                    cursor = NSMaxRange(range)
+                }
+            }
+            view.attributedText = attributed
             view.setContentOffset(oldOffset, animated: false)
         }
         DispatchQueue.main.async { [weak coordinator] in coordinator?.restorePosition(); coordinator?.updateAccessibility() }
@@ -69,6 +87,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
         var lastAccessibilityUpdate = Date.distantPast
         var lastBounds: CGSize = .zero
         var rotationOffset: Int?
+        private var wordElements: [Int: WordAccessibilityElement] = [:]
         init(_ parent: InteractiveEnglishText) { self.parent = parent }
         func restorePosition() {
             if let view, view.bounds.size != lastBounds, view.bounds.width > 0, view.bounds.height > 0 {
@@ -106,7 +125,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
             return EnglishTokenizer.token(at: manager.characterIndexForGlyph(at: glyph), tokens: tokens)
         }
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
-            guard restored, let view else { return }
+            guard restored, let view, view.bounds.size == lastBounds else { return }
             let textLength = (parent.text as NSString).length
             guard textLength > 0, view.contentSize.height > 0 else { return }
             let point = CGPoint(x: 1, y: max(0, view.contentOffset.y))
@@ -123,8 +142,11 @@ struct InteractiveEnglishText: UIViewRepresentable {
             let glyphs = view.layoutManager.glyphRange(forBoundingRect: visible, in: view.textContainer)
             let chars = view.layoutManager.characterRange(forGlyphRange: glyphs, actualGlyphRange: nil)
             var elements: [UIAccessibilityElement] = []
+            var retained: [Int: WordAccessibilityElement] = [:]
             for token in tokens where NSIntersectionRange(token.range, chars).length > 0 {
-                let element = WordAccessibilityElement(accessibilityContainer: accessibilityContainer)
+                let sourceOffset = projection.rawOffset(token.range.location)
+                let element = wordElements[sourceOffset] ?? WordAccessibilityElement(accessibilityContainer: accessibilityContainer)
+                retained[sourceOffset] = element
                 element.accessibilityLabel = token.surface; element.accessibilityTraits = .button
                 element.accessibilityIdentifier = "word-\(token.surface)"
                 element.accessibilityValue = "\(projection.rawOffset(token.range.location))"
@@ -138,6 +160,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
                 }
                 elements.append(element)
             }
+            wordElements = retained
             accessibilityContainer.accessibilityElements = elements
         }
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) { updateAccessibility() }

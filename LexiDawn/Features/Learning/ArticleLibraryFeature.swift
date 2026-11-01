@@ -59,7 +59,7 @@ struct ArticleLibraryView: View {
     private func load() { do { items = try learning.content.library(); error = nil } catch { self.error = error.localizedDescription } }
     private func flags(_ item: ArticleLibraryItem, favorite: Bool? = nil, later: Bool? = nil) {
         do { try learning.content.setLibraryFlags(articleID: item.id, favorite: favorite, readLater: later); learning.changed(); error = nil }
-        catch { error = error.localizedDescription }
+        catch { self.error = error.localizedDescription }
     }
     private func refresh() async {
         guard !loading else { return }; loading = true; defer { loading = false }
