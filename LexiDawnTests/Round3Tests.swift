@@ -12,6 +12,31 @@ private actor CacheRequestProbe: DictionaryProvider {
 
 @MainActor final class Round3Tests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 1793534400)
+    func testPersonalOriginalUpdateKeepsVersionRestoresAnchorAndRollsBackSaveFailure() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let dailyID = try learning.content.importArticle(.init(title: "Explicit daily fixture", body: "A complete daily original article.", source: "Fixture author", rightsConfirmed: true), at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        _ = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        try learning.reader.complete(articleID: dailyID, cycleID: cycle.cycleID, manualConfirmation: true, at: now)
+        let old = "Original first paragraph.\n\nA unique original second paragraph remains preserved."
+        let id = try learning.content.importArticle(.init(title: "Personal original", body: old, source: "Fixture author", rightsConfirmed: true, eligibleForDaily: false), at: now)
+        let paragraph = "A unique original second paragraph remains preserved."
+        try learning.reader.save(articleID: id, cycleID: nil, position: .init(percent: 0.5, anchor: fingerprint(paragraph), offset: 27), at: now)
+        let updated = "A new original introduction.\n\n" + old
+        let draft = ArticleImportDraft(title: "Updated original", body: updated, source: "Fixture author", rightsConfirmed: true, eligibleForDaily: false)
+        try learning.content.updateOriginal(articleID: id, draft: draft, at: now)
+        let article = try learning.openExplore(articleID: id, at: now), position = try learning.reader.position(article: article, cycleID: nil)
+        XCTAssertTrue(position.contentChanged); XCTAssertEqual(position.percent, 0)
+        XCTAssertEqual(position.offset, (updated as NSString).range(of: paragraph).location)
+        let versions = try ModelContext(app.modelContainer).fetch(FetchDescriptor<ArticleContentVersionRecord>())
+        XCTAssertEqual(versions.count, 1); XCTAssertEqual(versions.first?.rawContent, old)
+        XCTAssertThrowsError(try learning.content.updateOriginal(articleID: dailyID, draft: draft, at: now))
+        let failing = ContentRepository(context: ModelContext(app.modelContainer), saveContext: { _ in throw LearningError.invalid("Explicit version save fault") })
+        XCTAssertThrowsError(try failing.updateOriginal(articleID: id, draft: .init(title: "Failed update", body: "A different complete original that must roll back.", source: "Fixture author", rightsConfirmed: true), at: now))
+        XCTAssertEqual(try learning.content.read(articleID: id, at: now).body, updated)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ArticleContentVersionRecord>()), 1)
+        XCTAssertEqual(try learning.cycles.fetchAll().count, 1)
+    }
     private var webBody: String { (1...3).map { "<p>Paragraph \($0) is explicit original fixture writing. Science helps people understand nature and share discoveries. Every sentence in this complete document is preserved for a deterministic parser test, including the final sentence.</p>" }.joined() }
     func testConfirmedDictionaryMeaningIsUsedAndSavedQuestionCannotBeRewritten() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)

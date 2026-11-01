@@ -151,6 +151,7 @@ struct LiveTodayView: View {
 
 struct ArticleImportView: View {
     @ObservedObject var learning: LearningServices
+    var editingArticleID: String? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var title = ""
     @State private var bodyText = ""
@@ -177,13 +178,21 @@ struct ArticleImportView: View {
                     Text("此确认不是第三方版权授权。内容不会公开分发或自动上传，也不会根据链接抓取正文。不会替换旧未完成任务。").font(.caption).foregroundStyle(.secondary)
                 }
                 if let error { Text(error).foregroundStyle(.red) }
-                Button("保存到本地文章库") {
+                Button(editingArticleID == nil ? "保存到本地文章库" : "更新本地完整原文") {
                     do {
-                        _ = try learning.content.importArticle(ArticleImportDraft(title: title, body: bodyText, source: source, originalURL: originalURL, topic: topic, rightsConfirmed: rights, eligibleForDaily: eligible), at: Date())
+                        let draft = ArticleImportDraft(title: title, body: bodyText, source: source, originalURL: originalURL, topic: topic, rightsConfirmed: rights, eligibleForDaily: eligible)
+                        if let editingArticleID { try learning.content.updateOriginal(articleID: editingArticleID, draft: draft, at: Date()) }
+                        else { _ = try learning.content.importArticle(draft, at: Date()) }
                         learning.changed(); dismiss()
                     } catch { self.error = error.localizedDescription }
                 }.disabled(!rights).accessibilityIdentifier("save-import")
-            }.scrollDismissesKeyboard(.interactively).navigationTitle("合法导入文章").toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } } }
+            }.scrollDismissesKeyboard(.interactively).navigationTitle(editingArticleID == nil ? "合法导入文章" : "更新个人原文")
+                .task {
+                    guard let editingArticleID else { return }
+                    do { let draft = try learning.content.originalForEditing(articleID: editingArticleID, at: Date()); title = draft.title; bodyText = draft.body; source = draft.source; originalURL = draft.originalURL; topic = draft.topic; eligible = draft.eligibleForDaily }
+                    catch { self.error = error.localizedDescription }
+                }
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } } }
                 .interactiveDismissDisabled()
         }
     }
