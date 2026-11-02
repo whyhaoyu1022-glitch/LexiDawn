@@ -4,6 +4,13 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: 'export: run only the export diagnostic first; full regression follows only on success'
+        type: choice
+        options: [full, export]
+        default: full
 
 # A newer main commit supersedes stale verification; its complete suite is still required.
 concurrency:
@@ -11,7 +18,73 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  export-check:
+    name: Export diagnostic · one UI method
+    if: ${{ inputs.scope == 'export' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[export-only]')) }}
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/ci-prepare.sh
+      - name: Compile tests for isolated export diagnostic
+        run: |
+          set -euo pipefail
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/export-derived" -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -configuration Debug IPHONEOS_DEPLOYMENT_TARGET=26.5 CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone build-for-testing 2>&1 | tee "${RUNNER_TEMP}/export-build.log"
+      - run: bash scripts/ci-simulator.sh iPhone-17-Pro
+      - name: Test only real vocabulary export cancellation and JSON CSV save
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          TEST_RUN_FILE="$(python3 -c 'import os,pathlib; print(next((pathlib.Path(os.environ["RUNNER_TEMP"])/"export-derived/Build/Products").glob("*.xctestrun")))')"
+          xcodebuild test-without-building -xctestrun "$TEST_RUN_FILE" -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/export.xcresult" -only-testing:LexiDawnUITests/Round3UITests/testVocabularyStatusSortConfirmedMeaningAndNativeExportDialogs 2>&1 | tee "${RUNNER_TEMP}/export-ui.log"
+      - name: Verify exactly one diagnostic test completed
+        run: |
+          python3 - <<'PYEXPORT'
+          import os, pathlib, re
+          log = (pathlib.Path(os.environ['RUNNER_TEMP']) / 'export-ui.log').read_text()
+          counts = re.findall(r'Executed (\d+) tests?, with (\d+) failures', log)
+          assert counts and all(value == ('1', '0') for value in counts), counts
+          print('Exactly one export UI method completed with zero failures.')
+          PYEXPORT
+      - name: Export diagnostic native attachments even on failure
+        if: always()
+        run: |
+          if [[ -f "${RUNNER_TEMP}/export.xcresult/Info.plist" ]]; then
+            xcrun xcresulttool export attachments --path "${RUNNER_TEMP}/export.xcresult" --output-path "${RUNNER_TEMP}/export-attachments"
+            python3 scripts/export-round3-evidence.py "${RUNNER_TEMP}/export-attachments" "${RUNNER_TEMP}/export-evidence"
+          fi
+      - uses: actions/upload-artifact@v4
+        id: upload_export
+        if: always()
+        continue-on-error: true
+        with:
+          name: LexiDawn-export-check-${{ github.run_id }}-${{ github.run_attempt }}
+          compression-level: 0
+          path: |
+            ${{ runner.temp }}/export-build.log
+            ${{ runner.temp }}/export-ui.log
+            ${{ runner.temp }}/export.xcresult
+            ${{ runner.temp }}/export-attachments
+            ${{ runner.temp }}/export-evidence
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        name: Retry export diagnostic evidence upload
+        if: ${{ always() && steps.upload_export.outcome == 'failure' }}
+        with:
+          name: LexiDawn-export-check-${{ github.run_id }}-${{ github.run_attempt }}
+          overwrite: true
+          compression-level: 0
+          path: |
+            ${{ runner.temp }}/export-build.log
+            ${{ runner.temp }}/export-ui.log
+            ${{ runner.temp }}/export.xcresult
+            ${{ runner.temp }}/export-attachments
+            ${{ runner.temp }}/export-evidence
+          if-no-files-found: error
+
   build-and-test:
+    needs: export-check
+    if: ${{ always() && !cancelled() && (needs.export-check.result == 'success' || needs.export-check.result == 'skipped') }}
     name: Build once, complete unit and network gate
     runs-on: macos-latest
     outputs:

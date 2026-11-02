@@ -53,24 +53,10 @@ struct VocabularyListView: View {
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in load() }
                 .toolbar { Menu("导出生词", systemImage: "square.and.arrow.up") { Button("导出 JSON（完整学习数据）") { prepareExport(.json) }; Button("导出 CSV") { prepareExport(.csv) } }.accessibilityIdentifier("vocabulary-export") }
                 .sheet(item: $exportFile, onDismiss: clearExport) { file in
-                    VStack(spacing: 0) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("导出生词").font(.headline)
-                                // This is the actual staged file's name, also readable by
-                                // VoiceOver when the system provider omits its filename field.
-                                Text(file.url.lastPathComponent).font(.subheadline)
-                                    .accessibilityIdentifier("vocabulary-export-filename")
-                            }
-                            Spacer()
-                            Button("取消") { exportFile = nil }.accessibilityIdentifier("cancel-vocabulary-export")
-                        }.padding()
-                        Divider()
-                        VocabularyExportPicker(file: file) { destination in
-                            guard exportFile?.id == file.id else { return }
-                            if let destination { exportNotice = "已导出 " + destination.lastPathComponent }
-                            exportFile = nil
-                        }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    VocabularyExportPicker(file: file) { destination in
+                        guard exportFile?.id == file.id else { return }
+                        if let destination { exportNotice = "已导出 " + destination.lastPathComponent }
+                        exportFile = nil
                     }.presentationDetents([.large])
                 }
                 .alert("确认移除生词？", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })) {
@@ -101,13 +87,47 @@ struct VocabularyExportPicker: UIViewControllerRepresentable {
     let file: VocabularyExportFile
     let finished: (URL?) -> Void
     func makeCoordinator() -> Coordinator { Coordinator(finished: finished) }
-    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+    func makeUIViewController(context: Context) -> UIViewController {
+        let container = UIViewController()
+        container.view.backgroundColor = .systemBackground
+        let filename = UILabel()
+        filename.text = file.url.lastPathComponent
+        filename.font = .preferredFont(forTextStyle: .subheadline)
+        filename.adjustsFontForContentSizeCategory = true
+        filename.numberOfLines = 0
+        filename.accessibilityIdentifier = "vocabulary-export-filename"
+        let cancel = UIButton(type: .system)
+        cancel.setTitle("取消", for: .normal)
+        cancel.accessibilityIdentifier = "cancel-vocabulary-export"
+        cancel.addAction(UIAction { _ in finished(nil) }, for: .touchUpInside)
+        cancel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        let header = UIStackView(arrangedSubviews: [filename, cancel])
+        header.axis = .horizontal; header.alignment = .center; header.spacing = 16
+        header.translatesAutoresizingMaskIntoConstraints = false
+        container.view.addSubview(header)
         let picker = UIDocumentPickerViewController(forExporting: [file.url], asCopy: true)
         picker.shouldShowFileExtensions = true
         picker.delegate = context.coordinator
-        return picker
+        container.addChild(picker)
+        picker.view.translatesAutoresizingMaskIntoConstraints = false
+        container.view.addSubview(picker.view)
+        let safe = container.view.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            header.topAnchor.constraint(equalTo: safe.topAnchor),
+            header.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 16),
+            header.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -16),
+            header.heightAnchor.constraint(greaterThanOrEqualToConstant: 56),
+            cancel.widthAnchor.constraint(greaterThanOrEqualToConstant: 60),
+            cancel.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
+            picker.view.topAnchor.constraint(equalTo: header.bottomAnchor),
+            picker.view.leadingAnchor.constraint(equalTo: safe.leadingAnchor),
+            picker.view.trailingAnchor.constraint(equalTo: safe.trailingAnchor),
+            picker.view.bottomAnchor.constraint(equalTo: safe.bottomAnchor)
+        ])
+        picker.didMove(toParent: container)
+        return container
     }
-    func updateUIViewController(_ controller: UIDocumentPickerViewController, context: Context) { }
+    func updateUIViewController(_ controller: UIViewController, context: Context) { }
     @MainActor final class Coordinator: NSObject, UIDocumentPickerDelegate {
         let finished: (URL?) -> Void
         init(finished: @escaping (URL?) -> Void) { self.finished = finished }

@@ -1,6 +1,6 @@
 # CURRENT · Round 3 开发与验证中（2026-11-02）
 
-负责人批准Free Dictionary为可选不稳定来源：空/失败时明确提示，保留Wiktionary及可用缓存；仅该真实可用性探测的外部不可用可XCTSkip并单独报告，解析错误和非空noun断言仍严格验证，Wiktionary真实联网仍强制。最新41420744836编译通过，184测试/2失败（Free三次404、推荐测试跨日时钟）；本次同时统一测试时钟并增加次日重新锁定断言。源码185/49、138截图状态，待新CI。 [授权范围、证据与规格依据](docs/reviews/round-3-optional-free-dictionary-41420744836.md)。
+最新41423920944：185单元/0失败，主full-2 12/0、full-3 13/0，SE/大屏成功；导出文件名已通过，失败在取消按钮落入状态栏、点击点{-1,-1}导致窗口未关闭。已改为受安全区域约束的原生容器，保留所有取消/Save断言。本次[export-only]提交先跑一个导出UI；成功才自动全量，失败则停止，不再先浪费全量运行。新专项尚未验证。 [现场证据、规格与执行规则](docs/reviews/round-3-export-focused-41423920944.md)。
 
 尚未达到统一验收条件。**本次源码清单为 185 XCTest / 49 XCUITest，包含原 93 / 20；新增清单不是通过结果。** 所有远端开发直接提交 main，没有新建分支。本次修复将由新的 Actions 验证，准确 SHA 与运行链接见 GitHub main/Actions。
 
@@ -8,6 +8,7 @@
 
 | 代码 SHA | Actions | 实际结果 |
 |---|---|---|
+| 80ffd4446b665968eac2101ad51c74f9e8b6a829 | [41423920944](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41423920944) | Debug/Release、185单元/0失败；full-2 12/0、full-3 13/0，SE/大屏成功；full-4导出取消失败13/1，full-1取消，尚未统一通过。 |
 | 954b30b6ee38059c16560eb68c661329dd439d35 | [41420744836](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41420744836) | Debug/Release通过；184单元/2失败（Free真实404、推荐测试日期不一致）；Wiktionary真实成功，UI跳过。 |
 | 03a4b0edad02a18de2d644822b545536d45dd92d | [41361046807](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41361046807) | Debug/Release和测试目标编译成功；182单元/1失败（Free真实book三次404）；UI及合并跳过，整次失败。 |
 | 714db6605df7c0cf578d63bcf94ba09d6486b3a1 | [41357763875](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41357763875) | Debug/Release、182单元/0失败；full-2 12/0、SE7/0、大屏3/0；full-4 13/1及上传超时，其他取消，整次失败。 |

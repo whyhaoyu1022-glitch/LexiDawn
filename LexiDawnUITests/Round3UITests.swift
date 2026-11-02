@@ -102,7 +102,10 @@ final class Round3UITests: XCTestCase {
             let expectedName = index == 0 ? "LexiDawn-vocabulary.json" : "LexiDawn-vocabulary.csv"
             XCTAssertEqual(app.staticTexts["vocabulary-export-filename"].label, expectedName)
             if index == 0 {
-                app.buttons["cancel-vocabulary-export"].tap()
+                let cancel = app.buttons["cancel-vocabulary-export"]
+                XCTAssertTrue(cancel.isHittable)
+                XCTAssertGreaterThanOrEqual(cancel.frame.height, 44)
+                cancel.tap()
                 expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: exporterBar)
                 waitForExpectations(timeout: 10)
                 XCTAssertFalse(app.staticTexts["vocabulary-export-completed"].exists)

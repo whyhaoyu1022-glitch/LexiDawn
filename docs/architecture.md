@@ -1,6 +1,6 @@
 # CURRENT · Round 3 架构与数据模型
 
-负责人批准Free Dictionary为可选不稳定来源：空/失败时明确提示，保留Wiktionary及可用缓存；仅该真实可用性探测的外部不可用可XCTSkip并单独报告，解析错误和非空noun断言仍严格验证，Wiktionary真实联网仍强制。最新41420744836编译通过，184测试/2失败（Free三次404、推荐测试跨日时钟）；本次同时统一测试时钟并增加次日重新锁定断言。源码185/49、138截图状态，待新CI。 [授权范围、证据与规格依据](reviews/round-3-optional-free-dictionary-41420744836.md)。
+最新41423920944：185单元/0失败，主full-2 12/0、full-3 13/0，SE/大屏成功；导出文件名已通过，失败在取消按钮落入状态栏、点击点{-1,-1}导致窗口未关闭。已改为受安全区域约束的原生容器，保留所有取消/Save断言。本次[export-only]提交先跑一个导出UI；成功才自动全量，失败则停止，不再先浪费全量运行。新专项尚未验证。 [现场证据、规格与执行规则](reviews/round-3-export-focused-41423920944.md)。
 
 沿用 SwiftUI → ViewModel/Service → Domain/Repository → RepositoryWriter → SwiftData。网络不在 View，数据库操作在 Repository；UI只维护选择与草稿。每次写使用独立 context，关闭 autosave，同步 save/rollback，读取用新context，不复用失败上下文。
 
