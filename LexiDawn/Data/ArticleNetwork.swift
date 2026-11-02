@@ -10,8 +10,8 @@ actor ArticleFetchService {
         configuration.httpMaximumConnectionsPerHost = 2
         session = URLSession(configuration: configuration)
     }
-    func fetch(_ url: URL, allowedHost: String) async throws -> Data { try await fetch(url, allowedHosts: [allowedHost]) }
-    func fetch(_ url: URL, allowedHosts: Set<String>) async throws -> Data {
+    func fetch(_ url: URL, allowedHost: String, revalidate: Bool = false) async throws -> Data { try await fetch(url, allowedHosts: [allowedHost], revalidate: revalidate) }
+    func fetch(_ url: URL, allowedHosts: Set<String>, revalidate: Bool = false) async throws -> Data {
         guard url.scheme == "https", allowedHosts.contains(url.host ?? ""), url.user == nil, url.password == nil else { throw FullTextImportError.transport }
         for attempt in 0..<3 {
             try Task.checkCancellation()
@@ -21,6 +21,11 @@ actor ArticleFetchService {
             var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
             request.setValue("LexiDawn/0.3 (personal offline reader; https://github.com/whyhaoyu1022-glitch/LexiDawn)", forHTTPHeaderField: "User-Agent")
             request.setValue("application/json, application/rss+xml, application/atom+xml, application/xml, text/html;q=0.9, */*;q=0.1", forHTTPHeaderField: "Accept")
+            if revalidate {
+                // A local cache policy alone does not ask intermediary caches to revalidate.
+                request.setValue("no-cache, max-age=0", forHTTPHeaderField: "Cache-Control")
+                request.setValue("no-cache", forHTTPHeaderField: "Pragma")
+            }
             do {
                 let (data, response) = try await session.data(for: request, delegate: ArticleRedirectGuard(hosts: allowedHosts))
                 try Task.checkCancellation()
@@ -33,7 +38,7 @@ actor ArticleFetchService {
                 }
                 guard http.statusCode == 200 else {
                     let sourceID = ArticleSourceRegistry.personalSources.first { $0.hosts.contains(url.host ?? "") }?.id ?? (url.host ?? "unknown")
-                    print("ARTICLE_HTTP_DIAGNOSTIC sourceID=\(sourceID) status=\(http.statusCode) attempt=\(attempt + 1)")
+                    print("ARTICLE_HTTP_DIAGNOSTIC sourceID=\(sourceID) status=\(http.statusCode) attempt=\(attempt + 1) revalidate=\(revalidate)")
                     throw http.statusCode == 429 ? FullTextImportError.rateLimited : http.statusCode == 404 ? FullTextImportError.notFound : FullTextImportError.transport
                 }
                 guard data.count <= 4_000_000, !data.isEmpty else { throw FullTextImportError.incomplete }

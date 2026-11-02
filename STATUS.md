@@ -1,13 +1,14 @@
 # CURRENT · Round 3 开发与验证中（2026-11-02）
 
-最新核查运行41357763875：182单元/0失败、主full-2 12/0、SE7/0、大屏3/0；full-4导出文件名断言失败（13/1），上传CreateArtifact另连续超时，其他取消。full-3获runner晚约11分钟，不能把排队/未完成视为失败。本次补充真实文件名可访问显示、系统实际保存回调反馈、取消/重试/过期结果保护，以及附件上传重试；原文件名断言保留并扩展到真实Save。新增三项截图要求，共137项，新原生复验待CI。 [核查证据与规格依据](docs/reviews/round-3-ci-41357763875-repair.md)。
+最新核查41361046807：Debug/Release及测试目标编译成功；182 XCTest中181通过、Free Dictionary真实book查词1失败，三次HTTP404；UI和合并全部跳过。本次为404后的限次请求加入中间缓存重新验证头，保留原接口/词条及真实非空noun断言；新增2确定性测试，源码184/49，原生复验待新CI。持续真实404仍必须报失败，不冒称外网已恢复。 [失败证据、规格及验证边界](docs/reviews/round-3-ci-41361046807-repair.md)。
 
-尚未达到统一验收条件。**本次源码清单为 182 XCTest / 49 XCUITest，包含原 93 / 20；新增清单不是通过结果。** 所有远端开发直接提交 main，没有新建分支。本次修复将由新的 Actions 验证，准确 SHA 与运行链接见 GitHub main/Actions。
+尚未达到统一验收条件。**本次源码清单为 184 XCTest / 49 XCUITest，包含原 93 / 20；新增清单不是通过结果。** 所有远端开发直接提交 main，没有新建分支。本次修复将由新的 Actions 验证，准确 SHA 与运行链接见 GitHub main/Actions。
 
 ## 最近已核验结果
 
 | 代码 SHA | Actions | 实际结果 |
 |---|---|---|
+| 03a4b0edad02a18de2d644822b545536d45dd92d | [41361046807](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41361046807) | Debug/Release和测试目标编译成功；182单元/1失败（Free真实book三次404）；UI及合并跳过，整次失败。 |
 | 714db6605df7c0cf578d63bcf94ba09d6486b3a1 | [41357763875](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41357763875) | Debug/Release、182单元/0失败；full-2 12/0、SE7/0、大屏3/0；full-4 13/1及上传超时，其他取消，整次失败。 |
 | 0126709082265a3b2648b502772df889488c4b9f | [41326351407](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41326351407) | Debug/Release、180单元/0失败；SE7/0、大屏3/0；full-4 13/1导出失败，其余取消，整次失败。 |
 | 89ccd99e7978006470d36e7814ba64c1114438bc | [41318724181](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41318724181) | Debug/Release、180 XCTest/0失败，真实10源29篇；大屏3/0；SE7/1，主UI另发现重置确认与空库文案失败；其余取消，整次失败。 |

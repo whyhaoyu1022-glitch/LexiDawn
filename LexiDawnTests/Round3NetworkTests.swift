@@ -35,9 +35,49 @@ private final class Round3FaultURLProtocol: URLProtocol, @unchecked Sendable {
         catch { XCTAssertEqual(error.localizedDescription, FullTextImportError.transport.localizedDescription); XCTAssertFalse(error.localizedDescription.contains("fixture.invalid")) }
     }
     func testInjectedDictionary404IsARevalidatedEmptyResultNotFabricatedDefinition() async throws {
-        let provider = FreeDictionaryProvider(fetcher: client(status: 404))
+        let fetcher = client(status: 404)
+        var requests: [URLRequest] = []
+        Round3FaultURLProtocol.handler = { request in
+            requests.append(request)
+            return (HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: "HTTP/1.1", headerFields: nil)!, Data("Explicit unknown-word fixture".utf8))
+        }
+        let provider = FreeDictionaryProvider(fetcher: fetcher)
         let result = try await provider.lookup("explicit-unknown-fixture")
         XCTAssertTrue(result.isEmpty)
+        XCTAssertEqual(requests.count, 3)
+        XCTAssertNil(requests.first?.value(forHTTPHeaderField: "Cache-Control"))
+        XCTAssertTrue(requests.dropFirst().allSatisfy { $0.value(forHTTPHeaderField: "Cache-Control") == "no-cache, max-age=0" && $0.value(forHTTPHeaderField: "Pragma") == "no-cache" })
+        XCTAssertEqual(Set(requests.compactMap(\.url)).count, 1)
+    }
+    func testInjectedDictionaryNegativeCacheRevalidationReturnsOnlyRealResponseDefinitions() async throws {
+        let fetcher = client()
+        var requests: [URLRequest] = []
+        let response = Data(#"[{"word":"book","meanings":[{"partOfSpeech":"noun","definitions":[{"definition":"Explicit original provider fixture definition."}]}]}]"#.utf8)
+        Round3FaultURLProtocol.handler = { request in
+            requests.append(request)
+            let revalidated = request.value(forHTTPHeaderField: "Cache-Control") == "no-cache, max-age=0" && request.value(forHTTPHeaderField: "Pragma") == "no-cache"
+            return (HTTPURLResponse(url: request.url!, statusCode: revalidated ? 200 : 404, httpVersion: "HTTP/1.1", headerFields: nil)!, revalidated ? response : Data("Explicit cached-negative fixture".utf8))
+        }
+        let senses = try await FreeDictionaryProvider(fetcher: fetcher).lookup("book")
+        XCTAssertEqual(requests.count, 2)
+        XCTAssertEqual(Set(requests.compactMap(\.url)).count, 1)
+        XCTAssertEqual(requests.first?.url?.absoluteString, "https://api.dictionaryapi.dev/api/v2/entries/en/book")
+        XCTAssertEqual(senses.map(\.en), ["Explicit original provider fixture definition."])
+        XCTAssertEqual(senses.first?.partOfSpeech, "noun")
+        XCTAssertEqual(senses.first?.sources, ["Free Dictionary API"])
+    }
+    func testCancelledDictionaryLookupDoesNotStartRequestsOrReturnEmptySuccess() async {
+        let fetcher = client()
+        var count = 0
+        Round3FaultURLProtocol.handler = { request in
+            count += 1
+            return (HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: "HTTP/1.1", headerFields: nil)!, Data("Explicit fixture".utf8))
+        }
+        let task = Task { try await FreeDictionaryProvider(fetcher: fetcher).lookup("book") }
+        task.cancel()
+        do { _ = try await task.value; XCTFail("Cancellation cannot become an empty successful lookup") }
+        catch { XCTAssertTrue(error is CancellationError) }
+        XCTAssertEqual(count, 0)
     }
     func testConcurrentRefreshJoinsOneOperationAndReportsSameCommittedImport() async throws {
         let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)

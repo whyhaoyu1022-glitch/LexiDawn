@@ -16,7 +16,7 @@ struct FreeDictionaryProvider: DictionaryProvider {
         // A negative lookup is distinct from an unavailable provider. Revalidate transient CDN negatives
         // using the same documented endpoint, without changing hosts, credentials or request identity.
         for attempt in 0..<3 {
-            do { return try Self.parse(await transport.fetch(url, allowedHost: "api.dictionaryapi.dev")) }
+            do { return try Self.parse(await transport.fetch(url, allowedHost: "api.dictionaryapi.dev", revalidate: attempt > 0)) }
             catch FullTextImportError.notFound {
                 if attempt == 2 { return [] }
                 try await Task.sleep(for: .seconds(Double(attempt + 1)))

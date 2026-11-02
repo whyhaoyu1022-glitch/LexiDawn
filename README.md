@@ -1,10 +1,10 @@
 # 词光 LexiDawn
 
-最新核查运行41357763875：182单元/0失败、主full-2 12/0、SE7/0、大屏3/0；full-4导出文件名断言失败（13/1），上传CreateArtifact另连续超时，其他取消。full-3获runner晚约11分钟，不能把排队/未完成视为失败。本次补充真实文件名可访问显示、系统实际保存回调反馈、取消/重试/过期结果保护，以及附件上传重试；原文件名断言保留并扩展到真实Save。新增三项截图要求，共137项，新原生复验待CI。 [核查报告](docs/reviews/round-3-ci-41357763875-repair.md)。
+最新核查41361046807：Debug/Release及测试目标编译成功；182 XCTest中181通过、Free Dictionary真实book查词1失败，三次HTTP404；UI和合并全部跳过。本次为404后的限次请求加入中间缓存重新验证头，保留原接口/词条及真实非空noun断言；新增2确定性测试，源码184/49，原生复验待新CI。持续真实404仍必须报失败，不冒称外网已恢复。 [核查报告](docs/reviews/round-3-ci-41361046807-repair.md)。
 
 原生 iOS 英文全文阅读、查词、生词管理和间隔复习应用。使用 SwiftUI、SwiftData、Domain、Service 和 Repository，不依赖网页阅读器或大型 UI 框架。
 
-**CURRENT · Round 3 仍在开发验证，尚未统一验收通过。** 当前源码清单为 182 XCTest / 49 XCUITest，包含原 93 / 20。已核验的代码和失败详情见 [STATUS](STATUS.md) 与 [Round 3 开发记录](docs/reviews/round-3-development-delivery.md)，清单数量不代表通过数量。
+**CURRENT · Round 3 仍在开发验证，尚未统一验收通过。** 当前源码清单为 184 XCTest / 49 XCUITest，包含原 93 / 20。已核验的代码和失败详情见 [STATUS](STATUS.md) 与 [Round 3 开发记录](docs/reviews/round-3-development-delivery.md)，清单数量不代表通过数量。
 
 最近已核验运行 41318724181：180 单元/0失败、大屏3/0；SE及主UI仍有失败。已针对键盘保存、重置误开阅读器和探索空库说明修复源码，待新运行复验，见[核查报告](docs/reviews/round-3-ci-41318724181-repair.md)。
 

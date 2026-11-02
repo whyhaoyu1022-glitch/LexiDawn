@@ -1,6 +1,6 @@
 # CURRENT · Round 3 架构与数据模型
 
-最新核查运行41357763875：182单元/0失败、主full-2 12/0、SE7/0、大屏3/0；full-4导出文件名断言失败（13/1），上传CreateArtifact另连续超时，其他取消。full-3获runner晚约11分钟，不能把排队/未完成视为失败。本次补充真实文件名可访问显示、系统实际保存回调反馈、取消/重试/过期结果保护，以及附件上传重试；原文件名断言保留并扩展到真实Save。新增三项截图要求，共137项，新原生复验待CI。 [核查证据与规格依据](reviews/round-3-ci-41357763875-repair.md)。
+最新核查41361046807：Debug/Release及测试目标编译成功；182 XCTest中181通过、Free Dictionary真实book查词1失败，三次HTTP404；UI和合并全部跳过。本次为404后的限次请求加入中间缓存重新验证头，保留原接口/词条及真实非空noun断言；新增2确定性测试，源码184/49，原生复验待新CI。持续真实404仍必须报失败，不冒称外网已恢复。 [失败证据、规格及验证边界](reviews/round-3-ci-41361046807-repair.md)。
 
 沿用 SwiftUI → ViewModel/Service → Domain/Repository → RepositoryWriter → SwiftData。网络不在 View，数据库操作在 Repository；UI只维护选择与草稿。每次写使用独立 context，关闭 autosave，同步 save/rollback，读取用新context，不复用失败上下文。
 
