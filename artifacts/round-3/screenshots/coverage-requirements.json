@@ -822,6 +822,12 @@
       "feature": "vocabulary-export",
       "state": "取消导出无成功反馈",
       "screenshotIDPattern": "^R3-V18-"
+    },
+    {
+      "requirementID": "dictionary-optional-free-unavailable",
+      "feature": "dictionary",
+      "state": "Free Dictionary无结果时明确状态并保留Wiktionary释义",
+      "screenshotIDPattern": "^R3-D07-"
     }
   ],
   "additionalChecks": [

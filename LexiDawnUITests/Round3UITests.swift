@@ -519,7 +519,7 @@ final class Round3UITests: XCTestCase {
         }
     }
     func testDictionaryProviderFailureEmptyLoadingAndOfflineCacheEvidence() throws {
-        for (index, mode) in ["loading", "single-failed", "all-failed", "empty", "cache", "offline"].enumerated() {
+        for (index, mode) in ["loading", "single-failed", "all-failed", "empty", "cache", "offline", "free-unavailable"].enumerated() {
             let app = launch("round3-dictionary-" + mode)
             XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
             let word = app.buttons["word-Internet"].firstMatch; XCTAssertTrue(word.waitForExistence(timeout: 10)); word.tap()
@@ -534,10 +534,11 @@ final class Round3UITests: XCTestCase {
                 let providers = app.staticTexts["dictionary-providers"]
                 for _ in 0..<5 { if providers.exists { break }; app.swipeUp() }
                 XCTAssertTrue(providers.waitForExistence(timeout: 15))
+                if mode == "free-unavailable" { XCTAssertTrue(providers.label.contains("Wiktionary")); XCTAssertFalse(providers.label.contains("Free Dictionary API")) }
                 let detail = app.buttons["查看详细释义"]
                 for _ in 0..<5 { if detail.isHittable { break }; app.swipeUp() }
                 XCTAssertTrue(detail.waitForExistence(timeout: 15)); detail.tap()
-                let expected = mode == "single-failed" ? "部分来源不可用" : mode == "cache" || mode == "offline" ? "本地缓存" : "已合并"
+                let expected = mode == "free-unavailable" ? "Free Dictionary API 当前无可用结果" : mode == "single-failed" ? "部分来源不可用" : mode == "cache" || mode == "offline" ? "本地缓存" : "已合并"
                 let label = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", expected)).firstMatch
                 for _ in 0..<6 { if label.exists && label.isHittable { break }; app.swipeUp() }
                 XCTAssertTrue(label.waitForExistence(timeout: 15))

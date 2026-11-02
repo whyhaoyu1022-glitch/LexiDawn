@@ -6,6 +6,7 @@ struct DictionaryProviderOutcome: Sendable {
     let senses: [DictionarySense]
     let failed: [String]
     let successful: [String]
+    let empty: [String]
 }
 struct FreeDictionaryProvider: DictionaryProvider {
     private let fetcher: ArticleFetchService
@@ -124,11 +125,11 @@ actor DictionaryAggregator {
     func lookup(_ lemma: String) async -> DictionaryProviderOutcome {
         await withTaskGroup(of: (String, [DictionarySense]?).self) { group in
             for (name, provider) in providers { group.addTask { do { return (name, try await provider.lookup(lemma)) } catch { return (name, nil) } } }
-            var senses: [DictionarySense] = [], failed: [String] = [], successful: [String] = []
+            var senses: [DictionarySense] = [], failed: [String] = [], successful: [String] = [], empty: [String] = []
             for await (name, result) in group {
-                if let result { senses += result; successful.append(name) } else { failed.append(name) }
+                if let result { senses += result; successful.append(name); if result.isEmpty { empty.append(name) } } else { failed.append(name) }
             }
-            return DictionaryProviderOutcome(senses: Self.merge(senses), failed: failed.sorted(), successful: successful.sorted())
+            return DictionaryProviderOutcome(senses: Self.merge(senses), failed: failed.sorted(), successful: successful.sorted(), empty: empty.sorted())
         }
     }
     nonisolated static func merge(_ senses: [DictionarySense]) -> [DictionarySense] {

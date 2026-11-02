@@ -121,18 +121,22 @@ private actor CacheRequestProbe: DictionaryProvider {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
         let id = try learning.content.importArticle(.init(title: "Explicit recommendation fixture", body: "Cooperation and architecture support thoughtful learning.", source: "Fixture author", rightsConfirmed: true), at: now)
         guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        var clockDate = now
+        let recommendations = learning.recommendationService(clock: { clockDate })
         var received: [RecommendedVocabulary] = []
-        do { _ = try await learning.recommendationService().discover { received.append($0) }; XCTFail("Recommendations must remain locked") } catch { }
+        do { _ = try await recommendations.discover { received.append($0) }; XCTFail("Recommendations must remain locked") } catch { }
         _ = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
         try learning.reader.complete(articleID: id, cycleID: cycle.cycleID, manualConfirmation: true, at: now)
         let providers = Array(DictionaryAggregator.versions.keys).map { ($0, DictionaryEvidenceProvider(mode: "many", source: $0) as any DictionaryProvider) }
         try learning.dictionary.configureDictionaryEvidence(providers: providers)
-        _ = try await learning.recommendationService().discover(limit: 2) { received.append($0) }
+        _ = try await recommendations.discover(limit: 2) { received.append($0) }
         XCTAssertEqual(received.count, 2); XCTAssertTrue(try learning.vocabulary.entries().isEmpty)
         let candidate = try XCTUnwrap(received.first).candidate
         _ = try learning.vocabulary.add(token: .init(surface: candidate.lemma, range: NSRange(location: 0, length: candidate.lemma.count), sentence: candidate.sentence), articleID: candidate.articleID, autoAdd: false, explicit: true, at: Date())
-        received = []; _ = try await learning.recommendationService().discover(limit: 2) { received.append($0) }
+        received = []; _ = try await recommendations.discover(limit: 2) { received.append($0) }
         XCTAssertFalse(received.contains { $0.id == candidate.lemma }); XCTAssertEqual(try learning.vocabulary.entries().count, 1)
+        clockDate = now.addingTimeInterval(86400)
+        do { _ = try await recommendations.discover { _ in }; XCTFail("A new learning day must lock recommendations again") } catch { }
     }
     func testExtraReviewRestoresFixedSessionSchedulesOnceAndNeverChangesDailyCycle() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
@@ -653,6 +657,25 @@ private actor CacheRequestProbe: DictionaryProvider {
         let data = Data(#"{"en":[{"partOfSpeech":"Verb","definitions":[{"definition":"To <b>reserve</b> a place.","examples":["Please book a seat."]}]}]}"#.utf8)
         let sense = try XCTUnwrap(WiktionaryDictionaryProvider.parse(data).first)
         XCTAssertEqual(sense.en, "To reserve a place."); XCTAssertEqual(sense.partOfSpeech, "verb"); XCTAssertTrue(sense.zh.isEmpty)
+    }
+    func testUnavailableOrEmptyFreeDictionaryKeepsWiktionaryResultsAndStatus() async throws {
+        struct Empty: DictionaryProvider { func lookup(_ word: String) async throws -> [DictionarySense] { [] } }
+        struct Failed: DictionaryProvider { func lookup(_ word: String) async throws -> [DictionarySense] { throw FullTextImportError.transport } }
+        struct Wiki: DictionaryProvider {
+            func lookup(_ word: String) async throws -> [DictionarySense] {
+                [DictionarySense(id: "explicit-wiki-fixture", en: "Explicit original Wiktionary provider test definition.", zh: "", line: "Explicit fixture, not live data.", partOfSpeech: "noun", sources: ["Wiktionary"])]
+            }
+        }
+        for (isEmpty, free) in [(true, Empty() as any DictionaryProvider), (false, Failed() as any DictionaryProvider)] {
+            let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+            try learning.dictionary.configureDictionaryEvidence(providers: [("Free Dictionary API", free), ("Wiktionary", Wiki())])
+            let result = try await learning.dictionary.lookup("book", at: now)
+            XCTAssertEqual(result.senses.map(\.en), ["Explicit original Wiktionary provider test definition."])
+            XCTAssertEqual(result.senses.first?.sources, ["Wiktionary"])
+            XCTAssertTrue(result.senses.allSatisfy { $0.zh.isEmpty })
+            XCTAssertEqual(result.failedProviders, isEmpty ? [] : ["Free Dictionary API"])
+            XCTAssertEqual(result.emptyProviders, isEmpty ? ["Free Dictionary API"] : [])
+        }
     }
     func testSingleProviderFailureDoesNotDiscardSuccess() async {
         struct Failure: DictionaryProvider { func lookup(_ word: String) async throws -> [DictionarySense] { throw FullTextImportError.transport } }

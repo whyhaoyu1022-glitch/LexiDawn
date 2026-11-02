@@ -51,8 +51,8 @@ import Combine
     }
     #endif
     func changed() { revision += 1 }
-    func recommendationService() -> VocabularyRecommendationService {
-        VocabularyRecommendationService(content: content, dictionary: dictionary, vocabulary: vocabulary, allowed: { [unowned self] in try self.explorationAllowed() })
+    func recommendationService(clock: @escaping @MainActor () -> Date = { Date() }) -> VocabularyRecommendationService {
+        VocabularyRecommendationService(content: content, dictionary: dictionary, vocabulary: vocabulary, allowed: { [unowned self] in try self.explorationAllowed(at: clock()) })
     }
     func statistics(timeZone: TimeZone, at now: Date) throws -> LearningStatistics {
         let cycles = try cycles.fetchAll()

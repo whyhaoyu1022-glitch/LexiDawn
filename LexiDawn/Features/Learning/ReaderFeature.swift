@@ -257,6 +257,10 @@ struct WordLookupSheet: View {
                 if !model.loading, model.error == nil, let result = model.result, result.senses.isEmpty {
                     Text("暂无可验证的释义。可以继续阅读，或在生词本添加明确标记的个人释义。")
                 }
+                if let result = model.result, result.emptyProviders.contains("Free Dictionary API") {
+                    Text("Free Dictionary API 当前无可用结果（暂不可用或未收录此词）。其他可用来源仍可使用。").font(.caption)
+                        .accessibilityIdentifier("dictionary-free-unavailable")
+                }
                 Section("生词本") {
                     HStack {
                         if model.addition?.created == true { Label("刚刚加入", systemImage: "checkmark.circle"); Spacer(); Button("撤销本次加入") { model.undo() }.accessibilityIdentifier("undo-word") }
@@ -266,7 +270,7 @@ struct WordLookupSheet: View {
                 }
                 if let result = model.result, !result.senses.isEmpty {
                     if result.cached { Label("正在使用本地缓存", systemImage: "internaldrive").font(.caption) }
-                    if !result.failedProviders.isEmpty { Label("某些词典来源暂不可用，已显示可用结果", systemImage: "exclamationmark.triangle").font(.caption) }
+                    if !result.failedProviders.isEmpty { Label("某些词典来源暂不可用（" + result.failedProviders.joined(separator: "、") + "），已显示可用结果", systemImage: "exclamationmark.triangle").font(.caption) }
                 }
                 Section {
                     HStack {
@@ -377,6 +381,7 @@ struct DictionaryResultContent: View {
             }
             if result.cached { Label("本地缓存 · 可离线查看，可能不是最新版本", systemImage: "internaldrive").font(.caption) }
             if !result.failedProviders.isEmpty { Label("部分来源不可用：" + result.failedProviders.joined(separator: "、") + "。已保留其他真实结果。", systemImage: "exclamationmark.triangle").font(.caption) }
+            if result.emptyProviders.contains("Free Dictionary API") { Text("Free Dictionary API 当前无可用结果（暂不可用或未收录此词）。其他可用来源仍可使用。").font(.caption).accessibilityIdentifier("dictionary-free-unavailable") }
             Text("中文反向索引提供可能对应词。义项按当前语境排序，仍需结合原文判断；个人释义与词典原文分开保存。").font(.caption).foregroundStyle(.secondary)
         }
     }

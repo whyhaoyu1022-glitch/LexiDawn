@@ -1,6 +1,6 @@
 # CURRENT · Round 3 需求追踪
 
-最新核查41361046807：Debug/Release及测试目标编译成功；182 XCTest中181通过、Free Dictionary真实book查词1失败，三次HTTP404；UI和合并全部跳过。本次为404后的限次请求加入中间缓存重新验证头，保留原接口/词条及真实非空noun断言；新增2确定性测试，源码184/49，原生复验待新CI。持续真实404仍必须报失败，不冒称外网已恢复。 [失败证据、规格及验证边界](reviews/round-3-ci-41361046807-repair.md)。
+负责人批准Free Dictionary为可选不稳定来源：空/失败时明确提示，保留Wiktionary及可用缓存；仅该真实可用性探测的外部不可用可XCTSkip并单独报告，解析错误和非空noun断言仍严格验证，Wiktionary真实联网仍强制。最新41420744836编译通过，184测试/2失败（Free三次404、推荐测试跨日时钟）；本次同时统一测试时钟并增加次日重新锁定断言。源码185/49、138截图状态，待新CI。 [授权范围、证据与规格依据](reviews/round-3-optional-free-dictionary-41420744836.md)。
 
 功能存在、持久化、测试、真实截图和 CI 都必须有同一代码证据才能标记完成。当前仍在验证；180 XCTest / 49 UI 为源码清单。20 项 R2-A01–A20 的逐项实现及证据缺口见 [本轮矩阵](reviews/round-3-development-delivery.md)。
 

@@ -1,13 +1,14 @@
 # CURRENT · Round 3 开发与验证中（2026-11-02）
 
-最新核查41361046807：Debug/Release及测试目标编译成功；182 XCTest中181通过、Free Dictionary真实book查词1失败，三次HTTP404；UI和合并全部跳过。本次为404后的限次请求加入中间缓存重新验证头，保留原接口/词条及真实非空noun断言；新增2确定性测试，源码184/49，原生复验待新CI。持续真实404仍必须报失败，不冒称外网已恢复。 [失败证据、规格及验证边界](docs/reviews/round-3-ci-41361046807-repair.md)。
+负责人批准Free Dictionary为可选不稳定来源：空/失败时明确提示，保留Wiktionary及可用缓存；仅该真实可用性探测的外部不可用可XCTSkip并单独报告，解析错误和非空noun断言仍严格验证，Wiktionary真实联网仍强制。最新41420744836编译通过，184测试/2失败（Free三次404、推荐测试跨日时钟）；本次同时统一测试时钟并增加次日重新锁定断言。源码185/49、138截图状态，待新CI。 [授权范围、证据与规格依据](docs/reviews/round-3-optional-free-dictionary-41420744836.md)。
 
-尚未达到统一验收条件。**本次源码清单为 184 XCTest / 49 XCUITest，包含原 93 / 20；新增清单不是通过结果。** 所有远端开发直接提交 main，没有新建分支。本次修复将由新的 Actions 验证，准确 SHA 与运行链接见 GitHub main/Actions。
+尚未达到统一验收条件。**本次源码清单为 185 XCTest / 49 XCUITest，包含原 93 / 20；新增清单不是通过结果。** 所有远端开发直接提交 main，没有新建分支。本次修复将由新的 Actions 验证，准确 SHA 与运行链接见 GitHub main/Actions。
 
 ## 最近已核验结果
 
 | 代码 SHA | Actions | 实际结果 |
 |---|---|---|
+| 954b30b6ee38059c16560eb68c661329dd439d35 | [41420744836](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41420744836) | Debug/Release通过；184单元/2失败（Free真实404、推荐测试日期不一致）；Wiktionary真实成功，UI跳过。 |
 | 03a4b0edad02a18de2d644822b545536d45dd92d | [41361046807](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41361046807) | Debug/Release和测试目标编译成功；182单元/1失败（Free真实book三次404）；UI及合并跳过，整次失败。 |
 | 714db6605df7c0cf578d63bcf94ba09d6486b3a1 | [41357763875](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41357763875) | Debug/Release、182单元/0失败；full-2 12/0、SE7/0、大屏3/0；full-4 13/1及上传超时，其他取消，整次失败。 |
 | 0126709082265a3b2648b502772df889488c4b9f | [41326351407](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41326351407) | Debug/Release、180单元/0失败；SE7/0、大屏3/0；full-4 13/1导出失败，其余取消，整次失败。 |
@@ -25,7 +26,7 @@
 - 短语按原始全文或原始词典文本核验完整 UTF16 范围，包含首词及原有硬换行；同句其他相同单词不能冒充当前短语位置。位置核验失败与生词保存错误分开，不会用“重试保存”错误地保存另一个词。
 - 新词明确写入 new 状态，首次 Again 保持 learning；既有 review 失败才进入 relearning。成功次数由已保存 Hard/Good 计数派生，历史未知计数不伪造。
 - 新增一万条 RSS 候选和千段 HTML 的实际解析时钟/内存测量，同时断言完整性；原长文原生滚动/内存 UI 保留，不作真机帧率承诺。
-- 补充嵌套词典词→生词本真实来源 UI 与 D66/D67 原生截图点；共137项实际PNG状态覆盖要求，逐源首/中/末及SE/大屏主题横屏仍是最终合并关卡。
+- 补充嵌套词典词→生词本真实来源 UI 与 D66/D67 原生截图点；共138项实际PNG状态覆盖要求，逐源首/中/末及SE/大屏主题横屏仍是最终合并关卡。
 
 ## 已实装范围与业务保护
 
@@ -38,7 +39,7 @@
 ## 仍待完成的验收
 
 1. 本次代码的完整构建、180单元/网络/迁移测试、49主UI及SE/大屏专项。
-2. 全部137项状态对应的真实PNG核对与逐图审阅，同一代码的完整ZIP、manifest、CSV、索引和xcresult。
+2. 全部138项状态对应的真实PNG核对与逐图审阅，同一代码的完整ZIP、manifest、CSV、索引和xcresult。
 3. 最终报告、真实main SHA及运行结果回填。尚未取得iOS27/真机、完整VoiceOver听读或Instruments通过证据；现有CI是已批准Xcode26.6/iOS26.5兼容模拟器。
 
 CI已采用一次编译共享产物、4主UI分组+设备专项、fail-fast、旧main运行清理和PNG打包去重复压缩。没有删除旧测试或降低断言；不能用历史绿色关卡或部分截图代替最终验收。

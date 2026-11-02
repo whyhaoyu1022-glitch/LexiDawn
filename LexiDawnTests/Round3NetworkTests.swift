@@ -151,7 +151,14 @@ private final class Round3FaultURLProtocol: URLProtocol, @unchecked Sendable {
         }
     }
     func testLiveFreeDictionaryEnglishDefinition() async throws {
-        let senses = try await FreeDictionaryProvider().lookup("book")
+        // Owner-authorized optional availability probe. Never skip parsing bugs or
+        // claim an unavailable service as a successful external lookup.
+        let senses: [DictionarySense]
+        do { senses = try await FreeDictionaryProvider().lookup("book") }
+        catch let error as FullTextImportError where error == .transport || error == .rateLimited || error == .notFound {
+            throw XCTSkip("Optional Free Dictionary currently unavailable; Wiktionary remains a required live test.")
+        }
+        guard !senses.isEmpty else { throw XCTSkip("Optional Free Dictionary returned no definitions; not a successful live lookup.") }
         XCTAssertTrue(senses.contains { $0.partOfSpeech == "noun" && !$0.en.isBlank })
     }
     func testLiveWiktionaryEnglishDefinition() async throws {

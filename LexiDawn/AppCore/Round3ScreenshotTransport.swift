@@ -9,6 +9,7 @@ private actor DictionaryComparisonEvidenceProbe {
 struct DictionaryEvidenceProvider: DictionaryProvider {
     let mode: String, source: String
     func lookup(_ headword: String) async throws -> [DictionarySense] {
+        if mode == "free-unavailable", source == "Free Dictionary API" { return [] }
         if mode.hasPrefix("comparison-"), headword == "network" {
             if mode == "comparison-loading" { try await Task.sleep(for: .seconds(30)) }
             if mode == "comparison-empty" { return [] }

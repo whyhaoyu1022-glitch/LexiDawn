@@ -262,6 +262,7 @@ struct DictionaryResult: Equatable {
     let sourceURL: String
     let licenseURL: String
     var failedProviders: [String] = []
+    var emptyProviders: [String] = []
     var cached: Bool = false
     var versions: [String: String] = [:]
 }
@@ -316,13 +317,13 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
             try Task.checkCancellation()
             let local = try? await lookupLocal(surface, at: now)
             let all = (local?.senses ?? []) + outcome.senses
-            let fallback = old.senses.filter { !Set($0.sources ?? []).intersection(outcome.failed).isEmpty }
+            let fallback = old.senses.filter { !Set($0.sources ?? []).intersection(outcome.failed + outcome.empty).isEmpty }
             let senses = DictionaryAggregator.merge(all + fallback)
             guard !senses.isEmpty || outcome.failed.isEmpty else { throw LearningError.invalid("词典来源暂时不可用；本地没有缓存，请联网后重试。") }
             if !outcome.senses.isEmpty { try richCache.save(key, senses: outcome.senses, successful: outcome.successful, at: now) }
             let resultDate = outcome.senses.isEmpty ? (old.senses.isEmpty ? local?.updatedAt ?? now : old.date) : now
             return DictionaryResult(headword: key, senses: DictionaryAggregator.rank(senses, context: context, surface: key), updatedAt: resultDate,
-                sourceURL: "https://dictionaryapi.dev/", licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/", failedProviders: outcome.failed,
+                sourceURL: "https://dictionaryapi.dev/", licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/", failedProviders: outcome.failed, emptyProviders: outcome.empty,
                 cached: !fallback.isEmpty || outcome.senses.isEmpty && !(local?.senses.isEmpty ?? true), versions: DictionaryAggregator.versions)
         }
         return try await lookupLocal(surface, at: now)
