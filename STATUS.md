@@ -1,52 +1,35 @@
-# CURRENT · Round 3 开发与验证中（2026-11-02）
+# CURRENT · Round 3 全量自动化通过，截图与报告已交付（2026-11-02）
 
-最新导出专项41432723597：编译和生命周期单元1/0通过；UI在启动App时超时（1/1），尚未进入导出窗口，全量均跳过。本次隔离专项模拟器：关闭单元测试所用设备，创建并启动全新UI设备；保留所有真实保存断言及失败门禁。源码186/49、138截图状态不变；新专项尚待原生验证，不能把启动失败算作导出保存验证。 [日志证据、规格和验证边界](docs/reviews/round-3-export-launch-isolation-41432723597.md)。
+全量 CI [41436291391](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391) 已完成且成功，测试代码为 `b13d6b4e21e425472d059770319d88cd7c50a15e`。Debug/Release、186 XCTest（0失败）、49主 XCUITest（0失败）、SE7/大屏3（均0失败）、导出专项及截图合并全部通过；327张编号截图覆盖138项要求，缺失0项。当前交付自动化证据与完整截图包，最终视觉验收由负责人逐图确认；真机/iOS27/完整VoiceOver听读及Instruments未实测。本次仅文档与证据收尾，不修改应用、测试或CI代码。
 
-尚未达到统一验收条件。**本次源码清单为 186 XCTest / 49 XCUITest，包含原 93 / 20；新增清单不是通过结果。** 所有远端开发直接提交 main，没有新建分支。本次修复将由新的 Actions 验证，准确 SHA 与运行链接见 GitHub main/Actions。
+通过CI的main代码：`b13d6b4e21e425472d059770319d88cd7c50a15e`。本次为一次纯文档/证据收尾提交；没有改变已通过的Swift、测试、CI或数据文件，没有重写历史。
 
-## 最近已核验结果
+## 已核验结果
 
-| 代码 SHA | Actions | 实际结果 |
+| 验证 | 本次实际结果 |
+|---|---|
+| Debug build-for-testing / Release | 成功；Release排除故障/截图fixture标记 |
+| 完整XCTest | 186执行，0失败；其中原93保留；Free与Wiktionary真实接口本次均成功，无XCTest跳过 |
+| 主UI full-1 / full-2 / full-3 / full-4 | 11/12/13/13执行，均0失败，共49个不同方法 |
+| iPhone SE / iPhone Pro Max | 7/3执行，均0失败；属于额外设备复跑，不增加不同方法数 |
+| 导出专项 | 生命周期单元1/0、原生导出UI1/0；也在完整套件中再次执行，不重复计入186/49 |
+| 截图合并 | 327张编号截图；138项要求无缺失；10源完整逐源证据；无缺失设备证据 |
+
+[全量运行](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391) · [完整交付报告](docs/reviews/round-3-final-delivery-2026-11-02.md) · [逐图索引](artifacts/round-3/screenshots/INDEX.md) · [覆盖核对](artifacts/round-3/screenshots/COVERAGE.md) · [完整PNG artifact](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/artifacts/13139234028)。全部原始PNG与xcresult下载入口在报告内。
+
+## 当前范围与限制
+
+| 模块 | 已实现及融合 | 本次证据 |
 |---|---|---|
-| 8c21befea90f22885f446b6bea4dd02078306843 | [41432723597](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41432723597) | 专项编译成功，生命周期单元1/0；UI在launch()启动超时1/1，未进入导出；全量跳过。 |
-| 548aa9f095c20a267c9dac1ba167513df063bb75 | [41429945732](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41429945732) | 导出专项编译成功，1 UI/1失败；取消已通过，Save后未收到成功反馈；全量跳过。 |
-| 80ffd4446b665968eac2101ad51c74f9e8b6a829 | [41423920944](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41423920944) | Debug/Release、185单元/0失败；full-2 12/0、full-3 13/0，SE/大屏成功；full-4导出取消失败13/1，full-1取消，尚未统一通过。 |
-| 954b30b6ee38059c16560eb68c661329dd439d35 | [41420744836](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41420744836) | Debug/Release通过；184单元/2失败（Free真实404、推荐测试日期不一致）；Wiktionary真实成功，UI跳过。 |
-| 03a4b0edad02a18de2d644822b545536d45dd92d | [41361046807](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41361046807) | Debug/Release和测试目标编译成功；182单元/1失败（Free真实book三次404）；UI及合并跳过，整次失败。 |
-| 714db6605df7c0cf578d63bcf94ba09d6486b3a1 | [41357763875](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41357763875) | Debug/Release、182单元/0失败；full-2 12/0、SE7/0、大屏3/0；full-4 13/1及上传超时，其他取消，整次失败。 |
-| 0126709082265a3b2648b502772df889488c4b9f | [41326351407](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41326351407) | Debug/Release、180单元/0失败；SE7/0、大屏3/0；full-4 13/1导出失败，其余取消，整次失败。 |
-| 89ccd99e7978006470d36e7814ba64c1114438bc | [41318724181](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41318724181) | Debug/Release、180 XCTest/0失败，真实10源29篇；大屏3/0；SE7/1，主UI另发现重置确认与空库文案失败；其余取消，整次失败。 |
-| 747d7c322e5d11bc1aae9a94ec7d2a47723140ae | [41314198717](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41314198717) | Debug/Release、175 XCTest/0失败，真实10源29篇；UI full-3为13/1失败，其他组取消，整次失败。 |
-| d7f402025d87cd90ca35bff658b23eeda0ecf4da | [41312535622](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41312535622) | Debug/Release、174 XCTest/0失败；大屏3/1失败，其余未完成；整次失败。 |
+| 多源全文 | Registry/Audit、RSS/Atom/API、完整正文提取/整理、SHA/canonical去重、双正文原子入库、离线、失败保留旧版本 | 真实10源29篇；逐源library/body/scrolled/end PNG |
+| 多词典 | Wiktionary、Free Dictionary、本地CEDICT；词形/短语、多义项、来源、版本缓存、部分失败、离线 | 两英语Live本次均通过；可靠中文缺失禁止错误出题 |
+| 可视化连线 | 英中双列、实际Canvas曲线、错误重试、多线、双端禁用、重复消费保护、恢复 | 匹配、旋转、滚动、AX等价UI及原始PNG |
+| 阅读器 | 原生全文、标题/段落/列表/引用、三主题、大字、横屏、点击词、位置/版本恢复 | 主UI及SE/Pro Max均通过，原始横屏正文可见 |
+| 学习闭环 | 最多两条简明释义、完整独立详情/嵌套；生词/个人释义/笔记；FSRS4.5、原句词形/整段短语拼写、反馈/下次时间 | 真网络空库闭环、事务、恢复、评分UI与PNG |
+| 库/搜索/收藏 | 今日顶部书库入口；分类/来源/标题/排序/收藏/稍后/历史；完成后探索和词汇推荐；JSON/CSV真实导出 | 统一门禁、收藏不建周期、持久化与原生Save/取消均通过 |
 
-最新失败已核对原生录像/AX与日志：SE 键盘遮挡个人释义保存按钮，文章库同行默认按钮让重置同时误开阅读器，探索空库说明发生回归。源码已将唯一保存动作移到导航栏、隔离库内按钮并捕获确认文章快照、恢复原空库说明；加强键盘/取消重置/重新打开读回断言。原生复验尚待本次新 CI，详见[失败核查报告](docs/reviews/round-3-ci-41318724181-repair.md)。此前同义词展开及来源语境修复的180单元已通过；被取消的相关UI仍待验证。
-
-## 本次实际修改
-
-- 修复上述三处实际 UI 回归；保留原20 UI全部断言，并加强真实冷启动持久化和重置取消/确认验证。
-
-- 生词上下文分为 reader、dictionary、historical：词典句子保存原词和原始来源证据，关联文章单独显示；旧记录缺类型时保持未知，不在迁移中猜测。
-- 短语按原始全文或原始词典文本核验完整 UTF16 范围，包含首词及原有硬换行；同句其他相同单词不能冒充当前短语位置。位置核验失败与生词保存错误分开，不会用“重试保存”错误地保存另一个词。
-- 新词明确写入 new 状态，首次 Again 保持 learning；既有 review 失败才进入 relearning。成功次数由已保存 Hard/Good 计数派生，历史未知计数不伪造。
-- 新增一万条 RSS 候选和千段 HTML 的实际解析时钟/内存测量，同时断言完整性；原长文原生滚动/内存 UI 保留，不作真机帧率承诺。
-- 补充嵌套词典词→生词本真实来源 UI 与 D66/D67 原生截图点；共138项实际PNG状态覆盖要求，逐源首/中/末及SE/大屏主题横屏仍是最终合并关卡。
-
-## 已实装范围与业务保护
-
-六大模块主体已写入：多源全文发现/准入/原子入库、文章库/搜索/收藏/稍后/历史、多词典/离线缓存、真实连线、三主题原生阅读器、FSRS原句复习与学习闭环。另有额外复习、完整探索、词汇推荐、导出及个人全文版本保留。实现和20项Round 2矩阵见[开发记录](docs/reviews/round-3-development-delivery.md)。
-
-最早未完成周期优先；每日分配原子且不重复；阅读/复习独立；库/历史/收藏/稍后/探索及Reader打开/save/complete共用门禁；收藏不建周期。Repository独立context/save/rollback，失败无成功提示或孤儿记录。撤销只针对本次创建，复习和缓存清理不删除用户生词、个人内容或日志。
-
-按负责人批准的个人模式，13个候选适配器中最近实际成功10源：BBC、Guardian、NPR、DW、VOA、NASA、Wikipedia、Wikinews、ScienceDaily、Phys.org。Reuters401、AP403、Smithsonian不完整被舍弃；不绕过登录/验证码/付费墙，无摘要/URL/浏览器阅读降级。详见[来源审查](docs/article-source-eligibility-audit.md)。
-
-## 仍待完成的验收
-
-1. 本次代码的完整构建、186单元/网络/迁移测试、49主UI及SE/大屏专项。
-2. 全部138项状态对应的真实PNG核对与逐图审阅，同一代码的完整ZIP、manifest、CSV、索引和xcresult。
-3. 最终报告、真实main SHA及运行结果回填。尚未取得iOS27/真机、完整VoiceOver听读或Instruments通过证据；现有CI是已批准Xcode26.6/iOS26.5兼容模拟器。
-
-CI已采用一次编译共享产物、4主UI分组+设备专项、fail-fast、旧main运行清理和PNG打包去重复压缩。没有删除旧测试或降低断言；不能用历史绿色关卡或部分截图代替最终验收。
+未完成验收为负责人逐图视觉确认、完整VoiceOver听读、真机/iOS27及Instruments；没有把兼容模拟器或测试绿色标成这些项目已通过。外部来源持续可用性无法保证；Free本次成功但仍保留不可用处理。20项Round2整改实现、自动化结果、手动步骤及76路径完整修改清单见报告。
 
 ## 历史
 
-[Round 2独立审核](docs/reviews/round-2-independent-acceptance-and-91-screenshot-audit-2026-10-31.md)、[Round 2交付](docs/reviews/round-2-development-delivery.md)保留原文。旧STATUS记录可从[本次整理前版本](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/747d7c322e5d11bc1aae9a94ec7d2a47723140ae/STATUS.md)追溯，旧计数和待运行描述不代表CURRENT。
+专项41432723597为生命周期单元成功、UI启动超时；此前41429945732为实际Save反馈失败。这些历史失败经修复后，本次专项和全量均通过。历史CURRENT全文保留在[通过CI时的STATUS](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/b13d6b4e21e425472d059770319d88cd7c50a15e/STATUS.md)，不混作当前结果。

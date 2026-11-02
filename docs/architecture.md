@@ -1,6 +1,6 @@
 # CURRENT · Round 3 架构与数据模型
 
-导出专项41429945732仅1 UI执行/1失败，全量未启动。这次文件名、44pt取消与关闭均通过，真实Save后缺少完成反馈。源码发现展示绑定先清空会丢弃迟到回调、弱delegate会释放的竞态；改为独立session持有请求/回调至真实结果，再清理。新增一项生命周期确定性测试，专项先跑它再跑原导出UI，两者通过才全量。源码186/49，138截图状态不变，原生结果待新专项。 [日志证据、规格和验证边界](reviews/round-3-export-lifetime-41429945732.md)。
+全量 CI [41436291391](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391) 已完成且成功，测试代码为 `b13d6b4e21e425472d059770319d88cd7c50a15e`。Debug/Release、186 XCTest（0失败）、49主 XCUITest（0失败）、SE7/大屏3（均0失败）、导出专项及截图合并全部通过；327张编号截图覆盖138项要求，缺失0项。当前交付自动化证据与完整截图包，最终视觉验收由负责人逐图确认；真机/iOS27/完整VoiceOver听读及Instruments未实测。本次仅文档与证据收尾，不修改应用、测试或CI代码。 [完整交付报告](reviews/round-3-final-delivery-2026-11-02.md)。
 
 沿用 SwiftUI → ViewModel/Service → Domain/Repository → RepositoryWriter → SwiftData。网络不在 View，数据库操作在 Repository；UI只维护选择与草稿。每次写使用独立 context，关闭 autosave，同步 save/rollback，读取用新context，不复用失败上下文。
 

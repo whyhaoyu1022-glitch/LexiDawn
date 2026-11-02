@@ -1,12 +1,12 @@
 # 词光 LexiDawn
 
-导出专项41429945732仅1 UI执行/1失败，全量未启动。这次文件名、44pt取消与关闭均通过，真实Save后缺少完成反馈。源码发现展示绑定先清空会丢弃迟到回调、弱delegate会释放的竞态；改为独立session持有请求/回调至真实结果，再清理。新增一项生命周期确定性测试，专项先跑它再跑原导出UI，两者通过才全量。源码186/49，138截图状态不变，原生结果待新专项。 [专项记录](docs/reviews/round-3-export-lifetime-41429945732.md)。
+全量 CI [41436291391](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391) 已完成且成功，测试代码为 `b13d6b4e21e425472d059770319d88cd7c50a15e`。Debug/Release、186 XCTest（0失败）、49主 XCUITest（0失败）、SE7/大屏3（均0失败）、导出专项及截图合并全部通过；327张编号截图覆盖138项要求，缺失0项。当前交付自动化证据与完整截图包，最终视觉验收由负责人逐图确认；真机/iOS27/完整VoiceOver听读及Instruments未实测。本次仅文档与证据收尾，不修改应用、测试或CI代码。 [完整交付报告](docs/reviews/round-3-final-delivery-2026-11-02.md)。
 
 原生 iOS 英文全文阅读、查词、生词管理和间隔复习应用。使用 SwiftUI、SwiftData、Domain、Service 和 Repository，不依赖网页阅读器或大型 UI 框架。
 
-**CURRENT · Round 3 仍在开发验证，尚未统一验收通过。** 当前源码清单为 186 XCTest / 49 XCUITest，包含原 93 / 20。已核验的代码和失败详情见 [STATUS](STATUS.md) 与 [Round 3 开发记录](docs/reviews/round-3-development-delivery.md)，清单数量不代表通过数量。
+**CURRENT · 全量自动化通过，截图包已交付，等待负责人视觉验收。**
 
-最近已核验运行 41318724181：180 单元/0失败、大屏3/0；SE及主UI仍有失败。已针对键盘保存、重置误开阅读器和探索空库说明修复源码，待新运行复验，见[核查报告](docs/reviews/round-3-ci-41318724181-repair.md)。
+本次真实通过结果与完整下载入口见[交付报告](docs/reviews/round-3-final-delivery-2026-11-02.md)；历史失败保留在Actions与Git历史中。
 
 ## 使用入口与任务融合
 
@@ -36,3 +36,8 @@ python3 scripts/ci-test-plan.py verify
 CI 一次编译所有测试，完整单元/真实网络/Release 关卡通过后，4 个穷尽 UI 分组与 SE/大屏专项共享相同编译产物；新 main 提交取消旧运行，任一分组失败取消其余分组。失败日志、原生截图和 xcresult 仍保留。完整 PNG 包由同一次运行合并并核验 SHA，含 manifest、CSV 和逐张索引。尚未完成的最终证据不以历史绿色运行代替。
 
 规范：[SPEC](SPEC.md)、[补充规范](docs/spec-addendum-content-and-dictionary.md)、[本轮计划](docs/plans/round-3-development-plan.md)、[需求追踪](docs/requirements-traceability.md)、[测试计划](docs/test-plan.md)、[架构](docs/architecture.md)。Round 2 历史结果保留在原始独立审核和交付报告中，不作为当前提交结果。
+
+
+## Round 3截图下载
+
+[完整原生截图artifact](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/artifacts/13139234028)；[327张逐图编号与文件名](artifacts/round-3/screenshots/INDEX.md)；[138项覆盖核对](artifacts/round-3/screenshots/COVERAGE.md)。该产物属于上述已通过代码，后续仅文档提交不会改变其来源。

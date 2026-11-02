@@ -1,0 +1,449 @@
+{
+  "sourceCommit": "b13d6b4e21e425472d059770319d88cd7c50a15e",
+  "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "id": 125246739663,
+      "name": "Export diagnostic · one UI method",
+      "conclusion": "success",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/job/125246739663"
+    },
+    {
+      "id": 125249438952,
+      "name": "Build once, complete unit and network gate",
+      "conclusion": "success",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/job/125249438952"
+    },
+    {
+      "id": 125253788578,
+      "name": "Native UI · full-1 · iPhone-17-Pro",
+      "conclusion": "success",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/job/125253788578"
+    },
+    {
+      "id": 125253788619,
+      "name": "Native UI · small · iPhone-SE-3rd-generation",
+      "conclusion": "success",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/job/125253788619"
+    },
+    {
+      "id": 125253788642,
+      "name": "Native UI · full-2 · iPhone-17-Pro",
+      "conclusion": "success",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/job/125253788642"
+    },
+    {
+      "id": 125253788684,
+      "name": "Native UI · large · iPhone-17-Pro-Max",
+      "conclusion": "success",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/job/125253788684"
+    },
+    {
+      "id": 125253788734,
+      "name": "Native UI · full-3 · iPhone-17-Pro",
+      "conclusion": "success",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/job/125253788734"
+    },
+    {
+      "id": 125253788770,
+      "name": "Native UI · full-4 · iPhone-17-Pro",
+      "conclusion": "success",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/job/125253788770"
+    },
+    {
+      "id": 125267114654,
+      "name": "Combine original PNG evidence and complete index",
+      "conclusion": "success",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/job/125267114654"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 13141247249,
+      "name": "LexiDawn-round3-full-1-41436291391-1",
+      "size_in_bytes": 116284498,
+      "digest": "sha256:0ef76d36138a6047eb4ab27b4587c85afce5670b6131384508e8564a60abb26d",
+      "expires_at": "2027-01-31T11:22:14Z",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/artifacts/13141247249"
+    },
+    {
+      "id": 13140400869,
+      "name": "LexiDawn-round3-small-41436291391-1",
+      "size_in_bytes": 128197191,
+      "digest": "sha256:de7b4bb1c4e887ea7046de43b6184bbde7ca25614c52c4dc5b17083fae175def",
+      "expires_at": "2027-01-31T11:22:14Z",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/artifacts/13140400869"
+    },
+    {
+      "id": 13140165071,
+      "name": "LexiDawn-round3-full-3-41436291391-1",
+      "size_in_bytes": 89265638,
+      "digest": "sha256:6d6aa985ffdcfea7539a217402910c97a4a086142d6254db1dd410412a000c32",
+      "expires_at": "2027-01-31T11:22:14Z",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/artifacts/13140165071"
+    },
+    {
+      "id": 13139234028,
+      "name": "LexiDawn-round3-complete-native-package-41436291391-1",
+      "size_in_bytes": 284198112,
+      "digest": "sha256:6d61b1414dfa087798ddcb0ccc789bc11dff29b36a51b3b48b666f595236a8d4",
+      "expires_at": "2027-01-31T11:22:14Z",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/artifacts/13139234028"
+    },
+    {
+      "id": 13139116147,
+      "name": "LexiDawn-round3-full-2-41436291391-1",
+      "size_in_bytes": 251369766,
+      "digest": "sha256:49e1b31e400de23bf4cf92773b4f611cede502ea9b2ab6f771d1a6ff13178034",
+      "expires_at": "2027-01-31T11:22:14Z",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/artifacts/13139116147"
+    },
+    {
+      "id": 13138258516,
+      "name": "LexiDawn-round3-full-4-41436291391-1",
+      "size_in_bytes": 183297745,
+      "digest": "sha256:941e65168c62a1ffc092708e2c2f768e66cb89a452e14aceb41fa2ae19cb52f8",
+      "expires_at": "2027-01-31T11:22:14Z",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/artifacts/13138258516"
+    },
+    {
+      "id": 13138160706,
+      "name": "LexiDawn-compiled-tests-41436291391-1",
+      "size_in_bytes": 32494931,
+      "digest": "sha256:307a52076e2eac541c3f3849b0b8ecb073cd88d6b45c21853f7da9a8511207e5",
+      "expires_at": "2027-01-31T11:22:14Z",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/artifacts/13138160706"
+    },
+    {
+      "id": 13137801231,
+      "name": "LexiDawn-unit-diagnostics-41436291391-1",
+      "size_in_bytes": 353502,
+      "digest": "sha256:810f34e72fa8493b5aa4f07609833c72cd3e9ae386185a3ddc141b5849b708bb",
+      "expires_at": "2027-01-31T11:22:14Z",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/artifacts/13137801231"
+    },
+    {
+      "id": 13136813727,
+      "name": "LexiDawn-round3-large-41436291391-1",
+      "size_in_bytes": 21225097,
+      "digest": "sha256:bfd2d7f012cdeb6ee6bf272cff13a262e141046f3cbe21a8942ec73865cac945",
+      "expires_at": "2027-01-31T11:22:14Z",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/artifacts/13136813727"
+    },
+    {
+      "id": 13135914714,
+      "name": "LexiDawn-export-check-41436291391-1",
+      "size_in_bytes": 78532501,
+      "digest": "sha256:d78c1d1ec5093308ce1f429efa0fa0207816292d037cc3e6c1afcbb14c1a5dbd",
+      "expires_at": "2027-01-31T11:22:14Z",
+      "url": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/artifacts/13135914714"
+    }
+  ],
+  "round3ChangedFiles": [
+    {
+      "path": ".github/workflows/ci-supersession.yml",
+      "status": "added"
+    },
+    {
+      "path": ".github/workflows/ios-ci.yml",
+      "status": "modified"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn.xcodeproj/project.pbxproj",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/AppCore/DependencyContainer.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/AppCore/LearningServices.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/AppCore/Round3ScreenshotTransport.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Data/ArticleHistoryArchive.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Data/ArticleNetwork.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Data/ContentRepository.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Data/DictionaryAggregation.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Data/FullTextRepository.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Data/LearningModels.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Data/PersistenceModels.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Data/ReaderRepository.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Data/Repositories.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Data/ReviewRepository.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Data/VocabularyRecommendations.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Data/VocabularyRepository.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/DesignSystem/DesignTokens.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Domain/DailyTasks/DailyTasks.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Domain/Learning/ArticleDocument.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Domain/Learning/ArticleHTMLExtractor.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Domain/Learning/ArticleSources.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Domain/Learning/ArticleWebPageExtractor.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Domain/Learning/ClozeContext.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Domain/Learning/EnglishPhraseRecognizer.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Domain/Learning/FSRSScheduler.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Domain/Learning/LearningRules.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Domain/Learning/PublisherSources.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Domain/Learning/ReaderTextProjection.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Features/Learning/ArticleLibraryFeature.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Features/Learning/InteractiveEnglishText.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Features/Learning/LearningHome.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Features/Learning/MatchingBoard.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Features/Learning/ReaderFeature.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Features/Learning/ReviewFeature.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Features/Learning/SettingsFeature.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Features/Learning/SourceLicensesView.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/Features/Learning/VocabularyFeature.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Features/Learning/VocabularyRecommendationFeature.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawn/LexiDawnApp.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Resources/CONTENT-LICENSES.txt",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawn/Resources/html-entities.json",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawnTests/Round2MigrationSchema.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawnTests/Round3NetworkTests.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawnTests/Round3Tests.swift",
+      "status": "added"
+    },
+    {
+      "path": "LexiDawnUITests/LexiDawnUITests.swift",
+      "status": "modified"
+    },
+    {
+      "path": "LexiDawnUITests/Round3UITests.swift",
+      "status": "added"
+    },
+    {
+      "path": "README.md",
+      "status": "modified"
+    },
+    {
+      "path": "STATUS.md",
+      "status": "modified"
+    },
+    {
+      "path": "artifacts/round-3/screenshots/coverage-requirements.json",
+      "status": "added"
+    },
+    {
+      "path": "artifacts/round-3/screenshots/manifest.json",
+      "status": "added"
+    },
+    {
+      "path": "artifacts/round-3/screenshots/screenshots.csv",
+      "status": "added"
+    },
+    {
+      "path": "docs/architecture.md",
+      "status": "modified"
+    },
+    {
+      "path": "docs/article-source-eligibility-audit.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/daily/2026-11-01-round-3.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/requirements-traceability.md",
+      "status": "modified"
+    },
+    {
+      "path": "docs/reviews/round-3-ci-41318724181-repair.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/reviews/round-3-ci-41323390776-repair.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/reviews/round-3-ci-41326351407-repair.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/reviews/round-3-ci-41357763875-repair.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/reviews/round-3-ci-41361046807-repair.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/reviews/round-3-development-delivery.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/reviews/round-3-export-focused-41423920944.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/reviews/round-3-export-launch-isolation-41432723597.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/reviews/round-3-export-lifetime-41429945732.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/reviews/round-3-optional-free-dictionary-41420744836.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/test-plan.md",
+      "status": "modified"
+    },
+    {
+      "path": "scripts/ci-cancel-obsolete.py",
+      "status": "added"
+    },
+    {
+      "path": "scripts/ci-prepare.sh",
+      "status": "added"
+    },
+    {
+      "path": "scripts/ci-simulator.sh",
+      "status": "added"
+    },
+    {
+      "path": "scripts/ci-test-plan.py",
+      "status": "added"
+    },
+    {
+      "path": "scripts/export-round3-evidence.py",
+      "status": "added"
+    },
+    {
+      "path": "scripts/merge-round3-evidence.py",
+      "status": "added"
+    },
+    {
+      "path": "scripts/verify-round3-coverage.py",
+      "status": "added"
+    }
+  ]
+}

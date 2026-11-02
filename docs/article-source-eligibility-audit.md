@@ -1,10 +1,10 @@
-# CURRENT · ArticleSourceEligibilityAudit · 2026-11-01
+# CURRENT · ArticleSourceEligibilityAudit · 2026-11-02
 
 负责人特别指示允许个人使用场景尝试公开官网完整正文。实现把 `owner-directed-personal-use-2026-11-01` / `personal-full-text` 与出版社授权的 `audited-full-text` 分开；用户指令不是出版社许可。**当前运行会尝试下述公开官网，下面历史许可表的 pending/disabled 仅指未经审核授权模式，不代表个人模式没有尝试。** 登录/验证码/付费墙/403 不绕过，不提供摘要或原站阅读。
 
 ## 真实运行结果
 
-代码 `d37b9aa65aebd6bc010de57294ee243c1a95d825` 的 [Actions 41295662878](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41295662878) 真实来源测试通过，10 源共 29 篇通过 Repository 全文准入；后续 `c96015a` 的第一次运行真实文章测试也通过，Free Dictionary 单独失败，整次不算通过。
+代码 `b13d6b4e21e425472d059770319d88cd7c50a15e` 的 [Actions 41436291391](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391) 全量成功。真实来源测试日志确认10源29篇通过Repository全文准入；327张编号截图中，10源各自library/body/scrolled/end证据齐全。Free及Wiktionary真实词典测试本次也均成功。下表失败来源是历史观察，不把它们计入本次10源；成功不代表永久可用或出版社授权。
 
 | 官方来源适配器 | 运行准入方式 | 已观察真实结果 |
 |---|---|---|
