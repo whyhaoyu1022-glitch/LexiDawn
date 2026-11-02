@@ -37,6 +37,18 @@ jobs:
           set -euo pipefail
           TEST_RUN_FILE="$(python3 -c 'import os,pathlib; print(next((pathlib.Path(os.environ["RUNNER_TEMP"])/"export-derived/Build/Products").glob("*.xctestrun")))')"
           xcodebuild test-without-building -xctestrun "$TEST_RUN_FILE" -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/export-lifecycle.xcresult" -only-testing:LexiDawnTests/Round3Tests/testVocabularyExportCallbackSurvivesPresentationDismissalAndRejectsOldRequest 2>&1 | tee "${RUNNER_TEMP}/export-lifecycle.log"
+      - name: Isolate native UI from the app-hosted lifecycle test simulator
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          xcrun simctl list devices --json > "${RUNNER_TEMP}/export-unit-simulator-state.json"
+          UNIT_SIM_STATE="$(python3 -c 'import json,os,pathlib; data=json.loads((pathlib.Path(os.environ["RUNNER_TEMP"])/"export-unit-simulator-state.json").read_text()); matches=[v for values in data["devices"].values() for v in values if v["udid"]==os.environ["LEXIDAWN_SIMULATOR_ID"]]; assert len(matches)==1; print(matches[0]["state"])')"
+          case "$UNIT_SIM_STATE" in
+            Booted) xcrun simctl shutdown "$LEXIDAWN_SIMULATOR_ID" ;;
+            Shutdown) ;;
+            *) echo "::error::Unexpected lifecycle simulator state: $UNIT_SIM_STATE"; exit 1 ;;
+          esac
+          bash scripts/ci-simulator.sh iPhone-17-Pro
       - name: Test only real vocabulary export cancellation and JSON CSV save
         timeout-minutes: 12
         run: |
@@ -70,6 +82,7 @@ jobs:
             ${{ runner.temp }}/export-build.log
             ${{ runner.temp }}/export-lifecycle.log
             ${{ runner.temp }}/export-lifecycle.xcresult
+            ${{ runner.temp }}/export-unit-simulator-state.json
             ${{ runner.temp }}/export-ui.log
             ${{ runner.temp }}/export.xcresult
             ${{ runner.temp }}/export-attachments
@@ -86,6 +99,7 @@ jobs:
             ${{ runner.temp }}/export-build.log
             ${{ runner.temp }}/export-lifecycle.log
             ${{ runner.temp }}/export-lifecycle.xcresult
+            ${{ runner.temp }}/export-unit-simulator-state.json
             ${{ runner.temp }}/export-ui.log
             ${{ runner.temp }}/export.xcresult
             ${{ runner.temp }}/export-attachments

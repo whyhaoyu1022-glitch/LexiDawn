@@ -1,6 +1,6 @@
 # CURRENT · Round 3 开发与验证中（2026-11-02）
 
-导出专项41429945732仅1 UI执行/1失败，全量未启动。这次文件名、44pt取消与关闭均通过，真实Save后缺少完成反馈。源码发现展示绑定先清空会丢弃迟到回调、弱delegate会释放的竞态；改为独立session持有请求/回调至真实结果，再清理。新增一项生命周期确定性测试，专项先跑它再跑原导出UI，两者通过才全量。源码186/49，138截图状态不变，原生结果待新专项。 [日志证据、规格和验证边界](docs/reviews/round-3-export-lifetime-41429945732.md)。
+最新导出专项41432723597：编译和生命周期单元1/0通过；UI在启动App时超时（1/1），尚未进入导出窗口，全量均跳过。本次隔离专项模拟器：关闭单元测试所用设备，创建并启动全新UI设备；保留所有真实保存断言及失败门禁。源码186/49、138截图状态不变；新专项尚待原生验证，不能把启动失败算作导出保存验证。 [日志证据、规格和验证边界](docs/reviews/round-3-export-launch-isolation-41432723597.md)。
 
 尚未达到统一验收条件。**本次源码清单为 186 XCTest / 49 XCUITest，包含原 93 / 20；新增清单不是通过结果。** 所有远端开发直接提交 main，没有新建分支。本次修复将由新的 Actions 验证，准确 SHA 与运行链接见 GitHub main/Actions。
 
@@ -8,6 +8,7 @@
 
 | 代码 SHA | Actions | 实际结果 |
 |---|---|---|
+| 8c21befea90f22885f446b6bea4dd02078306843 | [41432723597](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41432723597) | 专项编译成功，生命周期单元1/0；UI在launch()启动超时1/1，未进入导出；全量跳过。 |
 | 548aa9f095c20a267c9dac1ba167513df063bb75 | [41429945732](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41429945732) | 导出专项编译成功，1 UI/1失败；取消已通过，Save后未收到成功反馈；全量跳过。 |
 | 80ffd4446b665968eac2101ad51c74f9e8b6a829 | [41423920944](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41423920944) | Debug/Release、185单元/0失败；full-2 12/0、full-3 13/0，SE/大屏成功；full-4导出取消失败13/1，full-1取消，尚未统一通过。 |
 | 954b30b6ee38059c16560eb68c661329dd439d35 | [41420744836](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41420744836) | Debug/Release通过；184单元/2失败（Free真实404、推荐测试日期不一致）；Wiktionary真实成功，UI跳过。 |
@@ -40,7 +41,7 @@
 
 ## 仍待完成的验收
 
-1. 本次代码的完整构建、180单元/网络/迁移测试、49主UI及SE/大屏专项。
+1. 本次代码的完整构建、186单元/网络/迁移测试、49主UI及SE/大屏专项。
 2. 全部138项状态对应的真实PNG核对与逐图审阅，同一代码的完整ZIP、manifest、CSV、索引和xcresult。
 3. 最终报告、真实main SHA及运行结果回填。尚未取得iOS27/真机、完整VoiceOver听读或Instruments通过证据；现有CI是已批准Xcode26.6/iOS26.5兼容模拟器。
 
