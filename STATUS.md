@@ -1,13 +1,14 @@
 # CURRENT · Round 3 开发与验证中（2026-11-02）
 
-最新41423920944：185单元/0失败，主full-2 12/0、full-3 13/0，SE/大屏成功；导出文件名已通过，失败在取消按钮落入状态栏、点击点{-1,-1}导致窗口未关闭。已改为受安全区域约束的原生容器，保留所有取消/Save断言。本次[export-only]提交先跑一个导出UI；成功才自动全量，失败则停止，不再先浪费全量运行。新专项尚未验证。 [现场证据、规格与执行规则](docs/reviews/round-3-export-focused-41423920944.md)。
+导出专项41429945732仅1 UI执行/1失败，全量未启动。这次文件名、44pt取消与关闭均通过，真实Save后缺少完成反馈。源码发现展示绑定先清空会丢弃迟到回调、弱delegate会释放的竞态；改为独立session持有请求/回调至真实结果，再清理。新增一项生命周期确定性测试，专项先跑它再跑原导出UI，两者通过才全量。源码186/49，138截图状态不变，原生结果待新专项。 [日志证据、规格和验证边界](docs/reviews/round-3-export-lifetime-41429945732.md)。
 
-尚未达到统一验收条件。**本次源码清单为 185 XCTest / 49 XCUITest，包含原 93 / 20；新增清单不是通过结果。** 所有远端开发直接提交 main，没有新建分支。本次修复将由新的 Actions 验证，准确 SHA 与运行链接见 GitHub main/Actions。
+尚未达到统一验收条件。**本次源码清单为 186 XCTest / 49 XCUITest，包含原 93 / 20；新增清单不是通过结果。** 所有远端开发直接提交 main，没有新建分支。本次修复将由新的 Actions 验证，准确 SHA 与运行链接见 GitHub main/Actions。
 
 ## 最近已核验结果
 
 | 代码 SHA | Actions | 实际结果 |
 |---|---|---|
+| 548aa9f095c20a267c9dac1ba167513df063bb75 | [41429945732](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41429945732) | 导出专项编译成功，1 UI/1失败；取消已通过，Save后未收到成功反馈；全量跳过。 |
 | 80ffd4446b665968eac2101ad51c74f9e8b6a829 | [41423920944](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41423920944) | Debug/Release、185单元/0失败；full-2 12/0、full-3 13/0，SE/大屏成功；full-4导出取消失败13/1，full-1取消，尚未统一通过。 |
 | 954b30b6ee38059c16560eb68c661329dd439d35 | [41420744836](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41420744836) | Debug/Release通过；184单元/2失败（Free真实404、推荐测试日期不一致）；Wiktionary真实成功，UI跳过。 |
 | 03a4b0edad02a18de2d644822b545536d45dd92d | [41361046807](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41361046807) | Debug/Release和测试目标编译成功；182单元/1失败（Free真实book三次404）；UI及合并跳过，整次失败。 |

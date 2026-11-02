@@ -225,6 +225,43 @@ private actor CacheRequestProbe: DictionaryProvider {
         XCTAssertEqual(try learning.vocabulary.entries().map(\.id), [entry.entryID])
         XCTAssertEqual(try learning.vocabulary.find(surface: "book")?.notes, "Quoted \"note\"\n第二行")
     }
+    func testVocabularyExportCallbackSurvivesPresentationDismissalAndRejectsOldRequest() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let session = VocabularyExportSession(files: VocabularyExportFileService(directory: directory))
+        try session.prepare(Data("{\"explicitCallbackFixture\":true}".utf8), format: .json)
+        weak var pendingDelegate: VocabularyExportPicker.Coordinator?
+        var firstURL: URL?
+        do {
+            let request = try XCTUnwrap(session.presentation)
+            pendingDelegate = request.delegate; firstURL = request.file.url
+        }
+        let stagedURL = try XCTUnwrap(firstURL)
+        session.presentation = nil // Reproduce SwiftUI dismissal before UIKit delegate delivery.
+        session.presentationDidDismiss()
+        XCTAssertTrue(session.isBusy)
+        XCTAssertNotNil(pendingDelegate) // The session, not a test-local request, retains it.
+        XCTAssertTrue(FileManager.default.fileExists(atPath: stagedURL.path))
+        XCTAssertNil(session.notice)
+        let callback = try XCTUnwrap(pendingDelegate)
+        let target = directory.appendingPathComponent("LexiDawn-vocabulary.json")
+        // Explicit delegate fixture, not evidence of a real system save.
+        callback.finished(target)
+        XCTAssertEqual(session.notice, "已导出 LexiDawn-vocabulary.json")
+        XCTAssertFalse(session.isBusy)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: stagedURL.path))
+        try session.prepare(Data("lemma,meaning\nbook,书".utf8), format: .csv)
+        let second = try XCTUnwrap(session.presentation)
+        XCTAssertNil(session.notice)
+        callback.finished(target)
+        XCTAssertEqual(session.presentation?.id, second.id)
+        XCTAssertNil(session.notice)
+        second.delegate.finished(nil)
+        XCTAssertNil(session.presentation)
+        XCTAssertNil(session.notice)
+        XCTAssertFalse(session.isBusy)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: second.file.url.path))
+    }
     func testVocabularyExportStagingFailureDoesNotPresentEmptyFileOrOverwriteData() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

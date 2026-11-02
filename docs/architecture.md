@@ -1,6 +1,6 @@
 # CURRENT · Round 3 架构与数据模型
 
-最新41423920944：185单元/0失败，主full-2 12/0、full-3 13/0，SE/大屏成功；导出文件名已通过，失败在取消按钮落入状态栏、点击点{-1,-1}导致窗口未关闭。已改为受安全区域约束的原生容器，保留所有取消/Save断言。本次[export-only]提交先跑一个导出UI；成功才自动全量，失败则停止，不再先浪费全量运行。新专项尚未验证。 [现场证据、规格与执行规则](reviews/round-3-export-focused-41423920944.md)。
+导出专项41429945732仅1 UI执行/1失败，全量未启动。这次文件名、44pt取消与关闭均通过，真实Save后缺少完成反馈。源码发现展示绑定先清空会丢弃迟到回调、弱delegate会释放的竞态；改为独立session持有请求/回调至真实结果，再清理。新增一项生命周期确定性测试，专项先跑它再跑原导出UI，两者通过才全量。源码186/49，138截图状态不变，原生结果待新专项。 [日志证据、规格和验证边界](reviews/round-3-export-lifetime-41429945732.md)。
 
 沿用 SwiftUI → ViewModel/Service → Domain/Repository → RepositoryWriter → SwiftData。网络不在 View，数据库操作在 Repository；UI只维护选择与草稿。每次写使用独立 context，关闭 autosave，同步 save/rollback，读取用新context，不复用失败上下文。
 

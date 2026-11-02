@@ -1,10 +1,10 @@
 # 词光 LexiDawn
 
-最新41423920944：185单元/0失败，主full-2 12/0、full-3 13/0，SE/大屏成功；导出文件名已通过，失败在取消按钮落入状态栏、点击点{-1,-1}导致窗口未关闭。已改为受安全区域约束的原生容器，保留所有取消/Save断言。本次[export-only]提交先跑一个导出UI；成功才自动全量，失败则停止，不再先浪费全量运行。新专项尚未验证。 [专项说明](docs/reviews/round-3-export-focused-41423920944.md)。
+导出专项41429945732仅1 UI执行/1失败，全量未启动。这次文件名、44pt取消与关闭均通过，真实Save后缺少完成反馈。源码发现展示绑定先清空会丢弃迟到回调、弱delegate会释放的竞态；改为独立session持有请求/回调至真实结果，再清理。新增一项生命周期确定性测试，专项先跑它再跑原导出UI，两者通过才全量。源码186/49，138截图状态不变，原生结果待新专项。 [专项记录](docs/reviews/round-3-export-lifetime-41429945732.md)。
 
 原生 iOS 英文全文阅读、查词、生词管理和间隔复习应用。使用 SwiftUI、SwiftData、Domain、Service 和 Repository，不依赖网页阅读器或大型 UI 框架。
 
-**CURRENT · Round 3 仍在开发验证，尚未统一验收通过。** 当前源码清单为 185 XCTest / 49 XCUITest，包含原 93 / 20。已核验的代码和失败详情见 [STATUS](STATUS.md) 与 [Round 3 开发记录](docs/reviews/round-3-development-delivery.md)，清单数量不代表通过数量。
+**CURRENT · Round 3 仍在开发验证，尚未统一验收通过。** 当前源码清单为 186 XCTest / 49 XCUITest，包含原 93 / 20。已核验的代码和失败详情见 [STATUS](STATUS.md) 与 [Round 3 开发记录](docs/reviews/round-3-development-delivery.md)，清单数量不代表通过数量。
 
 最近已核验运行 41318724181：180 单元/0失败、大屏3/0；SE及主UI仍有失败。已针对键盘保存、重置误开阅读器和探索空库说明修复源码，待新运行复验，见[核查报告](docs/reviews/round-3-ci-41318724181-repair.md)。
 

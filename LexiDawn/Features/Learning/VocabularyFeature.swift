@@ -12,10 +12,7 @@ struct VocabularyListView: View {
     @State private var status: VocabularyStatusFilter = .all
     @State private var sort: VocabularySort = .added
     @State private var now = Date()
-    @State private var exportFile: VocabularyExportFile?
-    @State private var cleanupExport: VocabularyExportFile?
-    @State private var exportNotice: String?
-    private let exportFiles = VocabularyExportFileService()
+    @StateObject private var exports = VocabularyExportSession()
     private var items: [VocabularyItem] { VocabularyQuery.apply(allItems, search: search, type: filter, status: status, sort: sort, at: now) }
     var body: some View {
         NavigationStack {
@@ -43,8 +40,9 @@ struct VocabularyListView: View {
                     }.accessibilityIdentifier("vocabulary-entry-\(item.lemma)").swipeActions { Button("移除", role: .destructive) { removing = item } }
                 }
                 if let error { Text(error).foregroundStyle(.red); Button("重新读取", action: load) }
+                if let error = exports.error { Text(error).foregroundStyle(.red) }
             }.safeAreaInset(edge: .top) {
-                if let exportNotice {
+                if let exportNotice = exports.notice {
                     Text(exportNotice).font(.subheadline).frame(maxWidth: .infinity, alignment: .leading).padding()
                         .background(.regularMaterial).accessibilityIdentifier("vocabulary-export-completed")
                 }
@@ -52,12 +50,9 @@ struct VocabularyListView: View {
                 .navigationTitle("生词本").task { load() }.onReceive(learning.$revision) { _ in load() }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in load() }
                 .toolbar { Menu("导出生词", systemImage: "square.and.arrow.up") { Button("导出 JSON（完整学习数据）") { prepareExport(.json) }; Button("导出 CSV") { prepareExport(.csv) } }.accessibilityIdentifier("vocabulary-export") }
-                .sheet(item: $exportFile, onDismiss: clearExport) { file in
-                    VocabularyExportPicker(file: file) { destination in
-                        guard exportFile?.id == file.id else { return }
-                        if let destination { exportNotice = "已导出 " + destination.lastPathComponent }
-                        exportFile = nil
-                    }.presentationDetents([.large])
+                .sheet(item: $exports.presentation, onDismiss: exports.presentationDidDismiss) { request in
+                    VocabularyExportPicker(file: request.file, delegate: request.delegate)
+                        .presentationDetents([.large]).interactiveDismissDisabled()
                 }
                 .alert("确认移除生词？", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })) {
                     Button("取消", role: .cancel) { removing = nil }
@@ -67,26 +62,63 @@ struct VocabularyListView: View {
     }
     private func load() { do { allItems = try learning.vocabulary.entries(); now = Date(); error = nil } catch { self.error = error.localizedDescription } }
     private func prepareExport(_ format: VocabularyExportFormat) {
-        guard exportFile == nil, cleanupExport == nil else { return }
-        exportNotice = nil
-        do {
-            let file = try exportFiles.prepare(learning.vocabulary.export(format, at: Date()), format: format)
-            cleanupExport = file; exportFile = file; error = nil
-        }
+        guard !exports.isBusy else { return }
+        do { try exports.prepare(learning.vocabulary.export(format, at: Date()), format: format); error = nil }
         catch { self.error = error.localizedDescription }
     }
-    private func clearExport() {
-        guard let file = cleanupExport else { return }
-        defer { cleanupExport = nil }
-        do { try exportFiles.discard(file) } catch { self.error = error.localizedDescription }
+}
+
+struct VocabularyExportPresentation: Identifiable {
+    var id: UUID { file.id }
+    let file: VocabularyExportFile
+    let delegate: VocabularyExportPicker.Coordinator
+}
+
+/// Retains the request and UIKit delegate independently of SwiftUI's sheet binding.
+/// UIKit can dismiss its presentation before delivering the export completion callback.
+@MainActor final class VocabularyExportSession: ObservableObject {
+    @Published var presentation: VocabularyExportPresentation?
+    @Published private(set) var notice: String?
+    @Published private(set) var error: String?
+    private var active: VocabularyExportPresentation?
+    private let files: VocabularyExportFileService
+    var isBusy: Bool { active != nil }
+    init(files: VocabularyExportFileService = VocabularyExportFileService()) { self.files = files }
+    func prepare(_ data: Data, format: VocabularyExportFormat) throws {
+        guard active == nil else { return }
+        notice = nil; error = nil
+        let file = try files.prepare(data, format: format)
+        let delegate = VocabularyExportPicker.Coordinator { [weak self] destination in
+            self?.finish(id: file.id, destination: destination)
+        }
+        let request = VocabularyExportPresentation(file: file, delegate: delegate)
+        active = request; presentation = request
+        #if DEBUG
+        print("VOCAB_EXPORT_DIAGNOSTIC phase=prepared")
+        #endif
+    }
+    func presentationDidDismiss() {
+        // Do not invalidate the active request or delete its source before the delegate.
+        #if DEBUG
+        print("VOCAB_EXPORT_DIAGNOSTIC phase=presentation-dismissed active=\(active != nil)")
+        #endif
+    }
+    private func finish(id: UUID, destination: URL?) {
+        guard let request = active, request.id == id else { return }
+        #if DEBUG
+        print("VOCAB_EXPORT_DIAGNOSTIC phase=callback copied=\(destination != nil)")
+        #endif
+        if let destination { notice = "已导出 " + destination.lastPathComponent }
+        active = nil; presentation = nil
+        do { try files.discard(request.file) } catch { self.error = error.localizedDescription }
     }
 }
 
 /// Public UIKit export API receives an existing file, never a changing optional document.
 struct VocabularyExportPicker: UIViewControllerRepresentable {
     let file: VocabularyExportFile
-    let finished: (URL?) -> Void
-    func makeCoordinator() -> Coordinator { Coordinator(finished: finished) }
+    let delegate: Coordinator
+    func makeCoordinator() -> Coordinator { delegate }
     func makeUIViewController(context: Context) -> UIViewController {
         let container = UIViewController()
         container.view.backgroundColor = .systemBackground
@@ -99,7 +131,7 @@ struct VocabularyExportPicker: UIViewControllerRepresentable {
         let cancel = UIButton(type: .system)
         cancel.setTitle("取消", for: .normal)
         cancel.accessibilityIdentifier = "cancel-vocabulary-export"
-        cancel.addAction(UIAction { _ in finished(nil) }, for: .touchUpInside)
+        cancel.addAction(UIAction { _ in delegate.finished(nil) }, for: .touchUpInside)
         cancel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
         let header = UIStackView(arrangedSubviews: [filename, cancel])
         header.axis = .horizontal; header.alignment = .center; header.spacing = 16
