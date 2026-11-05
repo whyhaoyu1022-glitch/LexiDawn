@@ -108,7 +108,7 @@ jobs:
 
   build-and-test:
     needs: export-check
-    if: ${{ always() && !cancelled() && (needs.export-check.result == 'success' || needs.export-check.result == 'skipped') }}
+    if: ${{ always() && !cancelled() && !contains(github.event.head_commit.message, '[ipa-only]') && (needs.export-check.result == 'success' || needs.export-check.result == 'skipped') }}
     name: Build once, complete unit and network gate
     runs-on: macos-latest
     outputs:

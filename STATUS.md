@@ -1,4 +1,8 @@
-# CURRENT · Round 3 全量自动化通过，截图与报告已交付（2026-11-02）
+# CURRENT · Round 3全量已通过；首次未签名真机IPA打包中（2026-11-05）
+
+## 2026-11-05 · 首次真机未签名IPA打包（构建结果待原生任务）
+
+负责人授权仅导出未签名IPA，不重跑全量。核查发现原概念PNG IDAT截断/无IEND，保留原文件，按SPEC原品牌方向重建1024不透明AppIcon并接入资源编译；显示名称保持LexiDawn。新增独立iphoneos/arm64 Release打包及实际包校验，最低系统在命令中覆盖为26.0，项目原27.0目标不改；如低版本API不兼容必须由真实编译报错，不伪改IPA绕过。打包提交用[ipa-only]跳过原全量构建/测试，只产出unsigned包、manifest/SHA/日志及AltServer安装指南。Swift业务和全部旧测试不修改；尚未签名、尚未安装、构建结果待本次任务。
 
 全量 CI [41436291391](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391) 已完成且成功，测试代码为 `b13d6b4e21e425472d059770319d88cd7c50a15e`。Debug/Release、186 XCTest（0失败）、49主 XCUITest（0失败）、SE7/大屏3（均0失败）、导出专项及截图合并全部通过；327张编号截图覆盖138项要求，缺失0项。当前交付自动化证据与完整截图包，最终视觉验收由负责人逐图确认；真机/iOS27/完整VoiceOver听读及Instruments未实测。本次仅文档与证据收尾，不修改应用、测试或CI代码。
 
