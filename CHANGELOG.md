@@ -1,3 +1,7 @@
+## 2026-11-06 · Round 4首次真机21图研究与任务书（计划完成，尚未实现）
+
+负责人上传21张不同批注HEIC，已逐张完整查看，并对7张密集/手写/黑字区域另行放大；按原文件名建立R4-P01–P21、R4-F01–F21、108个验收点和21个测试族。新增约1000行Round4任务书、逐图审阅及哈希清单，涵盖UI精简/渐变卡/小浮层、词典可靠性和词形、复习预检/延期/纠正/串题、自动保存、关于页、旧数据迁移、截图与统一验收。新批注冲突优先于旧SPEC，原版权/学习证据和数据保护保持。仅修改文档/索引，没有修复功能、运行测试或导出新IPA；本次文档提交使用[skip ci]。
+
 ## 2026-11-05 · 首次未签名真机IPA已导出
 
 main构建代码 `39c5f7056644972ca0030a1cb041400a08d52c3c`，[专用打包42027995248](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42027995248) 成功，原全量iOS CI明确skipped。本次只构建iphoneos/arm64 Release，Xcode26.6(17F113)/SDK26.5，最低iOS26.0，显示名LexiDawn，版本0.1.0(1)。实际IPA为6967717字节，SHA256 `2f8b2757a5aed10cee4cfc86f5055e4c4d3cbd880849e6391c1b8b16bf94e8c2`。AppIcon资源编译、完整1024不透明PNG、实际Info.plist、iOS Mach-O、无签名/无profile及ZIP CRC均通过；下载后再校验同一字节/权限。signed=false、installedOnDevice=false、testsRerun=false。未提供或索取Apple凭据；由负责人用AltServer本机重签安装。

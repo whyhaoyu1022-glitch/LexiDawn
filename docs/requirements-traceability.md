@@ -1,4 +1,38 @@
-# CURRENT · Round 3 需求追踪与自动化证据
+# CURRENT · Round 4需求追踪已规划，尚未实施（2026-11-06）
+
+## 2026-11-06 · Round 4首次真机21图研究与任务书（计划完成，尚未实现）
+
+负责人上传21张不同批注HEIC，已逐张完整查看，并对7张密集/手写/黑字区域另行放大；按原文件名建立R4-P01–P21、R4-F01–F21、108个验收点和21个测试族。新增约1000行Round4任务书、逐图审阅及哈希清单，涵盖UI精简/渐变卡/小浮层、词典可靠性和词形、复习预检/延期/纠正/串题、自动保存、关于页、旧数据迁移、截图与统一验收。新批注冲突优先于旧SPEC，原版权/学习证据和数据保护保持。仅修改文档/索引，没有修复功能、运行测试或导出新IPA；本次文档提交使用[skip ci]。
+
+[完整任务书](plans/round-4-development-specification.md) · [逐图审阅](reviews/round-4-first-device-21-image-audit-2026-11-06.md) · [机器清单](reviews/round-4-feedback-manifest.json)。F编号为强制整改，A编号为逐条验收，T编号为测试族；以下是计划，不是已运行测试结果。
+
+| 原图ID | 文件 | 需求 | 验收数 | 测试族 | 当前状态 |
+|---|---|---|---|---|---|
+| R4-P01 | IMG_8854.heic | R4-F01 | 5 | R4-T01 | planned |
+| R4-P02 | IMG_8857.heic | R4-F02 | 5 | R4-T02 | planned |
+| R4-P03 | IMG_8858.heic | R4-F03 | 5 | R4-T03 | planned |
+| R4-P04 | IMG_8859.heic | R4-F04 | 5 | R4-T04 | planned |
+| R4-P05 | IMG_8860.heic | R4-F05 | 5 | R4-T05 | planned |
+| R4-P06 | IMG_8862.heic | R4-F06 | 5 | R4-T06 | planned |
+| R4-P07 | IMG_8863.heic | R4-F07 | 5 | R4-T07 | planned |
+| R4-P08 | IMG_8864.heic | R4-F08 | 5 | R4-T08 | planned |
+| R4-P09 | IMG_8866.heic | R4-F09 | 6 | R4-T09 | planned |
+| R4-P10 | IMG_8867.heic | R4-F10 | 5 | R4-T10 | planned |
+| R4-P11 | IMG_8869.heic | R4-F11 | 5 | R4-T11 | planned |
+| R4-P12 | IMG_8870.heic | R4-F12 | 5 | R4-T12 | planned |
+| R4-P13 | IMG_8872.heic | R4-F13 | 5 | R4-T13 | planned |
+| R4-P14 | IMG_8873.heic | R4-F14 | 5 | R4-T14 | planned |
+| R4-P15 | IMG_8875.heic | R4-F15 | 5 | R4-T15 | planned |
+| R4-P16 | IMG_8876.heic | R4-F16 | 6 | R4-T16 | planned |
+| R4-P17 | IMG_8878.heic | R4-F17 | 5 | R4-T17 | planned |
+| R4-P18 | IMG_8879.heic | R4-F18 | 5 | R4-T18 | planned |
+| R4-P19 | IMG_8880.heic | R4-F19 | 5 | R4-T19 | planned |
+| R4-P20 | IMG_8881.heic | R4-F20 | 5 | R4-T20 | planned |
+| R4-P21 | IMG_8883.heic | R4-F21 | 6 | R4-T21 | planned |
+
+本轮沿用现有测试和数据安全要求；批准改变交互的旧UI断言必须迁移到对应F/A新合同，不能删除持久化、失败和业务门禁断言。最终验收仍需实际实现、真实CI、原始截图和负责人真机复验。
+
+## Round 3历史证据（不得冒充Round 4通过）
 
 ## 2026-11-05 · 首次未签名真机IPA已导出
 

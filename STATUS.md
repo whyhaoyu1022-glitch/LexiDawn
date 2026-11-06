@@ -1,4 +1,12 @@
-# CURRENT · Round 3全量已通过；首次未签名真机IPA已导出（2026-11-05）
+# CURRENT · Round 4任务书已制定，21图整改尚未开发（2026-11-06）
+
+本轮当前交付为研究/计划：21/21原图逐张核对，108条逐图验收标准，21组测试场景。没有修改产品代码或测试，没有新CI/真机结果；此前Round3与首IPA成功是历史事实，不能算本轮21项已修复。
+
+- [Round 4完整开发任务书](docs/plans/round-4-development-specification.md)
+- [21图逐张批注与圈画审阅](docs/reviews/round-4-first-device-21-image-audit-2026-11-06.md)
+- [原件哈希/需求/验收机器清单](docs/reviews/round-4-feedback-manifest.json)
+
+## Round 3与首IPA历史状态（2026-11-05及以前）
 
 ## 2026-11-05 · 首次未签名真机IPA已导出
 

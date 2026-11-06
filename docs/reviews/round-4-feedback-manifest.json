@@ -1,0 +1,1377 @@
+{
+  "sourceArchive": "修改意见(1).zip",
+  "archiveSHA256": "e754df2436b246c4798a95775a5f10e7776bd56c85fb7045ff5351b2ff302528",
+  "imageCount": 21,
+  "images": [
+    {
+      "imageID": "R4-P01",
+      "originalFile": "IMG_8854.heic",
+      "sha256": "f1b57d1c74afa1c30c916b107abf3b29b2a7db942593f41ce6680145e21dc25b",
+      "sizeBytes": 1453704,
+      "previewFile": "IMG_8854.png",
+      "width": 1206,
+      "height": 2565
+    },
+    {
+      "imageID": "R4-P02",
+      "originalFile": "IMG_8857.heic",
+      "sha256": "6627297897b05ae88cb51bdc175579d8bb1fa73888e634e0c06afb354834d6eb",
+      "sizeBytes": 1389860,
+      "previewFile": "IMG_8857.png",
+      "width": 1206,
+      "height": 2620
+    },
+    {
+      "imageID": "R4-P03",
+      "originalFile": "IMG_8858.heic",
+      "sha256": "29c00e705e502cd00c11ff6dbc9684213fd3ee67f5700a380cc83478a6cac1fc",
+      "sizeBytes": 988146,
+      "previewFile": "IMG_8858.png",
+      "width": 1205,
+      "height": 2622
+    },
+    {
+      "imageID": "R4-P04",
+      "originalFile": "IMG_8859.heic",
+      "sha256": "9db1ab75fa60d2dc2344345dd4f1413e03b2fdf69c9d8d2fb3fb6910bc545c9a",
+      "sizeBytes": 926090,
+      "previewFile": "IMG_8859.png",
+      "width": 1206,
+      "height": 2620
+    },
+    {
+      "imageID": "R4-P05",
+      "originalFile": "IMG_8860.heic",
+      "sha256": "c9a54257151a02989e9e36faa4a4ef617bc3c8c462460b5e97c9261a026cb8a4",
+      "sizeBytes": 1049142,
+      "previewFile": "IMG_8860.png",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "imageID": "R4-P06",
+      "originalFile": "IMG_8862.heic",
+      "sha256": "3ff72be8cc02c6c1f9f461986767d58bcc799447610376b4792bbdc5cd5f7b2b",
+      "sizeBytes": 800005,
+      "previewFile": "IMG_8862.png",
+      "width": 1171,
+      "height": 2622
+    },
+    {
+      "imageID": "R4-P07",
+      "originalFile": "IMG_8863.heic",
+      "sha256": "a382ae8d1aa72653a8bb9cfb64527ca8290d890507975392036c4fb44050820b",
+      "sizeBytes": 677961,
+      "previewFile": "IMG_8863.png",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "imageID": "R4-P08",
+      "originalFile": "IMG_8864.heic",
+      "sha256": "9c76007bbf3f7530e4c7d0013997d011be05a098aadce26e0adbe20fa902d71d",
+      "sizeBytes": 1029371,
+      "previewFile": "IMG_8864.png",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "imageID": "R4-P09",
+      "originalFile": "IMG_8866.heic",
+      "sha256": "c79dbe8603818b296aad1636518737628e08c6311a3e50b6109a07a2409fe5c1",
+      "sizeBytes": 1811506,
+      "previewFile": "IMG_8866.png",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "imageID": "R4-P10",
+      "originalFile": "IMG_8867.heic",
+      "sha256": "68220b5528e10f1fb81011b93701a42bf90eb59dd56d5a6afd82c1bd2942daef",
+      "sizeBytes": 1057714,
+      "previewFile": "IMG_8867.png",
+      "width": 1205,
+      "height": 2622
+    },
+    {
+      "imageID": "R4-P11",
+      "originalFile": "IMG_8869.heic",
+      "sha256": "cc18c3762dfcadd0209e7695d8751e766e791ad07db1f0a2085ccb793f3e2a49",
+      "sizeBytes": 1243068,
+      "previewFile": "IMG_8869.png",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "imageID": "R4-P12",
+      "originalFile": "IMG_8870.heic",
+      "sha256": "c97902f9413febabed28a24194921e3d84b838e64152000401a72e18e27314d6",
+      "sizeBytes": 1242588,
+      "previewFile": "IMG_8870.png",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "imageID": "R4-P13",
+      "originalFile": "IMG_8872.heic",
+      "sha256": "0f3a649f8a55a02fd2c8a68ccd30583db6e49d98362b3e6b95cb0de594118199",
+      "sizeBytes": 1981195,
+      "previewFile": "IMG_8872.png",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "imageID": "R4-P14",
+      "originalFile": "IMG_8873.heic",
+      "sha256": "10ebb6633300217b97faad0d3528971379b3837f539827dba131a4fadc0471af",
+      "sizeBytes": 1477758,
+      "previewFile": "IMG_8873.png",
+      "width": 1205,
+      "height": 2622
+    },
+    {
+      "imageID": "R4-P15",
+      "originalFile": "IMG_8875.heic",
+      "sha256": "4ed7adc0721a4d494a90c430e21674d670c05b2b350703f79dd511c38a12e9f8",
+      "sizeBytes": 1279485,
+      "previewFile": "IMG_8875.png",
+      "width": 1206,
+      "height": 2621
+    },
+    {
+      "imageID": "R4-P16",
+      "originalFile": "IMG_8876.heic",
+      "sha256": "197522dae6ae40057892b3ec49e7efa1ed3162a22f29540c4e6499d444035ed9",
+      "sizeBytes": 1018644,
+      "previewFile": "IMG_8876.png",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "imageID": "R4-P17",
+      "originalFile": "IMG_8878.heic",
+      "sha256": "8dedb9d37fe854225c6d7561cc19de5eed65a84c611475f832e860215a2a81fd",
+      "sizeBytes": 939696,
+      "previewFile": "IMG_8878.png",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "imageID": "R4-P18",
+      "originalFile": "IMG_8879.heic",
+      "sha256": "69467b3d60a6d13a705faa50c675668a4a48ca80be9b19877bf5083e9866e777",
+      "sizeBytes": 1083997,
+      "previewFile": "IMG_8879.png",
+      "width": 1206,
+      "height": 2621
+    },
+    {
+      "imageID": "R4-P19",
+      "originalFile": "IMG_8880.heic",
+      "sha256": "e9e2b81ea27bc3c4489c489cca3e3b04c1678884e1958ae5482f8788fa1e2e33",
+      "sizeBytes": 951191,
+      "previewFile": "IMG_8880.png",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "imageID": "R4-P20",
+      "originalFile": "IMG_8881.heic",
+      "sha256": "5e256a4df4f6432574b194b56dbebf89eab733877c9014e2f3ff45480105e3dd",
+      "sizeBytes": 1135991,
+      "previewFile": "IMG_8881.png",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "imageID": "R4-P21",
+      "originalFile": "IMG_8883.heic",
+      "sha256": "ade6a1dd41c0fd7d934b410d9d3249eb92a9112e0ed497baf38f5447f5d9fe1f",
+      "sizeBytes": 1394702,
+      "previewFile": "IMG_8883.png",
+      "width": 1205,
+      "height": 2618
+    }
+  ],
+  "baselineMainCommit": "6840b2d0d786c88d6c067feebd16df968c50849a",
+  "priorIPASourceCommit": "39c5f7056644972ca0030a1cb041400a08d52c3c",
+  "reviewDate": "2026-11-06",
+  "status": "21-images-reviewed-plan-only",
+  "totalAcceptanceCriteria": 108,
+  "issues": [
+    {
+      "imageID": "R4-P01",
+      "originalFile": "IMG_8854.heic",
+      "sha256": "f1b57d1c74afa1c30c916b107abf3b29b2a7db942593f41ce6680145e21dc25b",
+      "sizeBytes": 1453704,
+      "previewFile": "IMG_8854.png",
+      "width": 1206,
+      "height": 2565,
+      "requirementID": "R4-F01",
+      "title": "今日任务卡删除技术性版权/个人模式长文案",
+      "priority": "P1",
+      "ownerAnnotation": "手写“去掉”。",
+      "visualMarks": "白色椭圆圈住Deutsche Welle后方的“原作者及原始版权归属保留 · 按负责人个人使用指示本地导入…”；并非圈住整个文章标题或任务卡。",
+      "observedFacts": "任务卡标题很大，发布方后接内部导入政策，灰色长文被截断。阅读0%、分配日期/时区和三个阶段也同时占据首屏。",
+      "codeEvidence": [
+        "Features/Learning/LearningHome.swift:LiveTodayView.hero",
+        "Domain/Learning/PublisherSources.swift:ArticleSourceRegistry.evidence",
+        "Data/FullTextRepository.swift:ContentRepository.importFullText"
+      ],
+      "implementationRequirements": [
+        "为展示建立简短sourceName/author与完整attribution的分层投影；今日只用短来源名。",
+        "删除该卡默认展示的“负责人/个人使用指示/原始版权归属保留”技术文案；完整来源证据保留在数据和关于/许可详情。",
+        "同步审查今日卡标题层级、无意义时区原始标识和统计口径长文；过期任务日期用用户可理解短句提示。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A01-01",
+          "criterion": "同一DW文章的今日卡只出现简短来源名，不出现圈中的技术政策长文、URL或截断尾巴。"
+        },
+        {
+          "id": "R4-A01-02",
+          "criterion": "来源名不是通过切割attribution前几个字符猜得，而是使用sourceID注册信息；作者缺失不补造。"
+        },
+        {
+          "id": "R4-A01-03",
+          "criterion": "原有版权、rights evidence、canonical URL、原文及bodyHash均未被删除或改写。"
+        },
+        {
+          "id": "R4-A01-04",
+          "criterion": "阅读/配对/拼写状态、进度与继续入口保持真实；未完成周期不被刷新覆盖。"
+        },
+        {
+          "id": "R4-A01-05",
+          "criterion": "长标题、大字体、浅/深/暖纸主题下卡片不重叠，最后一个按钮可滚动到完整可点。"
+        }
+      ],
+      "testSuiteID": "R4-T01",
+      "testScenarios": [
+        "DW/多行attribution展示投影单元测试；旧库来源字段回归。",
+        "当前0%与旧周期继续状态UI；拍R4-P01-after，另拍来源详情保留证据。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": false,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P02",
+      "originalFile": "IMG_8857.heic",
+      "sha256": "6627297897b05ae88cb51bdc175579d8bb1fa73888e634e0c06afb354834d6eb",
+      "sizeBytes": 1389860,
+      "previewFile": "IMG_8857.png",
+      "width": 1206,
+      "height": 2620,
+      "requirementID": "R4-F02",
+      "title": "今日统一真实多来源刷新，解释并降级RFC入口",
+      "priority": "P1",
+      "ownerAnnotation": "上方手写“意义不明”；RFC旁手写质疑其含义（“RFC”清楚，连接字笔迹不强行逐字定为产品文案）；下方“未看见BBC等新闻来源”。",
+      "visualMarks": "“使用官方 RFC 原文”和“从官方来源刷新”分别被白圈标出，箭头指向意见。",
+      "observedFacts": "用户看到两项含糊动作，不能判断刷新的是RFC还是新闻。图中下方已出现BBC卡，因此不能据此断言BBC从未导入。",
+      "codeEvidence": [
+        "Features/Learning/LearningHome.swift:LiveTodayView阅读内容区/refreshDiscovered",
+        "Data/ContentRepository.swift:ArticleAcquisitionService.refresh",
+        "Data/ArticleNetwork.swift:ArticleDiscoveryService.refresh"
+      ],
+      "implementationRequirements": [
+        "今日、书库、探索统一调用ArticleDiscoveryService，主按钮命名“发现新文章”或“刷新文章库”，不再用RFC专用刷新冒充多来源。",
+        "RFC保留为次级“示例文章：互联网与用户”入口，可放书库更多菜单；用可理解名称说明，不占主流程。",
+        "今日简化为任务、积累、明确书库入口；移除重复的导入/刷新入口组合，个人导入仍可访问。",
+        "来源状态显示真实尝试/成功/无新文/限流，不许把配置名单说成全部成功。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A02-01",
+          "criterion": "点今日刷新时可观察BBC/NPR等实际配置来源进入同一发现管线，而非只请求RFC Editor。"
+        },
+        {
+          "id": "R4-A02-02",
+          "criterion": "RFC示例入口不创建或替换已有未完成任务；原RFC词条/进度/复习历史保留。"
+        },
+        {
+          "id": "R4-A02-03",
+          "criterion": "不再出现“从官方来源刷新”实际仅刷新RFC的歧义；无网时提示重试并保留本地全文。"
+        },
+        {
+          "id": "R4-A02-04",
+          "criterion": "任务锁定时仍可管理/发现本地文章，但打不开其他正文；刷新不绕过中央门禁。"
+        },
+        {
+          "id": "R4-A02-05",
+          "criterion": "一处主入口可到书库及个人导入，不要求用户猜图标或在多个相同入口间试错。"
+        }
+      ],
+      "testSuiteID": "R4-T02",
+      "testScenarios": [
+        "来源请求spy/URLProtocol验证请求目标，明确不算生产联网；独立真实来源smoke。",
+        "干净库、已有RFC、已有未完成新闻、离线四种首页UI。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": true,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P03",
+      "originalFile": "IMG_8858.heic",
+      "sha256": "29c00e705e502cd00c11ff6dbc9684213fd3ee67f5700a380cc83478a6cac1fc",
+      "sizeBytes": 988146,
+      "previewFile": "IMG_8858.png",
+      "width": 1205,
+      "height": 2622,
+      "requirementID": "R4-F03",
+      "title": "消除今日重复文章区，统一数量与标题质量",
+      "priority": "P1",
+      "ownerAnnotation": "手写“文章…不对”“而且这个板块有何意义？”；中间连笔字未强行逐字定为“数量”或“质量”，工程上同时核查条数与标题质量，以整块“本地完整原文”列表为对象。",
+      "visualMarks": "白字覆盖BBC/NPR/DW卡片；下方ScienceDaily标题仍显示“Don&apos;t”“November&apos;s”实体文本。",
+      "observedFacts": "今日预览与完整文章库混在一起，预览每源一篇且最多6篇；数量容易被误认成库存。标题实体也未完全解码。",
+      "codeEvidence": [
+        "Features/Learning/LearningHome.swift:highlightedArticles（seen sourceID + prefix(6)）",
+        "Data/ArticleNetwork.swift:ArticleFeedParser",
+        "Domain/Learning/ArticleWebPageExtractor.swift:标题提取",
+        "Domain/Learning/ArticleHTMLExtractor.swift:decodeEntities"
+      ],
+      "implementationRequirements": [
+        "移除今日“本地完整原文”重复列表，库存统一由文章库承担；今日保留“文章库 · 共N篇”导航摘要。",
+        "统计同一可读本地集合，不以prefix(6)、已加载分页或来源数替代文章总量。",
+        "在有来源表示类型证据的边界规范化Feed/CDATA/HTML标题实体和异常硬换行，保留原始元数据以便追溯。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A03-01",
+          "criterion": "库存29篇时今日摘要与文章库总数同为29，不能因只预览6篇而报6；筛选命中数另列。"
+        },
+        {
+          "id": "R4-A03-02",
+          "criterion": "今日不再出现整块重复新闻列表，书库仍能查看全部本地完整文章。"
+        },
+        {
+          "id": "R4-A03-03",
+          "criterion": "ScienceDaily示例的撇号正常显示，不泄露&apos;/&amp;apos;等编码；合法字面符号不被过度解码。"
+        },
+        {
+          "id": "R4-A03-04",
+          "criterion": "修复标题显示不改文章正文/哈希、URL去重和周期分配；重复刷新不增长虚假计数。"
+        },
+        {
+          "id": "R4-A03-05",
+          "criterion": "零库存、全部过滤、连续导入、部分失败和重启后的计数语义一致。"
+        }
+      ],
+      "testSuiteID": "R4-T03",
+      "testScenarios": [
+        "0/1/6/29/分页库存统计与实体/CDATA/双层实体边界测试。",
+        "今日→书库数量对照UI，额外捕获实体修复前后相同标题。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": true,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P04",
+      "originalFile": "IMG_8859.heic",
+      "sha256": "9db1ab75fa60d2dc2344345dd4f1413e03b2fdf69c9d8d2fb3fb6910bc545c9a",
+      "sizeBytes": 926090,
+      "previewFile": "IMG_8859.png",
+      "width": 1206,
+      "height": 2620,
+      "requirementID": "R4-F04",
+      "title": "文章库总量与收藏/稍后入口可发现",
+      "priority": "P1",
+      "ownerAnnotation": "“1.未显示文章总数量”；收藏/稍后旁手写“未找到其他入口”。",
+      "visualMarks": "白圈同时圈住收藏和稍后阅读两个操作，向上箭头表示找不到之后查看这些内容的地方。",
+      "observedFacts": "现有阅读内容Picker实际上含收藏/稍后/历史，但隐藏在“全部”的菜单里；页面无总量和结果数。",
+      "codeEvidence": [
+        "Features/Learning/ArticleLibraryFeature.swift:visible、阅读内容Picker、flags",
+        "Data/FullTextRepository.swift:setLibraryFlags"
+      ],
+      "implementationRequirements": [
+        "书库顶部提供可见“全部/收藏/稍后/历史”分段或等价一跳入口；来源/主题作为二级筛选。",
+        "显示“本地共N篇 · 当前M篇”；收藏和稍后入口显示各自计数。",
+        "定义收藏与稍后为独立持久标记，允许交集；修改标记即时更新当前筛选结果及空状态。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A04-01",
+          "criterion": "用户收藏一篇后可在当前页面一跳进入收藏并找到；稍后同理，不能靠知道隐藏菜单才能完成。"
+        },
+        {
+          "id": "R4-A04-02",
+          "criterion": "搜索/主题/来源与四类视图交集正确；N为总可读库存，M为当前交集。"
+        },
+        {
+          "id": "R4-A04-03",
+          "criterion": "取消收藏或移出稍后后对应集合和数字立即变化，重启读回一致。"
+        },
+        {
+          "id": "R4-A04-04",
+          "criterion": "写入失败不显示已收藏/已移出，保留原状态并可重试。"
+        },
+        {
+          "id": "R4-A04-05",
+          "criterion": "收藏/稍后不创建每日周期，未完成任务时这些入口仍不能打开非任务正文。"
+        }
+      ],
+      "testSuiteID": "R4-T04",
+      "testScenarios": [
+        "标记交集/计数/事务故障/重启Repository测试。",
+        "加入→切收藏→移除→空状态；任务锁定时从收藏打开被拒绝UI。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": false,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P05",
+      "originalFile": "IMG_8860.heic",
+      "sha256": "c9a54257151a02989e9e36faa4a4ef617bc3c8c462460b5e97c9261a026cb8a4",
+      "sizeBytes": 1049142,
+      "previewFile": "IMG_8860.png",
+      "width": 1206,
+      "height": 2622,
+      "requirementID": "R4-F05",
+      "title": "发现/导入显示真实进度与正在访问的来源",
+      "priority": "P1",
+      "ownerAnnotation": "粉色：“增加一个进度条，并且显示当前正在搜索哪个网站”；白色：“未显示进度”。",
+      "visualMarks": "白圈圈住旋转指示器和“正在导入完整文章…”；箭头标出缺少进度。",
+      "observedFacts": "只有不定进度旋转图与停止按钮，看不到多来源是否仍在工作或卡住。",
+      "codeEvidence": [
+        "Data/ArticleNetwork.swift:ArticleDiscoveryService及3路并发",
+        "Features/Learning/ArticleLibraryFeature.swift:loading/refresh",
+        "Features/Learning/LearningHome.swift:discover/refreshDiscovered"
+      ],
+      "implementationRequirements": [
+        "增加服务级DiscoveryProgress快照/事件流；包含runID、总来源数、已处理来源数、当前active sourceIDs、阶段、实际入库/去重/失败计数。",
+        "共享任务的三个入口订阅同一真实状态，界面退出不误取消其他订阅；显式停止才取消本次任务。",
+        "总进度按已处理来源/本次计划来源计算；未知字节下载用不定阶段指示，不计时伪造百分比。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A05-01",
+          "criterion": "3路并发时能显示当前所有活跃来源或“BBC、NPR，另1个”，不能虚报只有一家在访问。"
+        },
+        {
+          "id": "R4-A05-02",
+          "criterion": "进度单调、分母稳定；失败/无新文/被退避来源计为已处理但不计导入成功。"
+        },
+        {
+          "id": "R4-A05-03",
+          "criterion": "展示实际新增N篇和阶段（检查/下载/验证/保存），未入库候选标题和URL不曝光。"
+        },
+        {
+          "id": "R4-A05-04",
+          "criterion": "取消后在网络取消信号后合理时间内结束UI，保留已完整入库文章；不会显示取消后的成功。"
+        },
+        {
+          "id": "R4-A05-05",
+          "criterion": "重试切新runID；迟到旧事件不覆盖新进度；429/超时/全失败/无新文均有终态和安全重试。"
+        }
+      ],
+      "testSuiteID": "R4-T05",
+      "testScenarios": [
+        "注入时钟和并发源事件的状态机测试，取消/过期事件/部分成功。",
+        "真实来源发现进度录屏+PNG；故障fixture单独标明。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": false,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P06",
+      "originalFile": "IMG_8862.heic",
+      "sha256": "3ff72be8cc02c6c1f9f461986767d58bcc799447610376b4792bbdc5cd5f7b2b",
+      "sizeBytes": 800005,
+      "previewFile": "IMG_8862.png",
+      "width": 1171,
+      "height": 2622,
+      "requirementID": "R4-F06",
+      "title": "阅读器完整标题可换行",
+      "priority": "P1",
+      "ownerAnnotation": "“把标题显示全，可以换行”。",
+      "visualMarks": "白色大圈覆盖标题、来源作者、日期和“来源与许可”，焦点是被省略的标题。",
+      "observedFacts": "DW长标题只显示一行并出现省略号；抬头与来源信息占用固定顶部空间。",
+      "codeEvidence": [
+        "Features/Learning/ReaderFeature.swift:ReaderView标题lineLimit",
+        "Features/Learning/InteractiveEnglishText.swift:正文视口/恢复"
+      ],
+      "implementationRequirements": [
+        "首屏标题取消1/2行硬截断，使用可滚动阅读文档头完整换行；来源/作者/日期紧凑显示。",
+        "滚动后轻导航栏可缩短导航标题，但原文标题仍在文档头可返回查看；长标题不能挤成正文零高度。",
+        "横屏和辅助大字采用可滚动头部/协调滚动，不再通过截断全文标题解决布局。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A06-01",
+          "criterion": "同一DW完整标题可逐字看到，不出现必须省略的“…”，也不横向出屏。"
+        },
+        {
+          "id": "R4-A06-02",
+          "criterion": "超长标题、无空格长词及最大字号下仍能滚动进入真实正文并点击单词。"
+        },
+        {
+          "id": "R4-A06-03",
+          "criterion": "标题展开/旋转/返回详情不破坏原文offset、阅读进度或已完成状态。"
+        },
+        {
+          "id": "R4-A06-04",
+          "criterion": "来源/作者/日期仍可找到，不重复显示整段导入说明或多个许可入口。"
+        },
+        {
+          "id": "R4-A06-05",
+          "criterion": "小/大屏、横竖屏、三主题均验证标题和正文可见，而非仅断言工具栏存在。"
+        }
+      ],
+      "testSuiteID": "R4-T06",
+      "testScenarios": [
+        "标题布局/Reader位置映射回归；长标题实际UI。",
+        "首屏完整标题、滚动正文及旋转恢复截图。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": false,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P07",
+      "originalFile": "IMG_8863.heic",
+      "sha256": "a382ae8d1aa72653a8bb9cfb64527ca8290d890507975392036c4fb44050820b",
+      "sizeBytes": 677961,
+      "previewFile": "IMG_8863.png",
+      "width": 1206,
+      "height": 2622,
+      "requirementID": "R4-F07",
+      "title": "正文排除视频/脚本控件等非文章内容",
+      "priority": "P0",
+      "ownerAnnotation": "“去掉这些无用内容”。",
+      "visualMarks": "白圈圈住“To view this video please enable JavaScript, and consider upgrading to a web browser that supports HTML5 video”；长箭头指向删除意见。",
+      "observedFacts": "视频播放失败提示被渲染成正文段落，打断DW文章。",
+      "codeEvidence": [
+        "Domain/Learning/ArticleHTMLExtractor.swift:excluded目前未涵盖video/noscript",
+        "Domain/Learning/ArticleWebPageExtractor.swift:正文子树选择",
+        "Domain/Learning/ArticleDocument.swift:结构与显示投影",
+        "Data/ReaderRepository.swift:内容版本/偏移"
+      ],
+      "implementationRequirements": [
+        "按DOM结构和源适配器规则排除播放器兜底、cookie/分享/订阅/广告等非新闻正文；保留记者段落、标题、引用、列表、相关图注。",
+        "不得以全局关键词删除任何谈及JavaScript或HTML5的正常报道；保留清理分类/版本及原始块证据。",
+        "新导入在完整性验证前清理；旧文章用可逆带偏移映射的展示投影，必要重提取走原子版本迁移，保留旧正文/哈希关联。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A07-01",
+          "criterion": "DW复现中圈出的播放器提示消失，提示前后真实段落完整相接，非隐藏全部文章。"
+        },
+        {
+          "id": "R4-A07-02",
+          "criterion": "正文中正常引用JavaScript/HTML5或技术讨论不被误删，列表/图注/引用内容保留。"
+        },
+        {
+          "id": "R4-A07-03",
+          "criterion": "清理不构成摘要、截断或网页降级；无法证明完整仍丢弃新候选，不覆盖旧全文。"
+        },
+        {
+          "id": "R4-A07-04",
+          "criterion": "旧文章进度、词元位置、生词来源和冻结题组均仍指向正确原始文本；写入失败保留原版本。"
+        },
+        {
+          "id": "R4-A07-05",
+          "criterion": "统计词数和阅读时长基于实际新闻正文，缓存版本变更有回归证据。"
+        }
+      ],
+      "testSuiteID": "R4-T07",
+      "testScenarios": [
+        "播放器DOM/正常技术段落/嵌套noscript/源根误选解析fixture与旧文映射测试。",
+        "同一文章清理后首/中/末+点词+重启位置，独立核对正文保全。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": false,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P08",
+      "originalFile": "IMG_8864.heic",
+      "sha256": "9c76007bbf3f7530e4c7d0013997d011be05a098aadce26e0adbe20fa902d71d",
+      "sizeBytes": 1029371,
+      "previewFile": "IMG_8864.png",
+      "width": 1206,
+      "height": 2622,
+      "requirementID": "R4-F08",
+      "title": "复习入口先预检，失败用可处理弹窗",
+      "priority": "P0",
+      "ownerAnnotation": "“这里的逻辑改一下，如果报错的话弹出一个弹窗，提示错误信息，然后弹窗的选项可以选择取消，忽略这个单词，或者立即填写，跳转到生词本填写的界面。不仅仅针对这个报错，凡是报错了就不要进入复习的这个界面了，就要弹出错误窗口，可以选择忽略取消或者是解决方法”。",
+      "visualMarks": "无额外大圈，白色整段批注指向红色effectively无中文义项错误与下方不相干空态。",
+      "observedFacts": "错误、FSRS说明、请先获得文章、重试同时出现；用户已积累词但被一个词阻塞。",
+      "codeEvidence": [
+        "Features/Learning/ReviewFeature.swift:load的catch与session=nil分支",
+        "Data/ReviewRepository.swift:prepare/insertExercises题组与无义项抛错",
+        "Features/Learning/LearningHome.swift:review sheet入口"
+      ],
+      "implementationRequirements": [
+        "统一ReviewEntryCoordinator先预检，成功才进入练习；今日按钮与复习Tab等价。",
+        "可定位词条的缺义/重复义项错误提供“取消/本次跳过该词/立即填写”；立即填写直达对应词条个人释义并保存后重试同一进入意图。",
+        "数据库/损坏会话/权限/网络等错误按能力提供取消/重试/恢复操作，不能对不可跳过错误伪造忽略成功。",
+        "显式跳过持久化为当次延期证据，保留生词、不推进该词FSRS、不计真实作答；全跳过需明确确认并与真正空队列区分。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A08-01",
+          "criterion": "缺义错误弹窗出现时练习板/拼写输入框未进入，取消返回原页面且不产生完成证据。"
+        },
+        {
+          "id": "R4-A08-02",
+          "criterion": "立即填写打开effectively对应条目，保存失败仍停留并保留草稿，成功再预检进入。"
+        },
+        {
+          "id": "R4-A08-03",
+          "criterion": "跳过仅作用本次选择的词；其余词正常复习，原词和历史日志保持；跳过集合重启可恢复。"
+        },
+        {
+          "id": "R4-A08-04",
+          "criterion": "全词跳过显示确切延期说明，不记成0词成功复习；周期门禁仅依据明确完成/合法延期处理。"
+        },
+        {
+          "id": "R4-A08-05",
+          "criterion": "非词条型失败不出现危险的“忽略整个数据库错误”操作；重试有上限，旧有效会话不被清空。"
+        }
+      ],
+      "testSuiteID": "R4-T08",
+      "testScenarios": [
+        "预检结果分类/跳过证据/原子性/全跳过与真空队列Domain测试。",
+        "三个动作、网络失败、读取失败、填写失败与恢复UI；从今日及Tab各进入一次。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": false,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P09",
+      "originalFile": "IMG_8866.heic",
+      "sha256": "c79dbe8603818b296aad1636518737628e08c6311a3e50b6109a07a2409fe5c1",
+      "sizeBytes": 1811506,
+      "previewFile": "IMG_8866.png",
+      "width": 1206,
+      "height": 2622,
+      "requirementID": "R4-F09",
+      "title": "生词词元正确、释义笔记自动保存",
+      "priority": "P0",
+      "ownerAnnotation": "“这个保存完全就是没有任何必要，我觉得完全可以实现输入完成之后自动保存，我觉得这个技术上应该不是很难”；红字“不应有复数”；“而且不一定要用户点击完成输入才保存，只要这个键盘消失了，那就可以保存了”。",
+      "visualMarks": "红圈圈住users的s；白圈分别圈右上保存与键盘上方完成输入。",
+      "observedFacts": "users作为主词条；填写“用户”后还需点保存，键盘收起不会自动提交。",
+      "codeEvidence": [
+        "Features/Learning/VocabularyFeature.swift:VocabularyDetailView.save/toolbar/FocusState",
+        "Domain/Learning/LearningRules.swift:EnglishTokenizer.lemma",
+        "Data/VocabularyRepository.swift:add/annotate"
+      ],
+      "implementationRequirements": [
+        "词条规范词形显示user，原始users保存在surfaceForms/原句；visit/visits等同类规则统一处理，不能简单删所有结尾s。",
+        "删除强制“保存”按钮；完成输入、拖动/点击空白收键盘、焦点离开、返回、切Tab、转后台均flush有变化的释义与笔记。",
+        "引入脏版本/保存状态/IME合成保护和最后写入胜出协调，失败保留草稿并提示未保存和重试，成功后才能显示已保存。",
+        "规范化迁移用别名/规范ID映射保留两条旧记录的笔记、个人义、来源与冻结题组；冲突不得静默覆盖。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A09-01",
+          "criterion": "输入“用户”后仅拖动收键盘再退出/重进/重启，释义仍在；不需点完成输入或保存。"
+        },
+        {
+          "id": "R4-A09-02",
+          "criterion": "未修改时不触发写入；中文拼音未上屏的合成文本不被当最终释义提交。"
+        },
+        {
+          "id": "R4-A09-03",
+          "criterion": "两次快速编辑、失焦与键盘通知重复、保存中导航都不会旧值覆盖新值或重复成功提示。"
+        },
+        {
+          "id": "R4-A09-04",
+          "criterion": "真实持久化失败时不能显示已保存，编辑内容仍可找回并重试；崩溃草稿恢复按独立草稿策略验收。"
+        },
+        {
+          "id": "R4-A09-05",
+          "criterion": "users→user、visits→visit；news/series/US不被错误去尾，专名May与情态may不混同；原始上下文保持。"
+        },
+        {
+          "id": "R4-A09-06",
+          "criterion": "词头/连线用lemma；原句拼写若要求users必须明确“原句词形users”，不能破坏语法强行改为user。"
+        }
+      ],
+      "testSuiteID": "R4-T09",
+      "testScenarios": [
+        "自动保存事件、IME、失败/迟到写入、旧库别名冲突迁移确定性测试。",
+        "四种收键盘路径和后台/强退重启读回；生词搜索仍能用users命中user。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": false,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P10",
+      "originalFile": "IMG_8867.heic",
+      "sha256": "68220b5528e10f1fb81011b93701a42bf90eb59dd56d5a6afd82c1bd2942daef",
+      "sizeBytes": 1057714,
+      "previewFile": "IMG_8867.png",
+      "width": 1205,
+      "height": 2622,
+      "requirementID": "R4-F10",
+      "title": "连线答案符合语境、词形与大小写",
+      "priority": "P0",
+      "ownerAnnotation": "visits的s旁圈问号；圈出may与“五月份”，手写“应大写”。",
+      "visualMarks": "白圈分别圈may、五月份；另在visits末尾标问号。",
+      "observedFacts": "图上provide→具、visits→人次、should→合该、may→五月份均显示绿色已匹配；绿色只证明senseID匹配，不能证明语义正确。",
+      "codeEvidence": [
+        "Data/ReviewRepository.swift:insertExercises的ranked.first及meaning/senseID",
+        "Data/DictionaryAggregation.swift:rank",
+        "Domain/Learning/LearningRules.swift:词形与大小写规范"
+      ],
+      "implementationRequirements": [
+        "匹配词头使用可靠lemma，义项选择使用原句、词性、大小写与来源可靠性，不把反向中文片段当通用标准答案。",
+        "may在情态语境下不得取月份；月份May保留大写及月份义。visit/user等原词形可在次级标注，而不作重复词头。",
+        "建立ReviewSensePolicy：个人确认/可验证语境义优先；弱反向候选无可验证对齐时进入F08解决流程。",
+        "正确/错误用词条ID+senseID验证，但先保证题组语义金标及一对一无歧义；保留真实绘线及双端禁用。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A10-01",
+          "criterion": "情态may不会配“五月份”；月份May有明确大写身份；两者不可在缓存或题组中错用。"
+        },
+        {
+          "id": "R4-A10-02",
+          "criterion": "visits/user(s)词头规范，并按实际上下文选“访问/参观”“用户”等可靠义，不能仅凭尾字母猜词性。"
+        },
+        {
+          "id": "R4-A10-03",
+          "criterion": "provide/need等不能自动把孤立“具/待/得要”作为高可信答案；缺可信数据时按F08处理。"
+        },
+        {
+          "id": "R4-A10-04",
+          "criterion": "人工核对金标的意义正确与自动senseID正确均通过，不能只点预设错误答案让测试变绿。"
+        },
+        {
+          "id": "R4-A10-05",
+          "criterion": "旋转、滚动、动态字体、恢复后连接线存在；完成两端不可重复消费，错误后可再试。"
+        }
+      ],
+      "testSuiteID": "R4-T10",
+      "testScenarios": [
+        "may/May、visit/visits、user/users、provide、need原句/POS/可靠性金标。",
+        "真实Provider数据来源证据及中文人工核对；画线/重复消费旧测试保持。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": false,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P11",
+      "originalFile": "IMG_8869.heic",
+      "sha256": "cc18c3762dfcadd0209e7695d8751e766e791ad07db1f0a2085ccb793f3e2a49",
+      "sizeBytes": 1243068,
+      "previewFile": "IMG_8869.png",
+      "width": 1206,
+      "height": 2622,
+      "requirementID": "R4-F11",
+      "title": "拼写挖空位置多样且固定可恢复",
+      "priority": "P1",
+      "ownerAnnotation": "黑色批注“目前好像扣掉都是结尾的字母，”（原字“扣”保留，含义为挖空集中在词尾）。",
+      "visualMarks": "白圈圈住prov…提示；黑字位于深色背景，已单独放大核对。",
+      "observedFacts": "provide只保留前缀，词尾被连续遮掉；与当前mask从尾部反向取字母一致。",
+      "codeEvidence": [
+        "Domain/Learning/LearningRules.swift:BasicReviewScheduler.mask",
+        "Data/ReviewRepository.swift:cloze prompt创建",
+        "Domain/Learning/ClozeContext.swift:原句整词遮空"
+      ],
+      "implementationRequirements": [
+        "新增可注入种子的SpellingMaskPolicy，前/中/后位置按稳定规则分布，不每题固定挖尾。",
+        "隐藏25%–45%有效字母并按词长取整，保留标点/连字符/空格；对极短词使用明确安全规则。",
+        "会话创建保存maskIndices/seed和版本，视图刷新/旋转/提示/重启不重随机；原句整词遮空与词内掩码区分。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A11-01",
+          "criterion": "固定测试语料的足够长词能覆盖前/中/后挖空，不全部为连续尾缀。"
+        },
+        {
+          "id": "R4-A11-02",
+          "criterion": "同一题退出重进、旋转或重启掩码完全一致；同一seed可确定性复现。"
+        },
+        {
+          "id": "R4-A11-03",
+          "criterion": "短语、撇号、连字符及Unicode词形不隐藏分隔符，不越界，不出现全词原答案泄漏。"
+        },
+        {
+          "id": "R4-A11-04",
+          "criterion": "掩码位置与冻结答案属于同一题ID；正确答案判定不随显示变化。"
+        },
+        {
+          "id": "R4-A11-05",
+          "criterion": "旧会话沿用已保存prompt，不在迁移时重随机或改答案。"
+        }
+      ],
+      "testSuiteID": "R4-T11",
+      "testScenarios": [
+        "种子向量/字符边界/分布/旧prompt迁移测试。",
+        "原句+中段挖空、短语、旋转/重启UI截图。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": true,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P12",
+      "originalFile": "IMG_8870.heic",
+      "sha256": "c97902f9413febabed28a24194921e3d84b838e64152000401a72e18e27314d6",
+      "sizeBytes": 1242588,
+      "previewFile": "IMG_8870.png",
+      "width": 1206,
+      "height": 2622,
+      "requirementID": "R4-F12",
+      "title": "完成页移除默认逐词排程日志墙",
+      "priority": "P1",
+      "ownerAnnotation": "手写“不需显示”。",
+      "visualMarks": "大白圈圈住should、effectively、visits、users、may、provide的Good/Hard与原定→下次长日志；箭头标示该区域。",
+      "observedFacts": "复习完成后大量日期/算法解释占满页面，下方仍出现正确已保存与重新读取/重试。",
+      "codeEvidence": [
+        "Features/Learning/ReviewFeature.swift:ForEach(schedules)、feedback、常驻重试",
+        "Data/ReviewRepository.swift:scheduleFeedback/extraScheduleFeedback"
+      ],
+      "implementationRequirements": [
+        "完成页只显示清晰完成标题、实际数量/跳过数量及返回/继续动作；默认不列逐词排程明细。",
+        "原始不可变日志和排程保留；需要时可经次级“复习记录/详情”查看，不自动展开。",
+        "算法版本说明和重复“正确已保存”不与完成态堆叠；成功态不显示重试按钮。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A12-01",
+          "criterion": "默认完成首屏没有圈中的逐词日期长列表，不靠缩到极小字号掩盖。"
+        },
+        {
+          "id": "R4-A12-02",
+          "criterion": "所有原作答、评分、dueAt和ReviewLog仍可查询；次级详情显示真实数据。"
+        },
+        {
+          "id": "R4-A12-03",
+          "criterion": "完成页数量与已答/延期证据一致，失败事务不得进入完成态。"
+        },
+        {
+          "id": "R4-A12-04",
+          "criterion": "重启回到完成页不再次生成本轮日志或重复推进排程。"
+        },
+        {
+          "id": "R4-A12-05",
+          "criterion": "完成后的主动作清楚，默认无重新读取/重试及上题反馈残留。"
+        }
+      ],
+      "testSuiteID": "R4-T12",
+      "testScenarios": [
+        "完成摘要与日志不变Repository测试。",
+        "完成主屏、可选次级记录、失败不完成及重启对照。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": true,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P13",
+      "originalFile": "IMG_8872.heic",
+      "sha256": "0f3a649f8a55a02fd2c8a68ccd30583db6e49d98362b3e6b95cb0de594118199",
+      "sizeBytes": 1981195,
+      "previewFile": "IMG_8872.png",
+      "width": 1206,
+      "height": 2622,
+      "requirementID": "R4-F13",
+      "title": "探索改为每篇一张完整渐变卡片",
+      "priority": "P1",
+      "ownerAnnotation": "“太难看了，重新设计一下这个界面，可以把标题放到这个渐变色的框里，然后字体可以换成首页那个字体，然后把其他的信息也放在框里，在下面排成一行小字就行了。总之这个探索就改成每个框，对应一篇文章就行了，信息全部都放在框里面。然后呢，对应不同主题框的渐变色颜色可以有区分。总之要设计得漂亮一些。”",
+      "visualMarks": "蓝色整段意见；大白圈囊括上方渐变装饰、卡外标题、元信息及收藏/稍后按钮。",
+      "observedFacts": "渐变区只画图标，标题和若干重复元数据在下面逐行展开；一篇内容被视觉切碎。",
+      "codeEvidence": [
+        "Features/Learning/LearningHome.swift:LiveExploreView/ExploreArticleCard",
+        "DesignSystem/DesignTokens.swift"
+      ],
+      "implementationRequirements": [
+        "一篇一张完整渐变卡，标题用今日主任务同一衬线字族，标题/来源/日期/主题/阅读信息及操作都归同一卡。",
+        "主题映射集中为稳定语义token，新闻/科学/文化等颜色可区分，不再只按英文science关键字二分。",
+        "默认字号下次要信息压缩为一条逻辑元信息行；辅助大字可自然换行以避免截断。",
+        "收藏/稍后放卡内独立命中区，点它们不触发打开文章；主题筛选保留。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A13-01",
+          "criterion": "NPR示例标题位于渐变框内，每篇仅一个外容器，不再出现上彩条+下白字散页。"
+        },
+        {
+          "id": "R4-A13-02",
+          "criterion": "全标题可读，正文色与渐变各区对比合格；浅/深/暖纸和大字不重叠。"
+        },
+        {
+          "id": "R4-A13-03",
+          "criterion": "同主题颜色稳定、不同主题有区分，中文分类也能正确映射。"
+        },
+        {
+          "id": "R4-A13-04",
+          "criterion": "收藏/稍后各自生效且不误开正文、不建每日周期；主卡点击只开本篇。"
+        },
+        {
+          "id": "R4-A13-05",
+          "criterion": "空/加载/锁定/失败/部分成功均使用同一视觉规范，锁定时不能因新卡绕过学习门禁。"
+        }
+      ],
+      "testSuiteID": "R4-T13",
+      "testScenarios": [
+        "主题token/卡片展示投影测试。",
+        "同NPR标题及至少3主题、三主题、大字、卡内按钮独立操作UI。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": false,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P14",
+      "originalFile": "IMG_8873.heic",
+      "sha256": "10ebb6633300217b97faad0d3528971379b3837f539827dba131a4fadc0471af",
+      "sizeBytes": 1477758,
+      "previewFile": "IMG_8873.png",
+      "width": 1205,
+      "height": 2622,
+      "requirementID": "R4-F14",
+      "title": "生词上下文去重复URL与内部导入长说明",
+      "priority": "P1",
+      "ownerAnnotation": "手写“去掉”；多根箭头对应多个圈。",
+      "visualMarks": "圈出来源卡attribution+URL、重复原文URL，以及下方同一来源再次出现的attribution/URL；非要求删除当前原句。",
+      "observedFacts": "一页中同一DW标题和网址多次出现；用户读义项时被出处长串和个人导入解释干扰。",
+      "codeEvidence": [
+        "Features/Learning/VocabularyFeature.swift:VocabularyDetailView来源上下文Section",
+        "Data/VocabularyRepository.swift:VocabularySourceContext/VocabularyItem",
+        "Data/FullTextRepository.swift:sourceAttribution拼接canonical"
+      ],
+      "implementationRequirements": [
+        "UI按articleID+context identity归组同源信息，简短来源名和文章标题只出现一次；实际遇词句子单独保留。",
+        "默认页面不渲染canonical URL、重复attribution或“负责人个人使用指示”长文；完整溯源存储保留。",
+        "多个真实上下文可折叠查看，不将不同句子强行去重或删除；历史来源未知不猜测。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A14-01",
+          "criterion": "need示例中圈出的多条URL和技术说明不在默认页面出现。"
+        },
+        {
+          "id": "R4-A14-02",
+          "criterion": "同一文章标题/短来源只显示一次；真正不同的遇词句子仍可查看。"
+        },
+        {
+          "id": "R4-A14-03",
+          "criterion": "文章ID、原始URL、sourceContext、原文证据及旧日志都未丢失；不增加原站阅读入口。"
+        },
+        {
+          "id": "R4-A14-04",
+          "criterion": "上下文中的英文依然能查词，返回后仍停在原位置。"
+        },
+        {
+          "id": "R4-A14-05",
+          "criterion": "多来源/历史未知/无来源/失败读取均展示简洁且真实，不靠占位来源补齐。"
+        }
+      ],
+      "testSuiteID": "R4-T14",
+      "testScenarios": [
+        "来源分组与去重键/多句不丢失/历史未知测试。",
+        "相同need上下文默认屏及展开多句后截图。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": true,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P15",
+      "originalFile": "IMG_8875.heic",
+      "sha256": "4ed7adc0721a4d494a90c430e21674d670c05b2b350703f79dd511c38a12e9f8",
+      "sizeBytes": 1279485,
+      "previewFile": "IMG_8875.png",
+      "width": 1206,
+      "height": 2621,
+      "requirementID": "R4-F15",
+      "title": "生词详情与完整词典合为单一详细页",
+      "priority": "P1",
+      "ownerAnnotation": "“去掉这个部分，把里面的内容合并到一起”。",
+      "visualMarks": "白圈圈住“详细词典”导航行，箭头指向意见；不是要求删除词典内容。",
+      "observedFacts": "已经展示长义项列表的生词详情还要再点详细词典，内容和入口重复。",
+      "codeEvidence": [
+        "Features/Learning/VocabularyFeature.swift:DictionaryResultContent + NavigationLink详细词典",
+        "Features/Learning/ReaderFeature.swift:DictionaryDetailView/DictionaryResultContent"
+      ],
+      "implementationRequirements": [
+        "抽出共享WordDetailContent，在生词详情一个页面整合完整义项、词性/IPA/例句/短语、个人释义/笔记、简化上下文。",
+        "移除该生词页重复“详细词典”行，保留真实完整内容和合理折叠分组。",
+        "阅读小浮窗的右箭头仍进入全屏详细页；该流与生词详情复用内容层而非再嵌一层详情。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A15-01",
+          "criterion": "生词页不再需要二次进入详细词典才能看原来该详情中的可靠字段。"
+        },
+        {
+          "id": "R4-A15-02",
+          "criterion": "全义项、来源、词性、例句等可用内容实际仍可访问，不用只删按钮冒充合并。"
+        },
+        {
+          "id": "R4-A15-03",
+          "criterion": "个人内容与词典原文区分，自动保存与确认义项不被新布局覆盖。"
+        },
+        {
+          "id": "R4-A15-04",
+          "criterion": "嵌套查词/返回/滚动位置和已有生词标记同步，页面不重复出现相同义项。"
+        },
+        {
+          "id": "R4-A15-05",
+          "criterion": "缺失字段优雅隐藏；失败或部分来源状态明确，不能编造字段填满版面。"
+        }
+      ],
+      "testSuiteID": "R4-T15",
+      "testScenarios": [
+        "共享详情投影及同sense去重测试。",
+        "生词直接完整义项、reader→全屏、嵌套返回及自动保存回归。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": false,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P16",
+      "originalFile": "IMG_8876.heic",
+      "sha256": "197522dae6ae40057892b3ec49e7efa1ed3162a22f29540c4e6499d444035ed9",
+      "sizeBytes": 1018644,
+      "previewFile": "IMG_8876.png",
+      "width": 1206,
+      "height": 2622,
+      "requirementID": "R4-F16",
+      "title": "可靠词典优先、CC-CEDICT最低、词性明确",
+      "priority": "P0",
+      "ownerAnnotation": "“词性未注明”“未发现其他词典来源。而且这个CC开头的这个来源准确性太低了，这个来源的优先级最低，优先采用其他可靠词典上的词典。”",
+      "visualMarks": "白圈圈住“已合并：CC-CEDICT”；白色整段批注覆盖不可靠中文义项。",
+      "observedFacts": "need只见CC-CEDICT的“须需/得要/待”等反向候选，词性未注明；不能把“有两Provider代码/CI一次成功”当设备上真实可用。",
+      "codeEvidence": [
+        "Data/DictionaryAggregation.swift:DictionaryAggregator.lookup/merge/rank",
+        "Data/VocabularyRepository.swift:DictionaryLookupService.lookup/localResult",
+        "Data/ReviewRepository.swift:primeMeanings/insertExercises",
+        "Features/Learning/ReaderFeature.swift:DictionaryQuickMeaning.quickSenses",
+        "Features/Learning/VocabularyFeature.swift:lookup未传上下文"
+      ],
+      "implementationRequirements": [
+        "生产在线启用已存在，先核查实际请求、超时/负缓存、版本完整性和显示过滤；不得误写“从未接入”。",
+        "可信在线/可信缓存及用户明确确认义优先，CC反向候选最低并标注来源性质；不能因先到或有中文就压住可靠英语Provider。",
+        "Vocabulary详情查询传真实sourceContext与词形；POS、IPA归属同一sense，单来源时不误称多源合并。",
+        "在线英语释义不自动变成可靠中文翻译；可靠中文缺失用明确选择/个人释义，弱候选不自动作为题目答案。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A16-01",
+          "criterion": "need联网时看到实际返回的Wiktionary等来源、词性及义项；不能以mock截图证明生产链路成功。"
+        },
+        {
+          "id": "R4-A16-02",
+          "criterion": "Free单独不可用时保留Wiktionary/可用缓存；全部失败与仅CC回退有真实不同状态。"
+        },
+        {
+          "id": "R4-A16-03",
+          "criterion": "有中文的低可信候选不会无条件盖过更可靠的语境义；CC排最后且不自动进入复习金标。"
+        },
+        {
+          "id": "R4-A16-04",
+          "criterion": "词性/音标不从另一个无关sense借用；未知保持未知但不得漏掉Provider已给字段。"
+        },
+        {
+          "id": "R4-A16-05",
+          "criterion": "版本缓存和负缓存不把一次失败长期锁成“仅本地”；重试和跨词迟到结果不会污染当前词。"
+        },
+        {
+          "id": "R4-A16-06",
+          "criterion": "个人已确认释义、旧题组/日志不因Provider优先级变化自动改写。"
+        }
+      ],
+      "testSuiteID": "R4-T16",
+      "testScenarios": [
+        "多Provider返回顺序/可靠性/POS/部分空结果/缓存版本与语境排序金标。",
+        "同need从干净缓存、仅CC旧缓存、离线、单源失败到在线恢复；生产与fixture分标。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": false,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P17",
+      "originalFile": "IMG_8878.heic",
+      "sha256": "8dedb9d37fe854225c6d7561cc19de5eed65a84c611475f832e860215a2a81fd",
+      "sizeBytes": 939696,
+      "previewFile": "IMG_8878.png",
+      "width": 1206,
+      "height": 2622,
+      "requirementID": "R4-F17",
+      "title": "词汇推荐改为紧凑渐变词卡",
+      "priority": "P1",
+      "ownerAnnotation": "“这个界面也要重新设计，就是和探索一样，也是设计成一个个渐变颜色的小框，每个小框里面只显示英文、音标和中文简明示意就是词典的示意，然后用户点击之后就跳转到详细词典的界面”。（“示意”按原字记录，产品含义为释义。）",
+      "visualMarks": "整段白字覆盖推荐理由/原句/查看详情/加入的冗长块。",
+      "observedFacts": "anti-corruption一张大卡有许多分隔线、推荐理由、文章原句和两个动作，信息密度失衡。",
+      "codeEvidence": [
+        "Features/Learning/VocabularyRecommendationFeature.swift:ForEach Section",
+        "Data/VocabularyRecommendations.swift:discover",
+        "Features/Learning/ReaderFeature.swift:DictionaryDetailView"
+      ],
+      "implementationRequirements": [
+        "紧凑渐变卡只展示英文词/短语、真实IPA、可靠中文简义；推荐理由/长原句/来源技术文案进入详情。",
+        "整卡点击进入统一完整词典页，不在卡面再堆两个操作行；详情明确加入，推荐浏览不自动加生词。",
+        "保留实际缺失/加载/部分失败语义，不造IPA或中文；可靠中文缺失的候选不装成有中文释义。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A17-01",
+          "criterion": "anti-corruption和administration卡面符合三项信息，不显示长理由、原句段落和冗余导航行。"
+        },
+        {
+          "id": "R4-A17-02",
+          "criterion": "点击每一词卡进入对应完整详情，返回保持列表位置。"
+        },
+        {
+          "id": "R4-A17-03",
+          "criterion": "仅浏览推荐和详情不增加生词；主动加入后状态正确并排除后续重复推荐。"
+        },
+        {
+          "id": "R4-A17-04",
+          "criterion": "有IPA显示真实音标，无IPA允许省略/短缺失标记；不能用系统语音当IPA。"
+        },
+        {
+          "id": "R4-A17-05",
+          "criterion": "加载中已有结果可用，取消/离线/失败/空列表均无巨大解释墙且可恢复。"
+        }
+      ],
+      "testSuiteID": "R4-T17",
+      "testScenarios": [
+        "推荐卡投影/可靠中文准入/无自动添加测试。",
+        "两张词卡、长短语、大字、详情返回、主动加入与失败UI。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": false,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P18",
+      "originalFile": "IMG_8879.heic",
+      "sha256": "69467b3d60a6d13a705faa50c675668a4a48ca80be9b19877bf5083e9866e777",
+      "sizeBytes": 1083997,
+      "previewFile": "IMG_8879.png",
+      "width": 1206,
+      "height": 2621,
+      "requirementID": "R4-F18",
+      "title": "复习按钮有边界，反馈不能串题",
+      "priority": "P0",
+      "ownerAnnotation": "手写“意义不明”；“这几个包括使用提示这几个按钮需要重新设计这些按钮加上边框，然后呢，这些按钮显示逻辑好像存在问题，我不知道为什么在输入的时候会显示一个绿色正确，已保存这个东西，这个地方需要重新设计。并且检查一下逻辑问题，现在完全不美观”。",
+      "visualMarks": "白圈圈“使用提示”、绿色“正确，已保存”和“重新读取/重试”；箭头连接反馈到文字意见。",
+      "observedFacts": "observer尚未提交、键盘打开时，下方已经显示绿色成功；普通按钮看起来是解释文本。",
+      "codeEvidence": [
+        "Features/Learning/ReviewFeature.swift:共享feedback、cloze选择first incomplete、submit",
+        "Features/Learning/ReviewFeature.swift:无条件重新读取按钮"
+      ],
+      "implementationRequirements": [
+        "反馈绑定(sessionID, questionID, attemptID, revision)，切题前清理上题状态；不能用全局字符串推导当前题状态。",
+        "提交/使用提示/显示答案为有边界、明确主次和44pt命中区的按钮，正常练习不常驻重读重试。",
+        "输入→提交中→错误/提示/已答→下一题以枚举状态驱动，数据库写成功才显示该题已保存。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A18-01",
+          "criterion": "上一题答对后进入observer空输入，绝不显示上题的绿色正确或旧答案。"
+        },
+        {
+          "id": "R4-A18-02",
+          "criterion": "每题题干、中文、提示、答案和反馈属于同一个questionID；重复/迟到提交不覆盖新题。"
+        },
+        {
+          "id": "R4-A18-03",
+          "criterion": "提交中禁用重复操作，失败保留输入且显示可重试错误，不显示成功。"
+        },
+        {
+          "id": "R4-A18-04",
+          "criterion": "使用提示与显示答案有清楚边框、完整标签及VoiceOver名称；小屏键盘上方可完整点击。"
+        },
+        {
+          "id": "R4-A18-05",
+          "criterion": "正常输入状态没有重新读取/重试；仅相应加载/保存失败时提供对应重试动作。"
+        }
+      ],
+      "testSuiteID": "R4-T18",
+      "testScenarios": [
+        "跨题feedback token/重复提交/失败回滚/场景恢复状态机测试。",
+        "答对A→空白B、错误重试、提示、键盘及快速多点UI。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": false,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P19",
+      "originalFile": "IMG_8880.heic",
+      "sha256": "e9e2b81ea27bc3c4489c489cca3e3b04c1678884e1958ae5482f8788fa1e2e33",
+      "sizeBytes": 951191,
+      "previewFile": "IMG_8880.png",
+      "width": 1206,
+      "height": 2622,
+      "requirementID": "R4-F19",
+      "title": "显示答案后必须亲自正确输入再推进",
+      "priority": "P0",
+      "ownerAnnotation": "“用户点击显示答案之后，应该让用户在输入一遍正确答案，而不是直接跳转到下一题”。（“在”按原字记录。）",
+      "visualMarks": "白圈圈“答案：product。本题记录为Again。”及其下方重试；右上少量白点无独立可辨文字。",
+      "observedFacts": "当前题干为commo____，答案反馈却为product，进一步表明已推进到下一题但旧反馈仍在。",
+      "codeEvidence": [
+        "Data/ReviewRepository.swift:submitSaved中的correct || reveal直接完成",
+        "Features/Learning/ReviewFeature.swift:显示答案回调与first incomplete切题",
+        "Data/LearningModels.swift:ReviewExerciseRecord"
+      ],
+      "implementationRequirements": [
+        "新增revealedAwaitingCorrection状态；显示答案仅持久化揭示事实并保留当前题，要求用户输入完整正确答案。",
+        "输入错误可重试，正确后才标题完成/推进；此纠正步骤不把已揭示题改评Good，评分上限固定Again。",
+        "揭示状态、纠正状态和按题反馈都持久化；不重复计FSRS事件/日志，恢复后仍要求该题纠正。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A19-01",
+          "criterion": "点显示答案后题ID、题干和正确答案保持同一题，不立即跳到commo____等下一题。"
+        },
+        {
+          "id": "R4-A19-02",
+          "criterion": "不自动填入用户输入框；空输入/错误拼写不能通过，用户正确输入后才推进。"
+        },
+        {
+          "id": "R4-A19-03",
+          "criterion": "揭示后即使一次抄对仍记Again；不会增加一次独立复习或生成两份日志。"
+        },
+        {
+          "id": "R4-A19-04",
+          "criterion": "揭示/输入一半/写入失败/重启均能恢复待纠正状态，未纠正不计任务完成或探索解锁。"
+        },
+        {
+          "id": "R4-A19-05",
+          "criterion": "旧已完成历史不回滚或假补纠正证据；未完成旧会话按兼容策略恢复原答案。"
+        }
+      ],
+      "testSuiteID": "R4-T19",
+      "testScenarios": [
+        "reveal→correction错误→正确、事务失败、幂等、旧schema迁移向量。",
+        "product→commodity串题复现、揭示后重启、正确纠正推进及最终排程。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": false,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P20",
+      "originalFile": "IMG_8881.heic",
+      "sha256": "5e256a4df4f6432574b194b56dbebf89eab733877c9014e2f3ff45480105e3dd",
+      "sizeBytes": 1135991,
+      "previewFile": "IMG_8881.png",
+      "width": 1206,
+      "height": 2622,
+      "requirementID": "R4-F20",
+      "title": "设置自动保存，新增关于页与开发者名",
+      "priority": "P1",
+      "ownerAnnotation": "“改成自动保存，同时增加一个关于页面，显示本应用的开发者Why Haoyu，喝一些其他的信息”。（“喝”为原图文字，理解为“和”。）",
+      "visualMarks": "白圈圈“保存设置”；左上及右侧少量白点/短笔画不另推导隐藏需求。",
+      "observedFacts": "主题、自动加入、每日上限和时区修改后还需找底部保存；关于只有准备中与许可入口。",
+      "codeEvidence": [
+        "Features/Learning/SettingsFeature.swift:LearningSettingsView.save/load/Form",
+        "Data/Repositories.swift:PreferencesRepository",
+        "Features/Learning/SourceLicensesView.swift"
+      ],
+      "implementationRequirements": [
+        "开关/选择器/步进器有效变化即持久化，滑块结束或短防抖提交；文本在输入完成/失焦/键盘隐藏/离页时flush。",
+        "去掉保存设置强制按钮；统一偏好服务，失败保留旧有效值和待修草稿，不把失败状态重复显示多处。",
+        "新增关于页面，明确开发者“Why Haoyu”、应用名、实际Bundle版本/build、简洁介绍及已有许可/来源说明；不捏造联系方式。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A20-01",
+          "criterion": "修改主题/自动加入/每日上限后不点保存，切页重启仍生效。"
+        },
+        {
+          "id": "R4-A20-02",
+          "criterion": "无效时区/超长文本不覆盖旧有效设置；失败可修正/重试，无虚假成功。"
+        },
+        {
+          "id": "R4-A20-03",
+          "criterion": "快速滑动/连续切换时最后值胜出；加载初值不误触发写回，返回导航不丢修改。"
+        },
+        {
+          "id": "R4-A20-04",
+          "criterion": "既有周期的日期/时区与冻结题量不重写；自动加入设置不批量改已有生词。"
+        },
+        {
+          "id": "R4-A20-05",
+          "criterion": "关于入口明显，开发者逐字为Why Haoyu；版本/build从Bundle读取，许可内容仍可访问。"
+        }
+      ],
+      "testSuiteID": "R4-T20",
+      "testScenarios": [
+        "偏好事务/防抖/恢复/有效性/旧周期不变测试。",
+        "多种控件自动保存、键盘隐藏、重启、失败及关于页截图。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": true,
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "imageID": "R4-P21",
+      "originalFile": "IMG_8883.heic",
+      "sha256": "ade6a1dd41c0fd7d934b410d9d3249eb92a9112e0ed497baf38f5447f5d9fe1f",
+      "sizeBytes": 1394702,
+      "previewFile": "IMG_8883.png",
+      "width": 1205,
+      "height": 2618,
+      "requirementID": "R4-F21",
+      "title": "阅读查词改为小浮层，箭头进入新全屏详情",
+      "priority": "P1",
+      "ownerAnnotation": "“这个点击单词，查看释义的界面需要大幅修改，首先现在弹出的窗口太大了，只需要我画的那个方框那么大就足够了。上面只要显示我的那个示意图的那些信息，然后呢，下面的左边是一个对号，表示成功加入生词本，可以点击撤销，然后右下角是一个指向右侧的一个箭头，点击可以查看详细解释。详细解释就应该进入一个新的全屏界面”。",
+      "visualMarks": "圈中prices为触发词；白色矩形示意含“英文词条/音标”、v./adj.中文义项、左下勾号与“撤销”、右下圆圈右箭头。",
+      "observedFacts": "本图展示期望示意，并非已实现浮层；当前代码实际默认large sheet并堆列表。",
+      "codeEvidence": [
+        "Features/Learning/ReaderFeature.swift:WordLookupSheet默认detent=.large",
+        "Features/Learning/ReaderFeature.swift:DictionaryQuickMeaning/DictionaryDetailView",
+        "Features/Learning/InteractiveEnglishText.swift:词元点击及几何定位",
+        "Data/VocabularyRepository.swift:VocabularyAddition/undo"
+      ],
+      "implementationRequirements": [
+        "用公开原生popover或原生锚定浮层实现小卡，尽量靠近被点词，避开安全区/标题/屏幕边界；不再默认medium/large底部大sheet。",
+        "默认仅词条+真实IPA、最多2条按词性简明中文义、左下生词状态/撤销、右下详情箭头；长原句/来源状态长文/短语列表移到详情。",
+        "正常字体目标约240–320pt宽、140–180pt高；以实际内容和屏幕边界为准，不机械照抄截图像素，辅助字号可自然增高。",
+        "勾号仅在数据库加入成功后出现；撤销仅撤本次新建，不删除既有词。自动加入关闭时用清楚的加入动作，成功后同样可撤销本次加入。",
+        "箭头打开独立NavigationStack全屏详情；关闭回原文原位置，嵌套查词沿用小浮层和既有深度保护。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A21-01",
+          "criterion": "prices点词后显示示意所需小卡，正常字号不默认占半屏/整屏；正文上下文仍可辨。"
+        },
+        {
+          "id": "R4-A21-02",
+          "criterion": "音标/词性/义项真实且紧凑；未找到可靠中文时有短缺失状态，不塞整段技术说明或伪造翻译。"
+        },
+        {
+          "id": "R4-A21-03",
+          "criterion": "加入失败无勾号；原有词不出现可误删的撤销本次加入；本次新建可准确撤销。"
+        },
+        {
+          "id": "R4-A21-04",
+          "criterion": "右下箭头实际进入新全屏页面，完整义项/来源/例句可查看；返回原阅读位置与进度保持。"
+        },
+        {
+          "id": "R4-A21-05",
+          "criterion": "首词/末词、屏幕四边、长短语、大字、横屏、三主题、连续点不同词和VoiceOver均不越界/串词。"
+        },
+        {
+          "id": "R4-A21-06",
+          "criterion": "点外部关闭/切词后旧请求取消或结果被隔离，旧词反馈不能覆盖新词；不新增学习周期或改变阅读完成。"
+        }
+      ],
+      "testSuiteID": "R4-T21",
+      "testScenarios": [
+        "锚点转换/可用区域布局/请求代次/加入撤销所有权测试。",
+        "小浮层、成功/失败/既有词、右箭头全屏及返回、屏边/横屏/VoiceOver等价证据。"
+      ],
+      "reviewedFullImage": true,
+      "annotationZoomReviewed": true,
+      "implementationStatus": "planned-not-implemented"
+    }
+  ]
+}

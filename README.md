@@ -1,10 +1,16 @@
 # 词光 LexiDawn
 
+**CURRENT · Round 4：首次真机21图已审阅，开发任务书已制定，尚未开始整改实现。**
+
+[Round 4详细任务书](docs/plans/round-4-development-specification.md) · [21图逐张审阅](docs/reviews/round-4-first-device-21-image-audit-2026-11-06.md) · [CURRENT状态](STATUS.md)。21张分别编号、共108个具体验收点；本次只提交计划文档。
+
+## Round 3历史交付与现有产品说明
+
 全量 CI [41436291391](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391) 已完成且成功，测试代码为 `b13d6b4e21e425472d059770319d88cd7c50a15e`。Debug/Release、186 XCTest（0失败）、49主 XCUITest（0失败）、SE7/大屏3（均0失败）、导出专项及截图合并全部通过；327张编号截图覆盖138项要求，缺失0项。当前交付自动化证据与完整截图包，最终视觉验收由负责人逐图确认；真机/iOS27/完整VoiceOver听读及Instruments未实测。本次仅文档与证据收尾，不修改应用、测试或CI代码。 [完整交付报告](docs/reviews/round-3-final-delivery-2026-11-02.md)。
 
 原生 iOS 英文全文阅读、查词、生词管理和间隔复习应用。使用 SwiftUI、SwiftData、Domain、Service 和 Repository，不依赖网页阅读器或大型 UI 框架。
 
-**CURRENT · 全量自动化通过，截图包已交付，等待负责人视觉验收。**
+**Round 3历史结果 · 全量自动化通过，截图包已交付；后续真机反馈见Round 4。**
 
 本次真实通过结果与完整下载入口见[交付报告](docs/reviews/round-3-final-delivery-2026-11-02.md)；历史失败保留在Actions与Git历史中。
 
