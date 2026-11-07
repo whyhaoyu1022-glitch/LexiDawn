@@ -48,8 +48,8 @@ final class Round4UITests: XCTestCase {
         let card = app.descendants(matching: .any)["compact-word-card"].firstMatch
         XCTAssertGreaterThan(card.frame.height, 100); XCTAssertLessThan(card.frame.height, 300)
         XCTAssertLessThan(card.frame.width, app.windows.firstMatch.frame.width)
-        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "点头")).firstMatch.waitForExistence(timeout: 15))
-        XCTAssertEqual(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'Explicit English-only fixture'")).count, 0)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "点头")).firstMatch.waitForExistence(timeout: 15))
+        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Explicit English-only fixture'")).count, 0)
         capture("R4-P21-compact", app: app, feature: "reader-dictionary", state: "small-bilingual-anchored-lookup")
         app.buttons["dictionary-details"].tap()
         XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
@@ -199,7 +199,7 @@ final class Round4UITests: XCTestCase {
     func testDictionaryPartialEmptyAndFailedStatesRemainCompact() throws {
         for mode in ["partial", "empty", "all-failed", "loading"] {
             let app = launch("round4-" + mode); reader(app); tapWord("nod", app: app)
-            if mode == "partial" { XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "点头")).firstMatch.waitForExistence(timeout: 15)) }
+            if mode == "partial" { XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "点头")).firstMatch.waitForExistence(timeout: 15)) }
             if mode == "empty" { XCTAssertTrue(app.staticTexts["暂无英中释义"].waitForExistence(timeout: 15)) }
             if mode == "all-failed" { XCTAssertTrue(app.buttons["词典暂不可用，重试"].waitForExistence(timeout: 15)) }
             if mode == "loading" { XCTAssertTrue(app.descendants(matching: .any)["dictionary-loading"].firstMatch.waitForExistence(timeout: 5)) }

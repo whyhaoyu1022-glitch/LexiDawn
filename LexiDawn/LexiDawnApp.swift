@@ -290,7 +290,7 @@ struct Round4DictionaryFixture: DictionaryProvider {
         }
         guard headword == "nod" else { return [] }
         return [
-            DictionarySense(id: "wiktionary|round4-noun", en: "", zh: "点头；点头的动作（原创测试义项）", line: "Original Round 4 bilingual layout fixture · not production dictionary content", partOfSpeech: "noun", ipa: "BrE /nɒd/ · AmE /nɑd/", examples: ["A nod can express agreement.", "She answered with a nod."], forms: ["复数 nods"], synonyms: ["agreement"], sources: [source], exampleTranslations: ["点头可以表达同意。", "她点头作答。"], usageLabels: ["动作"]),
+            DictionarySense(id: "wiktionary|round4-noun", en: "", zh: "点头；点头的动作（原创测试义项）", line: "Original Round 4 bilingual layout fixture · not production dictionary content", partOfSpeech: "noun", ipa: "BrE /nɒd/ · AmE /nɑd/", examples: ["A nod can express agreement.", "She answered with a nod."], synonyms: ["agreement"], forms: ["复数 nods"], sources: [source], exampleTranslations: ["点头可以表达同意。", "她点头作答。"], usageLabels: ["动作"]),
             DictionarySense(id: "wiktionary|round4-verb", en: "", zh: "点头示意（原创测试义项）", line: "Original Round 4 bilingual layout fixture · not production dictionary content", partOfSpeech: "verb", examples: ["We nod when we agree.", "He nodded to his friend."], forms: ["过去式 nodded · 现在分词 nodding"], sources: [source], exampleTranslations: ["同意时，我们会点头。", "他向朋友点头示意。"], relatedPhrases: ["nod off · 打盹（原创测试短语）"])
         ]
     }
