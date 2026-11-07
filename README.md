@@ -1,8 +1,8 @@
 # 词光 LexiDawn
 
-**CURRENT · Round 4：首次真机21图已审阅，开发任务书已制定，尚未开始整改实现。**
+**CURRENT · Round 4 v1.1：21张问题图与3张词典参考已审阅，24项需求/144条验收已规划，尚未开始整改实现。**
 
-[Round 4详细任务书](docs/plans/round-4-development-specification.md) · [21图逐张审阅](docs/reviews/round-4-first-device-21-image-audit-2026-11-06.md) · [CURRENT状态](STATUS.md)。21张分别编号、共108个具体验收点；本次只提交计划文档。
+[Round 4详细任务书](docs/plans/round-4-development-specification.md) · [21图逐张审阅](docs/reviews/round-4-first-device-21-image-audit-2026-11-06.md) · [CURRENT状态](STATUS.md)。原21图独立编号；新增[词典详细页补充规范](docs/plans/round-4-dictionary-detail-addendum.md)及[三图审阅](docs/reviews/round-4-dictionary-reference-audit-2026-11-07.md)，当前合计144条验收、24个测试族。可靠来源词禁用用户释义，无可靠来源才支持结构化个人词；两类词与复习统一合同。本次只提交计划文档。
 
 ## Round 3历史交付与现有产品说明
 

@@ -1,10 +1,11 @@
-# CURRENT · Round 4任务书已制定，21图整改尚未开发（2026-11-06）
+# CURRENT · Round 4 v1.1任务书已更新，整改尚未开发（2026-11-07）
 
-本轮当前交付为研究/计划：21/21原图逐张核对，108条逐图验收标准，21组测试场景。没有修改产品代码或测试，没有新CI/真机结果；此前Round3与首IPA成功是历史事实，不能算本轮21项已修复。
+2026-11-07按负责人新增三张词典参考升级Round 4至v1.1：完整页按词性/编号义项/搭配/双语例句/短语动词分层，Wiktionary、可配置Oxford、Free为可靠优先组并保留字段来源；有可靠英文也禁用用户释义，确认无可靠来源才允许结构化多词性/多义项/例句录入。笔记仍可用，旧个人义无损只读，复习统一sense/版本/来源快照。新增F22–F24、36条验收、T22–T24，当前总计24项/144条/24族；原21图不重排。仅文档，没有Swift/测试/CI/IPA变更或新通过结果。
 
-- [Round 4完整开发任务书](docs/plans/round-4-development-specification.md)
-- [21图逐张批注与圈画审阅](docs/reviews/round-4-first-device-21-image-audit-2026-11-06.md)
-- [原件哈希/需求/验收机器清单](docs/reviews/round-4-feedback-manifest.json)
+- [主任务书](docs/plans/round-4-development-specification.md)
+- [词典详细页补充规范](docs/plans/round-4-dictionary-detail-addendum.md)
+- [原21图审阅](docs/reviews/round-4-first-device-21-image-audit-2026-11-06.md) / [新增三图审阅](docs/reviews/round-4-dictionary-reference-audit-2026-11-07.md)
+- [机器清单](docs/reviews/round-4-feedback-manifest.json)
 
 ## Round 3与首IPA历史状态（2026-11-05及以前）
 

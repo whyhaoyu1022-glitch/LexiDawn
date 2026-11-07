@@ -196,8 +196,8 @@
   "baselineMainCommit": "6840b2d0d786c88d6c067feebd16df968c50849a",
   "priorIPASourceCommit": "39c5f7056644972ca0030a1cb041400a08d52c3c",
   "reviewDate": "2026-11-06",
-  "status": "21-images-reviewed-plan-only",
-  "totalAcceptanceCriteria": 108,
+  "status": "original-21-and-dictionary-supplement-planned-not-implemented",
+  "totalAcceptanceCriteria": 144,
   "issues": [
     {
       "imageID": "R4-P01",
@@ -606,7 +606,7 @@
       ],
       "implementationRequirements": [
         "统一ReviewEntryCoordinator先预检，成功才进入练习；今日按钮与复习Tab等价。",
-        "可定位词条的缺义/重复义项错误提供“取消/本次跳过该词/立即填写”；立即填写直达对应词条个人释义并保存后重试同一进入意图。",
+        "可定位词条的缺义/重复义项错误提供取消/本次延期及条件化处理：有可靠来源时选已有可靠义或重试，禁止个人补义；确认无可靠来源才提供“立即填写”直达对应结构化个人词条，保存/确认后重试同一进入意图（F23/F24）。",
         "数据库/损坏会话/权限/网络等错误按能力提供取消/重试/恢复操作，不能对不可跳过错误伪造忽略成功。",
         "显式跳过持久化为当次延期证据，保留生词、不推进该词FSRS、不计真实作答；全跳过需明确确认并与真正空队列区分。"
       ],
@@ -617,7 +617,7 @@
         },
         {
           "id": "R4-A08-02",
-          "criterion": "立即填写打开effectively对应条目，保存失败仍停留并保留草稿，成功再预检进入。"
+          "criterion": "仅在无可靠来源资格成立时立即填写对应条目，保存失败保留草稿，成功/确认后再预检；effectively若已有可靠英文则禁用个人补义，改选可靠中文/重试/延期。"
         },
         {
           "id": "R4-A08-03",
@@ -639,7 +639,13 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "planned-not-implemented",
+      "supplementalContractIDs": [
+        "R4-F22",
+        "R4-F23",
+        "R4-F24"
+      ],
+      "currentNormativeSource": "docs/plans/round-4-dictionary-detail-addendum.md"
     },
     {
       "imageID": "R4-P09",
@@ -662,14 +668,14 @@
       ],
       "implementationRequirements": [
         "词条规范词形显示user，原始users保存在surfaceForms/原句；visit/visits等同类规则统一处理，不能简单删所有结尾s。",
-        "删除强制“保存”按钮；完成输入、拖动/点击空白收键盘、焦点离开、返回、切Tab、转后台均flush有变化的释义与笔记。",
+        "删除强制“保存”按钮；完成输入、拖动/点击空白收键盘、焦点离开、返回、切Tab、转后台均flush有变化的笔记及资格允许的结构化个人释义；有可靠来源时不开放个人编辑（F23）。",
         "引入脏版本/保存状态/IME合成保护和最后写入胜出协调，失败保留草稿并提示未保存和重试，成功后才能显示已保存。",
         "规范化迁移用别名/规范ID映射保留两条旧记录的笔记、个人义、来源与冻结题组；冲突不得静默覆盖。"
       ],
       "acceptanceCriteria": [
         {
           "id": "R4-A09-01",
-          "criterion": "输入“用户”后仅拖动收键盘再退出/重进/重启，释义仍在；不需点完成输入或保存。"
+          "criterion": "在已确认无可靠来源的个人词中输入释义后，仅拖动收键盘再退出/重进/重启仍保留；可靠词改验证笔记自动保存，不允许为测“用户”而开放可靠词个人释义。"
         },
         {
           "id": "R4-A09-02",
@@ -699,7 +705,13 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "planned-not-implemented",
+      "supplementalContractIDs": [
+        "R4-F22",
+        "R4-F23",
+        "R4-F24"
+      ],
+      "currentNormativeSource": "docs/plans/round-4-dictionary-detail-addendum.md"
     },
     {
       "imageID": "R4-P10",
@@ -723,7 +735,7 @@
       "implementationRequirements": [
         "匹配词头使用可靠lemma，义项选择使用原句、词性、大小写与来源可靠性，不把反向中文片段当通用标准答案。",
         "may在情态语境下不得取月份；月份May保留大写及月份义。visit/user等原词形可在次级标注，而不作重复词头。",
-        "建立ReviewSensePolicy：个人确认/可验证语境义优先；弱反向候选无可验证对齐时进入F08解决流程。",
+        "建立ReviewSensePolicy：有可靠来源时只选可靠且语境对齐的义项；仅无可靠来源时可选已确认结构化个人sense；弱反向候选不自动出题，缺可靠中文按F08/F23处理。",
         "正确/错误用词条ID+senseID验证，但先保证题组语义金标及一对一无歧义；保留真实绘线及双端禁用。"
       ],
       "acceptanceCriteria": [
@@ -755,7 +767,13 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "planned-not-implemented",
+      "supplementalContractIDs": [
+        "R4-F22",
+        "R4-F23",
+        "R4-F24"
+      ],
+      "currentNormativeSource": "docs/plans/round-4-dictionary-detail-addendum.md"
     },
     {
       "imageID": "R4-P11",
@@ -995,7 +1013,7 @@
         "Features/Learning/ReaderFeature.swift:DictionaryDetailView/DictionaryResultContent"
       ],
       "implementationRequirements": [
-        "抽出共享WordDetailContent，在生词详情一个页面整合完整义项、词性/IPA/例句/短语、个人释义/笔记、简化上下文。",
+        "抽出共享WordDetailContent，按3张新增参考图的词性/编号义项/搭配例句层级整合完整词典、笔记和简化上下文；个人释义仅无可靠来源时可编辑，有可靠来源的旧个人义只读保留（F22/F23）。",
         "移除该生词页重复“详细词典”行，保留真实完整内容和合理折叠分组。",
         "阅读小浮窗的右箭头仍进入全屏详细页；该流与生词详情复用内容层而非再嵌一层详情。"
       ],
@@ -1010,7 +1028,7 @@
         },
         {
           "id": "R4-A15-03",
-          "criterion": "个人内容与词典原文区分，自动保存与确认义项不被新布局覆盖。"
+          "criterion": "按F23区分可靠词义、资格允许的个人义和始终可用的笔记；有可靠来源禁用个人编辑，旧个人义保留只读；有效自动保存和选义不被布局覆盖。"
         },
         {
           "id": "R4-A15-04",
@@ -1028,7 +1046,13 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "planned-not-implemented",
+      "supplementalContractIDs": [
+        "R4-F22",
+        "R4-F23",
+        "R4-F24"
+      ],
+      "currentNormativeSource": "docs/plans/round-4-dictionary-detail-addendum.md"
     },
     {
       "imageID": "R4-P16",
@@ -1053,9 +1077,9 @@
       ],
       "implementationRequirements": [
         "生产在线启用已存在，先核查实际请求、超时/负缓存、版本完整性和显示过滤；不得误写“从未接入”。",
-        "可信在线/可信缓存及用户明确确认义优先，CC反向候选最低并标注来源性质；不能因先到或有中文就压住可靠英语Provider。",
+        "Wiktionary、已配置且真实可用Oxford、Free为可靠优先组；可信缓存同样算可靠来源；有可靠来源禁用个人释义，CC最低，不能因先到或有中文压住可靠Provider（F23）。",
         "Vocabulary详情查询传真实sourceContext与词形；POS、IPA归属同一sense，单来源时不误称多源合并。",
-        "在线英语释义不自动变成可靠中文翻译；可靠中文缺失用明确选择/个人释义，弱候选不自动作为题目答案。"
+        "在线英语义不自动变可靠中文；有可靠英文而无中文仍禁用个人释义，选其他可靠中文/重试/延期；仅无可靠来源可结构化自建，弱候选不自动成为题目答案（F23/F24）。"
       ],
       "acceptanceCriteria": [
         {
@@ -1080,7 +1104,7 @@
         },
         {
           "id": "R4-A16-06",
-          "criterion": "个人已确认释义、旧题组/日志不因Provider优先级变化自动改写。"
+          "criterion": "旧个人义、旧题组/日志不被删改；可靠来源出现后旧个人义只读且不用于新题，有效进行中题按冻结快照恢复，已证实错误题按F24暂停处理。"
         }
       ],
       "testSuiteID": "R4-T16",
@@ -1090,7 +1114,13 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "planned-not-implemented",
+      "supplementalContractIDs": [
+        "R4-F22",
+        "R4-F23",
+        "R4-F24"
+      ],
+      "currentNormativeSource": "docs/plans/round-4-dictionary-detail-addendum.md"
     },
     {
       "imageID": "R4-P17",
@@ -1145,7 +1175,13 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "planned-not-implemented",
+      "supplementalContractIDs": [
+        "R4-F22",
+        "R4-F23",
+        "R4-F24"
+      ],
+      "currentNormativeSource": "docs/plans/round-4-dictionary-detail-addendum.md"
     },
     {
       "imageID": "R4-P18",
@@ -1371,6 +1407,302 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": true,
+      "implementationStatus": "planned-not-implemented",
+      "supplementalContractIDs": [
+        "R4-F22",
+        "R4-F23",
+        "R4-F24"
+      ],
+      "currentNormativeSource": "docs/plans/round-4-dictionary-detail-addendum.md"
+    }
+  ],
+  "schemaVersion": 2,
+  "supplementDate": "2026-11-07",
+  "supplementBaselineMainCommit": "203483b83fe9581c436f551938050a4c8c00febe",
+  "referenceImageCount": 3,
+  "totalInputImageCount": 24,
+  "originalAcceptanceCriteria": 108,
+  "supplementalAcceptanceCriteria": 36,
+  "totalRequirements": 24,
+  "totalTestSuites": 24,
+  "referenceImages": [
+    {
+      "referenceImageID": "R4-R01",
+      "originalFile": "IMG_8884.jpeg",
+      "sha256": "bf278dfaea1bf3785281b4a018872b5a017276aa32cb2d5554fabafc67c0a0ba",
+      "sizeBytes": 233964,
+      "width": 706,
+      "height": 1536,
+      "reviewedFullImage": true,
+      "role": "dictionary-layout-reference-not-app-evidence",
+      "observation": "词头与英美IPA、A名词组、编号义项、语域、搭配及双语例句，底部悬浮返回/词条/关闭条。",
+      "repositoryFile": "docs/reviews/references/round-4-dictionary/IMG_8884.jpeg"
+    },
+    {
+      "referenceImageID": "R4-R02",
+      "originalFile": "IMG_8885.jpeg",
+      "sha256": "92bebef0209a9b1239ad81306ac0b1b48ed994fe3154a923fd105a128b52d050",
+      "sizeBytes": 237748,
+      "width": 706,
+      "height": 1536,
+      "reviewedFullImage": true,
+      "role": "dictionary-layout-reference-not-app-evidence",
+      "observation": "名词续义与习语、B不及物动词及词形变化、多个义项/例句、C及物动词开头；与首图有内容重叠。",
+      "repositoryFile": "docs/reviews/references/round-4-dictionary/IMG_8885.jpeg"
+    },
+    {
+      "referenceImageID": "R4-R03",
+      "originalFile": "IMG_8886.jpeg",
+      "sha256": "c5ff3b01758f29634d28c07086ebc18af6c0285b60bffec14afb722c1b51b3c1",
+      "sizeBytes": 199267,
+      "width": 1206,
+      "height": 1322,
+      "reviewedFullImage": true,
+      "role": "dictionary-layout-reference-not-app-evidence",
+      "observation": "C及物动词续义、短语动词独立分节与短语词头/词性/义项，底部胶囊工具条；末行遮挡风险不照搬。",
+      "repositoryFile": "docs/reviews/references/round-4-dictionary/IMG_8886.jpeg"
+    }
+  ],
+  "supplementalRequirements": [
+    {
+      "requirementID": "R4-F22",
+      "title": "参照三张词典截图重设计丰富、有序的完整释义页",
+      "priority": "P1",
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "relatedRequirements": [
+        "R4-F15",
+        "R4-F17",
+        "R4-F21"
+      ],
+      "implementationRequirements": [
+        "按词头/英美音标→词性分组→编号义项→搭配与双语例句→短语动词/习语→其他可靠资料组织统一WordDetailContent。",
+        "参考衬线词头、清楚缩进、英文重点及中文对应行、克制毛玻璃底栏；加入生词本另行美观排版，不能遮挡最后内容。",
+        "尽量呈现实际可得字段和全部可用义项；缺失音标、中文、例句译文、词源等不编造，不用大量空卡填版。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A22-01",
+          "criterion": "阅读器、生词本、推荐三个入口使用同一完整释义内容层，均为可滚动详细页；小浮层仍保持简明。"
+        },
+        {
+          "id": "R4-A22-02",
+          "criterion": "词头、英美音标/真实发音、词性、编号义项、例句与短语形成与参考图对应的清晰层级，长文不堆成无分组字符串。"
+        },
+        {
+          "id": "R4-A22-03",
+          "criterion": "同一词不同词性/词源/读音保持边界；及物/不及物、语域和地域只在有原始证据时标注。"
+        },
+        {
+          "id": "R4-A22-04",
+          "criterion": "例句和已有中文译文成对显示，搭配缩进；无译文时保留英文，不借用其他义项的中文或人工伪造。"
+        },
+        {
+          "id": "R4-A22-05",
+          "criterion": "独立短语动词/习语区块可见、可导航、可返回；短语身份和其词形不被错误拆成普通单词。"
+        },
+        {
+          "id": "R4-A22-06",
+          "criterion": "实际返回的IPA、词形、词源、近反义词、用法及所有可靠义项均可找到；缺失区块优雅省略，不能只显示前几条即声称完整。"
+        },
+        {
+          "id": "R4-A22-07",
+          "criterion": "来源按真实内容标注，可追溯字段归属；只有一个来源时不称多源融合，不把截图文字写入生产fixture。"
+        },
+        {
+          "id": "R4-A22-08",
+          "criterion": "加入生词本、已加入/失败及撤销本次新增排版清楚且真实落盘，返回路径和已有生词不受新底栏影响。"
+        },
+        {
+          "id": "R4-A22-09",
+          "criterion": "底栏、安全区、键盘与Tab不遮住最后义项；关闭/后退、嵌套查词返回保持原阅读及详情位置。"
+        },
+        {
+          "id": "R4-A22-10",
+          "criterion": "浅色、深色、暖纸色、横竖屏及辅助大字下文字可读；降低透明度时使用稳定实色背景，无障碍能读词性与义项顺序。"
+        },
+        {
+          "id": "R4-A22-11",
+          "criterion": "按三张参考的首/中/末层级提供实际原生截图，以及缺失字段、部分失败、离线缓存和生词操作失败截图，不能用参考图冒充整改效果。"
+        },
+        {
+          "id": "R4-A22-12",
+          "criterion": "加载逐源补全且保留已有内容/滚动锚点；取消、换词与迟到结果不会把新词页面替换为旧词。"
+        }
+      ],
+      "testSuiteID": "R4-T22",
+      "testScenarios": [
+        "多词性/多词源/短语的层级投影与字段缺失确定性测试。",
+        "首中末原生UI、字体/主题/横屏/降低透明度/VoiceOver及底栏不遮挡。",
+        "阅读器→完整页→嵌套查词→返回，以及生词与推荐复用、加入/失败/撤销。"
+      ],
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "requirementID": "R4-F23",
+      "title": "可靠词典融合与受约束的结构化用户释义",
+      "priority": "P0",
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "relatedRequirements": [
+        "R4-F08",
+        "R4-F09",
+        "R4-F10",
+        "R4-F15",
+        "R4-F16"
+      ],
+      "implementationRequirements": [
+        "Wiktionary、已配置并真实可用的Oxford、Free Dictionary API组成优先可靠来源组；CC-CEDICT最低，不能以中文非空取代来源可靠性。",
+        "有任一可靠来源的有效释义即对整个对应词条身份禁用新增/编辑用户释义；只有英文、其他字段缺失或暂时断网均不是开放编辑的理由。笔记继续可用。",
+        "确认没有可靠来源时允许多词性、多义项、英文/中文释义、例句及译文、搭配等结构化自建；独立标注用户填写、版本及保存状态。",
+        "可靠来源出现时保留旧个人义只读历史与草稿，新题不再使用其覆盖可靠内容；Repository在保存和选义时强制策略，不能仅隐藏按钮。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A23-01",
+          "criterion": "优先组真实来源为Wiktionary/已配置Oxford/Free；排序由词身份、语境、词性及可靠性决定，CC最低，网络返回先后不改变结论。"
+        },
+        {
+          "id": "R4-A23-02",
+          "criterion": "Oxford未配置、无可用凭据或失败明确区分，其他来源正常工作；不得标成已引用牛津、假造内容或索取/提交密钥到仓库。"
+        },
+        {
+          "id": "R4-A23-03",
+          "criterion": "同概念同词性的跨源内容可融合并保留字段来源；不同词义、大小写、词源及例句译文不能错拼，无法确认一致时并列。"
+        },
+        {
+          "id": "R4-A23-04",
+          "criterion": "同词条有任一真实可靠释义即禁用用户释义的新建/编辑，包括仅英文、缺中文、缺例句和可信缓存状态；个人笔记仍可自动保存。"
+        },
+        {
+          "id": "R4-A23-05",
+          "criterion": "超时/429/离线不被当成查无此词；已知有可靠来源的词不会因清缓存、切页或失败临时恢复用户释义编辑。"
+        },
+        {
+          "id": "R4-A23-06",
+          "criterion": "可靠来源都明确无结果且无已知可靠条目时，允许结构化用户释义；仅CC候选不构成可靠来源锁定，用户确认后仍标个人来源。"
+        },
+        {
+          "id": "R4-A23-07",
+          "criterion": "自建支持多词性/多义项、英文与中文义、英文例句及译文、用法标签、搭配/短语和可选发音/词形信息，缺字段不自动补造。"
+        },
+        {
+          "id": "R4-A23-08",
+          "criterion": "结构化编辑沿用自动保存、IME保护、最后版本胜出、事务和失败草稿恢复；父义项与例句不得半写入。"
+        },
+        {
+          "id": "R4-A23-09",
+          "criterion": "可靠结果在编辑/保存期间到达时策略版本重新校验；未获允许的个人义不能迟到落盘，草稿保留为只读待处理，笔记不丢失。"
+        },
+        {
+          "id": "R4-A23-10",
+          "criterion": "旧userMeaning、选义、笔记、来源与导出数据无损迁移；有可靠来源时旧个人义只读保留，新题不回用，旧历史记录不改写。"
+        },
+        {
+          "id": "R4-A23-11",
+          "criterion": "可信仅英文词的页面仍禁用用户释义，复习明确缺可靠中文而非要求填写；有可靠中文时选义只引用真实官方sense。"
+        },
+        {
+          "id": "R4-A23-12",
+          "criterion": "Domain、Repository、各UI入口、导出/备份恢复入口执行同一策略，不能通过旧页面、直接写入或把笔记冒充答案绕过禁用。"
+        }
+      ],
+      "testSuiteID": "R4-T23",
+      "testScenarios": [
+        "可靠来源有/无、仅英文、部分失败、全失败、仅CC、已知可靠但过期不可用的策略矩阵。",
+        "多源同义/异义合并与POS、大小写、翻译对齐、顺序变化金标。",
+        "结构化多义项真实SwiftData事务/迁移/导出、自动保存失败和网络结果抢占写入竞态。",
+        "所有入口编辑禁用、个人笔记保留、Oxford未配置与Free单独失败原生UI。"
+      ],
+      "implementationStatus": "planned-not-implemented"
+    },
+    {
+      "requirementID": "R4-F24",
+      "title": "统一词义身份、用户词条与连线/拼写复习的正确闭环",
+      "priority": "P0",
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "relatedRequirements": [
+        "R4-F08",
+        "R4-F09",
+        "R4-F10",
+        "R4-F11",
+        "R4-F18",
+        "R4-F19",
+        "R4-F23"
+      ],
+      "implementationRequirements": [
+        "完整页、简明页、生词和ReviewSenseResolver共享稳定lexicalIdentity/senseID/meaningRevision及字段来源，不能各取首个字符串。",
+        "新题仅用语境匹配且有可靠中文的官方义项，或在无可靠来源策略允许时明确确认的结构化个人义；缺字段返回类型化预检结果。",
+        "题组冻结选义、词性、来源/版本、上下文、原句词形、答案、掩码和评分证据；后到Provider/个人编辑不暗换进行中的答案。",
+        "新禁用策略、复习延期、显示答案后亲自纠正、Again及幂等FSRS更新联动验证；旧库升级不丢学习周期和历史。"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "R4-A24-01",
+          "criterion": "从小浮层/完整详情选定同一义项加入生词后，连线与拼写引用相同的词身份、senseID、词性和语境证据，不回退仅本地CEDICT。"
+        },
+        {
+          "id": "R4-A24-02",
+          "criterion": "noun/verb、及物/不及物、may/May、nod/nod off和不同词源不串题；个人义同样按sense而非整串文本匹配。"
+        },
+        {
+          "id": "R4-A24-03",
+          "criterion": "官方仅英文且无可靠中文时不生成英中连线，也不开放个人释义；可选择其他真实可靠中文义、重试或本次延期，不能伪造成功。"
+        },
+        {
+          "id": "R4-A24-04",
+          "criterion": "无可靠来源的个人词只有达到最小复习合同并确认后才出题；缺中文/POS/可用语境分别返回可定位原因，不让用户进入错误练习板。"
+        },
+        {
+          "id": "R4-A24-05",
+          "criterion": "个人例句与真实文章原句分开标识；无文章时可用明确标注的个人例句，目标词/短语必须有唯一可校验范围和合法词形。"
+        },
+        {
+          "id": "R4-A24-06",
+          "criterion": "题组建立时原子冻结meaning/source/policy版本、答案与掩码；编辑、可靠来源新增、缓存刷新或重启不自动换当前答案。"
+        },
+        {
+          "id": "R4-A24-07",
+          "criterion": "可靠来源出现后新题停用旧个人义，旧会话/日志有原始来源快照；已证实语义错误的题暂停并明确处理，不继续要求错误答案或改写历史。"
+        },
+        {
+          "id": "R4-A24-08",
+          "criterion": "连线相同中文导致歧义时以真实词性/语境区分或预检解决；真实绘线、双端禁用和重复消费保护均保持。"
+        },
+        {
+          "id": "R4-A24-09",
+          "criterion": "揭示官方或个人词答案后都需亲自正确输入一次，仍计Again；按题反馈和跨题重置无残留，重复提交只产生一次有效排程事件。"
+        },
+        {
+          "id": "R4-A24-10",
+          "criterion": "来源暂不可用、个人义保存失败、题组/日志写入失败、迁移中断均保留旧有效状态与草稿，无孤立记录、伪完成或提前解锁。"
+        },
+        {
+          "id": "R4-A24-11",
+          "criterion": "完成阅读/真实复习或明确合法延期后门禁按已有规则处理；收藏、选义、填写、加入、Provider返回本身均不能算复习完成。"
+        },
+        {
+          "id": "R4-A24-12",
+          "criterion": "可靠词和无可靠来源自建词各有完整原生E2E/重启/离线/失败证据；真实网络与fixture分标，不把截图内容预置为生产成功。"
+        }
+      ],
+      "testSuiteID": "R4-T24",
+      "testScenarios": [
+        "可靠中文词与结构化个人词两条选义→生词→连线→拼写→纠正→FSRS→周期闭环。",
+        "可信仅英文禁用自建且不出错题、无义/POS/语境预检，缺义条件化补录及合法延期。",
+        "新可靠结果替代个人新题资格、旧会话冻结、错误题隔离、旧库/重启/离线/失败事务。",
+        "may/May、nod/nod off、users原句词形、相同中文歧义、Exactly-once评分与原门禁回归。"
+      ],
       "implementationStatus": "planned-not-implemented"
     }
   ]

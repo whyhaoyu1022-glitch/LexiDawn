@@ -4,6 +4,8 @@
 
 用户2026-11-06的新批注及本次指令优先于旧SPEC中的冲突UI/交互要求。所有强制项继续在[开发任务书](../plans/round-4-development-specification.md)统一验收。
 
+**2026-11-07后续指令：** 本文保留首次21图批注与当时事实，不改写原话；当前规范已升级v1.1，尤其个人补义入口须遵循[词典补充](../plans/round-4-dictionary-detail-addendum.md)。新增3张参考使用R4-R01–R03，见[独立审阅](round-4-dictionary-reference-audit-2026-11-07.md)，不计作本包新增问题图。
+
 ## 原始证据与阅读方法
 
 上传包：`修改意见(1).zip`；SHA256：`e754df2436b246c4798a95775a5f10e7776bd56c85fb7045ff5351b2ff302528`。ZIP共43项：1目录、21张HEIC、21个macOS资源旁文件；按文件名排序后建立P01–P21，**不是按ZIP物理顺序编号**。21个原件SHA均不同。
