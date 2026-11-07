@@ -158,5 +158,152 @@ import SwiftData
         XCTAssertTrue(document.text.contains("The original final paragraph."))
         XCTAssertFalse(document.text.contains("To view this video"))
     }
+    func testCanonicalAliasMigrationKeepsNotesIDsContextsAndReviewLogs() throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let id = try learning.content.importArticle(.init(title: "Explicit legacy identity fixture", body: "A user visits users.", source: "Original XCTest fixture", rightsConfirmed: true), at: now)
+        let context = ModelContext(app.modelContainer)
+        let singular = VocabularyEntryRecord(lemma: "user", surface: "user", type: "word", at: now, from: id, token: "singular")
+        singular.notes = "原单数笔记"; singular.deletedAt = now
+        let plural = VocabularyEntryRecord(lemma: "users", surface: "users", type: "word", at: now, from: id, token: "plural")
+        plural.notes = "原复数笔记"; plural.userMeaning = "旧个人义"
+        for record in [singular, plural] {
+            context.insert(record); context.insert(ReviewStateRecord(entryID: record.entryID, at: now))
+            context.insert(VocabularySourceContextRecord(entryID: record.entryID, articleID: id, surface: record.lemma, sentence: "A user visits users.", tokenLocation: record === singular ? 2 : 14, at: now))
+            context.insert(ReviewLogRecord(sessionID: record.entryID, entryID: record.entryID, grade: "good", at: now, previousDueAt: now, nextDueAt: now.addingTimeInterval(86400)))
+        }
+        try context.save()
+        let values = try learning.vocabulary.entries(), value = try XCTUnwrap(values.first)
+        XCTAssertEqual(values.count, 1); XCTAssertEqual(value.id, plural.entryID); XCTAssertEqual(value.lemma, "user")
+        XCTAssertEqual(value.notes, "原复数笔记"); XCTAssertEqual(value.legacyAnnotations?.first?.notes, "原单数笔记")
+        XCTAssertEqual(Set(value.surfaces), Set(["user", "users"])); XCTAssertEqual(value.contexts.count, 2)
+        let rows = try ModelContext(app.modelContainer).fetch(FetchDescriptor<VocabularyEntryRecord>())
+        XCTAssertEqual(rows.count, 2); XCTAssertEqual(Set(rows.map(\.normalizedKey)).count, 2)
+        XCTAssertEqual(rows.first { $0.entryID == singular.entryID }?.canonicalEntryID, plural.entryID)
+        let exported = try XCTUnwrap(JSONSerialization.jsonObject(with: learning.vocabulary.export(.json, at: now)) as? [String: Any])
+        XCTAssertEqual((exported["reviewLogs"] as? [[String: Any]])?.count, 2)
+        try learning.vocabulary.normalizeIdentities()
+        XCTAssertEqual(try learning.vocabulary.entries(), values)
+    }
+    func testCanonicalMigrationSaveFailureRollsBackEveryAlias() throws {
+        let app = try AppDependencies.makeLearningInMemory(), context = ModelContext(app.modelContainer)
+        let record = VocabularyEntryRecord(lemma: "users", surface: "users", type: "word", at: now, from: "explicit-fixture", token: "test")
+        context.insert(record); try context.save()
+        let repository = VocabularyRepository(context: ModelContext(app.modelContainer)) { _ in throw LearningError.invalid("Explicit migration fault") }
+        XCTAssertThrowsError(try repository.normalizeIdentities())
+        let restored = try XCTUnwrap(ModelContext(app.modelContainer).fetch(FetchDescriptor<VocabularyEntryRecord>()).first)
+        XCTAssertEqual(restored.lemma, "users"); XCTAssertEqual(restored.normalizedKey, "en|word|users"); XCTAssertNil(restored.canonicalEntryID)
+    }
+    func testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("round3.store"), articleID = UUID().uuidString
+        let raw = "A user reads a complete original article.\n\nThe final paragraph remains unchanged."
+        let document = ArticleDocumentNormalizer.plainText(raw)
+        let cycle = try DailyStudyCycle(assignedLocalDate: "2026-11-06", assignedTimeZoneID: "Asia/Shanghai", articleID: articleID, createdAtUTC: now, updatedAtUTC: now, assignmentReason: "explicit-Round3-disk-fixture")
+        var entryID = "", sessionID = ""
+        do {
+            let container = try ModelContainer(for: FrozenRound3Schema.schema, configurations: [ModelConfiguration(url: url)])
+            let context = ModelContext(container)
+            let article = FrozenRound3Schema.ArticleRecord(articleID: articleID, canonicalURL: "lexidawn-local://article/" + articleID, originalTitle: "Historical complete original", sourceID: "user-import", fetchedAt: now, licenseID: "user-declared-local-use", licenseVerified: true, bodyText: raw, bodyHash: fingerprint(raw), contentStatus: "available", createdAt: now, updatedAt: now)
+            article.structuredBody = try JSONEncoder().encode(document); article.cachePermissionData = try JSONEncoder().encode(ArticleCachePermission.persistent)
+            article.sourceAttribution = "Original XCTest author"; article.fullTextDisplayAllowed = true; article.isFavorite = true; article.readLater = true
+            article.fullTextRightsEvidenceID = "user-confirmed-original"; article.extractionVersion = ArticleDocument.extractionVersion; article.completenessVerifiedAt = now
+            context.insert(article); context.insert(try FrozenRound3Schema.DailyStudyCycleRecord(cycle: cycle))
+            context.insert(FrozenRound3Schema.ContentGrantRecord(articleID: articleID, sourceID: "user-import", bodyHash: fingerprint(raw), scope: "user-local", evidenceURL: "local-user-confirmation", originalURL: nil, acceptedAt: now, eligibleForDaily: true))
+            let progress = FrozenRound3Schema.ArticleProgressRecord(articleID: articleID, cycleID: cycle.cycleID, bodyHash: fingerprint(raw), at: now)
+            progress.readingPercent = 0.42; progress.characterOffset = 12; context.insert(progress)
+            let entry = FrozenRound3Schema.VocabularyEntryRecord(lemma: "users", surface: "users", type: "word", at: now, from: articleID, token: "old-token")
+            entry.notes = "真迁移保留笔记"; entry.userMeaning = "历史个人义"; entryID = entry.entryID; context.insert(entry)
+            context.insert(FrozenRound3Schema.VocabularySourceContextRecord(entryID: entryID, articleID: articleID, surface: "user", sentence: "A user reads.", tokenLocation: 2, at: now))
+            let state = FrozenRound3Schema.ReviewStateRecord(entryID: entryID, at: now)
+            state.stability = 3.7145; state.difficulty = 5.1618; state.repetitions = 2; state.goodCount = 2; state.dueAt = now.addingTimeInterval(86400); context.insert(state)
+            let session = FrozenRound3Schema.ReviewSessionRecord(cycleID: cycle.cycleID, entries: [entryID], at: now, limit: 12); sessionID = session.sessionID; context.insert(session)
+            context.insert(FrozenRound3Schema.ReviewExerciseRecord(sessionID: sessionID, entryID: entryID, stage: "matching", position: 0, prompt: "users", answer: "历史个人义", senseID: "user"))
+            let cloze = FrozenRound3Schema.ReviewExerciseRecord(sessionID: sessionID, entryID: entryID, stage: "cloze", position: 0, prompt: "us___", answer: "users", senseID: "user")
+            cloze.sourceContext = "A user reads."; cloze.attempts = 1; cloze.usedHint = true; context.insert(cloze)
+            let preferences = FrozenRound3Schema.UserPreferencesRecord(); preferences.displayName = "Historical reader"; preferences.readerTheme = "paper"; context.insert(preferences)
+            try context.save()
+        }
+        for _ in 0..<2 {
+            let container = try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url))
+            let context = ModelContext(container), content = ContentRepository(context: context), vocabulary = VocabularyRepository(context: context)
+            try content.migrateRound3(at: now)
+            let value = try XCTUnwrap(vocabulary.entries().first)
+            XCTAssertEqual(value.id, entryID); XCTAssertEqual(value.lemma, "user"); XCTAssertEqual(value.notes, "真迁移保留笔记"); XCTAssertEqual(value.meaning, "历史个人义")
+            XCTAssertEqual(value.stability, 3.7145); XCTAssertEqual(value.repetitions, 2)
+            XCTAssertEqual(try content.read(articleID: articleID, at: now).body, raw)
+            let article = try XCTUnwrap(context.fetch(FetchDescriptor<ArticleRecord>()).first)
+            XCTAssertEqual(article.structuredBody, try JSONEncoder().encode(document)); XCTAssertTrue(article.isFavorite); XCTAssertTrue(article.readLater)
+            let exercises = try context.fetch(FetchDescriptor<ReviewExerciseRecord>())
+            XCTAssertEqual(exercises.count, 2); XCTAssertEqual(exercises.first { $0.stage == "cloze" }?.prompt, "us___")
+            XCTAssertEqual(exercises.first { $0.stage == "cloze" }?.attempts, 1); XCTAssertNil(exercises.first?.meaningSnapshot)
+            XCTAssertEqual(try context.fetch(FetchDescriptor<ReviewSessionRecord>()).first?.sessionID, sessionID)
+            XCTAssertEqual(try context.fetch(FetchDescriptor<ArticleProgressRecord>()).first?.readingPercent, 0.42)
+            XCTAssertEqual(try context.fetch(FetchDescriptor<UserPreferencesRecord>()).first?.readerTheme, "paper")
+            XCTAssertFalse(try XCTUnwrap(StudyCycleRepository(context: context).fetchAll().first).isComplete)
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: url.appendingPathExtension("before-round4").path))
+    }
 
+    func testBilingualMergeNeverSeparatesExamplesFromTheirTranslations() {
+        let a = DictionarySense(id: "a", en: "", zh: "相同中文义", line: "Original fixture A", partOfSpeech: "noun", examples: ["Zebra fixture."], sources: ["Wiktionary"], exampleTranslations: ["甲例句译文"])
+        let b = DictionarySense(id: "b", en: "", zh: "相同中文义", line: "Original fixture B", partOfSpeech: "noun", examples: ["Apple fixture."], sources: ["Oxford"], exampleTranslations: ["乙例句译文"])
+        let merged = DictionaryAggregator.merge([b, a])
+        XCTAssertEqual(merged.count, 1); XCTAssertEqual(merged[0].examples, ["Zebra fixture.", "Apple fixture."])
+        XCTAssertEqual(merged[0].exampleTranslations, ["甲例句译文", "乙例句译文"])
+        XCTAssertEqual(merged[0].sources, ["Oxford", "Wiktionary"])
+    }
+    func testLegacyUnconfirmedQuestionSetIsArchivedVerbatimBeforeNewPreflight() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let added = try entry(learning)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        let context = ModelContext(app.modelContainer)
+        let saved = ReviewSessionRecord(cycleID: cycle.cycleID, entries: [added.entryID], at: now, limit: 1)
+        context.insert(saved)
+        let key = "cedict-reverse-v1|lexidawnfixtureword|unconfirmed"
+        let matching = ReviewExerciseRecord(sessionID: saved.sessionID, entryID: added.entryID, stage: "matching", position: 0, prompt: "lexidawnfixtureword", answer: "未经用户确认的旧反向索引义", senseID: key)
+        matching.attempts = 2; context.insert(matching)
+        let cloze = ReviewExerciseRecord(sessionID: saved.sessionID, entryID: added.entryID, stage: "cloze", position: 0, prompt: "lexidawnfixture____", answer: "lexidawnfixtureword", senseID: key)
+        cloze.usedHint = true; context.insert(cloze); try context.save()
+        do { _ = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now); XCTFail("Unconfirmed meaning must block") }
+        catch let issue as ReviewMeaningIssue { XCTAssertEqual(issue.entryID, added.entryID) }
+        let reopened = ModelContext(app.modelContainer)
+        let archive = try XCTUnwrap(reopened.fetch(FetchDescriptor<ReviewSessionRecord>()).first)
+        XCTAssertEqual(archive.sessionID, saved.sessionID); XCTAssertEqual(archive.purpose, "archived"); XCTAssertEqual(archive.archivedCycleID, cycle.cycleID.uuidString)
+        let questions = try reopened.fetch(FetchDescriptor<ReviewExerciseRecord>())
+        XCTAssertEqual(questions.count, 2); XCTAssertEqual(questions.first { $0.stage == "matching" }?.attempts, 2)
+        XCTAssertTrue(questions.first { $0.stage == "cloze" }?.usedHint == true)
+        XCTAssertEqual(questions.first { $0.stage == "matching" }?.answer, "未经用户确认的旧反向索引义")
+        XCTAssertNil(try learning.review.session(cycleID: cycle.cycleID)); XCTAssertEqual(try reopened.fetchCount(FetchDescriptor<ReviewLogRecord>()), 0)
+        XCTAssertEqual(try learning.cycles.fetch(by: cycle.cycleID)?.reviewTaskStatus, .ready)
+    }
+    func testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets() {
+        let raw = "An original paragraph.\n\nTo view this video please enable JavaScript, and consider upgrading to a web browser that supports HTML5 video.\n\nThe final original paragraph."
+        let projection = ReaderTextProjection(raw: raw, sourceID: "dw")
+        XCTAssertFalse(projection.text.contains("To view this video")); XCTAssertTrue(projection.text.contains("The final original paragraph."))
+        let displayRange = (projection.text as NSString).range(of: "final")
+        XCTAssertEqual((raw as NSString).substring(with: projection.rawRange(displayRange)), "final")
+        XCTAssertEqual(projection.displayOffset(projection.rawOffset(displayRange.location)), displayRange.location)
+        XCTAssertTrue(ReaderTextProjection(raw: raw, sourceID: "nasa").text.contains("To view this video"))
+    }
+
+    func testEnglishTranslationTablesKeepChineseLanguageAndPartBoundaries() throws {
+        let html = "<h2>English</h2><h3>Noun</h3><h4>Translations</h4><div class='NavFrame'><div class='NavHead'>Original fixture head movement</div><div><span lang='zh'>点头</span><span lang='ja'>除外漢字</span><span lang='cmn'>示意</span></div></div><h3>Verb</h3><h4>Translations</h4><div class='NavFrame'><div class='NavHead'>Original fixture agree</div><div><span lang='zh'>同意</span></div></div><h2>French</h2><h3>Noun</h3><div class='NavFrame'><span lang='zh'>错误语言</span></div>"
+        let values = try WiktionaryChineseTranslationParser.parse(html, revision: "original-9")
+        XCTAssertEqual(values.map(\.partOfSpeech), ["noun", "verb"])
+        XCTAssertEqual(values.map(\.zh), ["点头；示意", "同意"])
+        XCTAssertTrue(values.allSatisfy(BilingualMeaningPolicy.trusted)); XCTAssertTrue(values.allSatisfy { $0.sourceRevision == "original-9" })
+        XCTAssertTrue(try WiktionaryChineseTranslationParser.parse("<h2>French</h2><h3>Noun</h3><div class='NavFrame'><span lang='zh'>错误语言</span></div>", revision: "0").isEmpty)
+    }
+
+}
+
+@MainActor func confirmOriginalReviewFixtures(_ learning: LearningServices, at now: Date) throws {
+    for item in try learning.vocabulary.entries() where item.personalSenses == nil && item.reviewMeaningSenseID == nil {
+        let chinese = item.meaning ?? "原创测试义：" + item.lemma
+        let sense = PersonalDictionarySense(partOfSpeech: item.lemma == "take" ? "verb" : "noun", chinese: chinese,
+            examples: [.init(english: "This original fixture includes " + item.lemma + ".")], confirmed: true)
+        try learning.vocabulary.savePersonalSenses(entryID: item.id, senses: [sense], at: now)
+    }
 }

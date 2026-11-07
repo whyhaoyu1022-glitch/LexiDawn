@@ -49,19 +49,30 @@ struct FreeDictionaryProvider: DictionaryProvider {
     }
 }
 struct WiktionaryDictionaryProvider: DictionaryProvider {
+    private let fetcher: ArticleFetchService
+    init(fetcher: ArticleFetchService? = nil) {
+        if let fetcher { self.fetcher = fetcher }
+        else { let config = URLSessionConfiguration.ephemeral; config.timeoutIntervalForRequest = 5; config.timeoutIntervalForResource = 8; self.fetcher = ArticleFetchService(configuration: config) }
+    }
     func lookup(_ headword: String) async throws -> [DictionarySense] {
-        // Owner's Chinese-only rule: go directly to English entries in Chinese Wiktionary.
-        // The old English parsers remain available for versioned metadata/tests, not UI definitions.
-        let transport = ArticleFetchService()
-        let api = try OfficialArticleAPI.url(host: "zh.wiktionary.org", fields: ["action": "parse", "page": headword, "prop": "text|revid", "format": "json", "formatversion": "2", "disableeditsection": "1"])
         struct Response: Decodable { struct Page: Decodable { let text: String; let revid: Int }; let parse: Page? }
-        do {
-            let response = try JSONDecoder().decode(Response.self, from: await transport.fetch(api, allowedHost: "zh.wiktionary.org"))
-            guard let page = response.parse else { return [] }
-            return try WiktionaryBilingualParser.parse(page.text, revision: String(page.revid)).map { value in
-                var sense = value; sense.line += " · " + URL(string: "https://zh.wiktionary.org/wiki/")!.appendingPathComponent(headword).absoluteString; return sense
-            }
-        } catch FullTextImportError.notFound { return [] }
+        var firstError: Error?
+        for host in ["zh.wiktionary.org", "en.wiktionary.org"] {
+            try Task.checkCancellation()
+            let api = try OfficialArticleAPI.url(host: host, fields: ["action": "parse", "page": headword, "prop": "text|revid", "format": "json", "formatversion": "2", "disableeditsection": "1"])
+            do {
+                let response = try JSONDecoder().decode(Response.self, from: await fetcher.fetch(api, allowedHost: host))
+                guard let page = response.parse else { continue }
+                let values = try host == "zh.wiktionary.org" ? WiktionaryBilingualParser.parse(page.text, revision: String(page.revid)) : WiktionaryChineseTranslationParser.parse(page.text, revision: String(page.revid))
+                if !values.isEmpty { return values.map { value in
+                    var sense = value; sense.line += " · " + URL(string: "https://" + host + "/wiki/")!.appendingPathComponent(headword).absoluteString; return sense
+                } }
+            } catch is CancellationError { throw CancellationError() }
+            catch FullTextImportError.notFound { continue }
+            catch { firstError = firstError ?? error }
+        }
+        if let firstError { throw firstError }
+        return []
     }
     static func parseEnglishHTML(_ html: String) throws -> [DictionarySense] {
         guard let marker = html.range(of: "id=\"English\""),
@@ -117,7 +128,7 @@ struct WiktionaryDictionaryProvider: DictionaryProvider {
 }
 
 actor DictionaryAggregator {
-    static let versions = ["Free Dictionary API": "api-v2-schema-2", "Wiktionary": "bilingual-action-schema-6"]
+    static let versions = ["Free Dictionary API": "api-v2-schema-2", "Wiktionary": "bilingual-action-schema-7"]
     private let providers: [(String, any DictionaryProvider)]
     init(providers: [(String, any DictionaryProvider)] = [("Free Dictionary API", FreeDictionaryProvider()), ("Wiktionary", WiktionaryDictionaryProvider())]) { self.providers = providers }
     func lookup(_ lemma: String) async -> DictionaryProviderOutcome {
@@ -138,7 +149,18 @@ actor DictionaryAggregator {
                 old.sources = Array(Set((old.sources ?? []) + (sense.sources ?? []))).sorted()
                 if old.line != sense.line { old.line += "\n" + sense.line }
                 old.ipa = old.ipa ?? sense.ipa; old.audioURL = old.audioURL ?? sense.audioURL
-                old.examples = Array(Set((old.examples ?? []) + (sense.examples ?? []))).sorted()
+                // Keep each example with its own translation; sorting examples alone mispairs translations.
+                var examples = old.examples ?? [], translations = old.exampleTranslations ?? []
+                translations += Array(repeating: "", count: max(0, examples.count - translations.count))
+                for (index, example) in (sense.examples ?? []).enumerated() {
+                    let translation = sense.exampleTranslations.flatMap { $0.indices.contains(index) ? $0[index] : nil } ?? ""
+                    if let oldIndex = examples.firstIndex(of: example) {
+                        if translations[oldIndex].isBlank { translations[oldIndex] = translation }
+                    } else { examples.append(example); translations.append(translation) }
+                }
+                old.examples = examples; old.exampleTranslations = translations
+                old.usageLabels = Array(Set((old.usageLabels ?? []) + (sense.usageLabels ?? []))).sorted()
+                old.relatedPhrases = Array(Set((old.relatedPhrases ?? []) + (sense.relatedPhrases ?? []))).sorted()
                 old.synonyms = Array(Set((old.synonyms ?? []) + (sense.synonyms ?? []))).sorted()
                 old.antonyms = Array(Set((old.antonyms ?? []) + (sense.antonyms ?? []))).sorted()
                 old.forms = Array(Set((old.forms ?? []) + (sense.forms ?? []))).sorted()

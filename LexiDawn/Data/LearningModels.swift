@@ -68,6 +68,7 @@ import SwiftData
     var userMeaning: String?
     var personalSensesData: Data?
     var personalMeaningRevision: Int?
+    var canonicalEntryID: String?
     var reviewMeaningSenseID: String?
     var reviewMeaningText: String?
     var reviewMeaningEvidence: String?
@@ -158,6 +159,9 @@ import SwiftData
     var purpose: String?
     var deferredEntryIDs: [String]?
     var clozeExclusionReason: String?
+    var archivedCycleID: String?
+    var archivedReviewProgress: Data?
+    var archiveReason: String?
     init(cycleID: UUID, entries: [String], at: Date, limit: Int) {
         sessionID = UUID().uuidString; self.cycleID = cycleID.uuidString; selectedEntryIDs = entries
         createdAt = at; updatedAt = at; revision = 0; dailyLimit = limit; algorithmVersion = FSRSScheduler.version

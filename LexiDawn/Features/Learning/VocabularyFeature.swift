@@ -178,6 +178,8 @@ private struct VocabularyDraft: Codable {
     @Published var allowed: Bool
     @Published var state = ""
     @Published var error: String?
+    @Published private(set) var hasDraftConflict = false
+    private var conflictingDraft: VocabularyDraft?
     private let item: VocabularyItem
     private let learning: LearningServices
     private var base: String
@@ -200,10 +202,23 @@ private struct VocabularyDraft: Codable {
             if FileManager.default.fileExists(atPath: draftURL.path) {
                 let draft = try JSONDecoder().decode(VocabularyDraft.self, from: Data(contentsOf: draftURL))
                 if draft.entryID == item.id, draft.base == base { senses = draft.senses; notes = draft.notes; state = "已恢复未保存草稿" }
-                else { error = "发现与当前版本不同的草稿，已保留，请先核对当前内容。" }
+                else { conflictingDraft = draft; hasDraftConflict = true; error = "发现另一版本的未保存草稿，请选择恢复或保留当前内容。" }
             }
         } catch { self.error = "草稿读取失败：" + error.localizedDescription }
         ready = true
+    }
+    func resolveDraftConflict(restore: Bool) {
+        guard let draft = conflictingDraft else { return }
+        do {
+            // Keep the competing version before any explicit replacement, including readonly personal senses.
+            let archive = draftURL.deletingPathExtension().appendingPathExtension("conflict-" + UUID().uuidString + ".json")
+            try FileManager.default.copyItem(at: draftURL, to: archive)
+            try FileManager.default.removeItem(at: draftURL)
+            hasDraftConflict = false; conflictingDraft = nil; error = nil
+            refreshPolicy()
+            if restore { notes = draft.notes; if allowed { senses = draft.senses }; changed(); flush() }
+            else { state = "已保留当前内容，旧草稿已存档" }
+        } catch { self.error = "草稿仍保留：" + error.localizedDescription }
     }
     func refreshPolicy() {
         do { allowed = try learning.vocabulary.personalEditingAllowed(entryID: item.id) }
@@ -217,12 +232,14 @@ private struct VocabularyDraft: Codable {
         }
     }
     private func persistDraft() {
+        guard !hasDraftConflict else { return }
         do {
             try FileManager.default.createDirectory(at: draftURL.deletingLastPathComponent(), withIntermediateDirectories: true)
             try JSONEncoder().encode(VocabularyDraft(entryID: item.id, base: base, notes: notes, senses: senses)).write(to: draftURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
         } catch { self.error = "草稿尚未保存：" + error.localizedDescription }
     }
     func flush() {
+        guard !hasDraftConflict else { return }
         guard ready, !InputComposition.hasMarkedText else { persistDraft(); return }
         checkpoint?.cancel()
         guard Self.signature(notes, senses) != base else { return }
@@ -235,6 +252,7 @@ private struct VocabularyDraft: Codable {
             else if senses != persistedSenses {
                 state = "笔记已保存；个人释义草稿只读保留"; return
             }
+            if allowed, let updated = try learning.vocabulary.entries().first(where: { $0.id == item.id }) { senses = updated.personalSenses ?? [] }
             persistedSenses = senses; base = Self.signature(notes, senses); state = "已自动保存"; error = nil
             if FileManager.default.fileExists(atPath: draftURL.path) { try FileManager.default.removeItem(at: draftURL) }
             learning.changed()
@@ -282,8 +300,15 @@ struct VocabularyDetailView: View {
                         }
                     } label: { Text(chosenMeaningText.map { "学习义项：" + $0 } ?? "选择学习义项") }.accessibilityIdentifier("choose-review-meaning")
                 }
+                if annotation.hasDraftConflict {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("有未保存的旧草稿", systemImage: "doc.badge.clock").font(.headline)
+                        Text("当前记录和旧草稿均已保留。恢复前请确认，可靠英中释义的个人内容仍只读。").font(.footnote).foregroundStyle(.secondary)
+                        HStack { Button("恢复草稿") { annotation.resolveDraftConflict(restore: true) }; Button("保留当前内容") { annotation.resolveDraftConflict(restore: false) } }.buttonStyle(.bordered)
+                    }.padding(16).background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 18)).accessibilityIdentifier("annotation-draft-conflict")
+                }
                 if annotation.allowed {
-                    personalEditor
+                    personalEditor.disabled(annotation.hasDraftConflict)
                 } else {
                     Label("使用可靠英中释义", systemImage: "checkmark.shield").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("personal-meaning-disabled")
                     if !annotation.senses.isEmpty {
@@ -292,7 +317,7 @@ struct VocabularyDetailView: View {
                 }
                 VStack(alignment: .leading, spacing: 10) {
                     Text("我的笔记").font(.headline)
-                    TextField("记录自己的理解", text: $annotation.notes, axis: .vertical).lineLimit(3...8).focused($focusedField, equals: "notes").accessibilityIdentifier("vocabulary-notes")
+                    TextField("记录自己的理解", text: $annotation.notes, axis: .vertical).lineLimit(3...8).focused($focusedField, equals: "notes").accessibilityIdentifier("vocabulary-notes").disabled(annotation.hasDraftConflict)
                     if !annotation.state.isEmpty { Text(annotation.state).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("annotation-save-state") }
                     if let error = annotation.error { Text(error).font(.caption).foregroundStyle(.red); Button("重试保存", action: annotation.flush) }
                 }.padding(16).background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 18))
@@ -305,6 +330,13 @@ struct VocabularyDetailView: View {
                                 ForEach(contexts) { context in InlineEnglishText(text: context.sentence, onWord: { lookupWord($0, origin: context.lookupOrigin.withText(context.sentence)) }) }
                             }
                         }.padding(.top, 12)
+                    }
+                }
+                if let history = item.legacyAnnotations, !history.isEmpty {
+                    DisclosureGroup("词形合并前的记录") {
+                        ForEach(history) { record in
+                            VStack(alignment: .leading, spacing: 8) { Text(record.originalLemma).font(.headline); if let meaning = record.meaning { Text(meaning) }; if let notes = record.notes { Text(notes) } }.textSelection(.enabled).padding(.vertical, 8)
+                        }
                     }
                 }
                 Button("移出生词本", role: .destructive) { removeConfirmation = true }.font(.footnote).padding(.top, 10)

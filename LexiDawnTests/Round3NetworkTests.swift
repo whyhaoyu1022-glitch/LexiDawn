@@ -162,8 +162,10 @@ private final class Round3FaultURLProtocol: URLProtocol, @unchecked Sendable {
         XCTAssertTrue(senses.contains { $0.partOfSpeech == "noun" && !$0.en.isBlank })
     }
     func testLiveWiktionaryEnglishDefinition() async throws {
+        // Historical method name retained; current owner contract requires English -> Chinese.
         let senses = try await WiktionaryDictionaryProvider().lookup("book")
-        XCTAssertTrue(senses.contains { $0.partOfSpeech == "noun" && !$0.en.isBlank })
+        XCTAssertTrue(senses.contains { $0.partOfSpeech == "noun" && BilingualMeaningPolicy.trusted($0) && $0.sourceRevision != nil })
+        XCTAssertFalse(BilingualMeaningPolicy.displaySenses(senses).isEmpty)
     }
     func testLiveWikipediaDiscoveryImportsCompleteOriginalIntoEmptyDatabase() async throws {
         let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)

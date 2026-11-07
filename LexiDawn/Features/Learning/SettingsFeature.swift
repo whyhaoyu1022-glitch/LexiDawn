@@ -1,6 +1,12 @@
 import SwiftUI
 import UIKit
 
+private struct SettingsDraft: Codable {
+    let base: String
+    let name: String, age: String, goal: String, topics: String
+    let fontSize: Double, lineSpacing: Double
+    let theme: String, autoAdd: Bool, dailyLimit: Int, timezonePolicy: String, fixedTimezone: String
+}
 struct LearningSettingsView: View {
     @EnvironmentObject private var dependencies: AppDependencies
     @ObservedObject var learning: LearningServices
@@ -18,12 +24,20 @@ struct LearningSettingsView: View {
     @State private var message: String?
     @State private var loaded = false
     @State private var savedSignature = ""
+    @State private var draftConflict: SettingsDraft?
     @State private var saveTask: Task<Void, Never>?
     @Environment(\.scenePhase) private var scenePhase
     @State private var cacheKind: String?
     var body: some View {
         NavigationStack {
             Form {
+                if draftConflict != nil {
+                    Section("恢复未保存设置") {
+                        Text("发现另一版本的设置草稿。当前设置与草稿均保留，请选择要继续使用的版本。").font(.footnote)
+                        Button("恢复设置草稿") { resolveConflict(restore: true) }
+                        Button("保留当前设置") { resolveConflict(restore: false) }
+                    }
+                }
                 Section("个人资料") {
                     TextField("昵称", text: $name).accessibilityIdentifier("settings-name")
                     Picker("年龄段（可选）", selection: $age) { Text("不填写").tag(""); Text("未满 18 岁").tag("under18"); Text("18–24 岁").tag("18-24"); Text("25–44 岁").tag("25-44"); Text("45 岁及以上").tag("45+") }
@@ -84,20 +98,52 @@ struct LearningSettingsView: View {
             fontSize = prefs.readerFontSize; lineSpacing = prefs.readerLineSpacing; theme = prefs.readerTheme
             autoAdd = prefs.autoAddOnWordTap; dailyLimit = prefs.dailyReviewLimit; timezonePolicy = prefs.timeZonePolicy; fixedTimezone = prefs.fixedTimeZoneID ?? "Asia/Shanghai"
             savedSignature = signature; loaded = true
+            if FileManager.default.fileExists(atPath: draftURL.path) {
+                let draft = try JSONDecoder().decode(SettingsDraft.self, from: Data(contentsOf: draftURL))
+                if draft.base == savedSignature { apply(draft); message = "已恢复未保存设置"; scheduleSave() }
+                else { draftConflict = draft; message = "设置草稿等待核对" }
+            }
         } catch { message = error.localizedDescription }
     }
     private var signature: String {
         [name, age, goal, topics, String(fontSize), String(lineSpacing), theme, String(autoAdd), String(dailyLimit), timezonePolicy, fixedTimezone].joined(separator: "|\u{001f}|")
     }
+    private var draftURL: URL { URL.applicationSupportDirectory.appendingPathComponent("LexiDawn/settings-draft.json") }
+    private func apply(_ draft: SettingsDraft) {
+        name = draft.name; age = draft.age; goal = draft.goal; topics = draft.topics
+        fontSize = draft.fontSize; lineSpacing = draft.lineSpacing; theme = draft.theme; autoAdd = draft.autoAdd
+        dailyLimit = draft.dailyLimit; timezonePolicy = draft.timezonePolicy; fixedTimezone = draft.fixedTimezone
+    }
+    private func checkpoint() {
+        guard draftConflict == nil else { return }
+        do {
+            try FileManager.default.createDirectory(at: draftURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            let draft = SettingsDraft(base: savedSignature, name: name, age: age, goal: goal, topics: topics, fontSize: fontSize, lineSpacing: lineSpacing, theme: theme, autoAdd: autoAdd, dailyLimit: dailyLimit, timezonePolicy: timezonePolicy, fixedTimezone: fixedTimezone)
+            try JSONEncoder().encode(draft).write(to: draftURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        } catch { message = "设置草稿尚未保存：" + error.localizedDescription }
+    }
+    private func resolveConflict(restore: Bool) {
+        guard let draft = draftConflict else { return }
+        do {
+            let archive = draftURL.deletingPathExtension().appendingPathExtension("conflict-" + UUID().uuidString + ".json")
+            try FileManager.default.copyItem(at: draftURL, to: archive)
+            try FileManager.default.removeItem(at: draftURL)
+            draftConflict = nil
+            if restore { apply(draft); save() } else { message = "已保留当前设置，旧草稿已存档" }
+        } catch { message = "草稿仍保留：" + error.localizedDescription }
+    }
     private func scheduleSave() {
-        guard loaded, signature != savedSignature else { return }
+        guard loaded, draftConflict == nil, signature != savedSignature else { return }
+        checkpoint()
         saveTask?.cancel()
         saveTask = Task {
             do { try await Task.sleep(for: .milliseconds(350)); try Task.checkCancellation(); save() } catch { }
         }
     }
     private func save() {
-        guard loaded, signature != savedSignature, !InputComposition.hasMarkedText else { return }
+        guard loaded, draftConflict == nil, signature != savedSignature else { return }
+        checkpoint()
+        guard !InputComposition.hasMarkedText else { return }
         do {
             guard name.count <= 80, goal.count <= 200, topics.count <= 500 else { throw LearningError.invalid("昵称、目标或主题过长。") }
             let prefs = try dependencies.preferencesRepository.load()
@@ -106,6 +152,7 @@ struct LearningSettingsView: View {
             prefs.readerFontSize = fontSize; prefs.readerLineSpacing = lineSpacing; prefs.readerTheme = theme; prefs.autoAddOnWordTap = autoAdd
             prefs.dailyReviewLimit = dailyLimit; prefs.timeZonePolicy = timezonePolicy; prefs.fixedTimeZoneID = timezonePolicy == "fixed" ? fixedTimezone : nil
             try dependencies.preferencesRepository.save(prefs); savedSignature = signature; learning.changed(); message = "已自动保存"
+            if FileManager.default.fileExists(atPath: draftURL.path) { try FileManager.default.removeItem(at: draftURL) }
         } catch { message = error.localizedDescription }
     }
 }

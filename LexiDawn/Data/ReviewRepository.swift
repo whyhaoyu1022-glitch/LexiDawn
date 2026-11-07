@@ -31,7 +31,7 @@ struct ReviewSessionView: Equatable {
     }
     private func eligible(in context: ModelContext, at now: Date) throws -> [VocabularyEntryRecord] {
         guard now.timeIntervalSince1970.isFinite else { throw LearningError.invalid("复习时间无效。") }
-        let entries = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.deletedAt == nil }
+        let entries = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.deletedAt == nil && $0.canonicalEntryID == nil }
         let states = try context.fetch(FetchDescriptor<ReviewStateRecord>())
         guard Set(entries.map(\.entryID)).count == entries.count, Set(states.map(\.entryID)).count == states.count else { throw PersistenceError.integrity("词汇或复习状态重复") }
         for entry in entries {
@@ -56,6 +56,8 @@ struct ReviewSessionView: Equatable {
     }
     func pendingCount(at now: Date) throws -> Int { try writer.read { try eligible(in: $0, at: now).count } }
     func prepare(cycleID: UUID, dailyLimit: Int, pairCount: Int, clozeCount: Int, at now: Date) async throws -> ReviewSessionView? {
+        try VocabularyRepository(context: writer.context).normalizeIdentities()
+        try archiveUnconfirmedLegacySession(cycleID: cycleID, at: now)
         try snapshotLegacyContexts(cycleID: cycleID)
         if let saved = try session(cycleID: cycleID) { return saved }
         let cycle = try writer.read { try cycleInContext(cycleID, context: $0) }
@@ -107,6 +109,30 @@ struct ReviewSessionView: Equatable {
         }
         return try session(cycleID: cycleID)
     }
+    /// Preserve already-attempted questions verbatim, but never continue unconfirmed reverse-index answers.
+    private func archiveUnconfirmedLegacySession(cycleID: UUID, at now: Date) throws {
+        let needsArchive = try writer.read { context in
+            guard let saved = try context.fetch(FetchDescriptor<ReviewSessionRecord>()).first(where: { $0.cycleID == cycleID.uuidString }), saved.completedAt == nil else { return false }
+            let entries = try context.fetch(FetchDescriptor<VocabularyEntryRecord>())
+            return try context.fetch(FetchDescriptor<ReviewExerciseRecord>()).contains { question in
+                guard question.sessionID == saved.sessionID, question.meaningSnapshot == nil, question.senseID.hasPrefix("cedict-reverse-v1|") else { return false }
+                let entry = entries.first { $0.entryID == question.entryID }
+                return entry?.reviewMeaningSenseID != question.senseID && entry?.userMeaning?.isBlank != false
+            }
+        }
+        guard needsArchive else { return }
+        try writer.write {
+            let context = writer.context
+            guard let saved = try context.fetch(FetchDescriptor<ReviewSessionRecord>()).first(where: { $0.cycleID == cycleID.uuidString }), saved.completedAt == nil,
+                  let sessionID = UUID(uuidString: saved.sessionID),
+                  !(try context.fetch(FetchDescriptor<ReviewLogRecord>())).contains(where: { $0.sessionID == saved.sessionID }) else { throw PersistenceError.integrity("历史题组已有排程，保持原始数据并停止重建") }
+            var cycle = try cycleInContext(cycleID, context: context)
+            saved.archivedCycleID = saved.cycleID; saved.archivedReviewProgress = try cycle.reviewProgress.map { try JSONEncoder().encode($0) }
+            saved.archiveReason = "unconfirmed-reverse-index-answer"; saved.purpose = "archived"; saved.cycleID = "archived|" + saved.sessionID
+            try cycle.reprepareUnconfirmedLegacyReview(archivedSessionID: sessionID, at: now)
+            try cycles.applyInTransaction(cycle, context: context)
+        }
+    }
     func session(cycleID: UUID) throws -> ReviewSessionView? {
         try writer.read { context in
             let records = try context.fetch(FetchDescriptor<ReviewSessionRecord>()).filter { $0.cycleID == cycleID.uuidString }
@@ -156,7 +182,7 @@ struct ReviewSessionView: Equatable {
                 guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == id }) else { return false }
                 return (try? resolveMeaning(entry, context: context)) != nil
             }
-            if ready && !dictionary.onlineEnabled { continue }
+            if ready { continue }
             do {
                 let sentence = try writer.read { context in try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).first { $0.entryID == id }?.sentence ?? "" }
                 _ = try await dictionary.lookup(lemma, context: sentence, at: now)
@@ -174,7 +200,9 @@ struct ReviewSessionView: Equatable {
         let caches = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
         let official = caches.flatMap { (try? JSONDecoder().decode([DictionarySense].self, from: $0.payload)) ?? [] }.filter(BilingualMeaningPolicy.trusted)
         let known = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).contains { $0.lemma == entry.lemma && $0.reliableChineseKnown }
-        let source = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).filter { $0.entryID == entry.entryID }.sorted { $0.createdAt < $1.createdAt }.first
+        let aliases = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.canonicalEntryID == entry.entryID }.map(\.entryID)
+        let identities = Set([entry.entryID] + aliases)
+        let source = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).filter { identities.contains($0.entryID) }.sorted { ($0.createdAt, $0.contextID) < ($1.createdAt, $1.contextID) }.first
         if let data = entry.reviewMeaningSnapshotData, let selected = try? JSONDecoder().decode(DictionarySense.self, from: data), BilingualMeaningPolicy.trusted(selected) { return selected }
         if let selected = official.first(where: { $0.id == entry.reviewMeaningSenseID }) { return selected }
         if let sense = DictionaryAggregator.rank(official, context: source?.sentence ?? "", surface: entry.lemma).first {
@@ -182,6 +210,7 @@ struct ReviewSessionView: Equatable {
             return sense
         }
         if known { throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "的可靠英中资料暂不可用，请重新查词或本次延期。", canEditPersonal: false) }
+        if let data = entry.reviewMeaningSnapshotData, let selected = try? JSONDecoder().decode(DictionarySense.self, from: data), selected.originKind == "personal", selected.partOfSpeech != nil { return selected }
         if let data = entry.personalSensesData {
             let senses = try JSONDecoder().decode([PersonalDictionarySense].self, from: data)
             if let sense = senses.first(where: \.reviewReady) { return sense.dictionarySense(entryID: entry.entryID) }
@@ -208,7 +237,9 @@ struct ReviewSessionView: Equatable {
         var meanings = Set<String>()
         for (position, entry) in chosen.enumerated() {
             let sense = try resolveMeaning(entry, context: context)
-            let source = sources.first { $0.entryID == entry.entryID }
+            let aliases = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.canonicalEntryID == entry.entryID }.map(\.entryID)
+            let identities = Set([entry.entryID] + aliases)
+            let source = sources.first { identities.contains($0.entryID) }
             let meaning = sense.zh
             guard meanings.insert(meaning).inserted else { throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "与本组另一词的中文答案相同，请明确选择其他语境义或本次延期。", canEditPersonal: !BilingualMeaningPolicy.trusted(sense)) }
             let snapshot = try JSONEncoder().encode(sense)

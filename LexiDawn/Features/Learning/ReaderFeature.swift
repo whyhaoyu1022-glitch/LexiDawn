@@ -347,6 +347,9 @@ struct DictionaryResultContent: View {
             if result.cached { Label("本地词典", systemImage: "internaldrive").font(.caption).foregroundStyle(.secondary) }
             if !result.failedProviders.isEmpty { Label("部分词典暂不可用", systemImage: "wifi.exclamationmark").font(.caption).foregroundStyle(.secondary) }
             if result.emptyProviders.contains("Free Dictionary API") { Text("Free Dictionary 当前不可用").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("dictionary-free-unavailable") }
+            else if result.senses.contains(where: { ($0.sources ?? []).contains("Free Dictionary API") }), !result.usableSenses.contains(where: { ($0.sources ?? []).contains("Free Dictionary API") }) {
+                Text("Free Dictionary 未提供英中释义").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("dictionary-free-no-Chinese")
+            }
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -490,9 +493,9 @@ struct DictionaryComparisonView: View {
             Section("对照词：" + synonym) {
                 if model.loading { ProgressView("正在查询对照词…").accessibilityIdentifier("dictionary-comparison-loading") }
                 if let error = model.error { Text(error).foregroundStyle(.red); Button("重试对照查词") { Task { await model.load(synonym, context: context, learning: learning) } }.accessibilityIdentifier("dictionary-comparison-retry") }
-                if model.result?.senses.isEmpty == true { Text("对照词暂无可验证义项。原词释义仍可阅读。").accessibilityIdentifier("dictionary-comparison-empty") }
+                if model.result?.usableSenses.isEmpty == true { Text("对照词暂无可验证义项。原词释义仍可阅读。").accessibilityIdentifier("dictionary-comparison-empty") }
             }
-            if let result = model.result, !result.senses.isEmpty { Text(synonym).font(.title2.bold()); DictionaryResultContent(result: result) }
+            if let result = model.result, !result.usableSenses.isEmpty { Text(synonym).font(.title2.bold()); DictionaryResultContent(result: result) }
             Text("原词：" + original.headword).font(.title2.bold())
             DictionaryResultContent(result: original)
         }.scrollContentBackground(.hidden)

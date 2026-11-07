@@ -121,3 +121,55 @@ enum WiktionaryBilingualParser {
         return senses
     }
 }
+
+/// English Wiktionary's explicitly labelled Chinese translations, scoped to one English POS/table.
+/// English glosses remain ranking metadata; they are never shown as Chinese definitions.
+enum WiktionaryChineseTranslationParser {
+    static func parse(_ html: String, revision: String) throws -> [DictionarySense] {
+        guard html.utf8.count <= 4_000_000 else { throw FullTextImportError.parsing }
+        let ns = html as NSString
+        func matches(_ pattern: String, in text: String) throws -> [NSTextCheckingResult] {
+            try NSRegularExpression(pattern: pattern, options: [.caseInsensitive, .dotMatchesLineSeparators]).matches(in: text, range: NSRange(location: 0, length: (text as NSString).length))
+        }
+        func plain(_ text: String) -> String { (try? ArticleHTMLExtractor.extract(text).text) ?? "" }
+        let languageHeads = try matches(#"<h2\b[^>]*>(.*?)</h2>"#, in: html)
+        guard let englishIndex = languageHeads.firstIndex(where: { plain(ns.substring(with: $0.range(at: 1))).trimmingCharacters(in: .whitespacesAndNewlines) == "English" }) else { return [] }
+        let start = NSMaxRange(languageHeads[englishIndex].range)
+        let end = englishIndex + 1 < languageHeads.count ? languageHeads[englishIndex + 1].range.location : ns.length
+        let english = ns.substring(with: NSRange(location: start, length: end - start)), en = english as NSString
+        let headings = try matches(#"<h[3-6]\b[^>]*>(.*?)</h[3-6]>"#, in: english)
+        let tags = try matches(#"<div\b[^>]*>|</div\s*>"#, in: english)
+        var stack: [(start: Int, isTranslation: Bool)] = [], frames: [NSRange] = []
+        for tag in tags {
+            let value = en.substring(with: tag.range).lowercased()
+            if value.hasPrefix("</") {
+                if let open = stack.popLast(), open.isTranslation { frames.append(NSRange(location: open.start, length: NSMaxRange(tag.range) - open.start)) }
+            } else {
+                let nav = value.range(of: #"class\s*=\s*["'][^"']*\bnavframe\b"#, options: .regularExpression) != nil
+                stack.append((tag.range.location, nav))
+            }
+        }
+        let richMetadata = (try? WiktionaryDictionaryProvider.parseEnglishHTML("<h2 id=\"English\">English</h2>" + english)) ?? []
+        var values: [DictionarySense] = []
+        for frame in frames.sorted(by: { $0.location < $1.location }) {
+            let previous = headings.filter { $0.range.location < frame.location }.compactMap { match -> String? in
+                let value = plain(en.substring(with: match.range(at: 1))).lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+                return BilingualMeaningPolicy.parts.contains(value) ? value : nil
+            }
+            guard let part = previous.last else { continue }
+            let text = en.substring(with: frame), table = text as NSString
+            let chinese = try matches(#"<span\b[^>]*\blang\s*=\s*["'](?:zh|cmn|yue)["'][^>]*>(.*?)</span>"#, in: text).map { plain(table.substring(with: $0.range(at: 1))) }.filter { BilingualMeaningPolicy.hasChinese($0) && $0.count <= 100 }
+            var seen = Set<String>(); let translations = chinese.filter { seen.insert($0).inserted }
+            guard !translations.isEmpty else { continue }
+            let glossMatch = try matches(#"<div\b[^>]*class=["'][^"']*\bNavHead\b[^"']*["'][^>]*>(.*?)</div>"#, in: text).first
+            let gloss = glossMatch.map { plain(table.substring(with: $0.range(at: 1))) } ?? ""
+            // Only attach shared metadata from the same POS; do not align unrelated example indices.
+            let metadata = richMetadata.first { $0.partOfSpeech == part }
+            let chineseText = translations.joined(separator: "；")
+            values.append(DictionarySense(id: "wiktionary-translations|" + fingerprint(part + "|" + gloss + "|" + chineseText), en: gloss, zh: chineseText,
+                line: "English Wiktionary contributors · 中文翻译表 · CC BY-SA 4.0 · revision " + revision, partOfSpeech: part,
+                ipa: metadata?.ipa, forms: metadata?.forms, sources: ["Wiktionary"], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/", sourceRevision: revision))
+        }
+        return values
+    }
+}

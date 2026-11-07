@@ -11,6 +11,10 @@ struct VocabularyContextItem: Identifiable, Equatable, Codable {
         return .historical(title: title, evidence: attribution, text: sentence)
     }
 }
+struct VocabularyLegacyAnnotation: Codable, Equatable, Identifiable {
+    let id: String, originalLemma: String
+    let meaning: String?, notes: String?
+}
 struct VocabularyItem: Identifiable, Equatable, Codable {
     let id: String, lemma: String, type: String
     let surfaces: [String]
@@ -32,6 +36,7 @@ struct VocabularyItem: Identifiable, Equatable, Codable {
     var stability: Double? = nil
     var difficulty: Double? = nil
     var dictionarySenses: [DictionarySense] = []
+    var legacyAnnotations: [VocabularyLegacyAnnotation]? = nil
     var personalSenses: [PersonalDictionarySense]? = nil
     var reliableChineseKnown: Bool? = nil
     var reviewMeaningSenseID: String? = nil
@@ -40,7 +45,7 @@ struct VocabularyItem: Identifiable, Equatable, Codable {
     var primaryChinese: String? {
         if let sense = dictionarySenses.first(where: BilingualMeaningPolicy.trusted) { return sense.zh }
         if reliableChineseKnown == true { return nil }
-        return personalSenses?.first(where: \.reviewReady)?.chinese ?? meaning ?? dictionaryMeanings.first
+        return personalSenses?.first(where: \.reviewReady)?.chinese ?? reviewMeaningText ?? meaning ?? dictionaryMeanings.first
     }
 }
 enum VocabularyStatusFilter: String, CaseIterable { case all = "全部状态", due = "待复习", overdue = "逾期", recent = "近7日添加", familiar = "较熟悉" }
@@ -79,7 +84,7 @@ enum VocabularyQuery {
     static func apply(_ entries: [VocabularyItem], search: String, type: String, status: VocabularyStatusFilter, sort: VocabularySort, at now: Date) -> [VocabularyItem] {
         entries.filter { item in
             guard type == "all" || item.type == type else { return false }
-            guard search.isBlank || ([item.lemma, item.meaning ?? ""] + item.surfaces + item.dictionaryMeanings).contains(where: { $0.localizedCaseInsensitiveContains(search) }) else { return false }
+            guard search.isBlank || ([item.lemma, item.meaning ?? ""] + item.surfaces + item.dictionaryMeanings + (item.personalSenses ?? []).map(\.chinese) + item.dictionarySenses.map(\.zh)).contains(where: { $0.localizedCaseInsensitiveContains(search) }) else { return false }
             switch status {
             case .all: return true
             case .due: return item.dueAt.map { $0 <= now } ?? false
@@ -107,7 +112,8 @@ struct VocabularyAddition {
     private let writer: RepositoryWriter
     init(context: ModelContext, saveContext: @escaping (ModelContext) throws -> Void = { try $0.save() }) { writer = RepositoryWriter(context: context, saveContext: saveContext) }
     func entries(search: String = "", type: String? = nil) throws -> [VocabularyItem] {
-        try writer.read { context in
+        try normalizeIdentities()
+        return try writer.read { context in
             let all = try context.fetch(FetchDescriptor<VocabularyEntryRecord>())
             guard Set(all.map(\.normalizedKey)).count == all.count else { throw PersistenceError.integrity("重复生词身份") }
             let contexts = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>())
@@ -116,8 +122,10 @@ struct VocabularyAddition {
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
             let states = try context.fetch(FetchDescriptor<ReviewStateRecord>())
             let providerCaches = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>())
-            return try all.filter { $0.deletedAt == nil && (type == nil || $0.entryType == type) }.map { record in
-                let attached = contexts.filter { $0.entryID == record.entryID }
+            return try all.filter { $0.deletedAt == nil && $0.canonicalEntryID == nil && (type == nil || $0.entryType == type) }.map { record in
+                let aliases = all.filter { $0.canonicalEntryID == record.entryID }
+                let groupIDs = Set([record.entryID] + aliases.map(\.entryID))
+                let attached = contexts.filter { groupIDs.contains($0.entryID) }.sorted { ($0.createdAt, $0.contextID) < ($1.createdAt, $1.contextID) }
                 let definitions = senses.filter { $0.entryID == "cedict-reverse-v1|\(record.lemma)" }.sorted { $0.senseID < $1.senseID }.map(\.chinese)
                 let sourceItems: [VocabularyContextItem] = attached.map { source in
                     let article = articles.first { $0.articleID == source.articleID }
@@ -127,12 +135,13 @@ struct VocabularyAddition {
                         attribution: dictionaryContext ? source.contextAttribution ?? "词典来源证据不可用" : article?.sourceAttribution ?? article?.sourceID ?? "来源元数据不可用",
                         originalURL: dictionaryContext ? nil : grants.first { $0.articleID == source.articleID }?.originalURL, originKind: source.contextKind)
                 }
-                var value = VocabularyItem(id: record.entryID, lemma: record.lemma, type: record.entryType, surfaces: record.surfaceForms,
+                var value = VocabularyItem(id: record.entryID, lemma: record.lemma, type: record.entryType, surfaces: Array(Set(record.surfaceForms + aliases.flatMap(\.surfaceForms))).sorted(),
                     addedAt: record.addedAt, meaning: record.userMeaning, notes: record.notes,
                     contexts: attached.map(\.sentence), sourceArticleID: attached.first?.articleID,
                     dictionaryMeanings: definitions, sourceContexts: sourceItems)
                 let providerRows = providerCaches.filter { $0.lemma == record.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
                 value.dictionarySenses = DictionaryAggregator.merge(providerRows.flatMap { (try? JSONDecoder().decode([DictionarySense].self, from: $0.payload)) ?? [] })
+                value.legacyAnnotations = aliases.map { VocabularyLegacyAnnotation(id: $0.entryID, originalLemma: $0.lemma, meaning: $0.userMeaning, notes: $0.notes) }
                 value.personalSenses = try record.personalSensesData.map { try JSONDecoder().decode([PersonalDictionarySense].self, from: $0) }
                 value.reliableChineseKnown = try hasReliableChinese(lemma: record.lemma, context: context)
                 value.ipa = value.dictionarySenses.compactMap(\.ipa).first
@@ -145,8 +154,52 @@ struct VocabularyAddition {
                     value.stability = state.stability; value.difficulty = state.difficulty
                 }
                 return value
-            }.filter { search.isBlank || ([$0.lemma, $0.meaning ?? ""] + $0.surfaces + $0.dictionaryMeanings).contains { $0.localizedCaseInsensitiveContains(search) } }
+            }.filter { search.isBlank || ([$0.lemma, $0.meaning ?? ""] + $0.surfaces + $0.dictionaryMeanings + ($0.personalSenses ?? []).map(\.chinese) + $0.dictionarySenses.map(\.zh)).contains { $0.localizedCaseInsensitiveContains(search) } }
                 .sorted { $0.addedAt > $1.addedAt }
+        }
+    }
+    /// Additive canonical aliases preserve old IDs, annotations, sources, logs and sessions.
+    /// A colliding legacy row is linked, never deleted or used to overwrite the chosen root's notes.
+    func normalizeIdentities() throws {
+        let needed = try writer.read { context in
+            let rows = try context.fetch(FetchDescriptor<VocabularyEntryRecord>())
+            guard Set(rows.map(\.normalizedKey)).count == rows.count else { throw PersistenceError.integrity("重复生词身份") }
+            for alias in rows where alias.canonicalEntryID != nil {
+                guard let root = rows.first(where: { $0.entryID == alias.canonicalEntryID }), root.canonicalEntryID == nil,
+                      root.entryType == alias.entryType, EnglishTokenizer.lemma(root.lemma) == EnglishTokenizer.lemma(alias.lemma) else { throw PersistenceError.integrity("词形合并引用损坏，原记录保留") }
+            }
+            let roots = rows.filter { $0.canonicalEntryID == nil && $0.languageCode == "en" }
+            return roots.contains { $0.lemma != EnglishTokenizer.lemma($0.lemma) } || Set(roots.map { $0.entryType + "|" + EnglishTokenizer.lemma($0.lemma) }).count != roots.count
+        }
+        guard needed else { return }
+        try writer.write {
+            let context = writer.context
+            let rows = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.languageCode == "en" }
+            var evidence = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>())
+            let groups = Dictionary(grouping: rows, by: { $0.entryType + "|" + EnglishTokenizer.lemma($0.lemma) })
+            let states = try context.fetch(FetchDescriptor<ReviewStateRecord>())
+            for records in groups.values {
+                let sorted = records.filter { $0.canonicalEntryID == nil }.sorted {
+                    let a = ($0.deletedAt == nil ? 0 : 1, $0.lemma == EnglishTokenizer.lemma($0.lemma) ? 0 : 1, $0.addedAt, $0.entryID)
+                    let b = ($1.deletedAt == nil ? 0 : 1, $1.lemma == EnglishTokenizer.lemma($1.lemma) ? 0 : 1, $1.addedAt, $1.entryID)
+                    return a < b
+                }
+                guard let root = sorted.first else { continue }
+                let canonical = EnglishTokenizer.lemma(root.lemma)
+                let known = evidence.filter { $0.reliableChineseKnown && EnglishTokenizer.lemma($0.lemma) == canonical }
+                if !known.isEmpty, !evidence.contains(where: { $0.lemma == canonical }) {
+                    let record = DictionaryEligibilityRecord(lemma: canonical, at: known.map(\.checkedAt).max() ?? root.addedAt, evidence: known.map(\.evidence).joined(separator: "\n"))
+                    context.insert(record); evidence.append(record)
+                }
+                for old in sorted.dropFirst() { old.canonicalEntryID = root.entryID; old.normalizedKey = "legacy-alias|" + old.entryID; old.revision += 1 }
+                if root.lemma != canonical {
+                    if !root.surfaceForms.contains(root.lemma) { root.surfaceForms.append(root.lemma) }
+                    root.lemma = canonical; root.normalizedKey = "en|\(root.entryType)|\(canonical)"; root.revision += 1
+                }
+                if let state = states.first(where: { $0.entryID == root.entryID }), let earliest = states.filter({ row in records.contains { $0.entryID == row.entryID } }).map(\.dueAt).min() {
+                    state.dueAt = min(state.dueAt, earliest)
+                }
+            }
         }
     }
     func find(surface: String, type: String? = nil, context: String = "") throws -> VocabularyItem? {
@@ -157,7 +210,7 @@ struct VocabularyAddition {
         let items = try entries()
         struct ExportLog: Codable { let entryID: String, eventID: String, grade: String, algorithmVersion: String; let reviewedAt: Date, nextDueAt: Date }
         struct Payload: Codable { let formatVersion: Int; let exportedAt: Date; let entries: [VocabularyItem]; let reviewLogs: [ExportLog] }
-        let ids = Set(items.map(\.id))
+        let ids = Set(items.flatMap { [$0.id] + ($0.legacyAnnotations ?? []).map(\.id) })
         let logs = try writer.read { context in try context.fetch(FetchDescriptor<ReviewLogRecord>()).filter { ids.contains($0.entryID) }.map { ExportLog(entryID: $0.entryID, eventID: $0.eventID, grade: $0.grade, algorithmVersion: $0.algorithmVersion, reviewedAt: $0.reviewedAt, nextDueAt: $0.nextDueAt) } }
         if format == .json {
             let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601; encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -165,16 +218,17 @@ struct VocabularyAddition {
         }
         let date = ISO8601DateFormatter()
         func quote(_ text: String) -> String { "\"" + text.replacingOccurrences(of: "\"", with: "\"\"") + "\"" }
-        var rows = [["entryID", "lemma", "surfaceForms", "type", "personalMeaning", "dictionaryMeanings", "notes", "sourceContextsJSON", "addedAt", "lastReviewedAt", "nextDueAt", "algorithmVersion", "repetitions", "lapses", "stability", "difficulty", "dictionarySensesJSON", "reviewLogsJSON", "reviewMeaningSenseID", "reviewMeaningText", "reviewMeaningEvidence", "personalSensesJSON", "reliableChineseKnown"]]
+        var rows = [["entryID", "lemma", "surfaceForms", "type", "personalMeaning", "dictionaryMeanings", "notes", "sourceContextsJSON", "addedAt", "lastReviewedAt", "nextDueAt", "algorithmVersion", "repetitions", "lapses", "stability", "difficulty", "dictionarySensesJSON", "reviewLogsJSON", "reviewMeaningSenseID", "reviewMeaningText", "reviewMeaningEvidence", "personalSensesJSON", "reliableChineseKnown", "legacyAnnotationsJSON"]]
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601; encoder.outputFormatting = .sortedKeys
         for item in items {
             rows.append([item.id, item.lemma, item.surfaces.joined(separator: " | "), item.type, item.meaning ?? "", item.dictionaryMeanings.joined(separator: " | "), item.notes ?? "",
-                String(decoding: try encoder.encode(item.sourceContexts), as: UTF8.self), date.string(from: item.addedAt), item.lastReviewedAt.map { date.string(from: $0) } ?? "", item.dueAt.map { date.string(from: $0) } ?? "", item.algorithmVersion ?? "", String(item.repetitions), String(item.lapses), item.stability.map { String($0) } ?? "", item.difficulty.map { String($0) } ?? "", String(decoding: try encoder.encode(item.dictionarySenses), as: UTF8.self), String(decoding: try encoder.encode(logs.filter { $0.entryID == item.id }), as: UTF8.self), item.reviewMeaningSenseID ?? "", item.reviewMeaningText ?? "", item.reviewMeaningEvidence ?? "", String(decoding: try encoder.encode(item.personalSenses ?? []), as: UTF8.self), String(item.reliableChineseKnown ?? false)])
+                String(decoding: try encoder.encode(item.sourceContexts), as: UTF8.self), date.string(from: item.addedAt), item.lastReviewedAt.map { date.string(from: $0) } ?? "", item.dueAt.map { date.string(from: $0) } ?? "", item.algorithmVersion ?? "", String(item.repetitions), String(item.lapses), item.stability.map { String($0) } ?? "", item.difficulty.map { String($0) } ?? "", String(decoding: try encoder.encode(item.dictionarySenses), as: UTF8.self), String(decoding: try encoder.encode(logs.filter { $0.entryID == item.id }), as: UTF8.self), item.reviewMeaningSenseID ?? "", item.reviewMeaningText ?? "", item.reviewMeaningEvidence ?? "", String(decoding: try encoder.encode(item.personalSenses ?? []), as: UTF8.self), String(item.reliableChineseKnown ?? false), String(decoding: try encoder.encode(item.legacyAnnotations ?? []), as: UTF8.self)])
         }
         return Data((rows.map { $0.map(quote).joined(separator: ",") }.joined(separator: "\r\n") + "\r\n").utf8)
     }
     func add(token: EnglishToken, articleID: String, autoAdd: Bool, explicit: Bool = false, origin: VocabularyContextOrigin = .reader, at now: Date) throws -> VocabularyAddition? {
         guard autoAdd || explicit else { return nil }
+        try normalizeIdentities()
         if case let .dictionary(headword, evidence, _) = origin, headword.isBlank || evidence.isBlank { throw LearningError.invalid("词典语境缺少真实词条或来源证据，未加入生词本。") }
         let lemma = EnglishTokenizer.lemma(token.surface, context: token.sentence)
         let type = lemma.contains(" ") ? "phrase" : "word"
@@ -257,11 +311,20 @@ struct VocabularyAddition {
         guard senses.count <= 30, Set(senses.map(\.id)).count == senses.count else { throw LearningError.invalid("义项过多或身份重复。") }
         try senses.forEach { try $0.validate() }
         let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
-        let data = try encoder.encode(senses)
         try writer.write {
             let context = writer.context
             guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID && $0.deletedAt == nil }) else { throw LearningError.invalid("词条已移除。") }
             guard try !hasReliableChinese(lemma: entry.lemma, context: context) else { throw LearningError.invalid("已取得可靠英中释义，个人释义已停止编辑；草稿保留。") }
+            let old = try entry.personalSensesData.map { try JSONDecoder().decode([PersonalDictionarySense].self, from: $0) } ?? []
+            let updated = senses.map { draft -> PersonalDictionarySense in
+                var value = draft
+                if let previous = old.first(where: { $0.id == draft.id }) {
+                    value.revision = previous.revision
+                    if value != previous { value.revision += 1 }
+                } else { value.revision = max(1, value.revision) }
+                return value
+            }
+            let data = try encoder.encode(updated)
             if entry.personalSensesData == data { return }
             entry.personalSensesData = data; entry.personalMeaningRevision = (entry.personalMeaningRevision ?? 0) + 1
             entry.userMeaning = senses.first(where: { !$0.chinese.isBlank })?.chinese
@@ -288,7 +351,9 @@ struct VocabularyAddition {
             guard try !hasReliableChinese(lemma: entry.lemma, context: context) else { throw LearningError.invalid("请选择可靠来源中的中文义项。") }
             let senses = try context.fetch(FetchDescriptor<DictionarySenseRecord>()).filter { $0.entryID == "cedict-reverse-v1|\(entry.lemma)" && !$0.chinese.isBlank && ($0.senseID == sourceSenseID || $0.senseID.hasSuffix("|" + sourceSenseID)) }
             guard senses.count == 1, let sense = senses.first else { throw LearningError.invalid("无法唯一核实此中文义项，请重新查词或填写个人释义。") }
-            entry.reviewMeaningSenseID = sense.senseID; entry.reviewMeaningText = sense.chinese; entry.reviewMeaningEvidence = sense.sourceLine; entry.revision += 1
+            entry.reviewMeaningSenseID = sense.senseID; entry.reviewMeaningText = sense.chinese; entry.reviewMeaningEvidence = sense.sourceLine
+            entry.reviewMeaningSnapshotData = try JSONEncoder().encode(DictionarySense(id: sense.senseID, en: "", zh: sense.chinese, line: "用户确认 · " + sense.sourceLine, partOfSpeech: sense.partOfSpeech, sources: ["个人确认"], originKind: "personal"))
+            entry.revision += 1
         }
     }
 }

@@ -15,18 +15,18 @@ struct DictionaryEvidenceProvider: DictionaryProvider {
             if mode == "comparison-empty" { return [] }
             if mode == "comparison-failed" { throw URLError(.notConnectedToInternet) }
             if mode == "comparison-retry", await DictionaryComparisonEvidenceProbe.shared.firstAttempt(source: source) { throw URLError(.notConnectedToInternet) }
-            return [DictionarySense(id: source + "|explicit-network", en: "Explicit original comparison fixture: connected elements in a system.", zh: "", line: "Explicit original comparison fixture; not production dictionary data.", partOfSpeech: "noun", examples: ["Explicit fixture: a small network connects these rooms."], sources: [source], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/")]
+            return [DictionarySense(id: source + "|explicit-network", en: "Explicit original comparison fixture: connected elements in a system.", zh: "网络（原创比较测试义）", line: "Explicit original comparison fixture; not production dictionary data.", partOfSpeech: "noun", examples: ["Explicit fixture: a small network connects these rooms."], sources: [source], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/")]
         }
         if mode == "loading" { try await Task.sleep(for: .seconds(30)) }
         if ["all-failed", "offline", "single-failed"].contains(mode) && (mode != "single-failed" || source == "Wiktionary") { throw URLError(.notConnectedToInternet) }
         if mode == "empty" { return [] }
         if mode == "many" {
-            return (1...6).map { index in DictionarySense(id: source + "|explicit-many-\(index)", en: "Explicit original definition number \(index) for the dictionary presentation test.", zh: "", line: "Explicit original fixture; not production dictionary content.", partOfSpeech: index <= 3 ? "noun" : "verb", ipa: "/ˈɪntənet/", sources: [source], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/") }
+            return (1...6).map { index in DictionarySense(id: source + "|explicit-many-\(index)", en: "Explicit original definition number \(index) for the dictionary presentation test.", zh: "原创测试义项 \(index)", line: "Explicit original fixture; not production dictionary content.", partOfSpeech: index <= 3 ? "noun" : "verb", ipa: "/ˈɪntənet/", sources: [source], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/") }
         }
         return Self.senses(source: source)
     }
     static func senses(source: String) -> [DictionarySense] {
-        [DictionarySense(id: source + "|explicit-evidence", en: "An interconnected system of networks.", zh: "", line: "Explicit original dictionary UI fixture; not production dictionary data.", partOfSpeech: "noun", ipa: "/ˈɪntənet/", examples: ["Explicit fixture: the Internet connects networks."], synonyms: ["network"], sources: [source], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/")]
+        [DictionarySense(id: source + "|explicit-evidence", en: "An interconnected system of networks.", zh: "互联网（原创界面测试义）", line: "Explicit original dictionary UI fixture; not production dictionary data.", partOfSpeech: "noun", ipa: "/ˈɪntənet/", examples: ["Explicit fixture: the Internet connects networks."], synonyms: ["network"], sources: [source], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/")]
     }
     @MainActor static func install(mode: String, learning: LearningServices) throws {
         let names = Array(DictionaryAggregator.versions.keys).sorted()

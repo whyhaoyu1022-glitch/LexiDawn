@@ -67,6 +67,7 @@ final class AppDependencies: ObservableObject {
         // Separate backup generation: the earlier before-r2 backup belongs to Round 1 remediation.
         try backupBeforeUpgrade(at: configuration.url, suffix: "before-round2-features")
         try backupBeforeUpgrade(at: configuration.url, suffix: "before-round3")
+        try backupBeforeUpgrade(at: configuration.url, suffix: "before-round4")
         return try LearningSchema.container(configuration: configuration)
     }
 

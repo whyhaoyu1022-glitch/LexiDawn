@@ -120,6 +120,7 @@ import UIKit
         let token = EnglishToken(surface: "book", range: NSRange(location: 35, length: 4), sentence: "A book can open a new world.")
         _ = try learning.vocabulary.add(token: token, articleID: id, autoAdd: true, at: now)
         XCTAssertThrowsError(try ReviewQueueEvidence.evaluate(cycleID: cycle.cycleID, reader: learning.review, at: now))
+        try confirmOriginalReviewFixtures(learning, at: now)
         let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 12, pairCount: 6, clozeCount: 4, at: now)
         let session = try XCTUnwrap(prepared)
         XCTAssertEqual(session.matching.count, 1); XCTAssertEqual(session.cloze.count, 1)
@@ -235,6 +236,7 @@ extension Round2Tests {
     func testCompleteReviewSaveFailureRollsBackAnswerLogScheduleAndCycle() async throws {
         let (app, id, cycle) = try setup(); let learning = try XCTUnwrap(app.learning)
         _ = try learning.vocabulary.add(token: EnglishToken(surface: "book", range: NSRange(location: 0, length: 4), sentence: "A book."), articleID: id, autoAdd: true, at: now)
+        try confirmOriginalReviewFixtures(learning, at: now)
         let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
         let session = try XCTUnwrap(prepared)
         try learning.review.submit(cycleID: cycle.cycleID, questionID: session.matching[0].id, answer: session.matching[0].senseID, at: now)
@@ -300,6 +302,7 @@ extension Round2Tests {
             try learning.reader.save(articleID: articleID, cycleID: cycleID, position: ReaderPosition(percent: 0.5, offset: 15), at: now)
             _ = try learning.vocabulary.add(token: EnglishToken(surface: "book", range: NSRange(location: 10, length: 4), sentence: "A book."), articleID: articleID, autoAdd: true, at: now)
             let prefs = try app.preferencesRepository.load(); prefs.displayName = "Disk reader"; prefs.readerTheme = "paper"; prefs.autoAddOnWordTap = false; try app.preferencesRepository.save(prefs)
+            try confirmOriginalReviewFixtures(learning, at: now)
             savedSession = try await learning.review.prepare(cycleID: cycleID, dailyLimit: 6, pairCount: 6, clozeCount: 4, at: now)
         }
         do {
@@ -381,6 +384,7 @@ extension Round2Tests {
         let state = try XCTUnwrap(context.fetch(FetchDescriptor<ReviewStateRecord>()).first { $0.entryID == world.entryID })
         state.repetitions = 1; state.dueAt = now.addingTimeInterval(86400); try context.save()
         XCTAssertEqual(try learning.review.pendingCount(at: now), 2)
+        try confirmOriginalReviewFixtures(learning, at: now)
         let first = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 6, clozeCount: 4, at: now)
         XCTAssertEqual(first?.matching.count, 1)
         let restored = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 24, pairCount: 6, clozeCount: 4, at: now.addingTimeInterval(2 * 86400))
