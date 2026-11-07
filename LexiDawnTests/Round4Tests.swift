@@ -297,6 +297,20 @@ import SwiftData
         XCTAssertTrue(try WiktionaryChineseTranslationParser.parse("<h2>French</h2><h3>Noun</h3><div class='NavFrame'><span lang='zh'>错误语言</span></div>", revision: "0").isEmpty)
     }
 
+    func testRichBilingualFixtureFlowsThroughLookupModelAndDurableCache() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let article = try learning.content.importArticle(.init(title: "Original lookup model fixture", body: "We nod when we agree.", source: "Original XCTest author", rightsConfirmed: true), at: now)
+        let direct = try await Round4DictionaryFixture(mode: "rich", source: "Wiktionary").lookup("nod")
+        XCTAssertEqual(direct.count, 2)
+        try learning.dictionary.configureDictionaryEvidence(providers: [("Wiktionary", Round4DictionaryFixture(mode: "rich", source: "Wiktionary")), ("Free Dictionary API", Round4DictionaryFixture(mode: "rich", source: "Free Dictionary API"))])
+        let model = WordLookupModel(token: .init(surface: "nod", range: NSRange(location: 3, length: 3), sentence: "We nod when we agree."), articleID: article, autoAdd: true, learning: learning)
+        await model.begin()
+        XCTAssertNil(model.error); XCTAssertFalse(model.loading)
+        XCTAssertEqual(model.result?.headword, "nod"); XCTAssertEqual(model.result?.reliableChinese.count, 2)
+        XCTAssertEqual(try learning.vocabulary.entries().first?.reliableChineseKnown, true)
+        XCTAssertEqual(try DictionaryCacheRepository(context: ModelContext(app.modelContainer)).load("nod", at: Date()).senses.filter(BilingualMeaningPolicy.trusted).count, 2)
+    }
+
 }
 
 @MainActor func confirmOriginalReviewFixtures(_ learning: LearningServices, at now: Date) throws {

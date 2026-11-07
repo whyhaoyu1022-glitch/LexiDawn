@@ -260,6 +260,7 @@ private struct VocabularyDraft: Codable {
     }
 }
 @MainActor enum InputComposition {
+    static func dismissKeyboard() { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
     static var hasMarkedText: Bool {
         func marked(_ view: UIView) -> Bool {
             if view.isFirstResponder, let input = view as? any UITextInput, input.markedTextRange != nil { return true }
@@ -290,7 +291,8 @@ struct VocabularyDetailView: View {
             VStack(alignment: .leading, spacing: 26) {
                 Text(item.lemma).font(.system(.largeTitle, design: .serif).weight(.semibold))
                 if item.surfaces != [item.lemma] { Text(item.surfaces.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
-                if let result { DictionaryResultContent(result: result, onExampleWord: { token, sense in lookupWord(token, origin: .dictionary(headword: item.lemma, evidence: sense.line, text: token.sentence)) }) }
+                if let result, !result.usableSenses.isEmpty { DictionaryResultContent(result: result, onExampleWord: { token, sense in lookupWord(token, origin: .dictionary(headword: item.lemma, evidence: sense.line, text: token.sentence)) }) }
+                else if result != nil { Label("暂无可靠英中释义，可在下方补充。", systemImage: "text.book.closed").font(.subheadline).foregroundStyle(.secondary) }
                 else if dictionaryError == nil { ProgressView("正在查询英中释义…") }
                 if let dictionaryError { Text(dictionaryError).font(.footnote).foregroundStyle(.secondary); Button("重试词典") { Task { await lookup() } } }
                 if let result, !result.usableSenses.isEmpty {

@@ -67,7 +67,7 @@ struct ReaderView: View {
                             let auto = try dependencies.preferencesRepository.load().autoAddOnWordTap; model.flush()
                             guard model.article != nil else { return }
                             let lookup = WordLookupModel(token: token, articleID: model.articleID, autoAdd: auto, learning: model.learning)
-                            lookup.startAddition(); selection = lookup
+                            lookup.startAddition(); lookup.startLookup(); selection = lookup
                         }
                         catch { model.error = error.localizedDescription }
                     }, document: article.document, onWordAnchor: { point, size in
@@ -181,9 +181,19 @@ struct ReaderView: View {
     @Published private(set) var phraseError: String?
     private var started = false
     private var lookupGeneration = UUID()
+    private var lookupTask: Task<Void, Never>?
     let token: EnglishToken, articleID: String, autoAdd: Bool, learning: LearningServices
     let origin: VocabularyContextOrigin
     init(token: EnglishToken, articleID: String, autoAdd: Bool, learning: LearningServices, depth: Int = 0, origin: VocabularyContextOrigin = .reader) { self.token = token; self.articleID = articleID; self.autoAdd = autoAdd; self.learning = learning; self.depth = depth; self.origin = origin }
+    func startLookup(force: Bool = false) {
+        guard force || result == nil, lookupTask == nil else { return }
+        lookupTask = Task { [weak self] in
+            guard let self else { return }
+            defer { self.lookupTask = nil }
+            await self.begin()
+        }
+    }
+    func cancelLookup() { lookupTask?.cancel(); lookupTask = nil; lookupGeneration = UUID(); loading = false }
     func begin() async {
         startAddition()
         await lookup()
@@ -249,8 +259,8 @@ struct WordLookupSheet: View {
                 Button { dismiss() } label: { Image(systemName: "xmark").font(.caption).frame(width: 32, height: 32) }.accessibilityLabel("关闭查词").accessibilityIdentifier("close-word")
             }
             if model.loading && model.result?.usableSenses.isEmpty != false { ProgressView("查词中").accessibilityIdentifier("dictionary-loading") }
-            if let result = model.result { DictionaryQuickMeaning(result: result) }
-            if let error = model.error { Button("词典暂不可用，重试") { Task { await model.lookup() } }.font(.caption).accessibilityHint(error) }
+            if let result = model.result, !result.usableSenses.isEmpty || !model.loading { DictionaryQuickMeaning(result: result) }
+            if let error = model.error { Button("词典暂不可用，重试") { model.startLookup(force: true) }.font(.caption).accessibilityHint(error) }
             if let error = model.vocabularyError { Text(error).font(.caption).foregroundStyle(.red) }
             HStack {
                 if model.addition?.created == true {
@@ -259,11 +269,13 @@ struct WordLookupSheet: View {
                 else { Button("加入生词本", systemImage: "plus.circle") { model.add(explicit: true) }.accessibilityIdentifier("add-word") }
                 Spacer()
                 Button { showDetails = true } label: { Image(systemName: "arrow.up.right.circle.fill").font(.title2).frame(width: 44, height: 44) }
-                    .accessibilityLabel("查看详细释义").accessibilityIdentifier("dictionary-details")
+                    .accessibilityLabel("查看详细释义").accessibilityIdentifier("dictionary-details").disabled(model.loading && model.result?.usableSenses.isEmpty != false)
             }.font(.subheadline)
         }.padding(16).frame(width: dynamicTypeSize.isAccessibilitySize ? 310 : 285).accessibilityElement(children: .contain).accessibilityIdentifier("compact-word-card")
             .fixedSize(horizontal: false, vertical: true)
-            .task { if let prefs = try? dependencies.preferencesRepository.load() { theme = prefs.readerTheme }; await model.begin() }
+            .task { if let prefs = try? dependencies.preferencesRepository.load() { theme = prefs.readerTheme } }
+            .onAppear { model.startLookup() }
+            .onDisappear { if !showDetails { model.cancelLookup() } }
             .onReceive(model.learning.$revision) { _ in model.refreshMembership() }
             .fullScreenCover(isPresented: $showDetails) {
                 NavigationStack {

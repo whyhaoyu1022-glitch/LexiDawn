@@ -42,6 +42,13 @@ struct VocabularyItem: Identifiable, Equatable, Codable {
     var reviewMeaningSenseID: String? = nil
     var reviewMeaningText: String? = nil
     var reviewMeaningEvidence: String? = nil
+    var searchableText: [String] {
+        var values = [lemma, meaning ?? ""]
+        values.append(contentsOf: surfaces); values.append(contentsOf: dictionaryMeanings)
+        values.append(contentsOf: (personalSenses ?? []).map(\.chinese))
+        values.append(contentsOf: dictionarySenses.map(\.zh))
+        return values
+    }
     var primaryChinese: String? {
         if let sense = dictionarySenses.first(where: BilingualMeaningPolicy.trusted) { return sense.zh }
         if reliableChineseKnown == true { return nil }
@@ -84,7 +91,7 @@ enum VocabularyQuery {
     static func apply(_ entries: [VocabularyItem], search: String, type: String, status: VocabularyStatusFilter, sort: VocabularySort, at now: Date) -> [VocabularyItem] {
         entries.filter { item in
             guard type == "all" || item.type == type else { return false }
-            guard search.isBlank || ([item.lemma, item.meaning ?? ""] + item.surfaces + item.dictionaryMeanings + (item.personalSenses ?? []).map(\.chinese) + item.dictionarySenses.map(\.zh)).contains(where: { $0.localizedCaseInsensitiveContains(search) }) else { return false }
+            guard search.isBlank || item.searchableText.contains(where: { $0.localizedCaseInsensitiveContains(search) }) else { return false }
             switch status {
             case .all: return true
             case .due: return item.dueAt.map { $0 <= now } ?? false
@@ -122,7 +129,8 @@ struct VocabularyAddition {
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
             let states = try context.fetch(FetchDescriptor<ReviewStateRecord>())
             let providerCaches = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>())
-            return try all.filter { $0.deletedAt == nil && $0.canonicalEntryID == nil && (type == nil || $0.entryType == type) }.map { record in
+            let active = all.filter { $0.deletedAt == nil && $0.canonicalEntryID == nil && (type == nil || $0.entryType == type) }
+            let values: [VocabularyItem] = try active.map { record in
                 let aliases = all.filter { $0.canonicalEntryID == record.entryID }
                 let groupIDs = Set([record.entryID] + aliases.map(\.entryID))
                 let attached = contexts.filter { groupIDs.contains($0.entryID) }.sorted { ($0.createdAt, $0.contextID) < ($1.createdAt, $1.contextID) }
@@ -154,8 +162,8 @@ struct VocabularyAddition {
                     value.stability = state.stability; value.difficulty = state.difficulty
                 }
                 return value
-            }.filter { search.isBlank || ([$0.lemma, $0.meaning ?? ""] + $0.surfaces + $0.dictionaryMeanings + ($0.personalSenses ?? []).map(\.chinese) + $0.dictionarySenses.map(\.zh)).contains { $0.localizedCaseInsensitiveContains(search) } }
-                .sorted { $0.addedAt > $1.addedAt }
+            }
+            return values.filter { item in search.isBlank || item.searchableText.contains { $0.localizedCaseInsensitiveContains(search) } }.sorted { $0.addedAt > $1.addedAt }
         }
     }
     /// Additive canonical aliases preserve old IDs, annotations, sources, logs and sessions.

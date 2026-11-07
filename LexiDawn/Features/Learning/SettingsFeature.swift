@@ -71,7 +71,8 @@ struct LearningSettingsView: View {
                     NavigationLink("关于词光") { AboutLexiDawnView(licenseText: licenseText) }.accessibilityIdentifier("about-lexidawn")
                     NavigationLink("内容与词典许可") { SourceLicensesView(bundledNotices: licenseText) }
                 }
-            }.navigationTitle("我的").task { load() }
+            }.scrollDismissesKeyboard(.interactively).navigationTitle("我的").task { load() }
+                .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { InputComposition.dismissKeyboard(); save() } } }
                 .onChange(of: signature) { _, _ in scheduleSave() }
                 .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidHideNotification)) { _ in save() }
                 .onChange(of: scenePhase) { _, phase in if phase != .active { saveTask?.cancel(); save() } }
