@@ -97,4 +97,66 @@ import SwiftData
         XCTAssertNil(try learning.vocabulary.entries().first?.personalSenses)
         XCTAssertNil(try learning.vocabulary.entries().first?.meaning)
     }
+    func testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let added = try entry(learning)
+        try learning.vocabulary.savePersonalSenses(entryID: added.entryID, senses: [.init(partOfSpeech: "noun", chinese: "明确原创个人测试词", confirmed: true)], at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        let session = try XCTUnwrap(prepared)
+        try learning.review.submit(cycleID: cycle.cycleID, questionID: session.matching[0].id, answer: session.matching[0].senseID, at: now)
+        let question = session.cloze[0]
+        XCTAssertFalse(try learning.review.submit(cycleID: cycle.cycleID, questionID: question.id, answer: "", reveal: true, at: now))
+        let restored = try XCTUnwrap(learning.review.session(cycleID: cycle.cycleID))
+        XCTAssertTrue(restored.cloze[0].revealed); XCTAssertFalse(restored.cloze[0].completed)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ReviewLogRecord>()), 0)
+        XCTAssertFalse(try learning.review.submit(cycleID: cycle.cycleID, questionID: question.id, answer: "wrong", at: now))
+        XCTAssertTrue(try learning.review.submit(cycleID: cycle.cycleID, questionID: question.id, answer: question.answer, at: now))
+        XCTAssertTrue(try learning.review.submit(cycleID: cycle.cycleID, questionID: question.id, answer: question.answer, at: now))
+        let logs = try ModelContext(app.modelContainer).fetch(FetchDescriptor<ReviewLogRecord>())
+        XCTAssertEqual(logs.count, 1); XCTAssertEqual(logs.first?.grade, "again")
+        XCTAssertEqual(try learning.vocabulary.entries().first?.repetitions, 1)
+    }
+    func testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let added = try entry(learning)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        var issue: ReviewMeaningIssue?
+        do { _ = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now); XCTFail("Missing meaning must block") }
+        catch let value as ReviewMeaningIssue { issue = value }
+        let problem = try XCTUnwrap(issue)
+        XCTAssertEqual(problem.entryID, added.entryID)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ReviewExerciseRecord>()), 0)
+        XCTAssertNil(try learning.cycles.fetch(by: cycle.cycleID)?.reviewEvidence)
+        try learning.review.deferEntry(cycleID: cycle.cycleID, issue: problem, at: now)
+        let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        XCTAssertNil(prepared)
+        XCTAssertTrue(try learning.cycles.fetch(by: cycle.cycleID)?.reviewEvidence?.isUserDeferral == true)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ReviewLogRecord>()), 0)
+        XCTAssertEqual(try learning.vocabulary.entries().count, 1)
+        XCTAssertEqual(try learning.vocabulary.entries().first?.repetitions, 0)
+        XCTAssertFalse(try learning.cycles.fetch(by: cycle.cycleID)?.isComplete == true)
+    }
+    func testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let added = try entry(learning)
+        var sense = PersonalDictionarySense(partOfSpeech: "noun", chinese: "第一次明确的个人义", confirmed: true)
+        try learning.vocabulary.savePersonalSenses(entryID: added.entryID, senses: [sense], at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        sense.chinese = "后来改过的义"; sense.revision += 1
+        try learning.vocabulary.savePersonalSenses(entryID: added.entryID, senses: [sense], at: now)
+        let restored = try learning.review.session(cycleID: cycle.cycleID)
+        XCTAssertEqual(restored?.matching.first?.answer, "第一次明确的个人义")
+        XCTAssertEqual(restored?.cloze.first?.prompt, prepared?.cloze.first?.prompt)
+        XCTAssertEqual(restored?.matching.first?.meaning?.id, restored?.cloze.first?.meaning?.id)
+    }
+    func testMediaFallbackExcludedWithoutDeletingJavaScriptReporting() throws {
+        let html = "<article><p>A real report about JavaScript and HTML5.</p><video>To view this video please enable JavaScript.</video><p>The original final paragraph.</p></article>"
+        let document = try ArticleHTMLExtractor.extract(html)
+        XCTAssertTrue(document.text.contains("A real report about JavaScript and HTML5."))
+        XCTAssertTrue(document.text.contains("The original final paragraph."))
+        XCTAssertFalse(document.text.contains("To view this video"))
+    }
+
 }

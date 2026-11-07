@@ -15,6 +15,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
     var onWordAnchor: ((CGPoint, CGSize) -> Void)? = nil
     var title: String? = nil
     var subtitle: String? = nil
+    var sourceID: String? = nil
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeUIView(context: Context) -> EnglishTextContainer {
         let container = EnglishTextContainer()
@@ -46,7 +47,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
         if key != coordinator.renderKey || text != coordinator.renderedText {
             let oldOffset = view.contentOffset
             if text != coordinator.renderedText {
-                coordinator.projection = ReaderTextProjection(raw: text, document: document)
+                coordinator.projection = ReaderTextProjection(raw: text, document: document, sourceID: sourceID)
                 coordinator.tokens = EnglishTokenizer.tokens(in: coordinator.projection.text); coordinator.renderedText = text
             }
             coordinator.restored = false
@@ -97,7 +98,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
         var lastBounds: CGSize = .zero
         var rotationOffset: Int?
         private var wordElements: [Int: WordAccessibilityElement] = [:]
-        init(_ parent: InteractiveEnglishText) { self.parent = parent; projection = ReaderTextProjection(raw: parent.text, document: parent.document) }
+        init(_ parent: InteractiveEnglishText) { self.parent = parent; projection = ReaderTextProjection(raw: parent.text, document: parent.document, sourceID: parent.sourceID) }
         func restorePosition() {
             if let view, view.bounds.size != lastBounds, view.bounds.width > 0, view.bounds.height > 0 {
                 if lastBounds != .zero, restored { rotationOffset = parent.restore.offset; restored = false }

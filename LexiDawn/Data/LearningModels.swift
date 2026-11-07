@@ -71,6 +71,7 @@ import SwiftData
     var reviewMeaningSenseID: String?
     var reviewMeaningText: String?
     var reviewMeaningEvidence: String?
+    var reviewMeaningSnapshotData: Data?
     var creationToken: String
     var revision: Int
     init(lemma: String, surface: String, type: String, at: Date, from: String, token: String) {
@@ -155,6 +156,8 @@ import SwiftData
     var dailyLimit: Int
     var algorithmVersion: String
     var purpose: String?
+    var deferredEntryIDs: [String]?
+    var clozeExclusionReason: String?
     init(cycleID: UUID, entries: [String], at: Date, limit: Int) {
         sessionID = UUID().uuidString; self.cycleID = cycleID.uuidString; selectedEntryIDs = entries
         createdAt = at; updatedAt = at; revision = 0; dailyLimit = limit; algorithmVersion = FSRSScheduler.version
@@ -176,6 +179,7 @@ import SwiftData
     var completedAt: Date?
     var sourceContext: String?
     var contextSnapshotVersion: Int?
+    var contextOriginKind: String?
     var acceptedAnswers: [String]?
     var meaningSnapshot: Data?
     var maskIndices: [Int]?
@@ -203,6 +207,22 @@ import SwiftData
     }
 }
 
+@Model final class ReviewPreparationRecord {
+    @Attribute(.unique) var cycleID: String
+    var selectedEntryIDs: [String]
+    var createdAt: Date
+    init(cycleID: UUID, entries: [String], at: Date) { self.cycleID = cycleID.uuidString; selectedEntryIDs = entries; createdAt = at }
+}
+@Model final class ReviewDeferralRecord {
+    @Attribute(.unique) var id: String
+    var cycleID: String
+    var entryID: String
+    var reason: String
+    var confirmedAt: Date
+    init(cycleID: UUID, entryID: String, reason: String, at: Date) {
+        id = cycleID.uuidString + "|" + entryID; self.cycleID = cycleID.uuidString; self.entryID = entryID; self.reason = reason; confirmedAt = at
+    }
+}
 @Model final class DictionaryEligibilityRecord {
     @Attribute(.unique) var lemma: String
     var reliableChineseKnown: Bool
@@ -217,7 +237,7 @@ import SwiftData
     static var schema: Schema { Schema([ArticleRecord.self, DailyStudyCycleRecord.self, UserPreferencesRecord.self,
         ContentGrantRecord.self, SourceAcquisitionRecord.self, ArticleProgressRecord.self, VocabularyEntryRecord.self,
         VocabularySourceContextRecord.self, DictionaryEntryRecord.self, DictionarySenseRecord.self, ReviewStateRecord.self,
-        ReviewSessionRecord.self, ReviewExerciseRecord.self, ReviewLogRecord.self, DictionaryEligibilityRecord.self, DictionaryProviderCacheRecord.self, ArticleHistoryArchiveRecord.self, ArticleContentVersionRecord.self]) }
+        ReviewSessionRecord.self, ReviewExerciseRecord.self, ReviewLogRecord.self, ReviewPreparationRecord.self, ReviewDeferralRecord.self, DictionaryEligibilityRecord.self, DictionaryProviderCacheRecord.self, ArticleHistoryArchiveRecord.self, ArticleContentVersionRecord.self]) }
     static func container(configuration: ModelConfiguration) throws -> ModelContainer {
         try ModelContainer(for: schema, configurations: [configuration])
     }

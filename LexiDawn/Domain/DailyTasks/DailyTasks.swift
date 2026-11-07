@@ -371,7 +371,7 @@ struct DailyStudyCycle: Equatable, Sendable {
         if let reviewEvidence {
             try reviewEvidence.validate(cycleID: cycleID, createdAt: createdAtUTC, updatedAt: updatedAtUTC)
             try require(reviewStatuses.allSatisfy { $0 == .deferred }, "空队列必须一次性解析三个复习状态")
-            try require([reviewTaskReason, matchingStageReason, clozeStageReason].allSatisfy { $0 == "no-review-items" }, "空队列原因不一致")
+            try require([reviewTaskReason, matchingStageReason, clozeStageReason].allSatisfy { $0 == (reviewEvidence.isUserDeferral ? "user-explicit-deferral" : "no-review-items") }, "复习延期原因与证据不一致")
         } else {
             try require(!reviewStatuses.contains(.deferred), "缺少真实空队列证明")
         }
@@ -390,7 +390,7 @@ struct DailyStudyCycle: Equatable, Sendable {
         }
     }
 
-    private var expectedCompletionReason: String { reviewEvidence != nil ? "completed-with-no-review-items" : "all-required-tasks-completed" }
+    private var expectedCompletionReason: String { reviewEvidence?.isUserDeferral == true ? "completed-with-explicit-review-deferral" : reviewEvidence != nil ? "completed-with-no-review-items" : "all-required-tasks-completed" }
 
     mutating func recordReviewProgress(_ result: ReviewSessionResult) throws {
         try result.validate(cycleID: cycleID, createdAt: createdAtUTC, updatedAt: result.recordedAt)
@@ -432,6 +432,14 @@ struct DailyStudyCycle: Equatable, Sendable {
     }
 
     mutating func resolveEmptyReview(_ evidence: ReviewQueueEvidence) throws {
+        guard !evidence.isUserDeferral else { throw TaskStatusError.verifiedEvidenceRequired }
+        try resolveReviewEvidence(evidence)
+    }
+    mutating func resolveDeferredReview(_ evidence: ReviewQueueEvidence) throws {
+        guard evidence.isUserDeferral else { throw TaskStatusError.verifiedEvidenceRequired }
+        try resolveReviewEvidence(evidence)
+    }
+    private mutating func resolveReviewEvidence(_ evidence: ReviewQueueEvidence) throws {
         try evidence.validate(cycleID: cycleID, createdAt: createdAtUTC, updatedAt: evidence.evaluatedAt)
         if let reviewEvidence {
             guard reviewEvidence == evidence else { throw TaskStatusError.verifiedEvidenceRequired }
@@ -448,9 +456,9 @@ struct DailyStudyCycle: Equatable, Sendable {
         next.reviewTaskStatus = .deferred
         next.matchingStageStatus = .deferred
         next.clozeStageStatus = .deferred
-        next.reviewTaskReason = "no-review-items"
-        next.matchingStageReason = "no-review-items"
-        next.clozeStageReason = "no-review-items"
+        next.reviewTaskReason = evidence.isUserDeferral ? "user-explicit-deferral" : "no-review-items"
+        next.matchingStageReason = next.reviewTaskReason
+        next.clozeStageReason = next.reviewTaskReason
         next.reviewEvidence = evidence
         try next.finishEvidenceMutation(at: evidence.evaluatedAt)
         self = next
@@ -763,12 +771,25 @@ struct ReviewQueueEvidence: Equatable, Sendable, Codable {
     let evaluatedAt: Date
     private let eligibleCount: Int
     private let completeSnapshot: Bool
+    private let originalEntryIDs: [String]?
+    private let deferredEntryIDs: [String]?
+    var isUserDeferral: Bool { deferredEntryIDs != nil }
 
     private init(cycleID: UUID, snapshot: ReviewQueueSnapshot, at timestamp: Date) {
         self.cycleID = cycleID; sourceRevision = snapshot.revision; evaluatedAt = timestamp
         eligibleCount = snapshot.eligibleEntryIDs.count; completeSnapshot = snapshot.isComplete
+        originalEntryIDs = nil; deferredEntryIDs = nil
     }
 
+    private init(cycleID: UUID, original: [String], deferred: [String], revision: String, at: Date) {
+        self.cycleID = cycleID; sourceRevision = "explicit-deferred|" + revision; evaluatedAt = at
+        eligibleCount = original.count; completeSnapshot = true; originalEntryIDs = original; deferredEntryIDs = deferred
+    }
+    static func userDeferred(cycleID: UUID, original: [String], deferred: [String], revision: String, at: Date) throws -> Self {
+        let value = Self(cycleID: cycleID, original: original, deferred: deferred, revision: revision, at: at)
+        try value.validate(cycleID: cycleID, createdAt: at, updatedAt: at)
+        return value
+    }
     @MainActor
     static func evaluate(cycleID: UUID, reader: ReviewQueueReading, at timestamp: Date) throws -> Self {
         let snapshot = try reader.eligibleQueue(for: cycleID, at: timestamp)
@@ -778,8 +799,13 @@ struct ReviewQueueEvidence: Equatable, Sendable, Codable {
     }
 
     func validate(cycleID: UUID, createdAt: Date, updatedAt: Date) throws {
-        guard evaluatedAt.timeIntervalSince1970.isFinite, self.cycleID == cycleID, !sourceRevision.isBlank, eligibleCount == 0, completeSnapshot,
+        guard evaluatedAt.timeIntervalSince1970.isFinite, self.cycleID == cycleID, !sourceRevision.isBlank, completeSnapshot,
               evaluatedAt >= createdAt, evaluatedAt <= updatedAt else { throw TaskStatusError.verifiedEvidenceRequired }
+        if let originalEntryIDs, let deferredEntryIDs {
+            guard eligibleCount > 0, eligibleCount == originalEntryIDs.count, Set(originalEntryIDs).count == originalEntryIDs.count,
+                  Set(deferredEntryIDs).count == deferredEntryIDs.count, Set(originalEntryIDs) == Set(deferredEntryIDs),
+                  originalEntryIDs.allSatisfy({ !$0.isBlank }), sourceRevision.hasPrefix("explicit-deferred|") else { throw TaskStatusError.verifiedEvidenceRequired }
+        } else { guard eligibleCount == 0, originalEntryIDs == nil, deferredEntryIDs == nil else { throw TaskStatusError.verifiedEvidenceRequired } }
     }
 }
 
@@ -793,11 +819,13 @@ struct ReviewSessionResult: Equatable, Sendable, Codable {
     let clozeQuestionIDs: [String]
     let matchingAnsweredIDs: [String]
     let clozeAnsweredIDs: [String]
+    let clozeExclusionReason: String?
     let recordedAt: Date
     private init(cycleID: UUID, snapshot: SavedReviewSessionSnapshot, recordedAt: Date) {
         self.cycleID = cycleID; sessionID = snapshot.sessionID; sourceRevision = snapshot.sourceRevision
         matchingQuestionIDs = snapshot.matchingQuestionIDs; clozeQuestionIDs = snapshot.clozeQuestionIDs
         matchingAnsweredIDs = snapshot.matchingAnsweredIDs; clozeAnsweredIDs = snapshot.clozeAnsweredIDs
+        clozeExclusionReason = snapshot.clozeExclusionReason
         self.recordedAt = recordedAt
     }
     @MainActor
@@ -815,7 +843,9 @@ struct ReviewSessionResult: Equatable, Sendable, Codable {
         guard recordedAt.timeIntervalSince1970.isFinite, self.cycleID == cycleID, !sourceRevision.isBlank,
               recordedAt >= createdAt, recordedAt <= updatedAt else { throw TaskStatusError.verifiedEvidenceRequired }
         guard clozeAnsweredIDs.isEmpty || matchingComplete else { throw TaskStatusError.verifiedEvidenceRequired }
-        for (questions, answers) in [(matchingQuestionIDs, matchingAnsweredIDs), (clozeQuestionIDs, clozeAnsweredIDs)] {
+        for (index, pair) in [(matchingQuestionIDs, matchingAnsweredIDs), (clozeQuestionIDs, clozeAnsweredIDs)].enumerated() {
+            let (questions, answers) = pair
+            if index == 1, questions.isEmpty, answers.isEmpty, clozeExclusionReason == "targets-under-three-letters" { continue }
             guard !questions.isEmpty, questions.allSatisfy({ !$0.isBlank }), Set(questions).count == questions.count,
                   Set(answers).count == answers.count, Set(answers).isSubset(of: Set(questions)) else { throw TaskStatusError.verifiedEvidenceRequired }
         }
@@ -836,5 +866,6 @@ struct SavedReviewSessionSnapshot {
     let matchingAnsweredIDs: [String]
     let clozeAnsweredIDs: [String]
     let recordedAt: Date
+    var clozeExclusionReason: String? = nil
 }
 

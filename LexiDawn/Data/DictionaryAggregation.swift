@@ -71,7 +71,7 @@ struct WiktionaryDictionaryProvider: DictionaryProvider {
         catch { lastError = error }
         if senses.isEmpty, let lastError, (lastError as? FullTextImportError) != .notFound { throw lastError }
         return senses.map { value in
-            var sense = value; sense.line += " · " + URL(string: "https://en.wiktionary.org/wiki/")!.appendingPathComponent(headword).absoluteString; return sense
+            var sense = value; let host = sense.id.hasPrefix("wiktionary-zh|") ? "zh.wiktionary.org" : "en.wiktionary.org"; sense.line += " · " + URL(string: "https://" + host + "/wiki/")!.appendingPathComponent(headword).absoluteString; return sense
         }
     }
     static func parseEnglishHTML(_ html: String) throws -> [DictionarySense] {

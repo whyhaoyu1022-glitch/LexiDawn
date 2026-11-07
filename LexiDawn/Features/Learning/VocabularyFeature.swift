@@ -31,8 +31,7 @@ struct VocabularyListView: View {
                             Text(item.lemma).font(.headline)
                             if let ipa = item.ipa { Text(ipa).font(.caption.monospaced()) }
                             if !item.partsOfSpeech.isEmpty { Text(item.partsOfSpeech.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
-                            if let meaning = item.meaning { Text("个人释义：\(meaning)").font(.subheadline) }
-                            else if let meaning = item.dictionaryMeanings.first { Text("可能对应：\(meaning)").font(.subheadline) }
+                            if let meaning = item.primaryChinese { Text(meaning).font(.subheadline).lineLimit(2) }
                             Text("\(item.type == "word" ? "单词" : "短语") · \(item.addedAt.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.secondary)
                             if let due = item.dueAt { Text("下次复习：" + due.formatted(date: .abbreviated, time: .shortened)).font(.caption) }
                             if let last = item.lastReviewedAt { Text("最近复习：" + last.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary) }

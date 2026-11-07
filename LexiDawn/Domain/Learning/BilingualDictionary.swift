@@ -13,10 +13,8 @@ enum BilingualMeaningPolicy {
         }.isEmpty
     }
     static func displaySenses(_ senses: [DictionarySense]) -> [DictionarySense] {
-        senses.filter { !$0.zh.isBlank && hasChinese($0.zh) }.sorted {
-            if trusted($0) != trusted($1) { return trusted($0) }
-            return $0.id < $1.id
-        }
+        let values = senses.filter { !$0.zh.isBlank && hasChinese($0.zh) }
+        return values.filter(trusted) + values.filter { !trusted($0) }
     }
     static func permitsPersonal(senses: [DictionarySense], knownReliableChinese: Bool) -> Bool {
         !knownReliableChinese && !senses.contains(where: trusted)
@@ -113,7 +111,7 @@ enum WiktionaryBilingualParser {
                 let value = block.text.trimmingCharacters(in: .whitespacesAndNewlines)
                 senses.append(DictionarySense(id: "wiktionary-zh|" + fingerprint(part + "|" + value), en: "", zh: value,
                     line: "中文维基词典贡献者 · CC BY-SA 4.0 · revision " + revision, partOfSpeech: part, ipa: ipa, forms: forms.isEmpty ? nil : forms,
-                    sources: ["Wiktionary"], sourceRevision: revision))
+                    sources: ["Wiktionary"], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/", sourceRevision: revision))
             } else if block.kind == .listItem, block.listOrdinal == nil, !senses.isEmpty, block.text.unicodeScalars.contains(where: { (65...122).contains($0.value) }) {
                 var last = senses.removeLast(); last.examples = (last.examples ?? []) + [block.text]; senses.append(last)
             } else if part != nil, block.kind == .paragraph, block.text.contains("複數") || block.text.contains("过去式") || block.text.contains("過去式") {

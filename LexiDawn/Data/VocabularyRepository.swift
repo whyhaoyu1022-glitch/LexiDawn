@@ -37,6 +37,11 @@ struct VocabularyItem: Identifiable, Equatable, Codable {
     var reviewMeaningSenseID: String? = nil
     var reviewMeaningText: String? = nil
     var reviewMeaningEvidence: String? = nil
+    var primaryChinese: String? {
+        if let sense = dictionarySenses.first(where: BilingualMeaningPolicy.trusted) { return sense.zh }
+        if reliableChineseKnown == true { return nil }
+        return personalSenses?.first(where: \.reviewReady)?.chinese ?? meaning ?? dictionaryMeanings.first
+    }
 }
 enum VocabularyStatusFilter: String, CaseIterable { case all = "全部状态", due = "待复习", overdue = "逾期", recent = "近7日添加", familiar = "较熟悉" }
 enum VocabularySort: String, CaseIterable { case added = "最近添加", due = "到期时间", alphabet = "字母顺序", priority = "复习优先级" }
@@ -144,8 +149,8 @@ struct VocabularyAddition {
                 .sorted { $0.addedAt > $1.addedAt }
         }
     }
-    func find(surface: String, type: String? = nil) throws -> VocabularyItem? {
-        let lemma = EnglishTokenizer.lemma(surface)
+    func find(surface: String, type: String? = nil, context: String = "") throws -> VocabularyItem? {
+        let lemma = EnglishTokenizer.lemma(surface, context: context)
         return try entries(type: type ?? (lemma.contains(" ") ? "phrase" : "word")).first { $0.lemma == lemma }
     }
     func export(_ format: VocabularyExportFormat, at now: Date) throws -> Data {
@@ -160,18 +165,18 @@ struct VocabularyAddition {
         }
         let date = ISO8601DateFormatter()
         func quote(_ text: String) -> String { "\"" + text.replacingOccurrences(of: "\"", with: "\"\"") + "\"" }
-        var rows = [["entryID", "lemma", "surfaceForms", "type", "personalMeaning", "dictionaryMeanings", "notes", "sourceContextsJSON", "addedAt", "lastReviewedAt", "nextDueAt", "algorithmVersion", "repetitions", "lapses", "stability", "difficulty", "dictionarySensesJSON", "reviewLogsJSON", "reviewMeaningSenseID", "reviewMeaningText", "reviewMeaningEvidence"]]
+        var rows = [["entryID", "lemma", "surfaceForms", "type", "personalMeaning", "dictionaryMeanings", "notes", "sourceContextsJSON", "addedAt", "lastReviewedAt", "nextDueAt", "algorithmVersion", "repetitions", "lapses", "stability", "difficulty", "dictionarySensesJSON", "reviewLogsJSON", "reviewMeaningSenseID", "reviewMeaningText", "reviewMeaningEvidence", "personalSensesJSON", "reliableChineseKnown"]]
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601; encoder.outputFormatting = .sortedKeys
         for item in items {
             rows.append([item.id, item.lemma, item.surfaces.joined(separator: " | "), item.type, item.meaning ?? "", item.dictionaryMeanings.joined(separator: " | "), item.notes ?? "",
-                String(decoding: try encoder.encode(item.sourceContexts), as: UTF8.self), date.string(from: item.addedAt), item.lastReviewedAt.map { date.string(from: $0) } ?? "", item.dueAt.map { date.string(from: $0) } ?? "", item.algorithmVersion ?? "", String(item.repetitions), String(item.lapses), item.stability.map { String($0) } ?? "", item.difficulty.map { String($0) } ?? "", String(decoding: try encoder.encode(item.dictionarySenses), as: UTF8.self), String(decoding: try encoder.encode(logs.filter { $0.entryID == item.id }), as: UTF8.self), item.reviewMeaningSenseID ?? "", item.reviewMeaningText ?? "", item.reviewMeaningEvidence ?? ""])
+                String(decoding: try encoder.encode(item.sourceContexts), as: UTF8.self), date.string(from: item.addedAt), item.lastReviewedAt.map { date.string(from: $0) } ?? "", item.dueAt.map { date.string(from: $0) } ?? "", item.algorithmVersion ?? "", String(item.repetitions), String(item.lapses), item.stability.map { String($0) } ?? "", item.difficulty.map { String($0) } ?? "", String(decoding: try encoder.encode(item.dictionarySenses), as: UTF8.self), String(decoding: try encoder.encode(logs.filter { $0.entryID == item.id }), as: UTF8.self), item.reviewMeaningSenseID ?? "", item.reviewMeaningText ?? "", item.reviewMeaningEvidence ?? "", String(decoding: try encoder.encode(item.personalSenses ?? []), as: UTF8.self), String(item.reliableChineseKnown ?? false)])
         }
         return Data((rows.map { $0.map(quote).joined(separator: ",") }.joined(separator: "\r\n") + "\r\n").utf8)
     }
     func add(token: EnglishToken, articleID: String, autoAdd: Bool, explicit: Bool = false, origin: VocabularyContextOrigin = .reader, at now: Date) throws -> VocabularyAddition? {
         guard autoAdd || explicit else { return nil }
         if case let .dictionary(headword, evidence, _) = origin, headword.isBlank || evidence.isBlank { throw LearningError.invalid("词典语境缺少真实词条或来源证据，未加入生词本。") }
-        let lemma = EnglishTokenizer.lemma(token.surface)
+        let lemma = EnglishTokenizer.lemma(token.surface, context: token.sentence)
         let type = lemma.contains(" ") ? "phrase" : "word"
         guard !lemma.isBlank, lemma.count <= 100, !EnglishTokenizer.tokens(in: lemma).isEmpty else { throw LearningError.invalid("不是有效英文词条。") }
         return try writer.write {
@@ -231,7 +236,7 @@ struct VocabularyAddition {
             if entry.userMeaning != updatedMeaning, try hasReliableChinese(lemma: entry.lemma, context: writer.context) {
                 throw LearningError.invalid("已有可靠英中释义，不能修改个人释义。你的笔记仍可保存。")
             }
-            if entry.userMeaning != updatedMeaning { entry.reviewMeaningSenseID = nil; entry.reviewMeaningText = nil; entry.reviewMeaningEvidence = nil }
+            if entry.userMeaning != updatedMeaning { entry.reviewMeaningSenseID = nil; entry.reviewMeaningText = nil; entry.reviewMeaningEvidence = nil; entry.reviewMeaningSnapshotData = nil }
             entry.userMeaning = updatedMeaning; entry.notes = notes.isBlank ? nil : notes
             entry.lastOpenedAt = max(now, entry.lastOpenedAt); entry.revision += 1
         }
@@ -260,7 +265,7 @@ struct VocabularyAddition {
             if entry.personalSensesData == data { return }
             entry.personalSensesData = data; entry.personalMeaningRevision = (entry.personalMeaningRevision ?? 0) + 1
             entry.userMeaning = senses.first(where: { !$0.chinese.isBlank })?.chinese
-            entry.reviewMeaningSenseID = nil; entry.reviewMeaningText = nil; entry.reviewMeaningEvidence = nil
+            entry.reviewMeaningSenseID = nil; entry.reviewMeaningText = nil; entry.reviewMeaningEvidence = nil; entry.reviewMeaningSnapshotData = nil
             entry.lastOpenedAt = max(now, entry.lastOpenedAt); entry.revision += 1
         }
     }
@@ -278,7 +283,7 @@ struct VocabularyAddition {
             guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID && $0.deletedAt == nil }) else { throw LearningError.invalid("词条不存在或已移除。") }
             let official = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }.flatMap { (try? JSONDecoder().decode([DictionarySense].self, from: $0.payload)) ?? [] }.filter(BilingualMeaningPolicy.trusted)
             if let sense = official.first(where: { $0.id == sourceSenseID }) {
-                entry.reviewMeaningSenseID = sense.id; entry.reviewMeaningText = sense.zh; entry.reviewMeaningEvidence = sense.line; entry.revision += 1; return
+                entry.reviewMeaningSenseID = sense.id; entry.reviewMeaningText = sense.zh; entry.reviewMeaningEvidence = sense.line; entry.reviewMeaningSnapshotData = try JSONEncoder().encode(sense); entry.revision += 1; return
             }
             guard try !hasReliableChinese(lemma: entry.lemma, context: context) else { throw LearningError.invalid("请选择可靠来源中的中文义项。") }
             let senses = try context.fetch(FetchDescriptor<DictionarySenseRecord>()).filter { $0.entryID == "cedict-reverse-v1|\(entry.lemma)" && !$0.chinese.isBlank && ($0.senseID == sourceSenseID || $0.senseID.hasSuffix("|" + sourceSenseID)) }
@@ -347,6 +352,7 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
         if !cachedSenses.isEmpty { try cache.save("internet", senses: cachedSenses, successful: Array(DictionaryAggregator.versions.keys), at: Date().addingTimeInterval(stale ? -31 * 86400 : 0)) }
     }
     #endif
+    var onlineEnabled: Bool { aggregator != nil }
     func enableOnlineProviders() { aggregator = DictionaryAggregator(); richCache = DictionaryCacheRepository(context: writer.context) }
     func clearCaches() throws -> Int {
         try writer.write {
@@ -363,7 +369,7 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
     }
     func lookup(_ surface: String, context: String = "", at now: Date = Date()) async throws -> DictionaryResult {
         if let aggregator, let richCache {
-            let key = EnglishTokenizer.lemma(surface)
+            let key = EnglishTokenizer.lemma(surface, context: context)
             let old = try richCache.load(key, at: now)
             if old.complete {
                 let local = try? await lookupLocal(surface, at: now)

@@ -72,7 +72,7 @@ struct ReaderView: View {
                         catch { model.error = error.localizedDescription }
                     }, document: article.document, onWordAnchor: { point, size in
                         wordAnchor = UnitPoint(x: min(0.96, max(0.04, point.x / max(1, size.width))), y: min(0.96, max(0.04, point.y / max(1, size.height))))
-                    }, title: ArticleTitlePresentation.display(article.title), subtitle: compactSource(article) + " · " + (article.publishedAt.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "") + " · \(article.minutes)分钟")
+                    }, title: ArticleTitlePresentation.display(article.title), subtitle: compactSource(article) + " · " + (article.publishedAt.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "") + " · \(article.minutes)分钟", sourceID: article.sourceID)
                 .frame(maxWidth: .infinity, minHeight: 80, maxHeight: .infinity).layoutPriority(1)
                 .popover(item: $selection, attachmentAnchor: .point(wordAnchor), arrowEdge: .top) { selected in
                     WordLookupSheet(model: selected).presentationCompactAdaptation(.popover)
@@ -191,7 +191,7 @@ struct ReaderView: View {
     func startAddition() { if !started { started = true; add(explicit: false) } }
     func refreshMembership() {
         do {
-            if try learning.vocabulary.find(surface: token.surface) == nil { addition = nil; existing = false }
+            if try learning.vocabulary.find(surface: token.surface, context: token.sentence) == nil { addition = nil; existing = false }
             else if addition == nil { existing = true }
         } catch { vocabularyError = error.localizedDescription }
     }
@@ -209,7 +209,7 @@ struct ReaderView: View {
     func add(explicit: Bool) {
         do {
             if let addition = try learning.vocabulary.add(token: token, articleID: articleID, autoAdd: autoAdd, explicit: explicit, origin: origin, at: Date()) { self.addition = addition; existing = !addition.created; learning.changed() }
-            else { existing = try learning.vocabulary.find(surface: token.surface) != nil }
+            else { existing = try learning.vocabulary.find(surface: token.surface, context: token.sentence) != nil }
             vocabularyError = nil
         } catch { self.vocabularyError = error.localizedDescription }
     }
@@ -244,7 +244,7 @@ struct WordLookupSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
                 Text(model.result?.headword ?? EnglishTokenizer.lemma(model.token.surface)).font(.system(.title3, design: .serif).bold())
-                if let ipa = model.result?.usableSenses.compactMap(\.ipa).first { Text(ipa).font(.caption).foregroundStyle(.secondary).lineLimit(2) }
+                if let ipa = model.result?.senses.compactMap(\.ipa).first { Text(ipa).font(.caption).foregroundStyle(.secondary).lineLimit(2) }
                 Spacer(minLength: 2)
                 Button { dismiss() } label: { Image(systemName: "xmark").font(.caption).frame(width: 32, height: 32) }.accessibilityLabel("关闭查词").accessibilityIdentifier("close-word")
             }
@@ -267,7 +267,7 @@ struct WordLookupSheet: View {
             .onReceive(model.learning.$revision) { _ in model.refreshMembership() }
             .fullScreenCover(isPresented: $showDetails) {
                 NavigationStack {
-                    DictionaryDetailView(result: model.result ?? DictionaryResult(headword: EnglishTokenizer.lemma(model.token.surface), senses: [], updatedAt: Date(), sourceURL: "", licenseURL: ""), context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth, theme: theme, automaticAdditionAllowed: model.autoAdd, contextOrigin: model.origin)
+                    DictionaryDetailView(result: model.result ?? DictionaryResult(headword: EnglishTokenizer.lemma(model.token.surface), senses: [], updatedAt: Date(), sourceURL: "", licenseURL: ""), context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth, theme: theme, automaticAdditionAllowed: model.autoAdd, contextOrigin: model.origin, lookupModel: model)
                 }.preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
             }
     }
@@ -295,7 +295,7 @@ struct DictionaryResultContent: View {
     private var parts: [String] { senses.reduce(into: []) { values, sense in let part = sense.partOfSpeech ?? ""; if !values.contains(part) { values.append(part) } } }
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
-            if let ipa = senses.compactMap(\.ipa).first {
+            if let ipa = result.senses.compactMap(\.ipa).first {
                 Text(ipa).font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("dictionary-ipa-summary")
             }
             if senses.isEmpty {
@@ -359,12 +359,14 @@ struct DictionaryDetailView: View {
     var theme: String = "system"
     var automaticAdditionAllowed = true
     var contextOrigin: VocabularyContextOrigin = .reader
+    var lookupModel: WordLookupModel? = nil
     @EnvironmentObject private var dependencies: AppDependencies
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @State private var speech = AVSpeechSynthesizer()
     @State private var entry: VocabularyItem?
     @State private var addition: VocabularyAddition?
+    @State private var showingSynonyms = false
     @State private var selection: WordLookupModel?
     @State private var error: String?
     var body: some View {
@@ -384,6 +386,24 @@ struct DictionaryDetailView: View {
                 }.font(.subheadline)
                 if let error { Label(error, systemImage: "exclamationmark.circle").font(.footnote).foregroundStyle(.red) }
                 DictionaryResultContent(result: result, onExampleWord: lookup)
+                let synonyms = Array(Set(result.usableSenses.flatMap { $0.synonyms ?? [] })).filter { $0.lowercased() != result.headword.lowercased() }.sorted()
+                if !synonyms.isEmpty {
+                    DisclosureGroup(isExpanded: $showingSynonyms) {
+                        ForEach(synonyms, id: \.self) { synonym in
+                            NavigationLink { DictionaryComparisonView(original: result, synonym: synonym, context: context, learning: learning, theme: theme) } label: { Text(result.headword + " / " + synonym) }.accessibilityIdentifier("dictionary-compare-" + synonym)
+                        }
+                    } label: { Text("对照同义词") }.accessibilityIdentifier("dictionary-synonym-comparison")
+                }
+                if let lookupModel, depth < 3 {
+                    let phrases = EnglishPhraseRecognizer.phrases(around: lookupModel.token.surface, sentence: context)
+                    if !phrases.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("语境短语").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                            ForEach(phrases, id: \.self) { phrase in Button(phrase) { selection = lookupModel.phraseLookup(phrase) } }
+                            if let error = lookupModel.phraseError { Text(error).font(.caption).foregroundStyle(.secondary) }
+                        }
+                    }
+                }
                 if !context.isBlank {
                     DisclosureGroup(contextOrigin.kind == "reader" ? "遇见这个词的句子" : "查词语境") {
                         InlineEnglishText(text: context, onWord: { lookupContext($0) }).padding(.top, 8)
@@ -477,6 +497,6 @@ struct DictionaryComparisonView: View {
             DictionaryResultContent(result: original)
         }.scrollContentBackground(.hidden)
             .background(theme == "paper" ? Color(red: 0.97, green: 0.94, blue: 0.87) : theme == "dark" ? Color(white: 0.08) : Color(uiColor: .systemGroupedBackground))
-            .navigationTitle("同义词对照").navigationBarTitleDisplayMode(.inline).task { await model.load(synonym, context: context, learning: learning) }
+            .navigationTitle("同义词对照").navigationBarTitleDisplayMode(.inline).toolbar(.visible, for: .navigationBar).task { await model.load(synonym, context: context, learning: learning) }
     }
 }

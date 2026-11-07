@@ -4,14 +4,18 @@ struct LearningRootView: View {
     @EnvironmentObject private var dependencies: AppDependencies
     @ObservedObject var learning: LearningServices
     @State private var tab = 0
+    @StateObject private var reviewGate = ReviewEntryCoordinator()
     var body: some View {
-        TabView(selection: $tab) {
+        TabView(selection: Binding(get: { tab }, set: { value in
+            if value == 3 { Task { await reviewGate.open(dependencies: dependencies, learning: learning, onReady: { tab = 3 }) } }
+            else { reviewGate.cancel(); tab = value }
+        })) {
             LiveTodayView(dependencies: dependencies, learning: learning).tabItem { Label("今日", systemImage: "sun.max") }.tag(0)
             LiveExploreView(learning: learning, continueToday: { tab = 0 }).tabItem { Label("探索", systemImage: "safari") }.tag(1)
             VocabularyListView(learning: learning, continueToday: { tab = 0 }).tabItem { Label("词汇", systemImage: "text.book.closed") }.tag(2)
             ReviewPracticeView(learning: learning).tabItem { Label("复习", systemImage: "rectangle.stack") }.tag(3)
             LearningSettingsView(learning: learning).tabItem { Label("我的", systemImage: "person") }.tag(4)
-        }.tint(LexiDawnColor.dawn500)
+        }.tint(LexiDawnColor.dawn500).reviewEntryGate(reviewGate, learning: learning)
     }
 }
 struct LiveTodayView: View {
@@ -21,6 +25,7 @@ struct LiveTodayView: View {
     @State private var importSheet = false
     @State private var reader: ReaderRoute?
     @State private var review = false
+    @StateObject private var reviewGate = ReviewEntryCoordinator()
     @State private var statistics: LearningStatistics?
     @State private var sourceMessage: String?
     @State private var fetching = false
@@ -82,7 +87,7 @@ struct LiveTodayView: View {
             .sheet(isPresented: $importSheet) { ArticleImportView(learning: learning) }
             .fullScreenCover(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("返回今日") { reader = nil } } } } }
             .sheet(isPresented: $review) { NavigationStack { ReviewPracticeContent(learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("返回今日") { review = false; reload() } } } } }
-        }
+        }.reviewEntryGate(reviewGate, learning: learning)
     }
     private var highlightedArticles: [ArticleLibraryItem] {
         var seen = Set<String>()
@@ -116,7 +121,7 @@ struct LiveTodayView: View {
             taskRow("阅读", snapshot.cycle.articleTaskStatus, reason: snapshot.cycle.articleTaskReason)
             taskRow("连线复习", snapshot.cycle.matchingStageStatus, reason: snapshot.cycle.matchingStageReason)
             taskRow("拼写补全", snapshot.cycle.clozeStageStatus, reason: snapshot.cycle.clozeStageReason)
-            Button("进入 / 继续复习", systemImage: "rectangle.stack") { review = true }.buttonStyle(.bordered).accessibilityIdentifier("open-review")
+            Button("进入 / 继续复习", systemImage: "rectangle.stack") { Task { await reviewGate.open(dependencies: dependencies, learning: learning, onReady: { review = true }) } }.buttonStyle(.bordered).accessibilityIdentifier("open-review")
             if snapshot.cycle.isComplete { Label("探索已解锁", systemImage: "lock.open").foregroundStyle(.green).accessibilityIdentifier("cycle-completed") }
         }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
             .background(LinearGradient(colors: [Color.orange.opacity(0.18), Color.yellow.opacity(0.07)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 28))

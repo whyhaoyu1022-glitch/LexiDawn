@@ -55,6 +55,14 @@ struct EnglishTokenizer {
         surface.precomposedStringWithCanonicalMapping.lowercased().replacingOccurrences(of: "’", with: "'")
             .split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
+    static func lemma(_ surface: String, context: String) -> String {
+        guard surface == "May", !context.isBlank else { return lemma(surface) }
+        if context.range(of: #"^\s*["“]?May\s+(?:I|we|you|he|she|they|it)\b"#, options: [.regularExpression, .caseInsensitive]) != nil { return "may" }
+        let tagger = NLTagger(tagSchemes: [.lexicalClass]); tagger.string = context
+        tagger.setLanguage(.english, range: context.startIndex..<context.endIndex)
+        if let range = context.range(of: surface), tagger.tag(at: range.lowerBound, unit: .word, scheme: .lexicalClass).0 == .verb { return "may" }
+        return "May"
+    }
     static func lemma(_ surface: String) -> String {
         if surface == "May" { return "May" }
         if surface == "US" { return "US" }
