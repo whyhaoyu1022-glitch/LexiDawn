@@ -98,7 +98,7 @@ struct LiveTodayView: View {
         return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"
     }
     private func refreshDiscovered(force: Bool = false) async {
-        guard learning.productionNetworking else { return }
+        guard learning.productionNetworking || force else { return }
         fetching = true; defer { fetching = false }
         do { _ = try await learning.discovery.refresh(force: force, onImport: { learning.changed() }); learning.changed() }
         catch is CancellationError { }

@@ -7,7 +7,7 @@ actor ArticleFetchService {
     init(configuration supplied: URLSessionConfiguration? = nil) {
         let configuration = supplied ?? URLSessionConfiguration.ephemeral
         configuration.urlCache = nil; configuration.httpCookieStorage = nil
-        configuration.timeoutIntervalForRequest = 20; configuration.timeoutIntervalForResource = 45
+        if supplied == nil { configuration.timeoutIntervalForRequest = 20; configuration.timeoutIntervalForResource = 45 }
         configuration.httpMaximumConnectionsPerHost = 2
         session = URLSession(configuration: configuration)
     }

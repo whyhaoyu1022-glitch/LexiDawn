@@ -30,7 +30,7 @@ import Combine
     func setDiscoveryForUITesting(_ service: ArticleDiscoveryService) { discovery = service }
     func injectReviewSaveFailureForEvidence() {
         // The first write creates the real question set; the following answer transaction fails once.
-        let fault = EvidenceSaveFault(allowSuccessfulWrites: 1)
+        let fault = EvidenceSaveFault(allowSuccessfulWrites: 2)
         review = ReviewQueueService(context: ModelContext(writer.context.container), cycles: cycles, dictionary: dictionary) { context in
             if context.hasChanges, fault.remaining > 0 {
                 if fault.allowSuccessfulWrites > 0 { fault.allowSuccessfulWrites -= 1 }

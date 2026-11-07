@@ -261,7 +261,7 @@ struct WordLookupSheet: View {
                 Button { showDetails = true } label: { Image(systemName: "arrow.up.right.circle.fill").font(.title2).frame(width: 44, height: 44) }
                     .accessibilityLabel("查看详细释义").accessibilityIdentifier("dictionary-details")
             }.font(.subheadline)
-        }.padding(16).frame(width: dynamicTypeSize.isAccessibilitySize ? 310 : 285)
+        }.padding(16).frame(width: dynamicTypeSize.isAccessibilitySize ? 310 : 285).accessibilityElement(children: .contain).accessibilityIdentifier("compact-word-card")
             .fixedSize(horizontal: false, vertical: true)
             .task { if let prefs = try? dependencies.preferencesRepository.load() { theme = prefs.readerTheme }; await model.begin() }
             .onReceive(model.learning.$revision) { _ in model.refreshMembership() }

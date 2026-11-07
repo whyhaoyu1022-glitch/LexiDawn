@@ -20,9 +20,9 @@ concurrency:
 jobs:
   round4-core:
     name: Round 4 · compile and deterministic core checks
-    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[round4-core]') }}
+    if: ${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[round4-core]') || contains(github.event.head_commit.message, '[round4-ui]')) }}
     runs-on: macos-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - run: bash scripts/ci-prepare.sh
@@ -37,6 +37,25 @@ jobs:
           set -euo pipefail
           TEST_RUN_FILE="$(python3 -c 'import os,pathlib; print(next((pathlib.Path(os.environ["RUNNER_TEMP"])/"round4/Build/Products").glob("*.xctestrun")))')"
           xcodebuild test-without-building -xctestrun "$TEST_RUN_FILE" -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/round4-core.xcresult" -only-testing:LexiDawnTests/Round4Tests 2>&1 | tee "${RUNNER_TEMP}/round4-core.log"
+      - name: Isolate UI simulator after core tests
+        if: contains(github.event.head_commit.message, '[round4-ui]')
+        run: |
+          xcrun simctl shutdown "$LEXIDAWN_SIMULATOR_ID"
+          bash scripts/ci-simulator.sh iPhone-17-Pro
+      - name: Run Round 4 native UI and screenshots only
+        if: contains(github.event.head_commit.message, '[round4-ui]')
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          TEST_RUN_FILE="$(python3 -c 'import os,pathlib; print(next((pathlib.Path(os.environ["RUNNER_TEMP"])/"round4/Build/Products").glob("*.xctestrun")))')"
+          xcodebuild test-without-building -xctestrun "$TEST_RUN_FILE" -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/round4-ui.xcresult" -only-testing:LexiDawnUITests/Round4UITests 2>&1 | tee "${RUNNER_TEMP}/round4-ui.log"
+      - name: Export original Round 4 screenshots even on failure
+        if: ${{ always() && contains(github.event.head_commit.message, '[round4-ui]') }}
+        run: |
+          if [[ -f "${RUNNER_TEMP}/round4-ui.xcresult/Info.plist" ]]; then
+            xcrun xcresulttool export attachments --path "${RUNNER_TEMP}/round4-ui.xcresult" --output-path "${RUNNER_TEMP}/round4-native"
+            python3 scripts/export-round4-evidence.py "${RUNNER_TEMP}/round4-native" "${RUNNER_TEMP}/round4-evidence/screenshots" --commit '${{ github.sha }}' --run-url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -45,6 +64,10 @@ jobs:
             ${{ runner.temp }}/round4-build.log
             ${{ runner.temp }}/round4-core.log
             ${{ runner.temp }}/round4-core.xcresult
+            ${{ runner.temp }}/round4-ui.log
+            ${{ runner.temp }}/round4-ui.xcresult
+            ${{ runner.temp }}/round4-native
+            ${{ runner.temp }}/round4-evidence
           if-no-files-found: warn
 
   export-check:
@@ -137,7 +160,7 @@ jobs:
 
   build-and-test:
     needs: export-check
-    if: ${{ always() && !cancelled() && !contains(github.event.head_commit.message, '[ipa-only]') && !contains(github.event.head_commit.message, '[round4-core]') && (needs.export-check.result == 'success' || needs.export-check.result == 'skipped') }}
+    if: ${{ always() && !cancelled() && !contains(github.event.head_commit.message, '[ipa-only]') && !contains(github.event.head_commit.message, '[round4-core]') && !contains(github.event.head_commit.message, '[round4-ui]') && (needs.export-check.result == 'success' || needs.export-check.result == 'skipped') }}
     name: Build once, complete unit and network gate
     runs-on: macos-latest
     outputs:

@@ -49,6 +49,7 @@ final class AppStartup: ObservableObject {
         #if DEBUG && targetEnvironment(simulator)
         // Explicit opt-in UI fixture, isolated from the production disk store. Never used in Release.
         if let scenario = ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"] {
+            if scenario.hasPrefix("round4-"), let id = UUID(uuidString: ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"] ?? "") { return try round4Fixture(scenario, storeID: id) }
             if scenario == "round3-reader-structure", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
                 let url = FileManager.default.temporaryDirectory.appendingPathComponent("round3-structure-\(storeID).store")
                 let app = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
@@ -78,7 +79,7 @@ final class AppStartup: ObservableObject {
                     if scenario == "round3-extra-review" {
                         for (surface, meaning) in [("Internet", "互联网（额外复习夹具）"), ("document", "文档（额外复习夹具）")] {
                             let addition = try learning.vocabulary.add(token: .init(surface: surface, range: NSRange(location: 0, length: surface.count), sentence: "Explicit original context fixture: the \(surface) supports learning."), articleID: SourceRegistry.rfc.id, autoAdd: true, at: Date())
-                            if let addition { try learning.vocabulary.annotate(entryID: addition.entryID, meaning: meaning, notes: "Explicit extra-review fixture, not a live cold start.", at: Date()) }
+                            if let addition { try learning.vocabulary.savePersonalSenses(entryID: addition.entryID, senses: [.init(partOfSpeech: "noun", chinese: meaning, confirmed: true)], at: Date()); try learning.vocabulary.saveNotes(entryID: addition.entryID, notes: "Explicit extra-review fixture, not a live cold start.", at: Date()) }
                         }
                     } else if scenario == "round3-history-gate" {
                         _ = try learning.content.importArticle(.init(title: "Explicit original current-task fixture", body: "A new original task remains unfinished. Only this task article can be opened until its cycle is complete.", source: "Explicit UI fixture author", rightsConfirmed: true), at: Date())
@@ -124,7 +125,7 @@ final class AppStartup: ObservableObject {
                         for (index, pair) in pairs.enumerated() {
                             if let token = EnglishTokenizer.tokens(in: article.body).first(where: { $0.surface == pair.0 }) ?? (scenario == "gallery-round3-review" && pair.0 == "book" ? EnglishToken(surface: "book", range: NSRange(location: 0, length: 4), sentence: "Explicit test fixture: read a book.") : nil),
                                let added = try learning.vocabulary.add(token: token, articleID: article.id, autoAdd: true, at: now.addingTimeInterval(Double(index) * 0.001)) {
-                                try learning.vocabulary.annotate(entryID: added.entryID, meaning: pair.1, notes: "Screenshot test seed; actual RFC context", at: Date())
+                                try learning.vocabulary.savePersonalSenses(entryID: added.entryID, senses: [.init(partOfSpeech: "noun", chinese: pair.1, confirmed: true)], at: Date()); try learning.vocabulary.saveNotes(entryID: added.entryID, notes: "Explicit screenshot fixture; actual RFC context or labeled original book example", at: Date())
                             }
                         }
                         if scenario == "gallery-missing-state" {
@@ -243,3 +244,55 @@ private struct StorageUnavailableView: View {
     }
 }
 
+
+#if DEBUG && targetEnvironment(simulator)
+extension AppStartup {
+    /// Original, explicitly identified test content; never used by production or Release.
+    static func round4Fixture(_ scenario: String, storeID: UUID) throws -> AppDependencies {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("round4-fixture-\(storeID).store")
+        let app = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
+        guard let learning = app.learning else { return app }
+        if try app.articleRepository.allArticleIDs().isEmpty {
+            let first = "We nod when we agree. A book helps us learn. Clear examples provide useful context. A luminora appears in this original fixture sentence."
+            let paragraphs = (1...12).map { "Original fixture paragraph \($0). A complete reading experience should keep every sentence available. Careful practice turns unfamiliar words into lasting knowledge." }.joined(separator: "\n\n")
+            let title = scenario == "round4-reader" ? "A complete original English title that must wrap naturally on a small phone and remain readable after every rotation without hiding the article below it" : "Explicit Round 4 original UI fixture"
+            let id = try learning.content.importArticle(.init(title: title, body: first + "\n\n" + paragraphs, source: "Original UI test author · fixture", topic: "Science", rightsConfirmed: true), at: Date())
+            if ["round4-review", "round4-missing", "round4-note-failed"].contains(scenario) {
+                let body = try learning.content.read(articleID: id, at: Date()).body
+                let words = scenario == "round4-review" ? [("nod", "点头", "verb"), ("book", "书", "noun"), ("provide", "提供", "verb")] : [("luminora", "个人测试词", "noun")]
+                for (index, value) in words.enumerated() {
+                    guard let token = EnglishTokenizer.tokens(in: body).first(where: { $0.surface == value.0 }),
+                          let added = try learning.vocabulary.add(token: token, articleID: id, autoAdd: false, explicit: true, at: Date().addingTimeInterval(Double(index) * 0.001)) else { continue }
+                    if scenario != "round4-missing" {
+                        try learning.vocabulary.savePersonalSenses(entryID: added.entryID, senses: [.init(partOfSpeech: value.2, chinese: value.1, examples: [.init(english: token.sentence)], confirmed: true)], at: Date())
+                    }
+                }
+            }
+            if scenario == "round4-library" {
+                _ = try learning.content.importArticle(.init(title: "Culture and stories: explicit original fixture", body: paragraphs, source: "Original fixture author", topic: "Culture", rightsConfirmed: true, eligibleForDaily: false), at: Date())
+                _ = try learning.content.importArticle(.init(title: "Technology and learning: explicit original fixture", body: first + paragraphs, source: "Original fixture author", topic: "Technology", rightsConfirmed: true, eligibleForDaily: false), at: Date())
+            }
+        }
+        let mode = scenario.replacingOccurrences(of: "round4-", with: "")
+        try learning.dictionary.configureDictionaryEvidence(providers: [("Wiktionary", Round4DictionaryFixture(mode: mode, source: "Wiktionary")), ("Free Dictionary API", Round4DictionaryFixture(mode: mode, source: "Free Dictionary API"))])
+        if scenario == "round4-note-failed" { learning.injectVocabularySaveFailureForEvidence() }
+        return app
+    }
+}
+struct Round4DictionaryFixture: DictionaryProvider {
+    let mode: String, source: String
+    func lookup(_ headword: String) async throws -> [DictionarySense] {
+        if mode == "loading" { try await Task.sleep(for: .seconds(30)) }
+        if mode == "all-failed" || mode == "partial" && source == "Free Dictionary API" { throw URLError(.notConnectedToInternet) }
+        if ["empty", "review", "missing", "note-failed", "library", "reader"].contains(mode) { return [] }
+        if source == "Free Dictionary API" || mode == "english-only" {
+            return [DictionarySense(id: source + "|round4-en-only", en: "Explicit English-only fixture, excluded from bilingual meanings.", zh: "", line: "Original Round 4 metadata fixture; not a live API result", partOfSpeech: "verb", ipa: "/nɒd/", sources: [source], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/")]
+        }
+        guard headword == "nod" else { return [] }
+        return [
+            DictionarySense(id: "wiktionary|round4-noun", en: "", zh: "点头；点头的动作（原创测试义项）", line: "Original Round 4 bilingual layout fixture · not production dictionary content", partOfSpeech: "noun", ipa: "BrE /nɒd/ · AmE /nɑd/", examples: ["A nod can express agreement.", "She answered with a nod."], forms: ["复数 nods"], synonyms: ["agreement"], sources: [source], exampleTranslations: ["点头可以表达同意。", "她点头作答。"], usageLabels: ["动作"]),
+            DictionarySense(id: "wiktionary|round4-verb", en: "", zh: "点头示意（原创测试义项）", line: "Original Round 4 bilingual layout fixture · not production dictionary content", partOfSpeech: "verb", examples: ["We nod when we agree.", "He nodded to his friend."], forms: ["过去式 nodded · 现在分词 nodding"], sources: [source], exampleTranslations: ["同意时，我们会点头。", "他向朋友点头示意。"], relatedPhrases: ["nod off · 打盹（原创测试短语）"])
+        ]
+    }
+}
+#endif

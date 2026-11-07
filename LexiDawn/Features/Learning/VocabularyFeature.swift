@@ -327,10 +327,10 @@ struct VocabularyDetailView: View {
     private var personalEditor: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack { Text("个人英中词条").font(.headline); Spacer(); Button("添加义项", systemImage: "plus") { annotation.senses.append(PersonalDictionarySense()) }.font(.subheadline) }
-            Text("未找到可靠英中释义，可录入自己的词义。词性和中文确认后用于新复习，已有题目保持原答案。").font(.caption).foregroundStyle(.secondary)
+            Text("当前没有可用的可靠英中释义，可明确录入个人词义。词性和中文确认后用于新复习，已有题目保持原答案。").font(.caption).foregroundStyle(.secondary)
             ForEach($annotation.senses) { $sense in
                 VStack(alignment: .leading, spacing: 12) {
-                    Picker("词性", selection: $sense.partOfSpeech) { Text("待补充").tag(""); ForEach(BilingualMeaningPolicy.parts, id: \.self) { Text(BilingualMeaningPolicy.partName($0)).tag($0) } }
+                    Picker("词性", selection: $sense.partOfSpeech) { Text("待补充").tag(""); ForEach(BilingualMeaningPolicy.parts, id: \.self) { Text(BilingualMeaningPolicy.partName($0)).tag($0) } }.accessibilityIdentifier("personal-part-of-speech")
                     TextField("中文释义", text: $sense.chinese, axis: .vertical).focused($focusedField, equals: sense.id + "zh").accessibilityIdentifier("personal-meaning")
                     TextField("音标（可选）", text: $sense.ipa).focused($focusedField, equals: sense.id + "ipa")
                     TextField("用法 / 语域（可选）", text: $sense.usage).focused($focusedField, equals: sense.id + "usage")

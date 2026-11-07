@@ -10,7 +10,10 @@ struct DictionaryProviderOutcome: Sendable {
 }
 struct FreeDictionaryProvider: DictionaryProvider {
     private let fetcher: ArticleFetchService
-    init(fetcher: ArticleFetchService = ArticleFetchService()) { self.fetcher = fetcher }
+    init(fetcher: ArticleFetchService? = nil) {
+        if let fetcher { self.fetcher = fetcher }
+        else { let config = URLSessionConfiguration.ephemeral; config.timeoutIntervalForRequest = 5; config.timeoutIntervalForResource = 8; self.fetcher = ArticleFetchService(configuration: config) }
+    }
     func lookup(_ headword: String) async throws -> [DictionarySense] {
         let url = URL(string: "https://api.dictionaryapi.dev/api/v2/entries/en/")!.appendingPathComponent(headword)
         let transport = fetcher
@@ -47,32 +50,18 @@ struct FreeDictionaryProvider: DictionaryProvider {
 }
 struct WiktionaryDictionaryProvider: DictionaryProvider {
     func lookup(_ headword: String) async throws -> [DictionarySense] {
+        // Owner's Chinese-only rule: go directly to English entries in Chinese Wiktionary.
+        // The old English parsers remain available for versioned metadata/tests, not UI definitions.
         let transport = ArticleFetchService()
-        let url = URL(string: "https://en.wiktionary.org/api/rest_v1/page/definition/")!.appendingPathComponent(headword)
-        var senses: [DictionarySense] = []
-        var lastError: Error?
-        do { senses = try Self.parse(await transport.fetch(url, allowedHost: "en.wiktionary.org")) }
-        catch is CancellationError { throw CancellationError() }
-        catch { lastError = error }
+        let api = try OfficialArticleAPI.url(host: "zh.wiktionary.org", fields: ["action": "parse", "page": headword, "prop": "text|revid", "format": "json", "formatversion": "2", "disableeditsection": "1"])
+        struct Response: Decodable { struct Page: Decodable { let text: String; let revid: Int }; let parse: Page? }
         do {
-            let api = try OfficialArticleAPI.url(host: "en.wiktionary.org", fields: ["action": "parse", "page": headword, "prop": "text", "format": "json", "formatversion": "2", "disableeditsection": "1"])
-            let data = try await transport.fetch(api, allowedHost: "en.wiktionary.org")
-            struct Response: Decodable { struct Page: Decodable { let text: String }; let parse: Page }
-            let rich = try Self.parseEnglishHTML(JSONDecoder().decode(Response.self, from: data).parse.text)
-            senses = DictionaryAggregator.merge(senses + rich)
-        } catch is CancellationError { throw CancellationError() }
-        catch { lastError = error }
-        do {
-            let api = try OfficialArticleAPI.url(host: "zh.wiktionary.org", fields: ["action": "parse", "page": headword, "prop": "text|revid", "format": "json", "formatversion": "2", "disableeditsection": "1"])
-            struct Response: Decodable { struct Page: Decodable { let text: String; let revid: Int }; let parse: Page }
             let response = try JSONDecoder().decode(Response.self, from: await transport.fetch(api, allowedHost: "zh.wiktionary.org"))
-            senses += try WiktionaryBilingualParser.parse(response.parse.text, revision: String(response.parse.revid))
-        } catch is CancellationError { throw CancellationError() }
-        catch { lastError = error }
-        if senses.isEmpty, let lastError, (lastError as? FullTextImportError) != .notFound { throw lastError }
-        return senses.map { value in
-            var sense = value; let host = sense.id.hasPrefix("wiktionary-zh|") ? "zh.wiktionary.org" : "en.wiktionary.org"; sense.line += " · " + URL(string: "https://" + host + "/wiki/")!.appendingPathComponent(headword).absoluteString; return sense
-        }
+            guard let page = response.parse else { return [] }
+            return try WiktionaryBilingualParser.parse(page.text, revision: String(page.revid)).map { value in
+                var sense = value; sense.line += " · " + URL(string: "https://zh.wiktionary.org/wiki/")!.appendingPathComponent(headword).absoluteString; return sense
+            }
+        } catch FullTextImportError.notFound { return [] }
     }
     static func parseEnglishHTML(_ html: String) throws -> [DictionarySense] {
         guard let marker = html.range(of: "id=\"English\""),
@@ -128,7 +117,7 @@ struct WiktionaryDictionaryProvider: DictionaryProvider {
 }
 
 actor DictionaryAggregator {
-    static let versions = ["Free Dictionary API": "api-v2-schema-2", "Wiktionary": "bilingual-action-schema-5"]
+    static let versions = ["Free Dictionary API": "api-v2-schema-2", "Wiktionary": "bilingual-action-schema-6"]
     private let providers: [(String, any DictionaryProvider)]
     init(providers: [(String, any DictionaryProvider)] = [("Free Dictionary API", FreeDictionaryProvider()), ("Wiktionary", WiktionaryDictionaryProvider())]) { self.providers = providers }
     func lookup(_ lemma: String) async -> DictionaryProviderOutcome {
