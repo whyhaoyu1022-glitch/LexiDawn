@@ -66,6 +66,8 @@ import SwiftData
     var lastOpenedAt: Date
     var notes: String?
     var userMeaning: String?
+    var personalSensesData: Data?
+    var personalMeaningRevision: Int?
     var reviewMeaningSenseID: String?
     var reviewMeaningText: String?
     var reviewMeaningEvidence: String?
@@ -175,6 +177,10 @@ import SwiftData
     var sourceContext: String?
     var contextSnapshotVersion: Int?
     var acceptedAnswers: [String]?
+    var meaningSnapshot: Data?
+    var maskIndices: [Int]?
+    var maskVersion: String?
+    var correctionCompletedAt: Date?
     init(sessionID: String, entryID: String, stage: String, position: Int, prompt: String, answer: String, senseID: String) {
         exerciseID = "\(sessionID)|\(stage)|\(entryID)"; self.sessionID = sessionID; self.entryID = entryID
         sourceContext = nil; contextSnapshotVersion = 1
@@ -197,11 +203,21 @@ import SwiftData
     }
 }
 
+@Model final class DictionaryEligibilityRecord {
+    @Attribute(.unique) var lemma: String
+    var reliableChineseKnown: Bool
+    var checkedAt: Date
+    var evidence: String
+    init(lemma: String, at: Date, evidence: String) {
+        self.lemma = lemma; reliableChineseKnown = true; checkedAt = at; self.evidence = evidence
+    }
+}
+
 @MainActor enum LearningSchema {
     static var schema: Schema { Schema([ArticleRecord.self, DailyStudyCycleRecord.self, UserPreferencesRecord.self,
         ContentGrantRecord.self, SourceAcquisitionRecord.self, ArticleProgressRecord.self, VocabularyEntryRecord.self,
         VocabularySourceContextRecord.self, DictionaryEntryRecord.self, DictionarySenseRecord.self, ReviewStateRecord.self,
-        ReviewSessionRecord.self, ReviewExerciseRecord.self, ReviewLogRecord.self, DictionaryProviderCacheRecord.self, ArticleHistoryArchiveRecord.self, ArticleContentVersionRecord.self]) }
+        ReviewSessionRecord.self, ReviewExerciseRecord.self, ReviewLogRecord.self, DictionaryEligibilityRecord.self, DictionaryProviderCacheRecord.self, ArticleHistoryArchiveRecord.self, ArticleContentVersionRecord.self]) }
     static func container(configuration: ModelConfiguration) throws -> ModelContainer {
         try ModelContainer(for: schema, configurations: [configuration])
     }

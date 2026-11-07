@@ -32,6 +32,8 @@ struct VocabularyItem: Identifiable, Equatable, Codable {
     var stability: Double? = nil
     var difficulty: Double? = nil
     var dictionarySenses: [DictionarySense] = []
+    var personalSenses: [PersonalDictionarySense]? = nil
+    var reliableChineseKnown: Bool? = nil
     var reviewMeaningSenseID: String? = nil
     var reviewMeaningText: String? = nil
     var reviewMeaningEvidence: String? = nil
@@ -126,6 +128,8 @@ struct VocabularyAddition {
                     dictionaryMeanings: definitions, sourceContexts: sourceItems)
                 let providerRows = providerCaches.filter { $0.lemma == record.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
                 value.dictionarySenses = DictionaryAggregator.merge(providerRows.flatMap { (try? JSONDecoder().decode([DictionarySense].self, from: $0.payload)) ?? [] })
+                value.personalSenses = try record.personalSensesData.map { try JSONDecoder().decode([PersonalDictionarySense].self, from: $0) }
+                value.reliableChineseKnown = try hasReliableChinese(lemma: record.lemma, context: context)
                 value.ipa = value.dictionarySenses.compactMap(\.ipa).first
                 value.reviewMeaningSenseID = record.reviewMeaningSenseID
                 value.reviewMeaningText = record.reviewMeaningText; value.reviewMeaningEvidence = record.reviewMeaningEvidence
@@ -224,15 +228,58 @@ struct VocabularyAddition {
         try writer.write {
             guard let entry = try writer.context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID }), entry.deletedAt == nil else { throw LearningError.invalid("词条已移除。") }
             let updatedMeaning = meaning.isBlank ? nil : meaning
+            if entry.userMeaning != updatedMeaning, try hasReliableChinese(lemma: entry.lemma, context: writer.context) {
+                throw LearningError.invalid("已有可靠英中释义，不能修改个人释义。你的笔记仍可保存。")
+            }
             if entry.userMeaning != updatedMeaning { entry.reviewMeaningSenseID = nil; entry.reviewMeaningText = nil; entry.reviewMeaningEvidence = nil }
             entry.userMeaning = updatedMeaning; entry.notes = notes.isBlank ? nil : notes
             entry.lastOpenedAt = max(now, entry.lastOpenedAt); entry.revision += 1
+        }
+    }
+    private func hasReliableChinese(lemma: String, context: ModelContext) throws -> Bool {
+        if try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).contains(where: { $0.lemma == lemma && $0.reliableChineseKnown }) { return true }
+        return try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.lemma == lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }.contains { row in
+            ((try? JSONDecoder().decode([DictionarySense].self, from: row.payload)) ?? []).contains(where: BilingualMeaningPolicy.trusted)
+        }
+    }
+    func personalEditingAllowed(entryID: String) throws -> Bool {
+        try writer.read { context in
+            guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID && $0.deletedAt == nil }) else { throw LearningError.invalid("词条已移除。") }
+            return try !hasReliableChinese(lemma: entry.lemma, context: context)
+        }
+    }
+    func savePersonalSenses(entryID: String, senses: [PersonalDictionarySense], at now: Date) throws {
+        guard senses.count <= 30, Set(senses.map(\.id)).count == senses.count else { throw LearningError.invalid("义项过多或身份重复。") }
+        try senses.forEach { try $0.validate() }
+        let data = try JSONEncoder().encode(senses)
+        try writer.write {
+            let context = writer.context
+            guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID && $0.deletedAt == nil }) else { throw LearningError.invalid("词条已移除。") }
+            guard try !hasReliableChinese(lemma: entry.lemma, context: context) else { throw LearningError.invalid("已取得可靠英中释义，个人释义已停止编辑；草稿保留。") }
+            if entry.personalSensesData == data { return }
+            entry.personalSensesData = data; entry.personalMeaningRevision = (entry.personalMeaningRevision ?? 0) + 1
+            entry.userMeaning = senses.first(where: { !$0.chinese.isBlank })?.chinese
+            entry.reviewMeaningSenseID = nil; entry.reviewMeaningText = nil; entry.reviewMeaningEvidence = nil
+            entry.lastOpenedAt = max(now, entry.lastOpenedAt); entry.revision += 1
+        }
+    }
+    func saveNotes(entryID: String, notes: String, at now: Date) throws {
+        guard notes.count <= 2000 else { throw LearningError.invalid("笔记最多2000字。") }
+        try writer.write {
+            guard let entry = try writer.context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID && $0.deletedAt == nil }) else { throw LearningError.invalid("词条已移除。") }
+            let value = notes.isBlank ? nil : notes
+            if entry.notes != value { entry.notes = value; entry.revision += 1; entry.lastOpenedAt = max(now, entry.lastOpenedAt) }
         }
     }
     func confirmReviewMeaning(entryID: String, sourceSenseID: String) throws {
         try writer.write {
             let context = writer.context
             guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID && $0.deletedAt == nil }) else { throw LearningError.invalid("词条不存在或已移除。") }
+            let official = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }.flatMap { (try? JSONDecoder().decode([DictionarySense].self, from: $0.payload)) ?? [] }.filter(BilingualMeaningPolicy.trusted)
+            if let sense = official.first(where: { $0.id == sourceSenseID }) {
+                entry.reviewMeaningSenseID = sense.id; entry.reviewMeaningText = sense.zh; entry.reviewMeaningEvidence = sense.line; entry.revision += 1; return
+            }
+            guard try !hasReliableChinese(lemma: entry.lemma, context: context) else { throw LearningError.invalid("请选择可靠来源中的中文义项。") }
             let senses = try context.fetch(FetchDescriptor<DictionarySenseRecord>()).filter { $0.entryID == "cedict-reverse-v1|\(entry.lemma)" && !$0.chinese.isBlank && ($0.senseID == sourceSenseID || $0.senseID.hasSuffix("|" + sourceSenseID)) }
             guard senses.count == 1, let sense = senses.first else { throw LearningError.invalid("无法唯一核实此中文义项，请重新查词或填写个人释义。") }
             entry.reviewMeaningSenseID = sense.senseID; entry.reviewMeaningText = sense.chinese; entry.reviewMeaningEvidence = sense.sourceLine; entry.revision += 1
@@ -253,6 +300,11 @@ struct DictionarySense: Codable, Equatable, Identifiable, Sendable {
     var audioURL: String? = nil
     var sources: [String]? = nil
     var licenseURL: String? = nil
+    var exampleTranslations: [String]? = nil
+    var usageLabels: [String]? = nil
+    var relatedPhrases: [String]? = nil
+    var sourceRevision: String? = nil
+    var originKind: String? = nil
 }
 
 struct DictionaryResult: Equatable {
@@ -265,6 +317,8 @@ struct DictionaryResult: Equatable {
     var emptyProviders: [String] = []
     var cached: Bool = false
     var versions: [String: String] = [:]
+    var usableSenses: [DictionarySense] { BilingualMeaningPolicy.displaySenses(senses) }
+    var reliableChinese: [DictionarySense] { senses.filter(BilingualMeaningPolicy.trusted) }
 }
 protocol DictionaryProvider: Sendable { func lookup(_ headword: String) async throws -> [DictionarySense] }
 /// Local, source-derived, legally redistributable index. No network or personal reading history upload.

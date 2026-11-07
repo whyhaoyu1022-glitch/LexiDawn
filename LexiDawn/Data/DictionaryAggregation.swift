@@ -50,9 +50,10 @@ struct WiktionaryDictionaryProvider: DictionaryProvider {
         let transport = ArticleFetchService()
         let url = URL(string: "https://en.wiktionary.org/api/rest_v1/page/definition/")!.appendingPathComponent(headword)
         var senses: [DictionarySense] = []
+        var lastError: Error?
         do { senses = try Self.parse(await transport.fetch(url, allowedHost: "en.wiktionary.org")) }
         catch is CancellationError { throw CancellationError() }
-        catch { /* The official Action API is independently attempted below. */ }
+        catch { lastError = error }
         do {
             let api = try OfficialArticleAPI.url(host: "en.wiktionary.org", fields: ["action": "parse", "page": headword, "prop": "text", "format": "json", "formatversion": "2", "disableeditsection": "1"])
             let data = try await transport.fetch(api, allowedHost: "en.wiktionary.org")
@@ -60,7 +61,15 @@ struct WiktionaryDictionaryProvider: DictionaryProvider {
             let rich = try Self.parseEnglishHTML(JSONDecoder().decode(Response.self, from: data).parse.text)
             senses = DictionaryAggregator.merge(senses + rich)
         } catch is CancellationError { throw CancellationError() }
-        catch { if senses.isEmpty { throw error } }
+        catch { lastError = error }
+        do {
+            let api = try OfficialArticleAPI.url(host: "zh.wiktionary.org", fields: ["action": "parse", "page": headword, "prop": "text|revid", "format": "json", "formatversion": "2", "disableeditsection": "1"])
+            struct Response: Decodable { struct Page: Decodable { let text: String; let revid: Int }; let parse: Page }
+            let response = try JSONDecoder().decode(Response.self, from: await transport.fetch(api, allowedHost: "zh.wiktionary.org"))
+            senses += try WiktionaryBilingualParser.parse(response.parse.text, revision: String(response.parse.revid))
+        } catch is CancellationError { throw CancellationError() }
+        catch { lastError = error }
+        if senses.isEmpty, let lastError, (lastError as? FullTextImportError) != .notFound { throw lastError }
         return senses.map { value in
             var sense = value; sense.line += " · " + URL(string: "https://en.wiktionary.org/wiki/")!.appendingPathComponent(headword).absoluteString; return sense
         }
@@ -119,7 +128,7 @@ struct WiktionaryDictionaryProvider: DictionaryProvider {
 }
 
 actor DictionaryAggregator {
-    static let versions = ["Free Dictionary API": "api-v2-schema-2", "Wiktionary": "rest-and-action-schema-4"]
+    static let versions = ["Free Dictionary API": "api-v2-schema-2", "Wiktionary": "bilingual-action-schema-5"]
     private let providers: [(String, any DictionaryProvider)]
     init(providers: [(String, any DictionaryProvider)] = [("Free Dictionary API", FreeDictionaryProvider()), ("Wiktionary", WiktionaryDictionaryProvider())]) { self.providers = providers }
     func lookup(_ lemma: String) async -> DictionaryProviderOutcome {
@@ -171,7 +180,11 @@ actor DictionaryAggregator {
             return lexical + (distance.isFinite ? max(0, 2 - distance) * 4 : 0)
         }
         let scored = merge(senses).map { ($0, score($0)) }
-        return scored.sorted { $0.1 == $1.1 ? $0.0.id < $1.0.id : $0.1 > $1.1 }.map(\.0)
+        return scored.sorted {
+            let a = BilingualMeaningPolicy.trusted($0.0), b = BilingualMeaningPolicy.trusted($1.0)
+            if a != b { return a }
+            return $0.1 == $1.1 ? $0.0.id < $1.0.id : $0.1 > $1.1
+        }.map(\.0)
     }
 }
 
@@ -206,6 +219,12 @@ actor DictionaryAggregator {
     func save(_ lemma: String, senses: [DictionarySense], successful: [String], at now: Date) throws {
         try writer.write {
             let context = writer.context
+            let reliable = senses.filter(BilingualMeaningPolicy.trusted)
+            if !reliable.isEmpty {
+                let rows = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).filter { $0.lemma == lemma }
+                if let old = rows.first { old.reliableChineseKnown = true; old.checkedAt = max(old.checkedAt, now); old.evidence = reliable.map(\.line).joined(separator: "\n") }
+                else { context.insert(DictionaryEligibilityRecord(lemma: lemma, at: now, evidence: reliable.map(\.line).joined(separator: "\n"))) }
+            }
             for provider in successful {
                 guard let version = DictionaryAggregator.versions[provider] else { continue }
                 let values = senses.filter { ($0.sources ?? []).contains(provider) && (provider != "Free Dictionary API" || URL(string: $0.licenseURL ?? "")?.host == "creativecommons.org") }

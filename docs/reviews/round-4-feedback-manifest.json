@@ -196,7 +196,7 @@
   "baselineMainCommit": "6840b2d0d786c88d6c067feebd16df968c50849a",
   "priorIPASourceCommit": "39c5f7056644972ca0030a1cb041400a08d52c3c",
   "reviewDate": "2026-11-06",
-  "status": "original-21-and-dictionary-supplement-planned-not-implemented",
+  "status": "implementation-in-progress",
   "totalAcceptanceCriteria": 144,
   "issues": [
     {
@@ -1705,5 +1705,11 @@
       ],
       "implementationStatus": "planned-not-implemented"
     }
-  ]
+  ],
+  "latestOwnerOverride": {
+    "date": "2026-11-07",
+    "instruction": "只使用英中释义；只有英英视为没有可用释义，不锁定个人词义；可靠英中才锁定。",
+    "policyVersion": "english-chinese-1",
+    "supersedes": "v1.1 reliable-English-only lock"
+  }
 }

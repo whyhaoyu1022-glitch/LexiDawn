@@ -18,6 +18,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  round4-core:
+    name: Round 4 · compile and deterministic core checks
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[round4-core]') }}
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/ci-prepare.sh
+      - name: Compile app and all test targets
+        run: |
+          set -euo pipefail
+          xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/round4" -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -configuration Debug IPHONEOS_DEPLOYMENT_TARGET=26.5 CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES build-for-testing 2>&1 | tee "${RUNNER_TEMP}/round4-build.log"
+      - run: bash scripts/ci-simulator.sh iPhone-17-Pro
+      - name: Run Round 4 deterministic checks only
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          TEST_RUN_FILE="$(python3 -c 'import os,pathlib; print(next((pathlib.Path(os.environ["RUNNER_TEMP"])/"round4/Build/Products").glob("*.xctestrun")))')"
+          xcodebuild test-without-building -xctestrun "$TEST_RUN_FILE" -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/round4-core.xcresult" -only-testing:LexiDawnTests/Round4Tests 2>&1 | tee "${RUNNER_TEMP}/round4-core.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: LexiDawn-round4-core-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/round4-build.log
+            ${{ runner.temp }}/round4-core.log
+            ${{ runner.temp }}/round4-core.xcresult
+          if-no-files-found: warn
+
   export-check:
     name: Export diagnostic · one UI method
     if: ${{ inputs.scope == 'export' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[export-only]')) }}
@@ -108,7 +137,7 @@ jobs:
 
   build-and-test:
     needs: export-check
-    if: ${{ always() && !cancelled() && !contains(github.event.head_commit.message, '[ipa-only]') && (needs.export-check.result == 'success' || needs.export-check.result == 'skipped') }}
+    if: ${{ always() && !cancelled() && !contains(github.event.head_commit.message, '[ipa-only]') && !contains(github.event.head_commit.message, '[round4-core]') && (needs.export-check.result == 'success' || needs.export-check.result == 'skipped') }}
     name: Build once, complete unit and network gate
     runs-on: macos-latest
     outputs:
