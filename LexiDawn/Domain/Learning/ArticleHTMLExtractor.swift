@@ -14,7 +14,7 @@ enum ArticleHTMLExtractor {
         var kind = ArticleDocument.Block.Kind.paragraph, level = 0, suppressed: [String] = []
         var styles: [(String, ArticleDocument.Block.Kind, Int)] = []
         var lists: [(ordered: Bool, ordinal: Int)] = []
-        let excluded: Set<String> = ["script", "style", "nav", "button"]
+        let excluded: Set<String> = ["script", "style", "nav", "button", "video", "audio", "noscript", "iframe"]
         let boundaries: Set<String> = ["p", "div", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote", "figcaption", "tr", "section", "article", "main", "pre"]
         func flush() throws {
             let value = try decodeEntities(buffer).split(whereSeparator: \.isWhitespace).joined(separator: " ")

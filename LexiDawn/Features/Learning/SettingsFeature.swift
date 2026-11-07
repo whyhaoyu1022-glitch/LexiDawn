@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct LearningSettingsView: View {
     @EnvironmentObject private var dependencies: AppDependencies
@@ -15,6 +16,10 @@ struct LearningSettingsView: View {
     @State private var timezonePolicy = "device"
     @State private var fixedTimezone = "Asia/Shanghai"
     @State private var message: String?
+    @State private var loaded = false
+    @State private var savedSignature = ""
+    @State private var saveTask: Task<Void, Never>?
+    @Environment(\.scenePhase) private var scenePhase
     @State private var cacheKind: String?
     var body: some View {
         NavigationStack {
@@ -39,8 +44,8 @@ struct LearningSettingsView: View {
                     Text("原周期分配日期与时区保持不变；新设置只影响以后判断本地学习日期。题组创建后保留原题量。").font(.caption).foregroundStyle(.secondary)
                 }
                 Section {
-                    Button("保存设置", action: save).accessibilityIdentifier("save-settings")
                     if let message { Text(message).font(.footnote).accessibilityIdentifier("settings-message") }
+                    if savedSignature != signature { Button("重试保存设置", action: save) }
                 }
                 Section("本地缓存") {
                     Button("清理未使用的文章缓存") { cacheKind = "article" }
@@ -49,10 +54,14 @@ struct LearningSettingsView: View {
                     if let message { Text(message).font(.footnote) }
                 }
                 Section("关于与许可") {
-                    Text("通知与 AI 功能准备中，目前没有安排系统通知，也不上传阅读历史。")
+                    NavigationLink("关于词光") { AboutLexiDawnView(licenseText: licenseText) }.accessibilityIdentifier("about-lexidawn")
                     NavigationLink("内容与词典许可") { SourceLicensesView(bundledNotices: licenseText) }
                 }
             }.navigationTitle("我的").task { load() }
+                .onChange(of: signature) { _, _ in scheduleSave() }
+                .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidHideNotification)) { _ in save() }
+                .onChange(of: scenePhase) { _, phase in if phase != .active { saveTask?.cancel(); save() } }
+                .onDisappear { saveTask?.cancel(); save() }
                 .confirmationDialog("确认清理可重新取得的缓存？", isPresented: Binding(get: { cacheKind != nil }, set: { if !$0 { cacheKind = nil } })) {
                     if cacheKind == "article" { Button("确认清理文章缓存", role: .destructive) { clearCache(kind: "article") } }
                     else { Button("确认清理词典缓存", role: .destructive) { clearCache(kind: "dictionary") } }
@@ -74,9 +83,21 @@ struct LearningSettingsView: View {
             name = prefs.displayName; age = prefs.ageRange ?? ""; goal = prefs.learningGoal; topics = prefs.interestTopics.joined(separator: ", ")
             fontSize = prefs.readerFontSize; lineSpacing = prefs.readerLineSpacing; theme = prefs.readerTheme
             autoAdd = prefs.autoAddOnWordTap; dailyLimit = prefs.dailyReviewLimit; timezonePolicy = prefs.timeZonePolicy; fixedTimezone = prefs.fixedTimeZoneID ?? "Asia/Shanghai"
+            savedSignature = signature; loaded = true
         } catch { message = error.localizedDescription }
     }
+    private var signature: String {
+        [name, age, goal, topics, String(fontSize), String(lineSpacing), theme, String(autoAdd), String(dailyLimit), timezonePolicy, fixedTimezone].joined(separator: "|\u{001f}|")
+    }
+    private func scheduleSave() {
+        guard loaded, signature != savedSignature else { return }
+        saveTask?.cancel()
+        saveTask = Task {
+            do { try await Task.sleep(for: .milliseconds(350)); try Task.checkCancellation(); save() } catch { }
+        }
+    }
     private func save() {
+        guard loaded, signature != savedSignature, !InputComposition.hasMarkedText else { return }
         do {
             guard name.count <= 80, goal.count <= 200, topics.count <= 500 else { throw LearningError.invalid("昵称、目标或主题过长。") }
             let prefs = try dependencies.preferencesRepository.load()
@@ -84,8 +105,29 @@ struct LearningSettingsView: View {
             prefs.interestTopics = topics.components(separatedBy: CharacterSet(charactersIn: ",，")).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
             prefs.readerFontSize = fontSize; prefs.readerLineSpacing = lineSpacing; prefs.readerTheme = theme; prefs.autoAddOnWordTap = autoAdd
             prefs.dailyReviewLimit = dailyLimit; prefs.timeZonePolicy = timezonePolicy; prefs.fixedTimeZoneID = timezonePolicy == "fixed" ? fixedTimezone : nil
-            try dependencies.preferencesRepository.save(prefs); learning.changed(); message = "设置已保存"
+            try dependencies.preferencesRepository.save(prefs); savedSignature = signature; learning.changed(); message = "已自动保存"
         } catch { message = error.localizedDescription }
     }
 }
 
+
+struct AboutLexiDawnView: View {
+    let licenseText: String
+    var body: some View {
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 12) {
+                    Image(systemName: "sunrise.fill").font(.largeTitle).foregroundStyle(LexiDawnColor.dawn500)
+                    Text("LexiDawn · 词光").font(.system(.title, design: .serif).bold())
+                    Text("在真实阅读里，慢慢积累自己的词汇。").foregroundStyle(.secondary)
+                }.padding(.vertical, 16)
+            }
+            Section {
+                LabeledContent("开发者", value: "Why Haoyu").accessibilityIdentifier("about-developer")
+                LabeledContent("版本", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "未知")
+                LabeledContent("构建", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "未知")
+            }
+            Section { NavigationLink("内容与词典许可") { SourceLicensesView(bundledNotices: licenseText) } }
+        }.navigationTitle("关于词光").navigationBarTitleDisplayMode(.inline)
+    }
+}

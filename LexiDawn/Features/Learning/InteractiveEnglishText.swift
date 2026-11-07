@@ -12,6 +12,9 @@ struct InteractiveEnglishText: UIViewRepresentable {
     let onWord: (EnglishToken) -> Void
     var scrollable: Bool = true
     var document: ArticleDocument? = nil
+    var onWordAnchor: ((CGPoint, CGSize) -> Void)? = nil
+    var title: String? = nil
+    var subtitle: String? = nil
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeUIView(context: Context) -> EnglishTextContainer {
         let container = EnglishTextContainer()
@@ -38,7 +41,8 @@ struct InteractiveEnglishText: UIViewRepresentable {
         let coordinator = context.coordinator; coordinator.parent = self
         let key = "\(fontSize)|\(lineSpacing)|\(theme)|\(view.traitCollection.preferredContentSizeCategory.rawValue)|\(view.traitCollection.userInterfaceStyle.rawValue)"
         let width = max(20, (view.bounds.width - 720) / 2)
-        view.textContainerInset = UIEdgeInsets(top: 20, left: width, bottom: 40, right: width)
+        container.configureHeading(title: title, subtitle: subtitle, theme: theme)
+        view.textContainerInset = UIEdgeInsets(top: container.headingHeight, left: width, bottom: 40, right: width)
         if key != coordinator.renderKey || text != coordinator.renderedText {
             let oldOffset = view.contentOffset
             if text != coordinator.renderedText {
@@ -99,7 +103,8 @@ struct InteractiveEnglishText: UIViewRepresentable {
                 if lastBounds != .zero, restored { rotationOffset = parent.restore.offset; restored = false }
                 lastBounds = view.bounds.size
                 let margin = max(18, (view.bounds.width - 720) / 2)
-                view.textContainerInset = UIEdgeInsets(top: 12, left: margin, bottom: 24, right: margin)
+                accessibilityContainer?.configureHeading(title: parent.title, subtitle: parent.subtitle, theme: parent.theme)
+                view.textContainerInset = UIEdgeInsets(top: accessibilityContainer?.headingHeight ?? 12, left: margin, bottom: 24, right: margin)
             }
             guard !restored, !restoring, let view, view.bounds.height > 0, view.bounds.width > 0, !parent.text.isEmpty else { return }
             restoring = true
@@ -111,12 +116,15 @@ struct InteractiveEnglishText: UIViewRepresentable {
             if offset > 0 {
                 let glyph = view.layoutManager.glyphIndexForCharacter(at: projection.displayOffset(offset))
                 let rect = view.layoutManager.boundingRect(forGlyphRange: NSRange(location: glyph, length: 1), in: view.textContainer)
-                view.setContentOffset(CGPoint(x: 0, y: max(0, min(rect.minY, view.contentSize.height - view.bounds.height))), animated: false)
+                view.setContentOffset(CGPoint(x: 0, y: max(0, min(rect.minY + view.textContainerInset.top, view.contentSize.height - view.bounds.height))), animated: false)
             }
             rotationOffset = nil; restored = true
         }
         @objc func tap(_ recognizer: UITapGestureRecognizer) {
             guard let view, let token = token(at: recognizer.location(in: view)) else { return }
+            if let container = accessibilityContainer {
+                parent.onWordAnchor?(view.convert(recognizer.location(in: view), to: container), container.bounds.size)
+            }
             parent.onWord(EnglishToken(surface: token.surface, range: projection.rawRange(token.range), sentence: token.sentence))
         }
         func token(at local: CGPoint) -> EnglishToken? {
@@ -133,7 +141,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
             guard restored, let view, view.bounds.size == lastBounds else { return }
             let textLength = (parent.text as NSString).length
             guard textLength > 0, view.contentSize.height > 0 else { return }
-            let point = CGPoint(x: 1, y: max(0, view.contentOffset.y))
+            let point = CGPoint(x: 1, y: max(0, view.contentOffset.y - view.textContainerInset.top))
             let offset = min(textLength - 1, projection.rawOffset(view.layoutManager.characterIndex(for: point, in: view.textContainer, fractionOfDistanceBetweenInsertionPoints: nil)))
             let range = (parent.text as NSString).paragraphRange(for: NSRange(location: offset, length: 0))
             let percent = min(1, max(0, (view.contentOffset.y + view.bounds.height - view.textContainerInset.bottom) / view.contentSize.height))
@@ -147,6 +155,13 @@ struct InteractiveEnglishText: UIViewRepresentable {
             let glyphs = view.layoutManager.glyphRange(forBoundingRect: visible, in: view.textContainer)
             let chars = view.layoutManager.characterRange(forGlyphRange: glyphs, actualGlyphRange: nil)
             var elements: [UIAccessibilityElement] = []
+            if let title = parent.title, view.contentOffset.y < accessibilityContainer.headingHeight {
+                let heading = UIAccessibilityElement(accessibilityContainer: accessibilityContainer)
+                heading.accessibilityLabel = title + ". " + (parent.subtitle ?? "")
+                heading.accessibilityTraits = .header
+                heading.accessibilityFrameInContainerSpace = view.convert(accessibilityContainer.headingLabel.frame, to: accessibilityContainer)
+                elements.append(heading)
+            }
             var retained: [Int: WordAccessibilityElement] = [:]
             for token in tokens where NSIntersectionRange(token.range, chars).length > 0 {
                 let sourceOffset = projection.rawOffset(token.range.location)
@@ -159,8 +174,10 @@ struct InteractiveEnglishText: UIViewRepresentable {
                 var rect = view.layoutManager.boundingRect(forGlyphRange: view.layoutManager.glyphRange(forCharacterRange: token.range, actualCharacterRange: nil), in: view.textContainer)
                 rect.origin.x += view.textContainerInset.left; rect.origin.y += view.textContainerInset.top
                 element.accessibilityFrameInContainerSpace = view.convert(rect, to: accessibilityContainer)
-                element.action = { [weak self] in
-                    guard let self else { return }
+                element.action = { [weak self, weak element, weak accessibilityContainer] in
+                    guard let self, let element, let accessibilityContainer else { return }
+                    let rect = element.accessibilityFrameInContainerSpace
+                    self.parent.onWordAnchor?(CGPoint(x: rect.midX, y: rect.midY), accessibilityContainer.bounds.size)
                     self.parent.onWord(EnglishToken(surface: token.surface, range: self.projection.rawRange(token.range), sentence: token.sentence))
                 }
                 elements.append(element)
@@ -182,6 +199,26 @@ private final class WordAccessibilityElement: UIAccessibilityElement {
 final class EnglishTextContainer: UIView {
     let textView = UITextView(usingTextLayoutManager: false)
     var onLayout: (() -> Void)?
+    let headingLabel = UILabel()
+    let subtitleLabel = UILabel()
+    private(set) var headingHeight: CGFloat = 12
+    func configureHeading(title: String?, subtitle: String?, theme: String) {
+        guard let title else { headingLabel.isHidden = true; subtitleLabel.isHidden = true; headingHeight = 12; return }
+        if headingLabel.superview == nil { textView.addSubview(headingLabel); textView.addSubview(subtitleLabel) }
+        headingLabel.isHidden = false; subtitleLabel.isHidden = false
+        headingLabel.numberOfLines = 0; subtitleLabel.numberOfLines = 0
+        headingLabel.text = title; subtitleLabel.text = subtitle
+        headingLabel.font = UIFontMetrics(forTextStyle: .title2).scaledFont(for: UIFont(name: "Georgia-Bold", size: 26) ?? .boldSystemFont(ofSize: 26))
+        subtitleLabel.font = UIFont.preferredFont(forTextStyle: .caption1)
+        headingLabel.textColor = theme == "dark" ? .init(white: 0.92, alpha: 1) : theme == "paper" ? .init(red: 0.19, green: 0.16, blue: 0.12, alpha: 1) : .label
+        subtitleLabel.textColor = theme == "dark" ? .lightGray : .secondaryLabel
+        let margin = max(18, (bounds.width - 720) / 2), width = max(1, bounds.width - 2 * margin)
+        let height = headingLabel.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude)).height
+        headingLabel.frame = CGRect(x: margin, y: 12, width: width, height: height)
+        let subHeight = subtitleLabel.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude)).height
+        subtitleLabel.frame = CGRect(x: margin, y: height + 22, width: width, height: subHeight)
+        headingHeight = height + subHeight + 46
+    }
     override init(frame: CGRect) { super.init(frame: frame); addSubview(textView) }
     required init?(coder: NSCoder) { super.init(coder: coder); addSubview(textView) }
     override func layoutSubviews() { super.layoutSubviews(); textView.frame = bounds; onLayout?() }

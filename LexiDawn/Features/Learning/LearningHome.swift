@@ -41,7 +41,7 @@ struct LiveTodayView: View {
                     switch model.state {
                     case let .loaded(snapshot): hero(snapshot)
                     case .noCandidate:
-                        ContentUnavailableView("准备第一篇英文阅读", systemImage: "book.closed", description: Text("合法导入自己的文章，或使用已核验许可的 RFC 原文。不会用虚构文章填充候选。"))
+                        ContentUnavailableView("准备第一篇英文阅读", systemImage: "book.closed", description: Text("发现并导入完整英文原文，或导入自己的文章。"))
                     case let .failed(message), let .saveFailed(message): Text(message).foregroundStyle(.red); Button("重新读取") { reload() }
                     default: ProgressView("正在读取学习记录…")
                     }
@@ -50,39 +50,21 @@ struct LiveTodayView: View {
                             Text("你的积累").font(.title3.bold())
                             HStack { metric("完成文章", statistics.articles); metric("学习日期", statistics.studyDays); metric("连续日期", statistics.streak) }
                             HStack { metric("生词本", statistics.vocabulary); metric("待复习", statistics.pending); metric("近7日学习", statistics.recentDays) }
-                            Text("完成阅读或整次复习的实际日期计为学习日，使用周期记录的时区；同一日期只计一次。文章按完成证据去重。").font(.caption).foregroundStyle(.secondary)
                         }.padding().background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20))
                     }
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("阅读内容").font(.title3.bold())
-                        NavigationLink("本地文章库与阅读历史") { ArticleLibraryView(learning: learning) }.accessibilityIdentifier("article-library-body")
-                        Button("合法导入文章", systemImage: "square.and.arrow.down") { importSheet = true }.accessibilityIdentifier("import-article")
-                        Button("使用官方 RFC 原文", systemImage: "doc.text") { perform { try learning.content.installBundledRFC(at: Date()); learning.changed() } }
-                        Button(fetching ? "正在联系 RFC Editor…" : "从官方来源刷新", systemImage: "arrow.clockwise") {
-                            fetching = true
-                            Task {
-                                do { try await learning.acquisition.refresh(); sourceMessage = "官方正文核验成功；现有未完成文章保持不变。"; learning.changed() }
-                                catch { sourceMessage = error.localizedDescription }
-                                fetching = false
+                    VStack(alignment: .leading, spacing: 16) {
+                        NavigationLink { ArticleLibraryView(learning: learning) } label: {
+                            HStack {
+                                Label("文章库", systemImage: "books.vertical").font(.headline)
+                                Spacer()
+                                Text("\(articles.filter(\.readable).count) 篇").foregroundStyle(.secondary)
+                                Image(systemName: "chevron.right").font(.caption)
                             }
-                        }.disabled(fetching)
-                        Text("RFC 8890 · M. Nottingham / IETF Trust。全文连同原版权声明保留。导入内容仅在本地使用，不自动上传。官网完整文章可在文章库中发现。").font(.caption).foregroundStyle(.secondary)
-                        if let sourceMessage { Text(sourceMessage).font(.footnote).foregroundStyle(.secondary) }
-                    }.padding().background(Color.accentColor.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
-                    if !articles.filter(\.readable).isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("本地完整原文").font(.title3.bold())
-                            ForEach(highlightedArticles) { article in
-                                NavigationLink { ArticleLibraryView(learning: learning) } label: {
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text(ArticleSourceRegistry.name(article.sourceID)).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                                        Text(article.title).font(.headline).lineLimit(3)
-                                        Text("\(article.minutes) 分钟 · \(article.topics.joined(separator: " · ")) · 离线可读").font(.caption).foregroundStyle(.secondary)
-                                    }.frame(maxWidth: .infinity, alignment: .leading).padding().background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
-                                }.buttonStyle(.plain).accessibilityIdentifier("today-source-" + article.sourceID)
-                            }
-                        }
-                    }
+                        }.accessibilityIdentifier("article-library-body")
+                        Button("发现新文章", systemImage: "arrow.clockwise") { Task { await refreshDiscovered(force: true) } }.disabled(fetching)
+                        DiscoveryProgressCard(service: learning.discovery)
+                        if let sourceMessage { Text(sourceMessage).font(.caption).foregroundStyle(.secondary) }
+                    }.padding(20).background(.thinMaterial, in: RoundedRectangle(cornerRadius: 22))
                 }.padding(20)
             }.accessibilityIdentifier("learning-today-scroll")
             .navigationTitle("词光").navigationBarTitleDisplayMode(.inline)
@@ -110,9 +92,10 @@ struct LiveTodayView: View {
         let hour = Calendar.current.component(.hour, from: Date())
         return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"
     }
-    private func refreshDiscovered() async {
+    private func refreshDiscovered(force: Bool = false) async {
         guard learning.productionNetworking else { return }
-        do { _ = try await learning.discovery.refresh(onImport: { learning.changed() }); learning.changed() }
+        fetching = true; defer { fetching = false }
+        do { _ = try await learning.discovery.refresh(force: force, onImport: { learning.changed() }); learning.changed() }
         catch is CancellationError { }
         catch { sourceMessage = FullTextImportError.transport.localizedDescription }
     }
@@ -120,13 +103,12 @@ struct LiveTodayView: View {
     private func hero(_ snapshot: TodayCycleSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Label(snapshot.cycle.isComplete ? "今日必做已完成" : "今天，读一篇真实的英文", systemImage: snapshot.cycle.isComplete ? "checkmark.seal.fill" : "sunrise.fill").font(.subheadline.weight(.semibold))
-            Text(snapshot.articleTitle ?? snapshot.cycle.articleID).font(.system(.title, design: .serif).bold()).fixedSize(horizontal: false, vertical: true)
+            Text(ArticleTitlePresentation.display(snapshot.articleTitle ?? snapshot.cycle.articleID)).font(.system(.title, design: .serif).bold()).fixedSize(horizontal: false, vertical: true)
             if let article = articles.first(where: { $0.id == snapshot.cycle.articleID }) {
                 Text("\(article.topics.joined(separator: " · ")) · 预计 \(article.minutes) 分钟").font(.subheadline)
-                Text(article.sourceID == "wikipedia" ? "Wikipedia · Contributors" : article.sourceID == SourceRegistry.rfc.id ? "RFC Editor · M. Nottingham" : article.source).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                Text(ArticleSourceRegistry.name(article.sourceID)).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 ProgressView(value: article.percent) { Text("阅读进度 \(Int(article.percent * 100))%") }.font(.caption)
             }
-            Text("原始分配日期 \(snapshot.cycle.assignedLocalDate) · \(snapshot.cycle.assignedTimeZoneID)").font(.caption)
             if snapshot.isOverdue { Label("已跨过 \(snapshot.cycle.carryOverCount) 个学习日期，继续原文章", systemImage: "clock").font(.footnote) }
             Button(snapshot.cycle.articleTaskStatus == .completed ? "重新阅读" : snapshot.cycle.articleTaskStatus == .inProgress ? "继续阅读" : "开始阅读") {
                 reader = ReaderRoute(articleID: snapshot.cycle.articleID, cycleID: snapshot.cycle.cycleID)
@@ -245,8 +227,8 @@ struct LiveExploreView: View {
                                 HStack {
                                     Button(article.favorite ? "取消收藏" : "收藏", systemImage: article.favorite ? "star.fill" : "star") { flags(article, favorite: !article.favorite) }
                                     Button(article.readLater ? "移出稍后阅读" : "稍后阅读", systemImage: article.readLater ? "bookmark.fill" : "bookmark") { flags(article, later: !article.readLater) }
-                                }.font(.caption).buttonStyle(.bordered)
-                            }.padding(.vertical, 8)
+                                }.font(.caption).buttonStyle(.bordered).tint(.white)
+                            }.padding(18).background(LinearGradient(colors: ReadingPalette.colors(topic: article.topics.joined()), startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 24)).foregroundStyle(.white).listRowBackground(Color.clear).listRowSeparator(.hidden)
                         }
                     }
                 }
@@ -258,7 +240,7 @@ struct LiveExploreView: View {
                     ToolbarItem(placement: .topBarLeading) { NavigationLink { ArticleLibraryView(learning: learning) } label: { Label("文章库与历史", systemImage: "books.vertical") }.accessibilityIdentifier("explore-library") }
                     ToolbarItem(placement: .primaryAction) { Button("发现完整文章", systemImage: "arrow.clockwise", action: discover).disabled(!allowed || loading) }
                 }
-                .onDisappear { refreshTask?.cancel() }
+
                 .fullScreenCover(item: $reader, onDismiss: load) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { reader = nil } } } } }
         }
     }
@@ -279,19 +261,16 @@ struct LiveExploreView: View {
 struct ExploreArticleCard: View {
     let article: ArticleLibraryItem
     let prominent: Bool
-    private var science: Bool { article.topics.joined().lowercased().contains("science") }
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            ZStack(alignment: .bottomLeading) {
-                LinearGradient(colors: science ? [.indigo.opacity(0.85), .cyan.opacity(0.45)] : [.orange.opacity(0.85), .pink.opacity(0.35)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                HStack { Image(systemName: science ? "atom" : "globe.americas.fill").font(.system(size: prominent ? 44 : 28)); Spacer(); Text(article.topics.joined(separator: " · ")).font(.caption.bold()) }.foregroundStyle(.white).padding(18)
-            }.frame(height: prominent ? 115 : 75).clipShape(RoundedRectangle(cornerRadius: 16)).accessibilityHidden(true)
-            Text(article.title).font(prominent ? .title2.bold() : .headline).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
-            Text(article.topics.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
-            Text(ArticleSourceRegistry.name(article.sourceID)).font(.caption.weight(.semibold))
-            if let date = article.publishedAt { Text(date.formatted(date: .abbreviated, time: .omitted)).font(.caption).foregroundStyle(.secondary) }
-            Text("\(article.minutes) 分钟 · \(article.wordCount) 词 · 未开始").font(.caption)
-            Label("完整原文已在本地 · 离线可读", systemImage: "checkmark.icloud").font(.caption).foregroundStyle(.secondary)
-        }.padding(14).background(Color.accentColor.opacity(0.04), in: RoundedRectangle(cornerRadius: 20))
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text(article.topics.first ?? "阅读").font(.caption.weight(.semibold))
+                Spacer()
+                Image(systemName: "arrow.up.right")
+            }.opacity(0.85)
+            Text(ArticleTitlePresentation.display(article.title)).font(.system(prominent ? .title2 : .title3, design: .serif).weight(.semibold)).fixedSize(horizontal: false, vertical: true)
+            Text([ArticleSourceRegistry.name(article.sourceID), article.publishedAt.map { $0.formatted(date: .abbreviated, time: .omitted) }, "\(article.minutes)分钟"].compactMap { $0 }.joined(separator: " · "))
+                .font(.caption).opacity(0.85).fixedSize(horizontal: false, vertical: true)
+        }.frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(.white)
     }
 }

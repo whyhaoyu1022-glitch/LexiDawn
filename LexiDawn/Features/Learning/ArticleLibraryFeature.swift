@@ -29,17 +29,24 @@ struct ArticleLibraryView: View {
         List {
             LibrarySearchCompletion { searchFocused = false }
             Section {
+                HStack { Text("共 \(items.filter(\.readable).count) 篇").font(.headline); Spacer(); Text("当前 \(visible.count) 篇").font(.caption).foregroundStyle(.secondary) }.accessibilityIdentifier("library-count")
+                Picker("阅读内容", selection: $mode) {
+                    Text("全部").tag("all")
+                    Text("收藏 \(items.filter { $0.readable && $0.favorite }.count)").tag("favorite")
+                    Text("稍后 \(items.filter { $0.readable && $0.readLater }.count)").tag("later")
+                    Text("历史").tag("history")
+                }.pickerStyle(.segmented).accessibilityIdentifier("library-mode-filter")
                 Picker("来源", selection: $source) { Text("全部来源").tag("all"); ForEach(Array(Set(items.filter(\.readable).map(\.sourceID))).sorted(), id: \.self) { Text(ArticleSourceRegistry.name($0)).tag($0) } }.accessibilityIdentifier("library-source-filter")
                 Picker("分类", selection: $topic) { Text("全部分类").tag("all"); ForEach(Array(Set(items.flatMap(\.topics))).sorted(), id: \.self) { Text($0).tag($0) } }.accessibilityIdentifier("library-topic-filter")
-                Picker("阅读内容", selection: $mode) { Text("全部").tag("all"); Text("收藏").tag("favorite"); Text("稍后阅读").tag("later"); Text("历史").tag("history") }.accessibilityIdentifier("library-mode-filter")
                 Toggle("最新导入优先", isOn: $newestFirst)
             }
-            if loading { ProgressView("正在导入完整文章…").accessibilityIdentifier("article-loading"); Button("停止本次发现") { refreshTask?.cancel() }.accessibilityIdentifier("cancel-article-discovery") }
+            DiscoveryProgressCard(service: learning.discovery)
+            if loading { Button("停止本次发现") { learning.discovery.cancelRefresh() }.accessibilityIdentifier("cancel-article-discovery") }
             if let notice { Text(notice).font(.footnote).accessibilityIdentifier("article-notice") }
             if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red); Button(importFailed ? "重试导入" : "重新读取本地数据") { if importFailed { beginRefresh() } else { load() } } }.accessibilityIdentifier("article-import-error") }
             ForEach(visible) { item in
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(item.title).font(.headline)
+                    Text(ArticleTitlePresentation.display(item.title)).font(.system(.headline, design: .serif))
                     Text(ArticleSourceRegistry.name(item.sourceID)).font(.caption).lineLimit(2)
                     Text("\(item.topics.joined(separator: " · ")) · \(item.minutes) 分钟").font(.caption)
                     Label("完整原文 · 本地离线可读", systemImage: "checkmark.icloud").font(.caption).foregroundStyle(.secondary)
@@ -60,6 +67,12 @@ struct ArticleLibraryView: View {
                 // actions. Opening, resetting and editing must remain independent.
                 }.buttonStyle(.borderless).padding(.vertical, 8)
             }
+            Section {
+                DisclosureGroup("备用技术文档") {
+                    Text("RFC是互联网技术标准文档，适合技术英语阅读。").font(.caption).foregroundStyle(.secondary)
+                    Button("导入 RFC 8890 完整原文") { do { try learning.content.installBundledRFC(at: Date()); learning.changed(); load() } catch { self.error = error.localizedDescription } }
+                }
+            }
             if visible.isEmpty, !loading { ContentUnavailableView("没有匹配的完整文章", systemImage: "books.vertical", description: Text("调整筛选，或导入有权在本地保存的完整英文原文。")) }
         }
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索完整文章标题")
@@ -71,7 +84,6 @@ struct ArticleLibraryView: View {
         .toolbar { Button("发现完整文章", systemImage: "arrow.clockwise") { beginRefresh() }.disabled(loading) }
         .refreshable { await beginRefresh().value }
         .task { load() }.onReceive(learning.$revision) { _ in load() }
-        .onDisappear { refreshTask?.cancel() }
         .sheet(item: $editing) { route in ArticleImportView(learning: learning, editingArticleID: route.articleID) }
         .alert("重新标记为未开始？", isPresented: Binding(get: { resetting != nil }, set: { if !$0 { resetting = nil } }), presenting: resetting) { item in
             Button("确认重新标记") {
@@ -110,6 +122,27 @@ private struct LibrarySearchCompletion: View {
         if isSearching {
             Button("完成搜索") { dismissSearch(); finished() }
                 .accessibilityIdentifier("library-finish-search")
+        }
+    }
+}
+
+struct DiscoveryProgressCard: View {
+    @ObservedObject var service: ArticleDiscoveryService
+    var body: some View {
+        if service.progress.phase != .idle {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text(service.progress.phase == .running ? "正在发现文章" : service.progress.phase == .cancelled ? "已停止发现" : service.progress.phase == .failed ? "部分来源暂不可用" : "来源检查完成").font(.subheadline.weight(.medium))
+                    Spacer()
+                    Text("\(service.progress.processedSources)/\(service.progress.totalSources)").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                }
+                ProgressView(value: service.progress.fraction).accessibilityIdentifier("article-discovery-progress")
+                    .accessibilityValue("已处理\(service.progress.processedSources)个来源，共\(service.progress.totalSources)个")
+                if !service.progress.activeSourceIDs.isEmpty {
+                    Text(service.progress.activeSourceIDs.map(ArticleSourceRegistry.name).joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("article-discovery-active-sources")
+                }
+                Text("新增\(service.progress.importedCount)篇 · 重复\(service.progress.duplicateCount)篇" + (service.progress.failedCount > 0 ? " · \(service.progress.failedCount)个来源未完成" : "")).font(.caption).foregroundStyle(.secondary)
+            }.padding(.vertical, 8)
         }
     }
 }

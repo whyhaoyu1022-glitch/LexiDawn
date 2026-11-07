@@ -111,7 +111,7 @@ struct VocabularyAddition {
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
             let states = try context.fetch(FetchDescriptor<ReviewStateRecord>())
             let providerCaches = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>())
-            return all.filter { $0.deletedAt == nil && (type == nil || $0.entryType == type) }.map { record in
+            return try all.filter { $0.deletedAt == nil && (type == nil || $0.entryType == type) }.map { record in
                 let attached = contexts.filter { $0.entryID == record.entryID }
                 let definitions = senses.filter { $0.entryID == "cedict-reverse-v1|\(record.lemma)" }.sorted { $0.senseID < $1.senseID }.map(\.chinese)
                 let sourceItems: [VocabularyContextItem] = attached.map { source in
@@ -251,7 +251,8 @@ struct VocabularyAddition {
     func savePersonalSenses(entryID: String, senses: [PersonalDictionarySense], at now: Date) throws {
         guard senses.count <= 30, Set(senses.map(\.id)).count == senses.count else { throw LearningError.invalid("义项过多或身份重复。") }
         try senses.forEach { try $0.validate() }
-        let data = try JSONEncoder().encode(senses)
+        let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
+        let data = try encoder.encode(senses)
         try writer.write {
             let context = writer.context
             guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID && $0.deletedAt == nil }) else { throw LearningError.invalid("词条已移除。") }

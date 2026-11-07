@@ -46,6 +46,7 @@ struct ReaderView: View {
     @EnvironmentObject private var dependencies: AppDependencies
     @Environment(\.scenePhase) private var scenePhase
     @State private var selection: WordLookupModel?
+    @State private var wordAnchor = UnitPoint.center
     @State private var manualConfirmation = false
     @State private var fontSize: Double = 19
     @State private var lineSpacing: Double = 1.5
@@ -58,13 +59,7 @@ struct ReaderView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let article = model.article {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(article.title).font(.title3.bold()).lineLimit(verticalSizeClass == .compact || dynamicTypeSize.isAccessibilitySize ? 1 : 2)
-                    Text("\(compactSource(article)) · \(article.minutes) 分钟").font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                    if verticalSizeClass != .compact && !dynamicTypeSize.isAccessibilitySize, let published = article.publishedAt { Text("发布：\(published.formatted(date: .abbreviated, time: .omitted))").font(.caption) }
-                    if verticalSizeClass != .compact && !dynamicTypeSize.isAccessibilitySize { DisclosureGroup("来源与许可") { Text(article.source).font(.caption).textSelection(.enabled); Text("正文完整性与导入依据在访问及保存时重新检查。导入内容仅限本地使用。").font(.caption) } }
-                    HStack { ProgressView(value: model.position.percent); Text("\(Int(model.position.percent * 100))%").font(.caption.monospacedDigit()).accessibilityIdentifier("reader-progress") }
-                }.dynamicTypeSize(...DynamicTypeSize.xxxLarge).padding(.horizontal)
+                HStack { ProgressView(value: model.position.percent); Text("\(Int(model.position.percent * 100))%").font(.caption.monospacedDigit()).accessibilityIdentifier("reader-progress") }.padding(.horizontal)
                 if let notice = model.notice { Text(notice).font(.caption).padding(.horizontal) }
                 InteractiveEnglishText(text: article.body, fontSize: fontSize, lineSpacing: lineSpacing, theme: theme, restore: model.position,
                     onPosition: model.observe, onWord: { token in
@@ -75,8 +70,13 @@ struct ReaderView: View {
                             lookup.startAddition(); selection = lookup
                         }
                         catch { model.error = error.localizedDescription }
-                    }, document: article.document)
+                    }, document: article.document, onWordAnchor: { point, size in
+                        wordAnchor = UnitPoint(x: min(0.96, max(0.04, point.x / max(1, size.width))), y: min(0.96, max(0.04, point.y / max(1, size.height))))
+                    }, title: ArticleTitlePresentation.display(article.title), subtitle: compactSource(article) + " · " + (article.publishedAt.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "") + " · \(article.minutes)分钟")
                 .frame(maxWidth: .infinity, minHeight: 80, maxHeight: .infinity).layoutPriority(1)
+                .popover(item: $selection, attachmentAnchor: .point(wordAnchor), arrowEdge: .top) { selected in
+                    WordLookupSheet(model: selected).presentationCompactAdaptation(.popover)
+                }
                 if model.position.completedAt != nil { Label("阅读已完成", systemImage: "checkmark.circle.fill").foregroundStyle(.green).padding(.horizontal).accessibilityIdentifier("reading-completed") }
                 else {
                     Button(verticalSizeClass == .compact ? "完成阅读" : model.position.percent >= 0.9 ? "确认完成阅读" : "我已读完，手动确认") {
@@ -145,7 +145,6 @@ struct ReaderView: View {
                     .toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { sourceDetails = false }.accessibilityIdentifier("close-source-details") } }
             }.presentationBackground(readerBackground)
         }
-        .sheet(item: $selection) { selected in WordLookupSheet(model: selected) }
         .alert("明确确认已读完", isPresented: $manualConfirmation) {
             Button("取消", role: .cancel) { }
             Button("确认我已读完") { model.complete(manual: true) }
@@ -234,156 +233,121 @@ struct WordLookupSheet: View {
     @StateObject private var model: WordLookupModel
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var dependencies: AppDependencies
-    @State private var phraseSelection: WordLookupModel?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showDetails = false
-    @State private var speech = AVSpeechSynthesizer()
-    @State private var detent: PresentationDetent = .large
     @State private var theme = "system"
     init(token: EnglishToken, articleID: String, autoAdd: Bool, learning: LearningServices) {
         _model = StateObject(wrappedValue: WordLookupModel(token: token, articleID: articleID, autoAdd: autoAdd, learning: learning))
     }
     init(model: WordLookupModel) { _model = StateObject(wrappedValue: model) }
     var body: some View {
-        NavigationStack {
-            List {
-                #if DEBUG && targetEnvironment(simulator)
-                if ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"]?.hasPrefix("round3-dictionary-") == true { Text("明确测试夹具：词典 Provider 状态注入，非生产词典数据。").font(.caption).accessibilityIdentifier("dictionary-fixture-label") }
-                #endif
-                if model.loading { ProgressView("正在查询词典…").accessibilityIdentifier("dictionary-loading") }
-                if let error = model.vocabularyError {
-                    Section { Text(error).foregroundStyle(.red); Button("重试保存生词") { model.add(explicit: true) } }
-                }
-                if let error = model.error { Section { Text(error).foregroundStyle(.red); Button("重试词典查询") { Task { await model.lookup() } } } }
-                if !model.loading, model.error == nil, let result = model.result, result.senses.isEmpty {
-                    Text("暂无可验证的释义。可以继续阅读，或在生词本添加明确标记的个人释义。")
-                }
-                if let result = model.result, result.emptyProviders.contains("Free Dictionary API") {
-                    Text("Free Dictionary API 当前无可用结果（暂不可用或未收录此词）。其他可用来源仍可使用。").font(.caption)
-                        .accessibilityIdentifier("dictionary-free-unavailable")
-                }
-                Section("生词本") {
-                    HStack {
-                        if model.addition?.created == true { Label("刚刚加入", systemImage: "checkmark.circle"); Spacer(); Button("撤销本次加入") { model.undo() }.accessibilityIdentifier("undo-word") }
-                        else if model.existing { Label("此前已加入", systemImage: "bookmark.fill") }
-                        else { Button("加入生词本") { model.add(explicit: true) }.accessibilityIdentifier("add-word") }
-                    }
-                }
-                if let result = model.result, !result.senses.isEmpty {
-                    if result.cached { Label("正在使用本地缓存", systemImage: "internaldrive").font(.caption) }
-                    if !result.failedProviders.isEmpty { Label("某些词典来源暂不可用（" + result.failedProviders.joined(separator: "、") + "），已显示可用结果", systemImage: "exclamationmark.triangle").font(.caption) }
-                }
-                Section {
-                    HStack {
-                        VStack(alignment: .leading) { Text(model.token.surface).font(.title2.bold()); Text("标准词形：\(EnglishTokenizer.lemma(model.token.surface))").font(.caption).foregroundStyle(.secondary) }
-                        Spacer()
-                        Button("英语朗读", systemImage: "speaker.wave.2") { let utterance = AVSpeechUtterance(string: model.token.surface); utterance.voice = AVSpeechSynthesisVoice(language: "en-US"); speech.speak(utterance) }.labelStyle(.iconOnly)
-                    }
-                }
-                if model.depth < 3 {
-                    let phrases = EnglishPhraseRecognizer.phrases(around: model.token.surface, sentence: model.token.sentence)
-                    if !phrases.isEmpty {
-                        Section("语境短语") {
-                            ForEach(Array(phrases.prefix(3)), id: \.self) { phrase in
-                                Button(phrase) {
-                                    phraseSelection = model.phraseLookup(phrase)
-                                }
-                            }
-                            if let phraseError = model.phraseError { Text(phraseError).foregroundStyle(.red).accessibilityIdentifier("dictionary-phrase-error") }
-                        }
-                    }
-                }
-                if let result = model.result, !result.senses.isEmpty { DictionaryQuickMeaning(result: result) }
-                Section("句子语境") {
-                    if model.origin.kind == "dictionary" { Text(model.origin.title ?? "词典语境").font(.caption); Text(model.origin.evidence ?? "").font(.caption).foregroundStyle(.secondary) }
-                    DisclosureGroup("完整句子语境") { Text(model.token.sentence).textSelection(.enabled) }
-                }
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(model.result?.headword ?? EnglishTokenizer.lemma(model.token.surface)).font(.system(.title3, design: .serif).bold())
+                if let ipa = model.result?.usableSenses.compactMap(\.ipa).first { Text(ipa).font(.caption).foregroundStyle(.secondary).lineLimit(2) }
+                Spacer(minLength: 2)
+                Button { dismiss() } label: { Image(systemName: "xmark").font(.caption).frame(width: 32, height: 32) }.accessibilityLabel("关闭查词").accessibilityIdentifier("close-word")
             }
-            .scrollContentBackground(.hidden).background(sheetBackground)
-            .navigationTitle("查词").navigationBarTitleDisplayMode(.inline).toolbarBackground(sheetBackground, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar).toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    if let result = model.result {
-                        Button { showDetails = true } label: { Label("查看详细释义", systemImage: "book").labelStyle(.iconOnly) }
-                        .accessibilityLabel("查看详细释义")
-                        .disabled(result.senses.isEmpty)
-                    }
-                }
-                if !showDetails && phraseSelection == nil {
-                    ToolbarItem(placement: .confirmationAction) { Button("关闭") { dismiss() }.accessibilityIdentifier("close-word") }
-                }
-            }
-            .task { if let preferences = try? dependencies.preferencesRepository.load() { theme = preferences.readerTheme }; await model.begin() }
+            if model.loading && model.result?.usableSenses.isEmpty != false { ProgressView("查词中").accessibilityIdentifier("dictionary-loading") }
+            if let result = model.result { DictionaryQuickMeaning(result: result) }
+            if let error = model.error { Button("词典暂不可用，重试") { Task { await model.lookup() } }.font(.caption).accessibilityHint(error) }
+            if let error = model.vocabularyError { Text(error).font(.caption).foregroundStyle(.red) }
+            HStack {
+                if model.addition?.created == true {
+                    Button { model.undo() } label: { Label("撤销", systemImage: "checkmark.circle.fill") }.accessibilityIdentifier("undo-word")
+                } else if model.existing { Label("已加入", systemImage: "checkmark.circle").foregroundStyle(.secondary) }
+                else { Button("加入生词本", systemImage: "plus.circle") { model.add(explicit: true) }.accessibilityIdentifier("add-word") }
+                Spacer()
+                Button { showDetails = true } label: { Image(systemName: "arrow.up.right.circle.fill").font(.title2).frame(width: 44, height: 44) }
+                    .accessibilityLabel("查看详细释义").accessibilityIdentifier("dictionary-details")
+            }.font(.subheadline)
+        }.padding(16).frame(width: dynamicTypeSize.isAccessibilitySize ? 310 : 285)
+            .fixedSize(horizontal: false, vertical: true)
+            .task { if let prefs = try? dependencies.preferencesRepository.load() { theme = prefs.readerTheme }; await model.begin() }
             .onReceive(model.learning.$revision) { _ in model.refreshMembership() }
-        }.accessibilityHidden(showDetails || phraseSelection != nil)
-            .presentationDetents([.medium, .large], selection: $detent).presentationBackground(sheetBackground)
-            .preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
-            .sheet(item: $phraseSelection) { WordLookupSheet(model: $0) }
             .fullScreenCover(isPresented: $showDetails) {
                 NavigationStack {
-                    if let result = model.result {
-                        DictionaryDetailView(result: result, context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth, theme: theme, automaticAdditionAllowed: model.autoAdd, contextOrigin: model.origin)
-                            .toolbar { ToolbarItem(placement: .topBarLeading) { Button("查词") { showDetails = false } } }
-                    }
+                    DictionaryDetailView(result: model.result ?? DictionaryResult(headword: EnglishTokenizer.lemma(model.token.surface), senses: [], updatedAt: Date(), sourceURL: "", licenseURL: ""), context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth, theme: theme, automaticAdditionAllowed: model.autoAdd, contextOrigin: model.origin)
                 }.preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
             }
-            .onDisappear { speech.stopSpeaking(at: .immediate) }
     }
-    private var sheetBackground: Color { theme == "paper" ? Color(red: 0.97, green: 0.94, blue: 0.87) : theme == "dark" ? Color(white: 0.08) : theme == "light" ? .white : Color(uiColor: .systemGroupedBackground) }
 }
 /// A bounded reading aid. All original provider senses remain in the separate detail page.
 struct DictionaryQuickMeaning: View {
     let result: DictionaryResult
-    // Prefer available original Chinese senses for this Chinese reading aid, keeping context order.
-    // English-only results remain useful; the separate detail retains every provider sense.
-    private var quickSenses: [DictionarySense] {
-        let chinese = result.senses.filter { !$0.zh.isBlank }
-        return Array((chinese.isEmpty ? result.senses : chinese).prefix(2))
-    }
     var body: some View {
-        Section("可能含义 · 语境优先") {
-            if let ipa = result.senses.compactMap(\.ipa).first { Text(ipa).font(.subheadline.monospaced()).accessibilityIdentifier("dictionary-ipa-summary") }
-            ForEach(quickSenses) { sense in
-                VStack(alignment: .leading, spacing: 3) {
-                    if let pos = sense.partOfSpeech { Text(pos).font(.caption).foregroundStyle(.secondary) }
-                    Text(sense.zh.isEmpty ? sense.en : sense.zh).font(.body).lineLimit(2)
+        VStack(alignment: .leading, spacing: 8) {
+            if result.usableSenses.isEmpty { Text("暂无英中释义").font(.subheadline).foregroundStyle(.secondary) }
+            ForEach(Array(result.usableSenses.prefix(2))) { sense in
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    if let part = sense.partOfSpeech { Text(BilingualMeaningPolicy.partName(part)).font(.caption).foregroundStyle(.secondary) }
+                    Text(sense.zh).font(.subheadline).lineLimit(2)
                 }.accessibilityIdentifier("dictionary-quick-sense-" + sense.id)
             }
-            Text("已合并：" + Array(Set(result.senses.flatMap { $0.sources ?? ["CC-CEDICT"] })).sorted().joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).lineLimit(2).accessibilityIdentifier("dictionary-providers")
-            Text("共 \(result.senses.count) 条义项 · 完整释义见左上角词典").font(.caption).foregroundStyle(.secondary)
         }
     }
 }
+/// One bilingual content tree shared by Reader, saved vocabulary and recommendations.
 struct DictionaryResultContent: View {
     let result: DictionaryResult
-    private var parts: [String] { result.senses.reduce(into: []) { list, sense in let part = sense.partOfSpeech ?? "词性未注明"; if !list.contains(part) { list.append(part) } } }
+    var onExampleWord: ((EnglishToken, DictionarySense) -> Void)? = nil
+    private var senses: [DictionarySense] { result.usableSenses }
+    private var parts: [String] { senses.reduce(into: []) { values, sense in let part = sense.partOfSpeech ?? ""; if !values.contains(part) { values.append(part) } } }
     var body: some View {
-        Section("词典义项与来源") {
-            if let pronunciation = result.senses.compactMap(\.ipa).first { Text(pronunciation).font(.headline.monospaced()).accessibilityIdentifier("dictionary-ipa-summary") }
-            let providers = Array(Set(result.senses.flatMap { $0.sources ?? ["CC-CEDICT"] })).sorted()
-            if !providers.isEmpty { Text("已合并：" + providers.joined(separator: " · ")).font(.caption).accessibilityIdentifier("dictionary-providers") }
-            if result.senses.isEmpty { Text("暂无可验证的释义。可以继续阅读，或在生词本添加明确标记的个人释义。") }
-            ForEach(parts, id: \.self) { part in
-                Text(part).font(.title3.bold()).accessibilityAddTraits(.isHeader)
-                ForEach(result.senses.filter { ($0.partOfSpeech ?? "词性未注明") == part }) { sense in
-                VStack(alignment: .leading, spacing: 6) {
-                    if !sense.zh.isEmpty { Text(sense.zh).font(.headline) }
-                    else { Text("暂无可靠中文释义").font(.caption).foregroundStyle(.secondary) }
-                    if let pos = sense.partOfSpeech { Text(pos).font(.caption.bold()) }
-                    if let ipa = sense.ipa { Text(ipa).font(.body.monospaced()).accessibilityIdentifier("dictionary-ipa") }
-                    Text(sense.en)
-                    ForEach(sense.examples ?? [], id: \.self) { Text($0).italic() }
-                    if let synonyms = sense.synonyms, !synonyms.isEmpty { Text("同义词：" + synonyms.joined(separator: " · ")).font(.footnote) }
-                    if let antonyms = sense.antonyms, !antonyms.isEmpty { Text("反义词：" + antonyms.joined(separator: " · ")).font(.footnote) }
-                    if let forms = sense.forms, !forms.isEmpty { Text("词形原文：" + forms.joined(separator: " · ")).font(.footnote) }
-                    if let etymology = sense.etymology { Text("词源：" + etymology).font(.footnote) }
-                    Text((sense.sources ?? ["CC-CEDICT reverse index"]).joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
-                }.padding(.vertical, 4).accessibilityIdentifier("dictionary-full-sense-" + sense.id)
+        VStack(alignment: .leading, spacing: 24) {
+            if let ipa = senses.compactMap(\.ipa).first {
+                Text(ipa).font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("dictionary-ipa-summary")
+            }
+            if senses.isEmpty {
+                ContentUnavailableView("暂无英中释义", systemImage: "text.book.closed", description: Text("可以在生词本补充词性、中文释义和例句。"))
+            }
+            ForEach(Array(parts.enumerated()), id: \.element) { groupIndex, part in
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Text(String(UnicodeScalar(65 + groupIndex % 26)!)+".").foregroundStyle(.secondary)
+                        Text(BilingualMeaningPolicy.partName(part)).fontWeight(.medium)
+                    }.font(.title3).accessibilityAddTraits(.isHeader)
+                    ForEach(Array(senses.filter { ($0.partOfSpeech ?? "") == part }.enumerated()), id: \.element.id) { index, sense in
+                        HStack(alignment: .top, spacing: 12) {
+                            Text("\(index + 1)").font(.caption.weight(.medium)).frame(width: 24, height: 24).background(.quaternary, in: Circle()).accessibilityLabel("义项\(index + 1)")
+                            VStack(alignment: .leading, spacing: 10) {
+                                if let labels = sense.usageLabels, !labels.isEmpty { Text(labels.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
+                                Text(sense.zh).font(.system(.title3, design: .serif)).fixedSize(horizontal: false, vertical: true)
+                                ForEach(Array((sense.examples ?? []).enumerated()), id: \.offset) { exampleIndex, example in
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        if let onExampleWord {
+                                            InlineEnglishText(text: example, onWord: { onExampleWord($0, sense) })
+                                        } else { Text(example).font(.system(.body, design: .serif)) }
+                                        if let translations = sense.exampleTranslations, translations.indices.contains(exampleIndex), !translations[exampleIndex].isBlank {
+                                            Text(translations[exampleIndex]).foregroundStyle(.secondary)
+                                        }
+                                    }.padding(.leading, 8).padding(.vertical, 3)
+                                }
+                                if let forms = sense.forms, !forms.isEmpty { Text(forms.joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary) }
+                                if let phrases = sense.relatedPhrases, !phrases.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("短语与搭配").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                                        ForEach(phrases, id: \.self) { Text($0).font(.system(.body, design: .serif)) }
+                                    }.padding(.top, 8)
+                                }
+                                if let synonyms = sense.synonyms, !synonyms.isEmpty { Text("近义词  " + synonyms.joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary) }
+                                if let antonyms = sense.antonyms, !antonyms.isEmpty { Text("反义词  " + antonyms.joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary) }
+                                if let etymology = sense.etymology, !etymology.isBlank { DisclosureGroup("词源") { Text(etymology).font(.footnote) } }
+                                Text((sense.sources ?? ["CC-CEDICT · 待确认候选"]).joined(separator: " · "))
+                                    .font(.caption2).foregroundStyle(.secondary)
+                            }.frame(maxWidth: .infinity, alignment: .leading)
+                        }.accessibilityIdentifier("dictionary-full-sense-" + sense.id)
+                    }
                 }
             }
-            if result.cached { Label("本地缓存 · 可离线查看，可能不是最新版本", systemImage: "internaldrive").font(.caption) }
-            if !result.failedProviders.isEmpty { Label("部分来源不可用：" + result.failedProviders.joined(separator: "、") + "。已保留其他真实结果。", systemImage: "exclamationmark.triangle").font(.caption) }
-            if result.emptyProviders.contains("Free Dictionary API") { Text("Free Dictionary API 当前无可用结果（暂不可用或未收录此词）。其他可用来源仍可使用。").font(.caption).accessibilityIdentifier("dictionary-free-unavailable") }
-            Text("中文反向索引提供可能对应词。义项按当前语境排序，仍需结合原文判断；个人释义与词典原文分开保存。").font(.caption).foregroundStyle(.secondary)
-        }
+            let providers = Array(Set(senses.flatMap { $0.sources ?? ["CC-CEDICT"] })).sorted()
+            if !providers.isEmpty {
+                Text((providers.count > 1 ? "融合来源：" : "来源：") + providers.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("dictionary-providers")
+            }
+            if result.cached { Label("本地词典", systemImage: "internaldrive").font(.caption).foregroundStyle(.secondary) }
+            if !result.failedProviders.isEmpty { Label("部分词典暂不可用", systemImage: "wifi.exclamationmark").font(.caption).foregroundStyle(.secondary) }
+            if result.emptyProviders.contains("Free Dictionary API") { Text("Free Dictionary 当前不可用").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("dictionary-free-unavailable") }
+        }.frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 struct DictionaryDetailView: View {
@@ -396,88 +360,87 @@ struct DictionaryDetailView: View {
     var automaticAdditionAllowed = true
     var contextOrigin: VocabularyContextOrigin = .reader
     @EnvironmentObject private var dependencies: AppDependencies
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @State private var speech = AVSpeechSynthesizer()
     @State private var entry: VocabularyItem?
-    @State private var removeConfirmation = false
-    @State private var showingSynonyms = false
+    @State private var addition: VocabularyAddition?
     @State private var selection: WordLookupModel?
     @State private var error: String?
     var body: some View {
-        List {
-            Section { Text(result.headword).font(.largeTitle); Button("系统英语朗读") { let utterance = AVSpeechUtterance(string: result.headword); utterance.voice = AVSpeechSynthesisVoice(language: "en-US"); speech.speak(utterance) } }
-            Section("生词本") {
-                if entry != nil { Label("已在生词本", systemImage: "bookmark.fill"); if let meaning = entry?.meaning { Text("个人释义：" + meaning) }; Button("手动移除词条", role: .destructive) { removeConfirmation = true } }
-                else if articleID != nil { Button("加入生词本") { add() } }
-                if let error { Text(error).foregroundStyle(.red) }
-            }
-            let synonyms = Array(Set(result.senses.flatMap { $0.synonyms ?? [] })).filter { $0.lowercased() != result.headword.lowercased() }.sorted()
-            if !synonyms.isEmpty {
-                Section("同义词对照") {
-                    Button { showingSynonyms.toggle() } label: {
-                        Label("对照同义词（\(synonyms.count)）", systemImage: showingSynonyms ? "chevron.up" : "chevron.down")
-                    }.accessibilityIdentifier("dictionary-synonym-comparison").accessibilityValue(showingSynonyms ? "已展开" : "已收起")
-                    if showingSynonyms {
-                        Text("对照原始词典义项、词性和例句，判断当前语境中的差别。").font(.caption)
-                        ForEach(synonyms, id: \.self) { synonym in
-                            NavigationLink { DictionaryComparisonView(original: result, synonym: synonym, context: context, learning: learning, theme: theme) } label: { Text(result.headword + " / " + synonym) }
-                                .accessibilityIdentifier("dictionary-compare-" + synonym)
-                        }
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                HStack(alignment: .top) {
+                    Text(result.headword).font(.system(.largeTitle, design: .serif).weight(.semibold)).textSelection(.enabled)
+                    Spacer(minLength: 12)
+                    Button { speak() } label: { Image(systemName: "speaker.wave.2").frame(width: 44, height: 44) }.accessibilityLabel("系统英语朗读")
                 }
-            }
-            DictionaryResultContent(result: result)
-            Section("可点击的英文释义") {
-                ForEach(result.senses) { sense in
-                    let origin = VocabularyContextOrigin.dictionary(headword: result.headword, evidence: sense.line)
-                    english(sense.en, origin: origin); ForEach(sense.examples ?? [], id: \.self) { english($0, origin: origin) }
+                HStack {
+                    if entry != nil {
+                        Label("已加入生词本", systemImage: "checkmark.circle.fill").foregroundStyle(.secondary)
+                        Spacer()
+                        if addition?.created == true { Button("撤销本次加入", action: undo).accessibilityIdentifier("undo-word") }
+                    } else if articleID != nil { Button("加入生词本", systemImage: "plus") { add() }.buttonStyle(.bordered).accessibilityIdentifier("add-word") }
+                }.font(.subheadline)
+                if let error { Label(error, systemImage: "exclamationmark.circle").font(.footnote).foregroundStyle(.red) }
+                DictionaryResultContent(result: result, onExampleWord: lookup)
+                if !context.isBlank {
+                    DisclosureGroup(contextOrigin.kind == "reader" ? "遇见这个词的句子" : "查词语境") {
+                        InlineEnglishText(text: context, onWord: { lookupContext($0) }).padding(.top, 8)
+                    }.font(.subheadline)
                 }
+                DisclosureGroup("来源详情") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(result.usableSenses) { Text($0.line).font(.caption).textSelection(.enabled) }
+                        Text("更新于 " + result.updatedAt.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
+                        Text("Oxford：未配置").font(.caption).foregroundStyle(.secondary)
+                    }.padding(.top, 8)
+                }.font(.subheadline)
+            }.padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 24)
+        }.background(background.ignoresSafeArea())
+            .safeAreaInset(edge: .bottom) {
+                HStack(spacing: 20) {
+                    Button { dismiss() } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }.accessibilityLabel("返回查词")
+                    Spacer()
+                    Label(result.headword, systemImage: "book.closed").font(.headline).lineLimit(1)
+                    Spacer()
+                    Button { dismiss() } label: { Image(systemName: "xmark.circle.fill").frame(width: 44, height: 44) }.accessibilityLabel("关闭详细释义")
+                }.padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(reduceTransparency ? AnyShapeStyle(background) : AnyShapeStyle(.regularMaterial), in: Capsule())
+                    .overlay { Capsule().strokeBorder(.primary.opacity(0.08)) }.padding(.horizontal, 20).padding(.bottom, 8)
             }
-            Section(contextOrigin.kind == "reader" ? "当前文章语境（并非词典例句）" : "当前查词语境") { english(context) }
-            Section("数据来源") {
-                if let url = URL(string: result.sourceURL) { Link("词典数据来源", destination: url) }
-                if let url = URL(string: result.licenseURL) { Link("CC BY-SA 4.0 · 派生索引使用同一许可", destination: url) }
-                Text("数据版本：\(result.versions.isEmpty ? "CEDICT 2026-10-30" : result.versions.sorted { $0.key < $1.key }.map { "\($0.key) \($0.value)" }.joined(separator: " · "))；缓存：\(result.updatedAt.formatted())").font(.caption)
-                Text("原始义项")
-                ForEach(result.senses) { Text($0.line).font(.caption) }
-            }
-        }.scrollContentBackground(.hidden)
-            .background(theme == "paper" ? Color(red: 0.97, green: 0.94, blue: 0.87) : theme == "dark" ? Color(white: 0.08) : Color(uiColor: .systemGroupedBackground))
-            .navigationTitle("详细释义").navigationBarTitleDisplayMode(.inline).task { refresh() }.onReceive(learning.$revision) { _ in refresh() }
-            .accessibilityHidden(selection != nil)
-            .sheet(item: $selection) { selected in WordLookupSheet(model: selected) }
-            .alert("确认移除词条", isPresented: $removeConfirmation) {
-                Button("取消", role: .cancel) { }
-                Button("确认移除", role: .destructive) {
-                    do { if let entry { try learning.vocabulary.remove(entryID: entry.id, at: Date()); learning.changed() }; refresh() }
-                    catch { self.error = error.localizedDescription }
-                }
-            } message: { Text("复习日志保留，仅本次明确操作移除生词。") }
+            .toolbar(.hidden, for: .navigationBar)
+            .task { refresh() }.onReceive(learning.$revision) { _ in refresh() }
+            .popover(item: $selection) { WordLookupSheet(model: $0).presentationCompactAdaptation(.popover) }
             .onDisappear { speech.stopSpeaking(at: .immediate) }
     }
-    @ViewBuilder private func english(_ text: String, origin: VocabularyContextOrigin? = nil) -> some View {
-        if let articleID, !text.isEmpty, depth < 3 {
-            InlineEnglishText(text: text, onWord: { token in
-                do {
-                    let auto = try automaticAdditionAllowed && dependencies.preferencesRepository.load().autoAddOnWordTap
-                    let lookupOrigin = (origin ?? contextOrigin).withText(text)
-                    let model = WordLookupModel(token: token, articleID: articleID, autoAdd: auto, learning: learning, depth: depth + 1, origin: lookupOrigin)
-                    model.startAddition(); selection = model
-                } catch { self.error = error.localizedDescription }
-            })
-        } else {
-            Text(text)
-            if depth >= 3 { Text("已达本次查词深度上限；返回上一层后可继续查词。").font(.caption).foregroundStyle(.secondary) }
-        }
+    private var background: Color { theme == "paper" ? LexiDawnColor.paperWarm : theme == "dark" ? Color(red: 0.055, green: 0.065, blue: 0.09) : Color(uiColor: .systemBackground) }
+    private func speak() { let value = AVSpeechUtterance(string: result.headword); value.voice = AVSpeechSynthesisVoice(language: "en-US"); speech.speak(value) }
+    private func lookup(_ token: EnglishToken, _ sense: DictionarySense) {
+        open(token, origin: .dictionary(headword: result.headword, evidence: sense.line, text: (sense.examples ?? []).first { $0.contains(token.surface) }))
+    }
+    private func lookupContext(_ token: EnglishToken) { open(token, origin: contextOrigin.withText(context)) }
+    private func open(_ token: EnglishToken, origin: VocabularyContextOrigin) {
+        guard depth < 3, let articleID else { return }
+        let auto = (try? dependencies.preferencesRepository.load().autoAddOnWordTap) ?? false
+        let model = WordLookupModel(token: token, articleID: articleID, autoAdd: automaticAdditionAllowed && auto, learning: learning, depth: depth + 1, origin: origin)
+        model.startAddition(); selection = model
     }
     private func refresh() { do { entry = try learning.vocabulary.find(surface: result.headword) } catch { self.error = error.localizedDescription } }
     private func add() {
         guard let articleID else { return }
         do {
-            _ = try learning.vocabulary.add(token: EnglishToken(surface: result.headword, range: NSRange(location: 0, length: (result.headword as NSString).length), sentence: context), articleID: articleID, autoAdd: false, explicit: true, origin: contextOrigin, at: Date())
+            addition = try learning.vocabulary.add(token: EnglishToken(surface: result.headword, range: NSRange(location: 0, length: (result.headword as NSString).length), sentence: context), articleID: articleID, autoAdd: false, explicit: true, origin: contextOrigin, at: Date())
             learning.changed(); refresh(); error = nil
         } catch { self.error = error.localizedDescription }
     }
+    private func undo() {
+        guard let addition else { return }
+        do { try learning.vocabulary.undo(addition, at: Date()); self.addition = nil; learning.changed(); refresh(); error = nil }
+        catch { self.error = error.localizedDescription }
+    }
 }
+
 
 
 @MainActor final class DictionaryComparisonModel: ObservableObject {

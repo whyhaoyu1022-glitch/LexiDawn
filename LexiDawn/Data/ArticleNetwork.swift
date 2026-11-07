@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 actor ArticleFetchService {
     private let session: URLSession
@@ -71,7 +72,22 @@ enum OfficialArticleAPI {
     }
 }
 
-@MainActor final class ArticleDiscoveryService {
+struct DiscoveryProgress: Equatable {
+    enum Phase { case idle, running, completed, failed, cancelled }
+    var runID = UUID()
+    var phase = Phase.idle
+    var totalSources = 0
+    var processedSources = 0
+    var activeSourceIDs: [String] = []
+    var importedCount = 0
+    var duplicateCount = 0
+    var failedCount = 0
+    var fraction: Double { totalSources == 0 ? 0 : min(1, max(0, Double(processedSources) / Double(totalSources))) }
+}
+@MainActor final class ArticleDiscoveryService: ObservableObject {
+    @Published private(set) var progress = DiscoveryProgress()
+    func cancelRefresh() { operation?.cancel() }
+
     private let fetcher: ArticleFetchService
     private let content: ContentRepository
     private let sourceIDs: [String]
@@ -92,22 +108,35 @@ enum OfficialArticleAPI {
         guard !refreshing else { return 0 }
         refreshing = true; defer { refreshing = false }
         let ids = sourceIDs.filter(ArticleSourceRegistry.canAttempt)
+        progress = DiscoveryProgress(phase: .running, totalSources: ids.count)
         var total = 0, successes = 0, failures: [FullTextImportError] = []
         // At most three source pipelines run concurrently. One source cannot suppress another.
         try await withThrowingTaskGroup(of: Outcome.self) { group in
             var next = 0
             func enqueue(_ id: String) { group.addTask { @MainActor [self] in
-                try await refreshSource(id, force: force, at: now, onImport: onImport)
+                self.progress.activeSourceIDs.append(id)
+                do { return try await refreshSource(id, force: force, at: now, onImport: {
+                    self.progress.importedCount += 1; onImport?()
+                }) } catch {
+                    self.progress.phase = error is CancellationError ? .cancelled : .failed
+                    self.progress.activeSourceIDs.removeAll { $0 == id }
+                    throw error
+                }
             } }
             while next < min(3, ids.count) { enqueue(ids[next]); next += 1 }
             while let outcome = try await group.next() {
+                progress.processedSources += 1
+                progress.activeSourceIDs.removeAll { $0 == outcome.sourceID }
+                if outcome.error != nil { progress.failedCount += 1 }
                 total += outcome.count; if outcome.succeeded { successes += 1 }
                 if let error = outcome.error { failures.append(error) }
                 print("ARTICLE_SOURCE_RESULT sourceID=\(outcome.sourceID) imported=\(outcome.count) status=\(outcome.error?.rawValue ?? (outcome.succeeded ? "success" : "fresh-or-backoff"))")
                 if next < ids.count { enqueue(ids[next]); next += 1 }
             }
         }
-        if total == 0 && successes == 0, let error = failures.first { throw error }
+        progress.activeSourceIDs = []
+        if total == 0 && successes == 0, let error = failures.first { progress.phase = .failed; throw error }
+        progress.phase = .completed
         return total
     }
     private func refreshSource(_ id: String, force: Bool, at now: Date, onImport: (@MainActor () -> Void)?) async throws -> Outcome {
@@ -158,7 +187,7 @@ enum OfficialArticleAPI {
                 let item = FullTextArticleImport(sourceID: id, canonicalURL: candidate.url, title: candidate.title, author: ArticleSourceRegistry.name(id) + " contributors", publishedAt: createdAt,
                     rawContent: document.text, document: document, topics: id == "wikinews" ? ["新闻"] : ["知识"], rights: rights, completeDocument: true, expectedHash: nil, verifiedAt: now)
                 try Task.checkCancellation()
-                if try content.importFullText(item, at: now) { count += 1; onImport?() }
+                if try content.importFullText(item, at: now) { count += 1; onImport?() } else { progress.duplicateCount += 1 }
             } catch is CancellationError { throw CancellationError() }
             catch { failures += 1 }
         }
@@ -190,7 +219,7 @@ enum OfficialArticleAPI {
                 let item = FullTextArticleImport(sourceID: source.id, canonicalURL: result.canonicalURL, title: result.title, author: result.author, publishedAt: result.publishedAt,
                     rawContent: result.document.text, document: result.document, topics: source.topics, rights: rights, completeDocument: true, expectedHash: nil, verifiedAt: now)
                 try Task.checkCancellation()
-                if try content.importFullText(item, at: now) { count += 1; onImport?() }
+                if try content.importFullText(item, at: now) { count += 1; onImport?() } else { progress.duplicateCount += 1 }
             } catch is CancellationError { throw CancellationError() }
             catch { failures += 1 }
         }

@@ -48,19 +48,19 @@ struct VocabularyRecommendationView: View {
                     Button("继续今日任务", action: continueToday)
                 }
             } else {
-                Text("从你的本地全文发现较长词形和常见短语，再查询真实词典。打开详情不会自动加入，只有点击加入才保存。").font(.caption).foregroundStyle(.secondary)
-                if model.loading { ProgressView("正在查找有可靠词典资料的条目…").accessibilityIdentifier("recommendation-loading") }
+                if model.loading { ProgressView("正在寻找新的词汇…").accessibilityIdentifier("recommendation-loading") }
                 ForEach(model.items) { item in
-                    Section {
-                        Text(item.candidate.lemma).font(.title3.bold())
-                        if let ipa = item.result.senses.compactMap(\.ipa).first { Text(ipa).font(.caption.monospaced()) }
-                        Text(Array(Set(item.result.senses.compactMap(\.partOfSpeech))).sorted().joined(separator: " · ")).font(.caption)
-                        if let sense = item.result.senses.first { Text(sense.zh.isEmpty ? sense.en : sense.zh).lineLimit(3) }
-                        Text("推荐理由：来自 \(item.candidate.topic) 阅读的\(item.candidate.lemma.contains(" ") ? "短语" : "较长词形")，难度为规则估计。").font(.caption).foregroundStyle(.secondary)
-                        Text(item.candidate.sentence).font(.footnote).lineLimit(3)
-                        NavigationLink("查看详细释义") { DictionaryDetailView(result: item.result, context: item.candidate.sentence, learning: learning, articleID: item.candidate.articleID, automaticAdditionAllowed: false) }
-                        Button(model.saved.contains(item.id) ? "已加入生词本" : "加入生词本") { model.add(item, learning: learning) }.disabled(model.saved.contains(item.id)).accessibilityIdentifier("recommendation-add-" + item.id)
-                    }
+                    NavigationLink {
+                        DictionaryDetailView(result: item.result, context: item.candidate.sentence, learning: learning, articleID: item.candidate.articleID, automaticAdditionAllowed: false)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(item.candidate.lemma).font(.system(.title3, design: .serif).weight(.semibold))
+                            if let ipa = item.result.usableSenses.compactMap(\.ipa).first { Text(ipa).font(.caption).opacity(0.8) }
+                            if let sense = item.result.usableSenses.first { Text(sense.zh).font(.subheadline).lineLimit(2) }
+                            else { Text("暂无英中释义").font(.caption).opacity(0.8) }
+                        }.frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(.white).padding(18)
+                            .background(LinearGradient(colors: ReadingPalette.colors(topic: item.candidate.topic), startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 20))
+                    }.buttonStyle(.plain).listRowBackground(Color.clear).listRowSeparator(.hidden)
                 }
                 if model.items.isEmpty && !model.loading && model.error == nil { ContentUnavailableView("暂无新的推荐词条", systemImage: "text.magnifyingglass", description: Text("导入更多完整文章后重试；不会重复推荐已在生词本中的词。")) }
                 Button("重新寻找推荐") { retry += 1 }.disabled(model.loading)

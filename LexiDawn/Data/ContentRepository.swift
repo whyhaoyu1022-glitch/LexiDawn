@@ -269,3 +269,8 @@ struct URLSessionArticleClient: ArticleHTTPClient {
     }
 }
 
+
+/// Display-only normalization preserves stored provenance and article identity.
+enum ArticleTitlePresentation {
+    static func display(_ title: String) -> String { (try? ArticleHTMLExtractor.decodeEntities(title)) ?? title }
+}

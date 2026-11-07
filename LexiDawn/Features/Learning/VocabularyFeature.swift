@@ -167,100 +167,198 @@ struct VocabularyExportPicker: UIViewControllerRepresentable {
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) { finished(urls.first) }
     }
 }
+private struct VocabularyDraft: Codable {
+    let entryID: String
+    let base: String
+    let notes: String
+    let senses: [PersonalDictionarySense]
+}
+@MainActor final class VocabularyAnnotationModel: ObservableObject {
+    @Published var senses: [PersonalDictionarySense]
+    @Published var notes: String
+    @Published var allowed: Bool
+    @Published var state = ""
+    @Published var error: String?
+    private let item: VocabularyItem
+    private let learning: LearningServices
+    private var base: String
+    private var persistedSenses: [PersonalDictionarySense]
+    private var checkpoint: Task<Void, Never>?
+    private var ready = false
+    private var draftURL: URL {
+        URL.applicationSupportDirectory.appendingPathComponent("LexiDawn/annotation-drafts", isDirectory: true).appendingPathComponent(item.id + ".json")
+    }
+    private static func signature(_ notes: String, _ senses: [PersonalDictionarySense]) -> String {
+        let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
+        return fingerprint(notes + String(decoding: (try? encoder.encode(senses)) ?? Data(), as: UTF8.self))
+    }
+    init(item: VocabularyItem, learning: LearningServices) {
+        self.item = item; self.learning = learning
+        let initial = item.personalSenses ?? item.meaning.map { [PersonalDictionarySense(chinese: $0)] } ?? []
+        senses = initial; persistedSenses = initial; notes = item.notes ?? ""; allowed = item.reliableChineseKnown != true
+        base = Self.signature(item.notes ?? "", initial)
+        do {
+            if FileManager.default.fileExists(atPath: draftURL.path) {
+                let draft = try JSONDecoder().decode(VocabularyDraft.self, from: Data(contentsOf: draftURL))
+                if draft.entryID == item.id, draft.base == base { senses = draft.senses; notes = draft.notes; state = "已恢复未保存草稿" }
+                else { error = "发现与当前版本不同的草稿，已保留，请先核对当前内容。" }
+            }
+        } catch { self.error = "草稿读取失败：" + error.localizedDescription }
+        ready = true
+    }
+    func refreshPolicy() {
+        do { allowed = try learning.vocabulary.personalEditingAllowed(entryID: item.id) }
+        catch { allowed = false; self.error = error.localizedDescription }
+    }
+    func changed() {
+        guard ready else { return }; state = "尚未保存"
+        checkpoint?.cancel()
+        checkpoint = Task { [weak self] in
+            do { try await Task.sleep(for: .milliseconds(250)); try Task.checkCancellation(); self?.persistDraft() } catch { }
+        }
+    }
+    private func persistDraft() {
+        do {
+            try FileManager.default.createDirectory(at: draftURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try JSONEncoder().encode(VocabularyDraft(entryID: item.id, base: base, notes: notes, senses: senses)).write(to: draftURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        } catch { self.error = "草稿尚未保存：" + error.localizedDescription }
+    }
+    func flush() {
+        guard ready, !InputComposition.hasMarkedText else { persistDraft(); return }
+        checkpoint?.cancel()
+        guard Self.signature(notes, senses) != base else { return }
+        persistDraft()
+        do {
+            refreshPolicy()
+            // Separate transactions: a source-policy change must not prevent saving ordinary notes.
+            try learning.vocabulary.saveNotes(entryID: item.id, notes: notes, at: Date())
+            if allowed { try learning.vocabulary.savePersonalSenses(entryID: item.id, senses: senses, at: Date()) }
+            else if senses != persistedSenses {
+                state = "笔记已保存；个人释义草稿只读保留"; return
+            }
+            persistedSenses = senses; base = Self.signature(notes, senses); state = "已自动保存"; error = nil
+            if FileManager.default.fileExists(atPath: draftURL.path) { try FileManager.default.removeItem(at: draftURL) }
+            learning.changed()
+        } catch { state = "未保存"; self.error = error.localizedDescription }
+    }
+}
+@MainActor enum InputComposition {
+    static var hasMarkedText: Bool {
+        func marked(_ view: UIView) -> Bool {
+            if view.isFirstResponder, let input = view as? any UITextInput, input.markedTextRange != nil { return true }
+            return view.subviews.contains(where: marked)
+        }
+        return UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).contains(where: marked)
+    }
+}
 struct VocabularyDetailView: View {
     let item: VocabularyItem
     @ObservedObject var learning: LearningServices
-    @State private var meaning = ""
-    @State private var notes = ""
+    @StateObject private var annotation: VocabularyAnnotationModel
     @State private var result: DictionaryResult?
-    @State private var error: String?
-    @State private var saved = false
-    @State private var saveError: String?
     @State private var dictionaryError: String?
-    @State private var selectedMeaningSaved = false
-    @State private var selectedMeaningError: String?
+    @State private var removeConfirmation = false
     @State private var choosingMeaning = false
     @State private var chosenMeaningText: String?
-    @State private var removeConfirmation = false
-    @State private var source: ArticleLibraryItem?
-    @FocusState private var editing: Bool
+    @State private var selection: WordLookupModel?
+    @FocusState private var focusedField: String?
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dismiss) private var dismiss
+    init(item: VocabularyItem, learning: LearningServices) {
+        self.item = item; self.learning = learning
+        _annotation = StateObject(wrappedValue: VocabularyAnnotationModel(item: item, learning: learning))
+    }
     var body: some View {
-        Form {
-            Section { Text(item.lemma).font(.largeTitle.bold()); Text(item.surfaces.joined(separator: " · ")) }
-            Section("你的释义与笔记") {
-                TextField("个人中文释义（非词典原文）", text: $meaning).focused($editing).submitLabel(.done).onSubmit { editing = false }.accessibilityIdentifier("personal-meaning")
-                TextField("笔记", text: $notes, axis: .vertical).focused($editing).accessibilityIdentifier("vocabulary-notes")
-                if let saveError { Text(saveError).foregroundStyle(.red); Button("重试保存释义与笔记", action: save) }
-                if saved { Label("已保存", systemImage: "checkmark.circle") }
-                Text("来源没有可用中文对应词时，可填写自己的释义用于复习。个人内容与开放词典数据明确区分。").font(.caption).foregroundStyle(.secondary)
-            }
-            if let result {
-                Section("复习用义项") {
-                    if let selected = chosenMeaningText { Text("已确认：" + selected).font(.subheadline) }
-                    Text("可明确选择词典中的中文义项用于以后新题组。修改个人释义后改用个人释义；已保存题组保持原答案。").font(.caption).foregroundStyle(.secondary)
-                    if selectedMeaningSaved { Label("复习义项已保存", systemImage: "checkmark.circle") }
-                    Button { choosingMeaning.toggle() } label: { Label("选择词典中文义项", systemImage: choosingMeaning ? "chevron.up" : "chevron.down") }
-                        .accessibilityIdentifier("choose-review-meaning").accessibilityValue(choosingMeaning ? "已展开" : "已收起")
-                    if choosingMeaning {
-                        ForEach(result.senses.filter { !$0.zh.isEmpty }) { sense in
-                            Button(sense.zh) {
-                                do { try learning.vocabulary.confirmReviewMeaning(entryID: item.id, sourceSenseID: sense.id); selectedMeaningSaved = true; choosingMeaning = false; chosenMeaningText = sense.zh; selectedMeaningError = nil; learning.changed() }
-                                catch { selectedMeaningSaved = false; selectedMeaningError = error.localizedDescription }
-                            }.accessibilityIdentifier("review-meaning-" + sense.id)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 26) {
+                Text(item.lemma).font(.system(.largeTitle, design: .serif).weight(.semibold))
+                if item.surfaces != [item.lemma] { Text(item.surfaces.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
+                if let result { DictionaryResultContent(result: result, onExampleWord: { token, sense in lookupWord(token, origin: .dictionary(headword: item.lemma, evidence: sense.line, text: token.sentence)) }) }
+                else if dictionaryError == nil { ProgressView("正在查询英中释义…") }
+                if let dictionaryError { Text(dictionaryError).font(.footnote).foregroundStyle(.secondary); Button("重试词典") { Task { await lookup() } } }
+                if let result, !result.usableSenses.isEmpty {
+                    DisclosureGroup(isExpanded: $choosingMeaning) {
+                        ForEach(result.usableSenses) { sense in
+                            Button { choose(sense) } label: { VStack(alignment: .leading, spacing: 4) { Text(sense.zh); Text(BilingualMeaningPolicy.partName(sense.partOfSpeech)).font(.caption).foregroundStyle(.secondary) } }.accessibilityIdentifier("review-meaning-" + sense.id)
                         }
-                    }
-                    if let selectedMeaningError { Text(selectedMeaningError).foregroundStyle(.red) }
+                    } label: { Text(chosenMeaningText.map { "学习义项：" + $0 } ?? "选择学习义项") }.accessibilityIdentifier("choose-review-meaning")
                 }
-                DictionaryResultContent(result: result)
-                NavigationLink("详细词典") { DictionaryDetailView(result: result, context: item.contexts.first ?? "", learning: learning, articleID: item.sourceArticleID, contextOrigin: item.sourceContexts.first?.lookupOrigin ?? .reader) }
-            }
-            Section("来源上下文") {
-                if let source {
-                    if item.sourceContexts.first?.originKind == "dictionary" { Text("关联的阅读文章").font(.caption).foregroundStyle(.secondary) }
-                    Text(source.title).font(.headline); Text(source.source).font(.caption).foregroundStyle(.secondary)
-                    if let attribution = source.originalURL { Text(attribution).font(.caption).textSelection(.enabled) }
-                }
-                ForEach(item.sourceContexts) { context in
-                    VStack(alignment: .leading, spacing: 6) {
-                        if context.originKind == nil || context.originKind == "historical" { Text("历史上下文 · 来源类型未记录").font(.caption).foregroundStyle(.secondary) }
-                        Text(context.title).font(.headline)
-                        Text(context.attribution).font(.caption).foregroundStyle(.secondary)
-                        Text(context.sentence)
-                        if let attribution = context.originalURL { Text(attribution).font(.caption).textSelection(.enabled) }
+                if annotation.allowed {
+                    personalEditor
+                } else {
+                    Label("使用可靠英中释义", systemImage: "checkmark.shield").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("personal-meaning-disabled")
+                    if !annotation.senses.isEmpty {
+                        DisclosureGroup("以前的个人释义（只读）") { ForEach(annotation.senses) { Text($0.chinese).font(.footnote) } }
                     }
                 }
-            }
-            Section { Button("手动移除词条", role: .destructive) { removeConfirmation = true } }
-            if let error { Text(error).foregroundStyle(.red) }
-            if let dictionaryError { Text(dictionaryError).foregroundStyle(.red); Button("重试词典") { Task { await lookup() } } }
-        }.scrollDismissesKeyboard(.interactively).navigationTitle(item.lemma).navigationBarTitleDisplayMode(.inline)
-            .onChange(of: meaning) { _, _ in saved = false; selectedMeaningSaved = false }.onChange(of: notes) { _, _ in saved = false }
-            .toolbar {
-                // Keep the single save action reachable above the keyboard, including
-                // on SE where a Form row can be obscured by the input accessory.
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("保存", action: save)
-                        .accessibilityLabel("保存个人释义与笔记")
-                        .accessibilityIdentifier("save-vocabulary-annotation")
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("我的笔记").font(.headline)
+                    TextField("记录自己的理解", text: $annotation.notes, axis: .vertical).lineLimit(3...8).focused($focusedField, equals: "notes").accessibilityIdentifier("vocabulary-notes")
+                    if !annotation.state.isEmpty { Text(annotation.state).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("annotation-save-state") }
+                    if let error = annotation.error { Text(error).font(.caption).foregroundStyle(.red); Button("重试保存", action: annotation.flush) }
+                }.padding(16).background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 18))
+                if !item.sourceContexts.isEmpty {
+                    DisclosureGroup("遇见这个词的句子") {
+                        VStack(alignment: .leading, spacing: 18) {
+                            ForEach(Array(Set(item.sourceContexts.map(\.articleID))).sorted(), id: \.self) { articleID in
+                                let contexts = item.sourceContexts.filter { $0.articleID == articleID }
+                                if let first = contexts.first { Text(first.title).font(.caption.weight(.semibold)).foregroundStyle(.secondary) }
+                                ForEach(contexts) { context in InlineEnglishText(text: context.sentence, onWord: { lookupWord($0, origin: context.lookupOrigin.withText(context.sentence)) }) }
+                            }
+                        }.padding(.top, 12)
+                    }
                 }
-                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { editing = false } }
-            }
-            .task {
-                meaning = item.meaning ?? ""; notes = item.notes ?? ""; chosenMeaningText = item.reviewMeaningText
-                do { source = try learning.content.library().first { $0.id == item.sourceArticleID } } catch { self.error = error.localizedDescription }
-                await lookup()
-            }
+                Button("移出生词本", role: .destructive) { removeConfirmation = true }.font(.footnote).padding(.top, 10)
+            }.padding(24)
+        }.scrollDismissesKeyboard(.interactively).navigationTitle("词条").navigationBarTitleDisplayMode(.inline)
+            .onChange(of: annotation.senses) { _, _ in annotation.changed(); if focusedField == nil { annotation.flush() } }
+            .onChange(of: annotation.notes) { _, _ in annotation.changed() }
+            .onChange(of: focusedField) { _, value in if value == nil { annotation.flush() } }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidHideNotification)) { _ in annotation.flush() }
+            .onChange(of: scenePhase) { _, phase in if phase != .active { annotation.flush() } }
+            .onDisappear { annotation.flush() }
+            .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { focusedField = nil } } }
+            .task { chosenMeaningText = item.reviewMeaningText; annotation.refreshPolicy(); await lookup() }
+            .popover(item: $selection) { WordLookupSheet(model: $0).presentationCompactAdaptation(.popover) }
             .alert("确认移除词条", isPresented: $removeConfirmation) {
                 Button("取消", role: .cancel) { }
-                Button("确认移除", role: .destructive) { do { try learning.vocabulary.remove(entryID: item.id, at: Date()); learning.changed(); dismiss() } catch { self.error = error.localizedDescription } }
-            } message: { Text("仅由本次明确操作移除，复习状态和历史日志保留。") }
+                Button("确认移除", role: .destructive) { do { annotation.flush(); try learning.vocabulary.remove(entryID: item.id, at: Date()); learning.changed(); dismiss() } catch { annotation.error = error.localizedDescription } }
+            } message: { Text("历史学习和复习记录保留。") }
     }
-    private func save() {
-        saved = false; editing = false
-        do { try learning.vocabulary.annotate(entryID: item.id, meaning: meaning, notes: notes, at: Date()); chosenMeaningText = try learning.vocabulary.find(surface: item.lemma)?.reviewMeaningText; saved = true; saveError = nil; learning.changed() }
-        catch { saveError = error.localizedDescription }
+    private var personalEditor: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack { Text("个人英中词条").font(.headline); Spacer(); Button("添加义项", systemImage: "plus") { annotation.senses.append(PersonalDictionarySense()) }.font(.subheadline) }
+            Text("未找到可靠英中释义，可录入自己的词义。词性和中文确认后用于新复习，已有题目保持原答案。").font(.caption).foregroundStyle(.secondary)
+            ForEach($annotation.senses) { $sense in
+                VStack(alignment: .leading, spacing: 12) {
+                    Picker("词性", selection: $sense.partOfSpeech) { Text("待补充").tag(""); ForEach(BilingualMeaningPolicy.parts, id: \.self) { Text(BilingualMeaningPolicy.partName($0)).tag($0) } }
+                    TextField("中文释义", text: $sense.chinese, axis: .vertical).focused($focusedField, equals: sense.id + "zh").accessibilityIdentifier("personal-meaning")
+                    TextField("音标（可选）", text: $sense.ipa).focused($focusedField, equals: sense.id + "ipa")
+                    TextField("用法 / 语域（可选）", text: $sense.usage).focused($focusedField, equals: sense.id + "usage")
+                    TextField("词形变化（可选）", text: $sense.forms).focused($focusedField, equals: sense.id + "forms")
+                    TextField("搭配 / 短语（可选）", text: $sense.phrases).focused($focusedField, equals: sense.id + "phrases")
+                    ForEach($sense.examples) { $example in
+                        VStack(alignment: .leading, spacing: 8) {
+                            TextField("英文例句", text: $example.english, axis: .vertical).focused($focusedField, equals: example.id + "en").textInputAutocapitalization(.sentences)
+                            TextField("例句译文（可选）", text: $example.chinese, axis: .vertical).focused($focusedField, equals: example.id + "zh")
+                        }.padding(.leading, 12)
+                    }
+                    Button("添加例句", systemImage: "plus.circle") { sense.examples.append(PersonalDictionaryExample()) }
+                    Toggle("确认作为学习义项", isOn: $sense.confirmed).font(.subheadline)
+                }.textFieldStyle(.roundedBorder).padding(16).background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 18))
+            }
+        }
     }
-    private func lookup() async { do { result = try await learning.dictionary.lookup(item.lemma); dictionaryError = nil } catch { self.dictionaryError = error.localizedDescription } }
+    private func lookup() async {
+        do { result = try await learning.dictionary.lookup(item.lemma, context: item.contexts.first ?? ""); dictionaryError = nil; annotation.refreshPolicy() }
+        catch { dictionaryError = error.localizedDescription }
+    }
+    private func choose(_ sense: DictionarySense) {
+        do { try learning.vocabulary.confirmReviewMeaning(entryID: item.id, sourceSenseID: sense.id); chosenMeaningText = sense.zh; choosingMeaning = false; learning.changed() }
+        catch { annotation.error = error.localizedDescription }
+    }
+    private func lookupWord(_ token: EnglishToken, origin: VocabularyContextOrigin) {
+        guard let articleID = item.sourceArticleID else { return }
+        selection = WordLookupModel(token: token, articleID: articleID, autoAdd: false, learning: learning, depth: 1, origin: origin)
+    }
 }
-
