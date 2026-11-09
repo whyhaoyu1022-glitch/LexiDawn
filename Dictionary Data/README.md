@@ -1,38 +1,61 @@
 # Dictionary Data
 
-本目录用于在授权范围内保存、备份和重组词典数据文件。
+本目录保存经授权可使用的词典数据分块，以及拆分、合并和完整性校验工具。
 
-## 当前上传方式
+## 已上传的数据包
 
-原始二进制文件已拆成两个 ZIP 包，方便通过单文件大小有限的网页上传：
+两个 ZIP 包已从仓库根目录移动到本目录。请保留原文件名：
 
-- dic_data-package-001.zip
-- dic_data-package-002.zip
+- `dic_data-package-001.zip`
+- `dic_data-package-002.zip`
 
-请将**两个 ZIP 包都上传到本目录**，保持文件名不变。不要只上传其中一个，也不要在上传前解压。每个 ZIP 内都包含对应的二进制分块、manifest.json 和上传说明。
-
-> 当前仓库中的 ZIP 包需要由用户从原始文件下载后手动上传；仓库中尚未自动包含这两个包。
+每个 ZIP 包都包含对应的二进制分块、`manifest.json` 和上传说明。两个包都必须存在，才能完整恢复原始文件。
 
 ## 合并与校验
 
-需要 Python 3。将两个 ZIP 包放在本目录后，在本目录运行：
+需要 Python 3。进入本目录后运行：
 
-    python3 merge.py --output ../dic_data_restored
+```bash
+python3 merge.py --output ../dic_data_restored
+```
 
-merge.py 会从第一个 ZIP 包读取 manifest，检查每个包内的 manifest 是否一致，逐块验证大小和 SHA-256，再验证合并文件的总大小及 SHA-256。只有全部校验通过后才会生成目标文件。
+也可以从仓库根目录运行：
 
-本次原始文件信息：
+```bash
+python3 "Dictionary Data/merge.py" \
+  --package-dir "Dictionary Data" \
+  --output dic_data_restored
+```
 
-- 文件名：dic_data(1)
-- 原始大小：38,774,534 bytes
-- 原始 SHA-256：095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443
+合并程序会：
+1. 从第一个 ZIP 包读取清单；
+2. 检查每个 ZIP 包内的清单是否一致；
+3. 按清单顺序提取数据分块；
+4. 校验每个分块的字节数和 SHA-256；
+5. 校验合并文件的总字节数和 SHA-256；
+6. 只有全部校验通过后才生成最终文件。
 
-## 重新拆分其他文件
+如果任一分块缺失、包名不正确或校验失败，程序会报错并删除临时输出文件。
 
-    python3 split.py "/path/to/input-file" --output-dir .
+## 原始文件校验信息
 
-默认每个数据分块为 20,000,000 bytes。脚本会为每个分块创建一个独立 ZIP 包，且在每个 ZIP 中放入相同的 manifest.json。
+- 原始文件名：`dic_data(1)`
+- 原始大小：`38,774,534` bytes
+- 原始 SHA-256：`095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443`
 
-## 版权与访问
+## 工具
 
-本仓库设置为 Private。请仅在你持有的许可允许的范围内存储、备份和使用数据。私有仓库并不等于取得额外的复制、云端存储或再分发授权。不要向未获授权的人分享仓库、分块或合并后的文件。
+- `split.py`：将本地二进制文件拆分成 ZIP 数据包，并生成 SHA-256 清单。
+- `merge.py`：从 ZIP 数据包恢复原文件，并执行完整性校验。
+
+重新拆分其他文件的示例：
+
+```bash
+python3 split.py "/path/to/input-file" --output-dir .
+```
+
+默认每个原始分块为 20,000,000 bytes。
+
+## 访问与版权
+
+本仓库设置为 Private。请仅在你持有的许可允许的范围内存储、备份和使用数据。私有仓库并不自动授予额外的复制、云端存储或再分发权利。不要向未获授权的人分享仓库、数据包或恢复后的文件。
