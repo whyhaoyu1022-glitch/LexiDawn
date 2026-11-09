@@ -95,6 +95,7 @@ final class AppStartup: ObservableObject {
                         }
                     }
                 }
+                if scenario == "round3-extra-review", let learning = app.learning { try DictionaryEvidenceProvider.install(mode: "empty", learning: learning) }
                 return app
             }
             // Screenshot scenarios use the exact production RFC bytes and repositories, with a
@@ -137,6 +138,9 @@ final class AppStartup: ObservableObject {
                     }
                 }
                 if scenario == "gallery-review-save-failure" { dependencies.learning?.injectReviewSaveFailureForEvidence() }
+                if ["gallery-review", "gallery-review-save-failure", "gallery-round3-review", "gallery-missing-state"].contains(scenario), let learning = dependencies.learning {
+                    try DictionaryEvidenceProvider.install(mode: "empty", learning: learning)
+                }
                 return dependencies
             }
             if scenario == "round3-phrases", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
@@ -153,7 +157,7 @@ final class AppStartup: ObservableObject {
                 let dependencies = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
                 if let learning = dependencies.learning {
                     try learning.content.installBundledRFC(at: Date())
-                    if scenario == "round3-storage-note" { learning.injectVocabularySaveFailureForEvidence(allowSuccessfulWrites: 2, message: "明确故障注入：释义与笔记保存失败，草稿已保留。") }
+                    if scenario == "round3-storage-note" { learning.injectNoteSaveFailureForEvidence() }
                     else { learning.injectVocabularySaveFailureForEvidence() }
                 }
                 return dependencies

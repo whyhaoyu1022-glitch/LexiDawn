@@ -60,7 +60,7 @@ struct VocabularyRecommendationView: View {
                             else { Text("暂无英中释义").font(.caption).opacity(0.8) }
                         }.frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(.white).padding(18)
                             .background(LinearGradient(colors: ReadingPalette.colors(topic: item.candidate.topic), startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 20))
-                    }.buttonStyle(.plain).listRowBackground(Color.clear).listRowSeparator(.hidden)
+                    }.buttonStyle(.plain).accessibilityIdentifier("recommendation-detail-" + item.candidate.lemma).listRowBackground(Color.clear).listRowSeparator(.hidden)
                 }
                 if model.items.isEmpty && !model.loading && model.error == nil { ContentUnavailableView("暂无新的推荐词条", systemImage: "text.magnifyingglass", description: Text("导入更多完整文章后重试；不会重复推荐已在生词本中的词。")) }
                 Button("重新寻找推荐") { retry += 1 }.disabled(model.loading)

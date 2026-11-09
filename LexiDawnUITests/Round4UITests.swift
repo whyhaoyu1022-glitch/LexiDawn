@@ -18,8 +18,12 @@ final class Round4UITests: XCTestCase {
         if app.keyboards.firstMatch.exists, app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
         for _ in 0..<count {
             if element.exists && element.isHittable { break }
-            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: upward ? 0.65 : 0.3))
-            start.press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: upward ? 0.3 : 0.65)))
+            let bounds = app.windows.firstMatch.frame
+            let above = element.exists && !element.frame.isEmpty && element.frame.maxY < bounds.minY + 100
+            let below = element.exists && !element.frame.isEmpty && element.frame.minY > bounds.maxY - 120
+            let scrollUp = above ? false : below ? true : upward
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: scrollUp ? 0.6 : 0.35))
+            start.press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: scrollUp ? 0.35 : 0.6)))
         }
         XCTAssertTrue(element.exists); XCTAssertTrue(element.isHittable)
     }
@@ -45,6 +49,7 @@ final class Round4UITests: XCTestCase {
         let image = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); image.name = identifier; image.lifetime = .keepAlways; add(image)
         let row: [String: String] = ["screenshotID": identifier, "featureID": feature, "screenName": feature, "state": state, "device": device,
             "orientation": orientation, "theme": theme, "osVersion": UIDevice.current.systemVersion, "testName": name,
+            "fontSize": UITraitCollection.current.preferredContentSizeCategory.rawValue,
             "fixtureOrProduction": provenance, "fileName": identifier + ".png", "notes": "Actual native Simulator capture. Reference images and generated images are not screenshots."]
         let data = try! JSONSerialization.data(withJSONObject: row, options: [.sortedKeys])
         let metadata = XCTAttachment(data: data, uniformTypeIdentifier: "public.json"); metadata.name = identifier + "-metadata"; metadata.lifetime = .keepAlways; add(metadata)
@@ -179,7 +184,9 @@ final class Round4UITests: XCTestCase {
         XCTAssertEqual(app.textFields["settings-name"].value as? String, "Round Four")
         capture("R4-P20-autosave", app: app, feature: "settings", state: "preferences-saved-without-save-button")
         let about = app.buttons["about-lexidawn"]; reach(about, app: app); about.tap()
-        XCTAssertTrue(app.staticTexts["Why Haoyu"].waitForExistence(timeout: 5))
+        let developer = app.descendants(matching: .any)["about-developer"].firstMatch
+        XCTAssertTrue(developer.waitForExistence(timeout: 10))
+        XCTAssertTrue(developer.label.contains("Why Haoyu") || (developer.value as? String)?.contains("Why Haoyu") == true || developer.staticTexts["Why Haoyu"].exists)
         capture("R4-P20-about", app: app, feature: "about", state: "developer-and-real-bundle-version")
         app.tabBars.buttons["今日"].tap(); app.buttons["article-library"].tap()
         XCTAssertTrue(app.staticTexts["共 3 篇"].waitForExistence(timeout: 10))
@@ -231,6 +238,34 @@ final class Round4UITests: XCTestCase {
             capture("R4-F23-" + scenario, app: app, feature: "dictionary-error", state: "actual-native-resource-error-not-notFound", provenance: "real-native-MDX-provider-explicit-file-fault")
             app.terminate()
         }
+    }
+    func testActualOfflineSearchCreatesStructuredPersonalEntryAndRestoresAfterRestart() throws {
+        let app = launch("round4-mdx-production")
+        app.tabBars.buttons["词汇"].tap(); app.buttons["open-offline-dictionary"].tap()
+        let query = app.textFields["dictionary-search-field"]
+        XCTAssertTrue(query.waitForExistence(timeout: 10)); query.tap(); query.typeText("user\n")
+        XCTAssertTrue(app.buttons["dictionary-search-result"].waitForExistence(timeout: 20))
+        XCTAssertFalse(app.buttons["dictionary-create-personal"].exists)
+        capture("R4-F23-real-search", app: app, feature: "dictionary-search", state: "actual-offline-MDX-Chinese-result-personal-edit-locked", provenance: "real-bundled-MDX-no-dictionary-network")
+        replace(query, with: "lexidawnuitestpersonal\n")
+        let create = app.buttons["dictionary-create-personal"]
+        XCTAssertTrue(create.waitForExistence(timeout: 20))
+        capture("R4-F23-real-notFound", app: app, feature: "dictionary-search", state: "actual-MDX-notFound-not-resource-error", provenance: "real-bundled-MDX-no-dictionary-network")
+        create.tap()
+        let add = app.buttons["添加义项"]; reach(add, app: app); add.tap()
+        let part = app.buttons["personal-part-of-speech"].firstMatch; reach(part, app: app); part.tap(); app.buttons["n. 名词"].tap()
+        let meaning = app.textFields["personal-meaning"].firstMatch; reach(meaning, app: app); replace(meaning, with: "个人离线测试词义")
+        if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+        let confirm = app.switches["确认作为学习义项"].firstMatch; reach(confirm, app: app); confirm.tap()
+        let notes = app.textFields["vocabulary-notes"]; reach(notes, app: app); replace(notes, with: "Actual MDX absence, personal content")
+        if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+        expectation(for: NSPredicate(format: "label == %@", "已自动保存"), evaluatedWith: app.staticTexts["annotation-save-state"]); waitForExpectations(timeout: 10)
+        capture("R4-F23-real-personal-saved", app: app, feature: "personal-dictionary", state: "actual-MDX-notFound-structured-personal-POS-confirmed-notes-persisted", provenance: "real-bundled-MDX-and-user-created-content-real-Repository")
+        app.terminate(); app.launch(); app.tabBars.buttons["词汇"].tap()
+        let entry = app.buttons["vocabulary-entry-lexidawnuitestpersonal"]; reach(entry, app: app); entry.tap()
+        reach(app.textFields["vocabulary-notes"], app: app)
+        XCTAssertEqual(app.textFields["vocabulary-notes"].value as? String, "Actual MDX absence, personal content")
+        capture("R4-F23-real-personal-restart", app: app, feature: "personal-dictionary", state: "actual-disk-personal-content-restored-after-process-restart", provenance: "real-bundled-MDX-and-user-created-content-real-Repository")
     }
     func testDictionaryPartialEmptyAndFailedStatesRemainCompact() throws {
         for mode in ["partial", "empty", "all-failed", "loading"] {

@@ -49,6 +49,17 @@ import Combine
             try context.save()
         }
     }
+    func injectNoteSaveFailureForEvidence() {
+        let fault = EvidenceSaveFault(allowSuccessfulWrites: 0)
+        vocabulary = VocabularyRepository(context: ModelContext(writer.context.container)) { context in
+            if fault.remaining > 0, context.hasChanges,
+               try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).contains(where: { $0.notes?.contains("Second note draft") == true }) {
+                fault.remaining -= 1
+                throw LearningError.invalid("明确故障注入：释义与笔记保存失败，草稿已保留。")
+            }
+            try context.save()
+        }
+    }
     #endif
     func changed() { revision += 1 }
     func recommendationService(clock: @escaping @MainActor () -> Date = { Date() }) -> VocabularyRecommendationService {

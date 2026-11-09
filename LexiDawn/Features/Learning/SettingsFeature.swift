@@ -22,6 +22,7 @@ struct LearningSettingsView: View {
     @State private var timezonePolicy = "device"
     @State private var fixedTimezone = "Asia/Shanghai"
     @State private var message: String?
+    @State private var saveFailed = false
     @State private var loaded = false
     @State private var savedSignature = ""
     @State private var draftConflict: SettingsDraft?
@@ -46,7 +47,7 @@ struct LearningSettingsView: View {
                 }
                 Section("阅读与查词") {
                     Stepper("字号：\(Int(fontSize)) pt", value: $fontSize, in: 14...32)
-                    Slider(value: $lineSpacing, in: 1.2...2.0, step: 0.05) { Text("阅读行距") }
+                    Slider(value: $lineSpacing, in: 1.2...2.0, step: 0.05, onEditingChanged: { editing in if !editing { saveTask?.cancel(); save() } }).accessibilityLabel("阅读行距")
                     Text("行距：\(lineSpacing, specifier: "%.2f")")
                     Picker("阅读主题", selection: $theme) { Text("跟随系统").tag("system"); Text("浅色").tag("light"); Text("深色").tag("dark"); Text("暖纸色").tag("paper") }.accessibilityIdentifier("reader-theme")
                     Toggle("点击单词自动加入生词本", isOn: $autoAdd).accessibilityIdentifier("auto-add")
@@ -59,12 +60,12 @@ struct LearningSettingsView: View {
                 }
                 Section {
                     if let message { Text(message).font(.footnote).accessibilityIdentifier("settings-message") }
-                    if savedSignature != signature { Button("重试保存设置", action: save) }
+                    if saveFailed { Button("重试保存设置", action: save) }
                 }
                 Section("本地缓存") {
                     Button("清理未使用的文章缓存") { cacheKind = "article" }
                     Button("清理词典缓存") { cacheKind = "dictionary" }
-                    Text("阅读历史、未完成周期、生词、笔记、收藏、稍后阅读和个人导入都保留。仅清理未使用的官方文章；词典缓存可从开放来源重新取得。").font(.footnote)
+                    Text("阅读历史、未完成周期、生词、笔记、收藏、稍后阅读和个人导入都保留。词典缓存可从内置 MDX 重建。").font(.footnote)
                     if let message { Text(message).font(.footnote) }
                 }
                 Section("关于与许可") {
@@ -136,6 +137,7 @@ struct LearningSettingsView: View {
     private func scheduleSave() {
         guard loaded, draftConflict == nil, signature != savedSignature else { return }
         checkpoint()
+        saveFailed = false
         saveTask?.cancel()
         saveTask = Task {
             do { try await Task.sleep(for: .milliseconds(350)); try Task.checkCancellation(); save() } catch { }
@@ -152,9 +154,9 @@ struct LearningSettingsView: View {
             prefs.interestTopics = topics.components(separatedBy: CharacterSet(charactersIn: ",，")).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
             prefs.readerFontSize = fontSize; prefs.readerLineSpacing = lineSpacing; prefs.readerTheme = theme; prefs.autoAddOnWordTap = autoAdd
             prefs.dailyReviewLimit = dailyLimit; prefs.timeZonePolicy = timezonePolicy; prefs.fixedTimeZoneID = timezonePolicy == "fixed" ? fixedTimezone : nil
-            try dependencies.preferencesRepository.save(prefs); savedSignature = signature; learning.changed(); message = "已自动保存"
+            try dependencies.preferencesRepository.save(prefs); savedSignature = signature; learning.changed(); message = "已自动保存"; saveFailed = false
             if FileManager.default.fileExists(atPath: draftURL.path) { try FileManager.default.removeItem(at: draftURL) }
-        } catch { message = error.localizedDescription }
+        } catch { message = error.localizedDescription; saveFailed = true }
     }
 }
 

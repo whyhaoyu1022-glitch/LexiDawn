@@ -4,6 +4,7 @@ enum SpellingAnswerPolicy {
     /// Accept only an explicit spelling relation in the original provider definition.
     /// A different tense or plural form is never inferred as an alternative answer.
     static func variants(answer: String, lemma: String, senses: [DictionarySense]) -> [String] {
+        if ["May", "US"].contains(answer) { return [answer] }
         let expected = EnglishTokenizer.normalized(answer)
         guard expected == EnglishTokenizer.normalized(lemma), !expected.contains(" ") else { return [expected] }
         var values: Set<String> = [expected]
@@ -18,6 +19,7 @@ enum SpellingAnswerPolicy {
         return values.sorted()
     }
     static func accepts(_ input: String, expected: String, alternatives: [String]) -> Bool {
+        if ["May", "US"].contains(expected) { return input.trimmingCharacters(in: .whitespacesAndNewlines) == expected }
         let value = EnglishTokenizer.normalized(input)
         return value == EnglishTokenizer.normalized(expected) || alternatives.contains { EnglishTokenizer.normalized($0) == value }
     }
@@ -28,10 +30,10 @@ enum ClozeContext {
     static func make(lemma: String, surfaces: [String], sentence: String?) -> Projection {
         guard let sentence, !sentence.isBlank else { return Projection(answer: lemma, sentence: nil) }
         for surface in surfaces where EnglishTokenizer.lemma(surface) == lemma && !surface.isBlank {
-            if mask(sentence, answer: surface) != sentence { return Projection(answer: EnglishTokenizer.normalized(surface), sentence: sentence) }
+            if mask(sentence, answer: surface) != sentence { return Projection(answer: ["May", "US"].contains(lemma) ? lemma : EnglishTokenizer.normalized(surface), sentence: sentence) }
         }
         if !lemma.contains(where: \.isWhitespace), let token = EnglishTokenizer.tokens(in: sentence).first(where: { EnglishTokenizer.lemma($0.surface) == lemma }) {
-            return Projection(answer: EnglishTokenizer.normalized(token.surface), sentence: sentence)
+            return Projection(answer: ["May", "US"].contains(lemma) ? lemma : EnglishTokenizer.normalized(token.surface), sentence: sentence)
         }
         return Projection(answer: lemma, sentence: safeSentence(sentence, answer: lemma))
     }

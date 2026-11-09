@@ -3,7 +3,7 @@ set -euo pipefail
 TASK_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$TASK_ROOT"
 export LEXIDAWN_IPA_OUTPUT="${LEXIDAWN_IPA_OUTPUT:?Specify a dedicated output directory}"
-export LEXIDAWN_DEVICE_MIN_IOS="${LEXIDAWN_DEVICE_MIN_IOS:-26.0}"
+export LEXIDAWN_DEVICE_MIN_IOS="${LEXIDAWN_DEVICE_MIN_IOS:-27.0}"
 export LEXIDAWN_BUILD_NUMBER="${GITHUB_RUN_NUMBER:-1}"
 TASK_DERIVED="${RUNNER_TEMP:?}/lexidawn-device-derived"
 mkdir -p "$LEXIDAWN_IPA_OUTPUT"

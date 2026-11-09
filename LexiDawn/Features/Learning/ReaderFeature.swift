@@ -252,7 +252,7 @@ struct WordLookupSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text(model.result?.headword ?? EnglishTokenizer.lemma(model.token.surface)).font(.system(.title3, design: .serif).bold())
+                Text(model.result?.headword ?? EnglishTokenizer.lemma(model.token.surface)).font(.system(.title3, design: .serif).bold()).accessibilityIdentifier("dictionary-headword")
                 if let ipa = model.result?.senses.compactMap(\.ipa).first { Text(ipa).font(.caption).foregroundStyle(.secondary).lineLimit(2) }
                 Spacer(minLength: 2)
                 Button { dismiss() } label: { Image(systemName: "xmark").font(.caption).frame(width: 32, height: 32) }.accessibilityLabel("关闭查词").accessibilityIdentifier("close-word")
@@ -307,7 +307,10 @@ struct DictionaryResultContent: View {
     var onExampleWord: ((EnglishToken, DictionarySense) -> Void)? = nil
     private var senses: [DictionarySense] { result.usableSenses }
     private func group(_ sense: DictionarySense) -> String { sense.sectionKind.map { "section|" + $0 } ?? "part|" + (sense.partOfSpeech ?? "") }
-    private var parts: [String] { senses.reduce(into: []) { values, sense in let key = group(sense); if !values.contains(key) { values.append(key) } } }
+    private var parts: [String] {
+        let values: [String] = senses.reduce(into: []) { values, sense in let key = group(sense); if !values.contains(key) { values.append(key) } }
+        return values.filter { $0.hasPrefix("part|") } + values.filter { $0.hasPrefix("section|") }
+    }
     private func groupTitle(_ key: String) -> String {
         if key == "section|phrasalVerb" { return "短语动词" }
         if key == "section|idiom" { return "习语" }
@@ -407,7 +410,7 @@ struct DictionaryDetailView: View {
                         Label("已加入生词本", systemImage: "checkmark.circle.fill").foregroundStyle(.secondary)
                         Spacer()
                         if addition?.created == true { Button("撤销本次加入", action: undo).accessibilityIdentifier("undo-word") }
-                    } else if articleID != nil { Button("加入生词本", systemImage: "plus") { add() }.buttonStyle(.bordered).accessibilityIdentifier("add-word") }
+                    } else { Button("加入生词本", systemImage: "plus") { add() }.buttonStyle(.bordered).accessibilityIdentifier("add-word") }
                 }.font(.subheadline)
                 if let error { Label(error, systemImage: "exclamationmark.circle").font(.footnote).foregroundStyle(.red) }
                 DictionaryResultContent(result: result, onExampleWord: lookup)
@@ -472,9 +475,10 @@ struct DictionaryDetailView: View {
     }
     private func refresh() { do { entry = try learning.vocabulary.find(surface: result.headword) } catch { self.error = error.localizedDescription } }
     private func add() {
-        guard let articleID else { return }
         do {
-            addition = try learning.vocabulary.add(token: EnglishToken(surface: result.headword, range: NSRange(location: 0, length: (result.headword as NSString).length), sentence: context), articleID: articleID, autoAdd: false, explicit: true, origin: contextOrigin, at: Date())
+            if let articleID {
+                addition = try learning.vocabulary.add(token: EnglishToken(surface: result.headword, range: NSRange(location: 0, length: (result.headword as NSString).length), sentence: context), articleID: articleID, autoAdd: false, explicit: true, origin: contextOrigin, at: Date())
+            } else { addition = try learning.vocabulary.addDictionaryEntry(headword: result.headword, at: Date()) }
             learning.changed(); refresh(); error = nil
         } catch { self.error = error.localizedDescription }
     }

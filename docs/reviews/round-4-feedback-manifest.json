@@ -252,7 +252,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     },
     {
       "imageID": "R4-P02",
@@ -308,7 +308,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": true,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     },
     {
       "imageID": "R4-P03",
@@ -364,7 +364,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": true,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     },
     {
       "imageID": "R4-P04",
@@ -418,7 +418,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     },
     {
       "imageID": "R4-P05",
@@ -473,7 +473,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     },
     {
       "imageID": "R4-P06",
@@ -527,7 +527,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     },
     {
       "imageID": "R4-P07",
@@ -583,7 +583,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     },
     {
       "imageID": "R4-P08",
@@ -639,7 +639,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented",
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted",
       "supplementalContractIDs": [
         "R4-F22",
         "R4-F23",
@@ -705,7 +705,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented",
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted",
       "supplementalContractIDs": [
         "R4-F22",
         "R4-F23",
@@ -767,7 +767,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented",
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted",
       "supplementalContractIDs": [
         "R4-F22",
         "R4-F23",
@@ -828,7 +828,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": true,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     },
     {
       "imageID": "R4-P12",
@@ -882,7 +882,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": true,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     },
     {
       "imageID": "R4-P13",
@@ -937,7 +937,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     },
     {
       "imageID": "R4-P14",
@@ -992,7 +992,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": true,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     },
     {
       "imageID": "R4-P15",
@@ -1046,7 +1046,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented",
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted",
       "supplementalContractIDs": [
         "R4-F22",
         "R4-F23",
@@ -1063,7 +1063,7 @@
       "width": 1206,
       "height": 2622,
       "requirementID": "R4-F16",
-      "title": "可靠词典优先、CC-CEDICT最低、词性明确",
+      "title": "唯一内置 MDX 词典与离线查询",
       "priority": "P0",
       "ownerAnnotation": "“词性未注明”“未发现其他词典来源。而且这个CC开头的这个来源准确性太低了，这个来源的优先级最低，优先采用其他可靠词典上的词典。”",
       "visualMarks": "白圈圈住“已合并：CC-CEDICT”；白色整段批注覆盖不可靠中文义项。",
@@ -1076,31 +1076,30 @@
         "Features/Learning/VocabularyFeature.swift:lookup未传上下文"
       ],
       "implementationRequirements": [
-        "生产在线启用已存在，先核查实际请求、超时/负缓存、版本完整性和显示过滤；不得误写“从未接入”。",
-        "Wiktionary、已配置且真实可用Oxford、Free为可靠优先组；可信缓存同样算可靠英中来源；有可靠英中来源禁用个人释义，CC最低，不能因先到或有中文压住可靠Provider（F23）。",
-        "Vocabulary详情查询传真实sourceContext与词形；POS、IPA归属同一sense，单来源时不误称多源合并。",
-        "在线英语义不自动变可靠中文；只有英英而无中文视为无可用释义，可结构化补录个人英中义、查可靠中文或延期，弱候选不自动成为题目答案（F23/F24）。"
+        "生产仅接入内置 MDX。Wiktionary、Free、Oxford 在线、CC-CEDICT 及其他旧缓存均不能参与展示或新题，不支持用户导入词典。",
+        "MDX 缺失、损坏、解析失败、查询中、查无此词和仅英英有不同真实状态；任何情况不调用其他词典回退。",
+        "惰性后台初始化、Actor 并发、取消和有界缓存真实有效；派生缓存关联 MDX SHA/解析版本，旧请求不覆盖当前词。"
       ],
       "acceptanceCriteria": [
         {
           "id": "R4-A16-01",
-          "criterion": "need联网时看到实际返回的Wiktionary等来源、词性及义项；不能以mock截图证明生产链路成功。"
+          "criterion": "真实 App Bundle 含完整、校验通过的 MDX；need 等真实词条可离线返回词性、中文和实际音标，不用 fixture 证明生产解析。"
         },
         {
           "id": "R4-A16-02",
-          "criterion": "Free单独不可用时保留Wiktionary/可用缓存；全部失败与仅CC回退有真实不同状态。"
+          "criterion": "MDX 缺失、损坏、解析失败、查询中、查无此词和仅英英有不同真实状态；任何情况不调用其他词典回退。"
         },
         {
           "id": "R4-A16-03",
-          "criterion": "有中文的低可信候选不会无条件盖过更可靠的语境义；CC排最后且不自动进入复习金标。"
+          "criterion": "生产仅接入内置 MDX。Wiktionary、Free、Oxford 在线、CC-CEDICT 及其他旧缓存均不能参与展示或新题，不支持用户导入词典。"
         },
         {
           "id": "R4-A16-04",
-          "criterion": "词性/音标不从另一个无关sense借用；未知保持未知但不得漏掉Provider已给字段。"
+          "criterion": "MDX 词性、音标、例句对应原词条和义项；缺失字段不编造，不借用无关词性的数据。"
         },
         {
           "id": "R4-A16-05",
-          "criterion": "版本缓存和负缓存不把一次失败长期锁成“仅本地”；重试和跨词迟到结果不会污染当前词。"
+          "criterion": "惰性后台初始化、Actor 并发、取消和有界缓存真实有效；派生缓存关联 MDX SHA/解析版本，旧请求不覆盖当前词。"
         },
         {
           "id": "R4-A16-06",
@@ -1109,12 +1108,13 @@
       ],
       "testSuiteID": "R4-T16",
       "testScenarios": [
-        "多Provider返回顺序/可靠性/POS/部分空结果/缓存版本与语境排序金标。",
-        "同need从干净缓存、仅CC旧缓存、离线、单源失败到在线恢复；生产与fixture分标。"
+        "真实完整 MDX 的版本/索引/压缩块/内部链接/中文/多词性/大小写/并发/取消。",
+        "缺失/损坏 MDX 与不支持的编码/加密/压缩格式明确失败。",
+        "Release 排除旧网络 Provider；旧缓存不参与当前查询和新题。"
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented",
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted",
       "supplementalContractIDs": [
         "R4-F22",
         "R4-F23",
@@ -1175,7 +1175,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented",
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted",
       "supplementalContractIDs": [
         "R4-F22",
         "R4-F23",
@@ -1235,7 +1235,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     },
     {
       "imageID": "R4-P19",
@@ -1290,7 +1290,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": false,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     },
     {
       "imageID": "R4-P20",
@@ -1345,7 +1345,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": true,
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     },
     {
       "imageID": "R4-P21",
@@ -1407,7 +1407,7 @@
       ],
       "reviewedFullImage": true,
       "annotationZoomReviewed": true,
-      "implementationStatus": "planned-not-implemented",
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted",
       "supplementalContractIDs": [
         "R4-F22",
         "R4-F23",
@@ -1416,7 +1416,7 @@
       "currentNormativeSource": "docs/plans/round-4-dictionary-detail-addendum.md"
     }
   ],
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "supplementDate": "2026-11-07",
   "supplementBaselineMainCommit": "203483b83fe9581c436f551938050a4c8c00febe",
   "referenceImageCount": 3,
@@ -1530,7 +1530,7 @@
         },
         {
           "id": "R4-A22-12",
-          "criterion": "加载逐源补全且保留已有内容/滚动锚点；取消、换词与迟到结果不会把新词页面替换为旧词。"
+          "criterion": "单一 MDX 查询具有真实加载状态；取消、换词与迟到结果不把新词页面替换成旧词，加载失败保留明确错误。"
         }
       ],
       "testSuiteID": "R4-T22",
@@ -1539,11 +1539,11 @@
         "首中末原生UI、字体/主题/横屏/降低透明度/VoiceOver及底栏不遮挡。",
         "阅读器→完整页→嵌套查词→返回，以及生词与推荐复用、加入/失败/撤销。"
       ],
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     },
     {
       "requirementID": "R4-F23",
-      "title": "可靠词典融合与受约束的结构化用户释义",
+      "title": "唯一 MDX 来源与结构化个人词",
       "priority": "P0",
       "referenceImageIDs": [
         "R4-R01",
@@ -1558,35 +1558,36 @@
         "R4-F16"
       ],
       "implementationRequirements": [
-        "Wiktionary、已配置并真实可用的Oxford、Free Dictionary API组成优先可靠英中来源组；CC-CEDICT最低，不能以中文非空取代来源可靠性。",
-        "有任一可靠英中来源的有效中文释义才禁用个人释义；只有英英视为没有可用释义，允许结构化个人英中录入。笔记继续可用。",
-        "没有可靠英中释义（含只有英英）时允许多词性、多义项、中文释义、英文例句及译文、搭配等结构化自建；标注用户填写、版本和保存状态。",
-        "可靠英中来源出现时保留旧个人义只读历史与草稿，新题不再使用其覆盖可靠内容；Repository在保存和选义时强制策略，不能仅隐藏按钮。"
+        "两个 ZIP 经现成 merge.py 按 manifest 恢复；分块/最终大小及 SHA 严格校验，完整 MDX 实际进入 App 与 IPA，不只检查项目引用。",
+        "唯一词典为内置 MDX，运行时无需下载/联网/导入；不含 MDD、词典图片或在线音频依赖，系统发音支持开始/停止及不可用状态。",
+        "MDX 已有中文时 Domain/Service/Repository/UI 均禁止新增或改写个人义项；只有英英不锁定个人英中，独立笔记仍可保存。",
+        "只有 MDX 成功确认无词或无中文时才允许结构化个人词；旧外部 Provider 和未确认旧反向候选保留历史，不转换成 MDX 或新题答案。",
+        "个人多词性/义项/配对例句/备注/搭配/习语/版本历史/自动保存/故障恢复完整。"
       ],
       "acceptanceCriteria": [
         {
           "id": "R4-A23-01",
-          "criterion": "优先组真实来源为Wiktionary/已配置Oxford/Free；排序由词身份、语境、词性及可靠性决定，CC最低，网络返回先后不改变结论。"
+          "criterion": "两个 ZIP 经现成 merge.py 按 manifest 恢复；分块/最终大小及 SHA 严格校验，完整 MDX 实际进入 App 与 IPA，不只检查项目引用。"
         },
         {
           "id": "R4-A23-02",
-          "criterion": "Oxford未配置、无可用凭据或失败明确区分，其他来源正常工作；不得标成已引用牛津、假造内容或索取/提交密钥到仓库。"
+          "criterion": "唯一词典为内置 MDX，运行时无需下载/联网/导入；不含 MDD、词典图片或在线音频依赖，系统发音支持开始/停止及不可用状态。"
         },
         {
           "id": "R4-A23-03",
-          "criterion": "同概念同词性的跨源内容可融合并保留字段来源；不同词义、大小写、词源及例句译文不能错拼，无法确认一致时并列。"
+          "criterion": "MDX 的多义项、多词性、词形、大小写和内部链接保持原身份；中文相同不能作为同义合并依据，例句和译文不得错配。"
         },
         {
           "id": "R4-A23-04",
-          "criterion": "同词条有真实可靠英中释义或其可信缓存时禁用个人释义新建/编辑；只有英英视为无可用释义，不能锁定个人英中录入；笔记仍可自动保存。"
+          "criterion": "MDX 已有中文时 Domain/Service/Repository/UI 均禁止新增或改写个人义项；只有英英不锁定个人英中，独立笔记仍可保存。"
         },
         {
           "id": "R4-A23-05",
-          "criterion": "超时/429/离线不被当成查无此词；已知有可靠英中来源的词不会因清缓存、切页或失败临时恢复用户释义编辑。"
+          "criterion": "资源缺失、损坏和解析失败不冒充查无此词；已知 MDX 中文不会因清缓存、切页或失败而开放个人释义。"
         },
         {
           "id": "R4-A23-06",
-          "criterion": "可靠英中来源都明确无结果且无已知可靠条目时，允许结构化用户释义；仅CC候选不构成可靠英中来源锁定，用户确认后仍标个人来源。"
+          "criterion": "只有 MDX 成功确认无词或无中文时才允许结构化个人词；旧外部 Provider 和未确认旧反向候选保留历史，不转换成 MDX 或新题答案。"
         },
         {
           "id": "R4-A23-07",
@@ -1615,12 +1616,11 @@
       ],
       "testSuiteID": "R4-T23",
       "testScenarios": [
-        "可靠来源有/无、仅英文、部分失败、全失败、仅CC、已知可靠但过期不可用的策略矩阵。",
-        "多源同义/异义合并与POS、大小写、翻译对齐、顺序变化金标。",
-        "结构化多义项真实SwiftData事务/迁移/导出、自动保存失败和网络结果抢占写入竞态。",
-        "所有入口编辑禁用、个人笔记保留、Oxford未配置与Free单独失败原生UI。"
+        "两 ZIP/manifest/分块/整文件校验故障及真实 Bundle/IPA 检查。",
+        "MDX 中文锁定、英英/无词允许、引擎失败禁止、旧个人保留和笔记可编辑。",
+        "真实磁盘重开、义项删除/排序/版本、自动保存/IME/保存失败/草稿恢复。"
       ],
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     },
     {
       "requirementID": "R4-F24",
@@ -1649,7 +1649,7 @@
       "acceptanceCriteria": [
         {
           "id": "R4-A24-01",
-          "criterion": "从小浮层/完整详情选定同一义项加入生词后，连线与拼写引用相同的词身份、senseID、词性和语境证据，不回退仅本地CEDICT。"
+          "criterion": "小浮层、完整页、生词、连线和拼写共享同一 MDX/个人词身份、senseID、词性和来源版本，不回退旧外部缓存。"
         },
         {
           "id": "R4-A24-02",
@@ -1693,7 +1693,7 @@
         },
         {
           "id": "R4-A24-12",
-          "criterion": "可靠词和无可靠英中来源自建词各有完整原生E2E/重启/离线/失败证据；真实网络与fixture分标，不把截图内容预置为生产成功。"
+          "criterion": "MDX 可靠中文词和确认自建词各有完整原生 E2E/重启/离线/失败证据；真实 MDX、界面布局 fixture 与故障注入明确区分。"
         }
       ],
       "testSuiteID": "R4-T24",
@@ -1703,13 +1703,13 @@
         "新可靠结果替代个人新题资格、旧会话冻结、错误题隔离、旧库/重启/离线/失败事务。",
         "may/May、nod/nod off、users原句词形、相同中文歧义、Exactly-once评分与原门禁回归。"
       ],
-      "implementationStatus": "planned-not-implemented"
+      "implementationStatus": "in-progress-partially-native-verified-not-accepted"
     }
   ],
   "latestOwnerOverride": {
-    "date": "2026-11-07",
-    "instruction": "只使用英中释义；只有英英视为没有可用释义，不锁定个人词义；可靠英中才锁定。",
-    "policyVersion": "english-chinese-1",
-    "supersedes": "v1.1 reliable-English-only lock"
+    "date": "2026-11-09",
+    "instruction": "唯一词典为内置 MDX；使用 merge.py 验证恢复并内置完整单文件。无其他词典来源/网络回退/用户导入/MDD；系统 TTS。只有 MDX 成功确认没有中文或没有词条才开放结构化个人词，资源/解析故障不等于无词。",
+    "policyVersion": "bundled-mdx-personal-1",
+    "supersedes": "all historical multi-provider dictionary rules; article rules unchanged"
   }
 }

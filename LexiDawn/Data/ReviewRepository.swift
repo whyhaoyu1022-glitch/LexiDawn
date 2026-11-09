@@ -146,17 +146,17 @@ struct ReviewSessionView: Equatable {
     }
     private func view(_ session: ReviewSessionRecord, context: ModelContext) throws -> ReviewSessionView {
         let exercises = try validatedExercises(session, context: context)
-        func questions(_ stage: String) -> [ReviewQuestion] {
-            exercises.filter { $0.stage == stage }.sorted { $0.position < $1.position }.map { exercise in
+        func questions(_ stage: String) throws -> [ReviewQuestion] {
+            try exercises.filter { $0.stage == stage }.sorted { $0.position < $1.position }.map { exercise in
                 var question = ReviewQuestion(id: exercise.exerciseID, entryID: exercise.entryID, stage: stage, prompt: exercise.prompt, answer: exercise.answer, senseID: exercise.senseID, attempts: exercise.attempts, usedHint: exercise.usedHint, completed: exercise.completedAt != nil, context: exercise.sourceContext, acceptedAnswers: exercise.acceptedAnswers ?? [exercise.answer])
                 question.contextOrigin = exercise.contextOriginKind
                 question.revealed = exercise.revealed
                 question.maskSeed = exercise.maskSeed; question.maskIndices = exercise.maskIndices
-                question.meaning = exercise.meaningSnapshot.flatMap { try? JSONDecoder().decode(DictionarySense.self, from: $0) }
+                question.meaning = try exercise.meaningSnapshot.map { try JSONDecoder().decode(DictionarySense.self, from: $0) }
                 return question
             }
         }
-        return ReviewSessionView(id: session.sessionID, matching: questions("matching"), cloze: questions("cloze"), completedAt: session.completedAt, deferredCount: session.deferredEntryIDs?.count ?? 0, revision: session.revision)
+        return try ReviewSessionView(id: session.sessionID, matching: questions("matching"), cloze: questions("cloze"), completedAt: session.completedAt, deferredCount: session.deferredEntryIDs?.count ?? 0, revision: session.revision)
     }
     func deferredIDs(cycleID: UUID) throws -> Set<String> {
         try writer.read { context in Set(try context.fetch(FetchDescriptor<ReviewDeferralRecord>()).filter { $0.cycleID == cycleID.uuidString }.map(\.entryID)) }
@@ -195,15 +195,18 @@ struct ReviewSessionView: Equatable {
     }
     private func resolveMeaning(_ entry: VocabularyEntryRecord, context: ModelContext) throws -> DictionarySense {
         let caches = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
-        let official = caches.flatMap { (try? JSONDecoder().decode([DictionarySense].self, from: $0.payload)) ?? [] }.filter(BilingualMeaningPolicy.trusted)
+        let official = try caches.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) }.filter(BilingualMeaningPolicy.trusted)
         let known = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).contains { $0.lemma == entry.lemma && $0.mdxSHA == BundledMDXDictionaryProvider.sourceSHA && $0.reliableChineseKnown }
         let aliases = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.canonicalEntryID == entry.entryID }.map(\.entryID)
         let identities = Set([entry.entryID] + aliases)
         let source = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).filter { identities.contains($0.entryID) }.sorted { ($0.createdAt, $0.contextID) < ($1.createdAt, $1.contextID) }.first
-        if let data = entry.reviewMeaningSnapshotData, let selected = try? JSONDecoder().decode(DictionarySense.self, from: data), BilingualMeaningPolicy.trusted(selected) { return selected }
-        if let selected = official.first(where: { $0.id == entry.reviewMeaningSenseID }) { return selected }
+        if let data = entry.reviewMeaningSnapshotData {
+            let selected = try JSONDecoder().decode(DictionarySense.self, from: data)
+            if BilingualMeaningPolicy.trusted(selected), selected.partOfSpeech?.isBlank == false { return selected }
+        }
+        if let selected = official.first(where: { $0.id == entry.reviewMeaningSenseID }), selected.partOfSpeech?.isBlank == false { return selected }
         if let sense = DictionaryAggregator.rank(official, context: source?.sentence ?? "", surface: entry.lemma).first {
-            guard sense.partOfSpeech != nil else { throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "的词性尚不完整，请重试词典或本次延期。", canEditPersonal: false) }
+            guard sense.partOfSpeech?.isBlank == false else { throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "的词性尚不完整，请重试词典或本次延期。", canEditPersonal: false) }
             return sense
         }
         if known { throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "的可靠英中资料暂不可用，请重新查词或本次延期。", canEditPersonal: false) }
@@ -211,12 +214,9 @@ struct ReviewSessionView: Equatable {
         guard ["noChinese", "notFound"].contains(eligibility?.lookupStatus ?? "") else {
             throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "的 MDX 查询尚未成功，不能把资源或解析故障当作查无此词。", canEditPersonal: false)
         }
-        if let data = entry.reviewMeaningSnapshotData {
-            let selected = try JSONDecoder().decode(DictionarySense.self, from: data)
-            if selected.originKind == "personal", selected.partOfSpeech != nil, BilingualMeaningPolicy.hasChinese(selected.zh) { return selected }
-        }
         if let data = entry.personalSensesData {
             let senses = try JSONDecoder().decode([PersonalDictionarySense].self, from: data)
+            if let selected = senses.filter(\.reviewReady).first(where: { $0.dictionarySense(entryID: entry.entryID).id == entry.reviewMeaningSenseID }) { return selected.dictionarySense(entryID: entry.entryID) }
             if let sense = senses.first(where: \.reviewReady) { return sense.dictionarySense(entryID: entry.entryID) }
         }
         throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "还没有可复习的英中义项。请补充词性、中文并确认学习义项，或本次延期。", canEditPersonal: true)
@@ -247,6 +247,12 @@ struct ReviewSessionView: Equatable {
             if spellingIDs.contains(entry.entryID) {
                 var projection = ClozeContext.make(lemma: entry.lemma, surfaces: source.map { [$0.surface] + entry.surfaceForms } ?? entry.surfaceForms, sentence: source?.sentence)
                 var contextOrigin = source?.contextKind == "reader" ? "article" : source?.contextKind == "dictionary" ? "dictionary" : "saved-context"
+                if projection.sentence == nil, BilingualMeaningPolicy.trusted(sense) {
+                    for example in sense.examples ?? [] {
+                        let value = ClozeContext.make(lemma: entry.lemma, surfaces: entry.surfaceForms, sentence: example)
+                        if value.sentence != nil { projection = value; contextOrigin = "dictionary"; break }
+                    }
+                }
                 if projection.sentence == nil, let data = entry.personalSensesData {
                     let personal = try JSONDecoder().decode([PersonalDictionarySense].self, from: data)
                     let examples = personal.filter(\.reviewReady).flatMap(\.examples)
@@ -262,7 +268,7 @@ struct ReviewSessionView: Equatable {
                 question.contextOriginKind = contextOrigin
                 question.sourceContext = projection.sentence; question.meaningSnapshot = snapshot; question.maskIndices = mask.indices; question.maskVersion = SpellingMaskPolicy.version
                 question.maskSeed = seed; question.sourceArticleID = source?.articleID; question.sourceContextID = source?.contextID; question.sourceSurface = projection.answer
-                let originalSenses = providerCaches.filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }.flatMap { (try? JSONDecoder().decode([DictionarySense].self, from: $0.payload)) ?? [] }
+                let originalSenses = try providerCaches.filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) }
                 question.acceptedAnswers = SpellingAnswerPolicy.variants(answer: projection.answer, lemma: entry.lemma, senses: originalSenses)
                 context.insert(question)
             }
@@ -283,8 +289,33 @@ struct ReviewSessionView: Equatable {
     }
     private func extraEligible(in context: ModelContext, at now: Date) throws -> [VocabularyEntryRecord] {
         let latest = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>()).sorted { $0.createdAtUTC < $1.createdAtUTC }.last
-        let excluded = Set(try context.fetch(FetchDescriptor<ReviewDeferralRecord>()).filter { $0.cycleID == latest?.cycleID }.map(\.entryID))
+        let keys = Set([latest?.cycleID, latest.map { "extra-preflight|" + $0.cycleID }].compactMap { $0 })
+        let excluded = Set(try context.fetch(FetchDescriptor<ReviewDeferralRecord>()).filter { keys.contains($0.cycleID) }.map(\.entryID))
         return try eligible(in: context, at: now).filter { !excluded.contains($0.entryID) }
+    }
+    func remainingExtraPreparationCount(at now: Date) throws -> Int {
+        try writer.read { context in
+            try requireExtraAllowed(context: context, at: now)
+            return try extraEligible(in: context, at: now).count
+        }
+    }
+    /// A preflight deferral belongs to the current learning cycle. It neither
+    /// completes an exercise nor changes a word's FSRS state, and expires when a
+    /// later cycle becomes current. Persisting the receipt also survives restart.
+    func deferExtraEntry(issue: ReviewMeaningIssue, at now: Date) throws {
+        try writer.write {
+            let context = writer.context
+            try requireExtraAllowed(context: context, at: now)
+            guard try !context.fetch(FetchDescriptor<ReviewSessionRecord>()).contains(where: { $0.purpose == "extra" && $0.completedAt == nil }),
+                  try extraEligible(in: context, at: now).contains(where: { $0.entryID == issue.entryID }),
+                  let latest = try context.fetch(FetchDescriptor<DailyStudyCycleRecord>()).sorted(by: { $0.createdAtUTC < $1.createdAtUTC }).last,
+                  let cycleID = UUID(uuidString: latest.cycleID) else { throw LearningError.invalid("额外复习队列已变化，请重新检查。") }
+            let record = ReviewDeferralRecord(cycleID: cycleID, entryID: issue.entryID, reason: issue.reason, at: now)
+            record.cycleID = "extra-preflight|" + latest.cycleID
+            record.id = record.cycleID + "|" + issue.entryID
+            guard try !context.fetch(FetchDescriptor<ReviewDeferralRecord>()).contains(where: { $0.id == record.id }) else { return }
+            context.insert(record)
+        }
     }
     func prepareExtra(dailyLimit: Int, pairCount: Int, clozeCount: Int, at now: Date) async throws -> ReviewSessionView? {
         try writer.read { try requireExtraAllowed(context: $0, at: now) }

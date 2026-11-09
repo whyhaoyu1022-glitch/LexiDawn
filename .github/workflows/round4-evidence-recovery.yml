@@ -1,0 +1,47 @@
+name: Recover original Round 4 screenshot package
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  recover:
+    if: contains(github.event.head_commit.message, '[recover-r4-evidence]')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract existing native screenshots without changing pixels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, io, json, os, pathlib, urllib.request, zipfile
+          url = 'https://api.github.com/repos/' + os.environ['REPOSITORY'] + '/actions/artifacts/13692760176/zip'
+          request = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'})
+          with urllib.request.urlopen(request, timeout=120) as response:
+              data = response.read()
+          output = pathlib.Path('recovered-round4'); output.mkdir()
+          selected = []
+          with zipfile.ZipFile(io.BytesIO(data)) as archive:
+              assert archive.testzip() is None
+              for item in archive.infolist():
+                  path = pathlib.PurePosixPath(item.filename)
+                  if '..' in path.parts or path.is_absolute(): raise ValueError('Unsafe artifact path')
+                  if 'round4-evidence' in path.parts or ('round4-native' in path.parts and item.filename.endswith(('.txt', '.json'))):
+                      target = output / item.filename
+                      if item.is_dir(): target.mkdir(parents=True, exist_ok=True); continue
+                      target.parent.mkdir(parents=True, exist_ok=True); target.write_bytes(archive.read(item)); selected.append(item.filename)
+          manifest = next(output.rglob('manifest.json'))
+          rows = json.loads(manifest.read_text())['screenshots']
+          for row in rows:
+              image = manifest.parent / row['fileName']
+              assert hashlib.sha256(image.read_bytes()).hexdigest() == row['sha256']
+          print('Recovered', len(rows), 'byte-identical Simulator PNGs from run 42650595539; not a later commit acceptance result.')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LexiDawn-round4-native-originals-42650595539
+          path: recovered-round4
+          compression-level: 0
+          if-no-files-found: error

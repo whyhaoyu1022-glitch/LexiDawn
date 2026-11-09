@@ -41,7 +41,6 @@ struct ArticleLibraryView: View {
                 Toggle("最新导入优先", isOn: $newestFirst)
             }
             DiscoveryProgressCard(service: learning.discovery)
-            if loading { Button("停止本次发现") { learning.discovery.cancelRefresh() }.accessibilityIdentifier("cancel-article-discovery") }
             if let notice { Text(notice).font(.footnote).accessibilityIdentifier("article-notice") }
             if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red); Button(importFailed ? "重试导入" : "重新读取本地数据") { if importFailed { beginRefresh() } else { load() } } }.accessibilityIdentifier("article-import-error") }
             ForEach(visible) { item in
@@ -141,7 +140,11 @@ struct DiscoveryProgressCard: View {
                 if !service.progress.activeSourceIDs.isEmpty {
                     Text(service.progress.activeSourceIDs.map(ArticleSourceRegistry.name).joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("article-discovery-active-sources")
                 }
-                Text("新增\(service.progress.importedCount)篇 · 重复\(service.progress.duplicateCount)篇" + (service.progress.failedCount > 0 ? " · \(service.progress.failedCount)个来源未完成" : "")).font(.caption).foregroundStyle(.secondary)
+                ForEach(service.progress.activeSourceIDs, id: \.self) { id in
+                    if let stage = service.progress.stagesBySource[id] { Text(ArticleSourceRegistry.name(id) + " · " + stage).font(.caption).foregroundStyle(.secondary) }
+                }
+                Text("新增\(service.progress.importedCount)篇 · 重复\(service.progress.duplicateCount)篇 · 未导入\(service.progress.failedArticleCount)篇" + (service.progress.failedCount > 0 ? " · \(service.progress.failedCount)个来源未完成" : "")).font(.caption).foregroundStyle(.secondary)
+                if service.progress.phase == .running { Button("停止本次发现") { service.cancelRefresh() }.accessibilityIdentifier("cancel-article-discovery") }
             }.padding(.vertical, 8)
         }
     }

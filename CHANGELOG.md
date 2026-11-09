@@ -1,3 +1,11 @@
+## 2026-11-09 · 第二轮原生证据与当前实现
+
+直接 main：`d186c9f29e84c6ec91babdc624830c04fe4f7929` 的 [42650595539](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539) 全目标编译成功，34 项核心测试（12 真实 MDX/边界 + 22 Round4）全部通过，包含真实 Round3 磁盘升级。10 个原生 UI 方法中 8 通过、2 失败；42 张真实 PNG 已导出，尚待下载和逐图检查。整体 CI 为 failure，不能称 Round4 完成。
+
+继续实现原生离线词典搜索、无虚构文章的独立词条、个人修订/删除历史与真实磁盘重开、短语 IPA 归属、May 拼写大小写、额外复习按词延期、三入口共享发现进度/阶段及明确停止、自动保存失败恢复。旧 UI 步骤按新交互迁移，保存/恢复/失败/FSRS 断言保留。新修改尚待完整 CI；源码计数为 227 单元、60 UI，不代表已执行数量。
+
+唯一词典为 App 内置 MDX；原生 TTS，无 MDD、词典图片/在线音频、其他 Provider 或用户词典导入。只有 MDX 成功无中文/无词时允许结构化个人词。144 项/24 测试族及完整截图、Release/IPA 与 iOS27 真机尚未全部验收。[持续更新交付报告](docs/reviews/round-4-final-delivery.md)。
+
 ## 2026-11-09 · 首轮实际原生验证与继续整改
 
 main 5d54f21 的 Actions 42647936727：全部目标 build-for-testing 成功；真实 Debug Simulator App 的 BundledDictionary.mdx 已检查为 38,774,534 字节及指定 SHA。12 个 MDXDictionaryTests 全通过；Round4Tests 22 个方法中 1 个磁盘迁移方法产生4个失败断言。整体为 failure，无 UI/Release/IPA 通过结论。证据见 artifacts/round-4/ci-42647936727.json。

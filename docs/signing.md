@@ -1,14 +1,16 @@
 # LexiDawn 未签名 IPA 与 AltServer 真机安装
 
-本次由负责人明确授权仅导出未签名 IPA，不重跑全量 XCTest/XCUITest。未签名包不能直接点开安装；AltServer 会在你的电脑上使用你自己的 Apple 账户签名，再安装到手机。项目和 Actions 不保存你的账户、密码、证书或设备 UDID。
+Round 4 要求完成完整测试并导出未签名 IPA；打包与测试证据分别报告。未签名包不能直接点开安装；AltServer 会在你的电脑上使用你自己的 Apple 账户签名，再安装到手机。项目和 Actions 不保存你的账户、密码、证书或设备 UDID。
 
 ## 打包配置
 
 - 显示名称：`LexiDawn`，Bundle ID：`com.lexidawn.app`，版本：`0.1.0`；build 使用本次打包 workflow 的 run number。
-- 真机 `iphoneos` / `arm64` / Release；不是模拟器 `.app`。本次包最低 iOS 26.0，手机必须是 iOS 26.0 或更高；项目原规格 iOS27 目标保留，最低版本只在打包命令覆盖，编译器负责检查低版本 API 可用性。
+- 真机 `iphoneos` / `arm64` / Release；不是模拟器 `.app`。当前产品及打包最低 iOS 27.0。CI 的 iOS 26.5 仅为兼容验证；Xcode 26.6/SDK26.5 构建不等于 iOS27 真机验收。此前 iOS26.0 IPA 属于历史产物，不适用于当前包。
 - `LexiDawn/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png`：不透明1024×1024方形源图，使用Xcode资源编译生成各尺寸。不烘焙圆角、不加文字。原概念图在仓库中已截断，见 `assets/AppIcon-design.md`。
 - 不带 provisioning profile、证书或代码签名；若链接器产生ad-hoc签名，只在暂存副本移除。打包校验实际Info.plist、arm64/iOS Mach-O、图标、无测试包、ZIP CRC和SHA256；`build-manifest.json`明确signed=false、installedOnDevice=false、testsRerun=false。
 - `[ipa-only]`提交只触发 `Unsigned iPhone IPA` 打包任务；原全量CI的构建关卡在此标记下跳过，其余完整测试配置保持。手动打包也可在Actions选择该workflow的Run workflow。
+
+构建必须实际验证 App/IPA 中的完整 BundledDictionary.mdx 与指定 SHA，禁止仅打入分块 ZIP。成功 iOS CI 会触发同一提交的未签名真机 Release 打包，失败不会宣称产物可用。
 
 ## 电脑准备
 
@@ -45,7 +47,7 @@ macOS：下载后把AltServer.app拖入Applications并运行，顶部菜单栏�
 
 - **找不到设备/AltServer**：手机解锁、两端信任、换可传输数据的线，确认Finder/iTunes看得到设备；使用USB排除Wi-Fi隔离。
 - **无法验证App/开发者不受信任**：检查VPN与设备管理和开发者模式，保持手机联网；不要尝试直接安装未签名IPA。
-- **系统版本不符**：本包最低iOS26.0。低于该版本不能只改IPA的MinimumOSVersion文本绕过；需要重新进行兼容构建。
+- **系统版本不符**：当前包最低 iOS27.0。低于该版本不能只改IPA的MinimumOSVersion文本绕过；需要重新进行兼容构建。
 - **免费账户App名额/证书限制**：按AltServer显示的真实错误处理；要移除其他App时先备份其数据，不能为了安装词光随意删数据。
 - **7天后打不开**：用同一账户刷新/覆盖重签，保留已有App，不先卸载。
 - **Windows新系统安装后闪退**：先更新官方AltServer；官方Windows1.7.4包含iOS26.4签名相关修复。词光自身崩溃则保留设备系统版本、机型和崩溃日志再定位。

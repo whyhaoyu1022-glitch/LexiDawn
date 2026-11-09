@@ -9,6 +9,7 @@ struct VocabularyListView: View {
     @State private var filter = "all"
     @State private var error: String?
     @State private var removing: VocabularyItem?
+    @State private var dictionarySearch = false
     @State private var status: VocabularyStatusFilter = .all
     @State private var sort: VocabularySort = .added
     @State private var now = Date()
@@ -48,7 +49,11 @@ struct VocabularyListView: View {
             }.searchable(text: $search, prompt: "搜索词形、lemma 或已缓存中文释义")
                 .navigationTitle("生词本").task { load() }.onReceive(learning.$revision) { _ in load() }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in load() }
-                .toolbar { Menu("导出生词", systemImage: "square.and.arrow.up") { Button("导出 JSON（完整学习数据）") { prepareExport(.json) }; Button("导出 CSV") { prepareExport(.csv) } }.accessibilityIdentifier("vocabulary-export") }
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) { Button("离线词典", systemImage: "book.closed") { dictionarySearch = true }.accessibilityIdentifier("open-offline-dictionary") }
+                    ToolbarItem(placement: .topBarTrailing) { Menu("导出生词", systemImage: "square.and.arrow.up") { Button("导出 JSON（完整学习数据）") { prepareExport(.json) }; Button("导出 CSV") { prepareExport(.csv) } }.accessibilityIdentifier("vocabulary-export") }
+                }
+                .sheet(isPresented: $dictionarySearch) { DictionarySearchView(learning: learning) }
                 .sheet(item: $exports.presentation, onDismiss: exports.presentationDidDismiss) { request in
                     VocabularyExportPicker(file: request.file, delegate: request.delegate)
                         .presentationDetents([.large]).interactiveDismissDisabled()
@@ -273,6 +278,8 @@ struct VocabularyDetailView: View {
     let item: VocabularyItem
     @ObservedObject var learning: LearningServices
     @StateObject private var annotation: VocabularyAnnotationModel
+    @EnvironmentObject private var dependencies: AppDependencies
+    @State private var theme = "system"
     @StateObject private var speech = SystemPronunciation()
     @State private var result: DictionaryResult?
     @State private var dictionaryError: String?
@@ -302,6 +309,7 @@ struct VocabularyDetailView: View {
                 if let result, !result.usableSenses.isEmpty { DictionaryResultContent(result: result, onExampleWord: { token, sense in lookupWord(token, origin: .dictionary(headword: item.lemma, evidence: sense.line, text: token.sentence)) }) }
                 else if result != nil { Label("暂无可靠英中释义，可在下方补充。", systemImage: "text.book.closed").font(.subheadline).foregroundStyle(.secondary) }
                 else if dictionaryError == nil { ProgressView("正在查询英中释义…") }
+                if result == nil, let cacheError = item.dictionaryCacheError { Text(cacheError).font(.caption).foregroundStyle(.secondary) }
                 if let dictionaryError { Text(dictionaryError).font(.footnote).foregroundStyle(.secondary); Button("重试词典") { Task { await lookup() } } }
                 if let result, !result.usableSenses.isEmpty {
                     DisclosureGroup(isExpanded: $choosingMeaning) {
@@ -337,7 +345,7 @@ struct VocabularyDetailView: View {
                             ForEach(Array(Set(item.sourceContexts.map(\.articleID))).sorted(), id: \.self) { articleID in
                                 let contexts = item.sourceContexts.filter { $0.articleID == articleID }
                                 if let first = contexts.first { Text(first.title).font(.caption.weight(.semibold)).foregroundStyle(.secondary) }
-                                ForEach(contexts) { context in InlineEnglishText(text: context.sentence, onWord: { lookupWord($0, origin: context.lookupOrigin.withText(context.sentence)) }) }
+                                ForEach(uniqueContexts(contexts)) { context in InlineEnglishText(text: context.sentence, onWord: { lookupWord($0, origin: context.lookupOrigin.withText(context.sentence)) }) }
                             }
                         }.padding(.top, 12)
                     }
@@ -351,7 +359,9 @@ struct VocabularyDetailView: View {
                 }
                 Button("移出生词本", role: .destructive) { removeConfirmation = true }.font(.footnote).padding(.top, 10)
             }.padding(24)
-        }.scrollDismissesKeyboard(.interactively).navigationTitle("词条").navigationBarTitleDisplayMode(.inline)
+        }.background(theme == "paper" ? LexiDawnColor.paperWarm : Color(uiColor: .systemBackground))
+            .preferredColorScheme(theme == "dark" ? .dark : ["paper", "light"].contains(theme) ? .light : nil)
+            .scrollDismissesKeyboard(.interactively).navigationTitle("词条").navigationBarTitleDisplayMode(.inline)
             .onChange(of: annotation.senses) { _, _ in annotation.changed(); if focusedField == nil { annotation.flush() } }
             .onChange(of: annotation.notes) { _, _ in annotation.changed() }
             .onChange(of: focusedField) { _, value in if value == nil { annotation.flush() } }
@@ -359,12 +369,19 @@ struct VocabularyDetailView: View {
             .onChange(of: scenePhase) { _, phase in if phase != .active { annotation.flush() } }
             .onDisappear { annotation.flush(); speech.stop() }
             .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { focusedField = nil } } }
-            .task { chosenMeaningText = item.reviewMeaningText; annotation.refreshPolicy(); await lookup() }
+            .task {
+                do { theme = try dependencies.preferencesRepository.load().readerTheme } catch { annotation.error = error.localizedDescription }
+                chosenMeaningText = item.reviewMeaningText; annotation.refreshPolicy(); await lookup()
+            }
             .popover(item: $selection) { WordLookupSheet(model: $0).presentationCompactAdaptation(.popover) }
             .alert("确认移除词条", isPresented: $removeConfirmation) {
                 Button("取消", role: .cancel) { }
                 Button("确认移除", role: .destructive) { do { annotation.flush(); try learning.vocabulary.remove(entryID: item.id, at: Date()); learning.changed(); dismiss() } catch { annotation.error = error.localizedDescription } }
             } message: { Text("历史学习和复习记录保留。") }
+    }
+    private func uniqueContexts(_ contexts: [VocabularyContextItem]) -> [VocabularyContextItem] {
+        var seen = Set<String>()
+        return contexts.filter { seen.insert(($0.originKind ?? "historical") + "|" + $0.sentence).inserted }
     }
     private var personalEditor: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -387,7 +404,7 @@ struct VocabularyDetailView: View {
     }
     private func lookup() async {
         do { result = try await learning.dictionary.lookup(item.lemma, context: item.contexts.first ?? ""); dictionaryError = nil; annotation.refreshPolicy() }
-        catch { dictionaryError = error.localizedDescription }
+        catch { result = nil; dictionaryError = error.localizedDescription; annotation.refreshPolicy() }
     }
     private func choose(_ sense: DictionarySense) {
         do { try learning.vocabulary.confirmReviewMeaning(entryID: item.id, sourceSenseID: sense.id); chosenMeaningText = sense.zh; choosingMeaning = false; learning.changed() }

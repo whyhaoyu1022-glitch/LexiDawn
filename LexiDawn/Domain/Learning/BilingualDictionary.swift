@@ -6,7 +6,7 @@ enum MDXDefinitionAvailability: String, Codable, Sendable {
 /// Owner 2026-11-07: English-to-Chinese only. English glosses are parser metadata,
 /// not a usable definition and never a reason to disable personal Chinese senses.
 enum BilingualMeaningPolicy {
-    static let version = "english-chinese-1"
+    static let version = "bundled-mdx-personal-1"
     static func hasChinese(_ text: String) -> Bool {
         text.unicodeScalars.contains { (0x3400...0x9FFF).contains($0.value) || (0x20000...0x3134F).contains($0.value) }
     }
@@ -71,7 +71,7 @@ struct PersonalDictionarySense: Codable, Equatable, Identifiable, Sendable {
     func dictionarySense(entryID: String) -> DictionarySense {
         DictionarySense(id: "personal|" + entryID + "|" + id, en: englishDefinition ?? "", zh: chinese, line: "用户自建 · 修订 \(revision)", partOfSpeech: partOfSpeech.isBlank ? nil : partOfSpeech,
                         ipa: ipa.isBlank ? nil : ipa, examples: examples.map(\.english), forms: forms.isBlank ? nil : [forms], sources: ["个人释义"],
-                        exampleTranslations: examples.map(\.chinese), usageLabels: [usage, grammar ?? "", scenarios ?? ""].filter { !$0.isBlank }, relatedPhrases: (phrases.isBlank ? [] : [phrases]) + (collocations ?? []) + (idioms ?? []), sourceRevision: String(revision), originKind: "personal")
+                        exampleTranslations: examples.map(\.chinese), usageLabels: [usage, grammar ?? "", scenarios ?? ""].filter { !$0.isBlank }, relatedPhrases: (phrases.isBlank ? [] : [phrases]) + (collocations ?? []) + (idioms ?? []), sourceRevision: String(revision), originKind: "personal", policyVersion: BilingualMeaningPolicy.version)
     }
     func validate() throws {
         guard chinese.count <= 500, ipa.count <= 120, usage.count <= 200, forms.count <= 500, phrases.count <= 1000, examples.count <= 20,

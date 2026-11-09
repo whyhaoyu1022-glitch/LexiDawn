@@ -39,6 +39,7 @@ struct VocabularyItem: Identifiable, Equatable, Codable {
     var legacyAnnotations: [VocabularyLegacyAnnotation]? = nil
     var personalSenses: [PersonalDictionarySense]? = nil
     var personalHistory: [PersonalMeaningRevision]? = nil
+    var dictionaryCacheError: String? = nil
     var reliableChineseKnown: Bool? = nil
     var reviewMeaningSenseID: String? = nil
     var reviewMeaningText: String? = nil
@@ -151,11 +152,17 @@ struct VocabularyAddition {
                     contexts: attached.map(\.sentence), sourceArticleID: attached.first?.articleID,
                     dictionaryMeanings: definitions, sourceContexts: sourceItems)
                 let providerRows = providerCaches.filter { $0.lemma == record.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
-                value.dictionarySenses = DictionaryAggregator.merge(providerRows.flatMap { (try? JSONDecoder().decode([DictionarySense].self, from: $0.payload)) ?? [] })
+                var decoded: [DictionarySense] = []
+                for row in providerRows {
+                    do { decoded += try JSONDecoder().decode([DictionarySense].self, from: row.payload) }
+                    catch { value.dictionaryCacheError = "MDX 派生缓存损坏，请重新查词恢复：" + error.localizedDescription }
+                }
+                value.dictionarySenses = DictionaryAggregator.merge(decoded)
                 value.legacyAnnotations = aliases.map { VocabularyLegacyAnnotation(id: $0.entryID, originalLemma: $0.lemma, meaning: $0.userMeaning, notes: $0.notes) }
                 value.personalSenses = try record.personalSensesData.map { try JSONDecoder().decode([PersonalDictionarySense].self, from: $0) }
                 value.personalHistory = try record.personalMeaningHistoryData.map { try JSONDecoder().decode([PersonalMeaningRevision].self, from: $0) }
-                value.reliableChineseKnown = try hasReliableChinese(lemma: record.lemma, context: context)
+                do { value.reliableChineseKnown = try hasReliableChinese(lemma: record.lemma, context: context) }
+                catch { value.dictionaryCacheError = error.localizedDescription }
                 value.ipa = value.dictionarySenses.compactMap(\.ipa).first
                 value.reviewMeaningSenseID = record.reviewMeaningSenseID
                 value.reviewMeaningText = record.reviewMeaningText; value.reviewMeaningEvidence = record.reviewMeaningEvidence
@@ -311,6 +318,32 @@ struct VocabularyAddition {
             entry.deletedAt = now; entry.revision += 1
         }
     }
+    /// Explicit dictionary action. A dictionary word does not need a fabricated article.
+    func addDictionaryEntry(headword: String, at now: Date) throws -> VocabularyAddition {
+        let lemma = EnglishTokenizer.lemma(headword), type = lemma.contains(" ") ? "phrase" : "word"
+        guard !lemma.isBlank, lemma.count <= 100, !EnglishTokenizer.tokens(in: lemma).isEmpty else { throw LearningError.invalid("请输入有效英文词头。") }
+        try normalizeIdentities()
+        return try writer.write {
+            let context = writer.context
+            guard try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).contains(where: {
+                $0.lemma == lemma && $0.mdxSHA == BundledMDXDictionaryProvider.sourceSHA && ["chinese", "noChinese", "notFound"].contains($0.lookupStatus ?? "")
+            }) else { throw LearningError.invalid("请先完成本次 MDX 查询，不能把引擎故障当作查无此词。") }
+            let rows = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.normalizedKey == "en|\(type)|\(lemma)" }
+            guard rows.count <= 1 else { throw PersistenceError.integrity("重复词条") }
+            let token = UUID().uuidString
+            if let existing = rows.first {
+                let states = try context.fetch(FetchDescriptor<ReviewStateRecord>()).filter { $0.entryID == existing.entryID }
+                guard states.count == 1 else { throw PersistenceError.integrity("生词复习状态缺失或重复，不能重新添加") }
+                if existing.deletedAt == nil { return VocabularyAddition(entryID: existing.entryID, created: false, token: nil, revision: existing.revision) }
+                existing.deletedAt = nil; existing.addedAt = now; existing.creationToken = token; existing.revision += 1
+                if let state = states.first { state.dueAt = min(state.dueAt, now) }
+                return VocabularyAddition(entryID: existing.entryID, created: true, token: token, revision: existing.revision)
+            }
+            let entry = VocabularyEntryRecord(lemma: lemma, surface: headword, type: type, at: now, from: "dictionary", token: token)
+            context.insert(entry); context.insert(ReviewStateRecord(entryID: entry.entryID, at: now))
+            return VocabularyAddition(entryID: entry.entryID, created: true, token: token, revision: entry.revision)
+        }
+    }
     func annotate(entryID: String, meaning: String, notes: String, at now: Date) throws {
         guard meaning.count <= 200, notes.count <= 2000 else { throw LearningError.invalid("个人释义或笔记过长。") }
         try writer.write {
@@ -327,7 +360,7 @@ struct VocabularyAddition {
     private func hasReliableChinese(lemma: String, context: ModelContext) throws -> Bool {
         if try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).contains(where: { $0.lemma == lemma && $0.mdxSHA == BundledMDXDictionaryProvider.sourceSHA && $0.reliableChineseKnown }) { return true }
         return try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.lemma == lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }.contains { row in
-            ((try? JSONDecoder().decode([DictionarySense].self, from: row.payload)) ?? []).contains(where: BilingualMeaningPolicy.trusted)
+            try JSONDecoder().decode([DictionarySense].self, from: row.payload).contains(where: BilingualMeaningPolicy.trusted)
         }
     }
     func personalEditingAllowed(entryID: String) throws -> Bool {
@@ -385,8 +418,9 @@ struct VocabularyAddition {
         try writer.write {
             let context = writer.context
             guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID && $0.deletedAt == nil }) else { throw LearningError.invalid("词条不存在或已移除。") }
-            let official = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }.flatMap { (try? JSONDecoder().decode([DictionarySense].self, from: $0.payload)) ?? [] }.filter(BilingualMeaningPolicy.trusted)
+            let official = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) }.filter(BilingualMeaningPolicy.trusted)
             if let sense = official.first(where: { $0.id == sourceSenseID }) {
+                guard sense.partOfSpeech?.isBlank == false else { throw LearningError.invalid("该 MDX 义项未提供词性，暂不能用作复习标准答案。") }
                 entry.reviewMeaningSenseID = sense.id; entry.reviewMeaningText = sense.zh; entry.reviewMeaningEvidence = sense.line; entry.reviewMeaningSnapshotData = try JSONEncoder().encode(sense); entry.revision += 1; return
             }
             guard try personalAllowed(lemma: entry.lemma, context: context) else { throw LearningError.invalid("请选择内置 MDX 中的中文义项。") }
@@ -419,6 +453,7 @@ struct DictionarySense: Codable, Equatable, Identifiable, Sendable {
     var originKind: String? = nil
     var lexicalHeadword: String? = nil
     var sectionKind: String? = nil
+    var policyVersion: String? = nil
 }
 
 struct DictionaryResult: Equatable {

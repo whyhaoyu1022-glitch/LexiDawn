@@ -76,7 +76,7 @@ final class Round3UITests: XCTestCase {
         capture("R3-L12", app: app, feature: "library", state: "completed-article-in-local-history", origin: "explicit-original-catalog-fixture-real-domain-evidence")
     }
     func testVocabularyStatusSortConfirmedMeaningAndNativeExportDialogs() throws {
-        let app = launch("gallery-review"); app.tabBars.buttons["词汇"].tap()
+        let app = launch("round4-rich"); app.buttons["open-reader"].tap(); app.buttons["word-nod"].firstMatch.tap(); XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10)); app.buttons["close-word"].tap(); app.buttons["返回今日"].tap(); app.tabBars.buttons["词汇"].tap()
         try choose("vocabulary-status-filter", option: "待复习", app: app)
         capture("R3-V10", app: app, feature: "vocabulary", state: "due-status-filter", origin: "real-RFC-explicit-personal-vocabulary-fixture")
         try choose("vocabulary-sort", option: "字母顺序", app: app)
@@ -90,8 +90,8 @@ final class Round3UITests: XCTestCase {
         let sense = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'review-meaning-'")).firstMatch
         for _ in 0..<5 { if sense.exists && sense.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(sense.isHittable); sense.tap()
-        XCTAssertTrue(app.staticTexts["复习义项已保存"].waitForExistence(timeout: 10))
-        capture("R3-V12", app: app, feature: "vocabulary", state: "explicit-source-meaning-saved", origin: "real-local-CEDICT-with-explicit-user-selection")
+        XCTAssertTrue(app.buttons["choose-review-meaning"].label.contains("学习义项："))
+        capture("R3-V12", app: app, feature: "vocabulary", state: "explicit-source-meaning-saved", origin: "explicit-original-MDX-layout-fixture-with-explicit-user-selection")
         app.navigationBars.buttons["生词本"].tap()
         for (index, title) in ["导出 JSON（完整学习数据）", "导出 CSV"].enumerated() {
             app.buttons["vocabulary-export"].tap(); app.buttons[title].tap()
@@ -166,16 +166,16 @@ final class Round3UITests: XCTestCase {
         let app = launch("round3-dictionary-many")
         XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
         XCTAssertTrue(app.buttons["word-Internet"].firstMatch.waitForExistence(timeout: 10)); app.buttons["word-Internet"].firstMatch.tap()
-        let count = app.staticTexts["共 6 条义项 · 完整释义见左上角词典"]
-        XCTAssertTrue(count.waitForExistence(timeout: 15))
-        XCTAssertFalse(app.staticTexts["Explicit original definition number 6 for the dictionary presentation test."].exists)
+        let quick = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'dictionary-quick-sense-'"))
+        XCTAssertTrue(quick.firstMatch.waitForExistence(timeout: 15)); XCTAssertEqual(quick.count, 2)
+        XCTAssertFalse(app.staticTexts["原创测试义项 6"].exists)
         capture("R3-D40", app: app, feature: "dictionary", state: "bounded-two-sense-quick-meaning", origin: "explicit-original-six-sense-provider-fixture")
-        app.buttons["查看详细释义"].tap(); XCTAssertTrue(app.navigationBars["详细释义"].waitForExistence(timeout: 10))
-        let last = app.staticTexts["Explicit original definition number 6 for the dictionary presentation test."].firstMatch
+        app.buttons["dictionary-details"].tap(); XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
+        let last = app.staticTexts["原创测试义项 6"].firstMatch
         for _ in 0..<10 { if last.exists && last.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(last.exists); XCTAssertTrue(last.isHittable)
         capture("R3-D41", app: app, feature: "dictionary", state: "full-screen-all-six-senses-grouped-by-pos", origin: "explicit-original-six-sense-provider-fixture")
-        app.navigationBars.buttons["查词"].tap(); XCTAssertTrue(app.buttons["close-word"].exists)
+        app.buttons["关闭详细释义"].tap(); XCTAssertTrue(app.buttons["close-word"].exists)
         capture("R3-D42", app: app, feature: "dictionary", state: "detail-returns-to-original-quick-meaning", origin: "explicit-original-six-sense-provider-fixture")
     }
     func testExtraReviewRestartsSameQuestionAndDoesNotRelockExplore() throws {
@@ -226,19 +226,16 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["完成必做后，开启词汇推荐"].waitForExistence(timeout: 10))
         capture("R3-N01", app: app, feature: "word-recommendation", state: "locked-with-current-task", origin: "explicit-isolated-RFC-learning-state")
         app.terminate(); app = launch("round3-recommendations-many"); app.tabBars.buttons["词汇"].tap(); app.buttons["vocabulary-recommendations"].tap()
-        let add = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'recommendation-add-'")).firstMatch
-        XCTAssertTrue(add.waitForExistence(timeout: 20)); XCTAssertEqual(add.label, "加入生词本")
+        let card = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'recommendation-detail-'")).firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 20))
         capture("R3-N02", app: app, feature: "word-recommendation", state: "real-article-candidates-with-explicit-fixture-definitions", origin: "explicit-original-article-and-provider-fixture")
-        let detail = app.buttons["查看详细释义"].firstMatch
-        for _ in 0..<4 { if detail.isHittable { break }; app.swipeUp() }
-        XCTAssertTrue(detail.isHittable); detail.tap()
-        XCTAssertTrue(app.navigationBars["详细释义"].waitForExistence(timeout: 10)); XCTAssertTrue(app.buttons["加入生词本"].exists)
+        card.tap(); XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10)); XCTAssertTrue(app.buttons["add-word"].exists)
         capture("R3-N03", app: app, feature: "word-recommendation", state: "detail-does-not-auto-add", origin: "explicit-original-article-and-provider-fixture")
-        app.navigationBars.buttons["词汇推荐"].tap()
-        XCTAssertTrue(add.exists); XCTAssertEqual(add.label, "加入生词本"); add.tap()
-        XCTAssertEqual(add.label, "已加入生词本")
+        app.buttons["关闭详细释义"].tap(); XCTAssertTrue(card.waitForExistence(timeout: 10)); card.tap()
+        XCTAssertTrue(app.buttons["add-word"].waitForExistence(timeout: 10)); app.buttons["add-word"].tap()
+        XCTAssertTrue(app.staticTexts["已加入生词本"].waitForExistence(timeout: 10))
         capture("R3-N04", app: app, feature: "word-recommendation", state: "explicit-add-persisted", origin: "explicit-original-article-and-provider-fixture")
-        app.navigationBars.buttons["生词本"].tap()
+        app.buttons["关闭详细释义"].tap(); app.navigationBars.buttons["生词本"].tap()
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'vocabulary-entry-'")).count, 1)
     }
     func testVocabularyRecommendationLoadingEmptyAndFailureStates() throws {
@@ -282,7 +279,7 @@ final class Round3UITests: XCTestCase {
         app.buttons["match-meaning-文档（个人释义）"].tap()
         XCTAssertTrue(app.staticTexts["review-feedback"].label.contains("还不正确"))
         capture("R3-M03", app: app, feature: "matching", state: "wrong-pair-feedback")
-        internet.tap(); app.buttons["match-meaning-互联网（个人释义）"].tap()
+        if internet.value as? String != "已选择" { internet.tap() }; app.buttons["match-meaning-互联网（个人释义）"].tap()
         XCTAssertFalse(internet.isEnabled); XCTAssertFalse(app.buttons["match-meaning-互联网（个人释义）"].isEnabled)
         XCTAssertGreaterThan(greenLinePixels(app: app), 12, "A real rendered line must cross the column gap")
         capture("R3-M04", app: app, feature: "matching", state: "one-visible-line-both-ends-disabled")
@@ -327,20 +324,18 @@ final class Round3UITests: XCTestCase {
         let entry = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'vocabulary-entry-'")).firstMatch
         XCTAssertTrue(entry.waitForExistence(timeout: 10))
         let lemma = String(entry.identifier.dropFirst("vocabulary-entry-".count)); XCTAssertFalse(lemma.isEmpty); entry.tap()
-        let personal = app.textFields["personal-meaning"]; XCTAssertTrue(personal.waitForExistence(timeout: 10))
-        personal.tap(); personal.typeText("学习测试个人释义（明确用户填写）")
-        let save = app.buttons["保存个人释义与笔记"]
-        XCTAssertTrue(app.keyboards.firstMatch.exists)
-        XCTAssertTrue(save.isHittable); save.tap()
-        XCTAssertTrue(app.staticTexts["已保存"].waitForExistence(timeout: 10))
-        XCTAssertFalse(app.keyboards.firstMatch.exists)
-        capture("R3-C04", app: app, feature: "vocabulary", state: "explicit-personal-meaning-saved", origin: origin)
+        // The new sole-source policy locks personal meanings when MDX has Chinese.
+        // Notes remain editable in either branch and must survive navigation.
+        let notes = app.textFields["vocabulary-notes"]
+        for _ in 0..<20 { if notes.exists && notes.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(notes.isHittable); notes.tap(); notes.typeText("真实文章学习笔记")
+        if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+        expectation(for: NSPredicate(format: "label == %@", "已自动保存"), evaluatedWith: app.staticTexts["annotation-save-state"]); waitForExpectations(timeout: 10)
+        capture("R3-C04", app: app, feature: "vocabulary", state: "actual-MDX-meaning-and-explicit-user-note-saved", origin: "production-article-network-real-bundled-MDX-user-note")
         app.navigationBars.buttons["生词本"].tap()
         XCTAssertTrue(entry.waitForExistence(timeout: 10)); entry.tap()
-        XCTAssertTrue(personal.waitForExistence(timeout: 10))
-        expectation(for: NSPredicate(format: "value == %@", "学习测试个人释义（明确用户填写）"), evaluatedWith: personal)
-        waitForExpectations(timeout: 10)
-        XCTAssertEqual(personal.value as? String, "学习测试个人释义（明确用户填写）")
+        for _ in 0..<20 { if notes.exists && notes.isHittable { break }; app.swipeUp() }
+        XCTAssertEqual(notes.value as? String, "真实文章学习笔记")
         app.tabBars.buttons["今日"].tap()
         XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 10)); app.buttons["open-reader"].tap()
         XCTAssertTrue(app.buttons["finish-reading"].waitForExistence(timeout: 10)); app.buttons["finish-reading"].tap()
@@ -476,21 +471,22 @@ final class Round3UITests: XCTestCase {
         let app = launch("round3-dictionary-single-failed")
         XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
         let word = app.buttons["word-Internet"].firstMatch; XCTAssertTrue(word.waitForExistence(timeout: 10)); word.tap()
-        let detail = app.buttons["查看详细释义"]; XCTAssertTrue(detail.waitForExistence(timeout: 10))
+        let detail = app.buttons["dictionary-details"]; XCTAssertTrue(detail.waitForExistence(timeout: 10))
         for _ in 0..<15 { if detail.isEnabled { break }; _ = app.staticTexts["dictionary-providers"].waitForExistence(timeout: 1) }
         XCTAssertTrue(detail.isEnabled); detail.tap()
         let nested = app.links["networks"].firstMatch
         for _ in 0..<12 { if nested.exists && nested.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(nested.isHittable); nested.tap()
-        XCTAssertTrue(app.staticTexts["标准词形：network"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["dictionary-headword"].waitForExistence(timeout: 10)); XCTAssertEqual(app.staticTexts["dictionary-headword"].label, "network")
         capture("R3-D66", app: app, feature: "dictionary-context", state: "nested-word-from-provider-definition", origin: "explicit-original-provider-fixture-not-production-network")
         XCTAssertEqual(app.buttons.matching(identifier: "close-word").count, 1)
-        app.buttons["close-word"].tap(); XCTAssertTrue(app.navigationBars["详细释义"].waitForExistence(timeout: 10))
-        app.navigationBars.buttons["查词"].tap(); app.buttons["close-word"].tap(); app.buttons["返回今日"].tap()
+        app.buttons["close-word"].tap(); XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
+        app.buttons["关闭详细释义"].tap(); app.buttons["close-word"].tap(); app.buttons["返回今日"].tap()
         app.tabBars.buttons["词汇"].tap()
         let entry = app.buttons["vocabulary-entry-network"]
         for _ in 0..<6 { if entry.exists && entry.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(entry.isHittable); entry.tap()
+        let contexts = app.buttons["遇见这个词的句子"]; for _ in 0..<12 { if contexts.exists && contexts.isHittable { break }; app.swipeUp() }; XCTAssertTrue(contexts.isHittable); contexts.tap()
         let provenance = app.staticTexts["词典释义：internet"]
         for _ in 0..<12 { if provenance.exists && provenance.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(provenance.isHittable)
@@ -501,7 +497,7 @@ final class Round3UITests: XCTestCase {
             let app = launch("round3-dictionary-comparison-" + mode)
             XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
             let word = app.buttons["word-Internet"].firstMatch; XCTAssertTrue(word.waitForExistence(timeout: 10)); word.tap()
-            let detail = app.buttons["查看详细释义"]; XCTAssertTrue(detail.waitForExistence(timeout: 10))
+            let detail = app.buttons["dictionary-details"]; XCTAssertTrue(detail.waitForExistence(timeout: 10))
             for _ in 0..<15 { if detail.isEnabled { break }; _ = app.staticTexts["dictionary-providers"].waitForExistence(timeout: 1) }
             XCTAssertTrue(detail.isEnabled); detail.tap()
             let synonyms = app.buttons["dictionary-synonym-comparison"]
@@ -515,38 +511,35 @@ final class Round3UITests: XCTestCase {
             capture("R3-D\(50 + index)", app: app, feature: "dictionary-comparison", state: mode, origin: "explicit-original-provider-fixture-not-production-network")
             if mode == "retry" {
                 app.buttons["dictionary-comparison-retry"].tap()
-                let definition = app.staticTexts["Explicit original comparison fixture: connected elements in a system."]
+                let definition = app.staticTexts["网络（原创比较测试义）"]
                 XCTAssertTrue(definition.waitForExistence(timeout: 10)); XCTAssertFalse(app.buttons["dictionary-comparison-retry"].exists)
                 capture("R3-D54", app: app, feature: "dictionary-comparison", state: "retry-success-with-original-provider-definition", origin: "explicit-original-provider-fixture-not-production-network")
             }
         }
     }
     func testDictionaryProviderFailureEmptyLoadingAndOfflineCacheEvidence() throws {
+        // Retain all seven historical transport/cache scenarios under the sole
+        // MDX contract: a failing engine cannot fall back to another provider.
         for (index, mode) in ["loading", "single-failed", "all-failed", "empty", "cache", "offline", "free-unavailable"].enumerated() {
             let app = launch("round3-dictionary-" + mode)
             XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
             let word = app.buttons["word-Internet"].firstMatch; XCTAssertTrue(word.waitForExistence(timeout: 10)); word.tap()
             XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10))
-            if mode == "loading" {
-                let indicator = app.descendants(matching: .any)["dictionary-loading"].firstMatch
-                XCTAssertTrue(indicator.waitForExistence(timeout: 5)); XCTAssertTrue(indicator.isHittable)
-            }
-            else if mode == "all-failed" { XCTAssertTrue(app.staticTexts["词典来源暂时不可用；本地没有缓存，请联网后重试。"].waitForExistence(timeout: 15)) }
-            else if mode == "empty" { XCTAssertTrue(app.staticTexts["暂无可验证的释义。可以继续阅读，或在生词本添加明确标记的个人释义。"].waitForExistence(timeout: 15)) }
+            if mode == "loading" { XCTAssertTrue(app.descendants(matching: .any)["dictionary-loading"].firstMatch.waitForExistence(timeout: 5)) }
+            else if ["all-failed", "offline"].contains(mode) {
+                XCTAssertTrue(app.staticTexts["dictionary-resource-error"].waitForExistence(timeout: 15))
+                XCTAssertFalse(app.buttons["dictionary-details"].isEnabled); XCTAssertFalse(app.staticTexts["暂无英中释义"].exists)
+                XCTAssertTrue(app.buttons["词典暂不可用，重试"].exists)
+            } else if mode == "empty" { XCTAssertTrue(app.staticTexts["暂无英中释义"].waitForExistence(timeout: 15)) }
             else {
+                let detail = app.buttons["dictionary-details"]
+                expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: detail); waitForExpectations(timeout: 15); detail.tap()
                 let providers = app.staticTexts["dictionary-providers"]
-                for _ in 0..<5 { if providers.exists { break }; app.swipeUp() }
-                XCTAssertTrue(providers.waitForExistence(timeout: 15))
-                if mode == "free-unavailable" { XCTAssertTrue(providers.label.contains("Wiktionary")); XCTAssertFalse(providers.label.contains("Free Dictionary API")) }
-                let detail = app.buttons["查看详细释义"]
-                for _ in 0..<5 { if detail.isHittable { break }; app.swipeUp() }
-                XCTAssertTrue(detail.waitForExistence(timeout: 15)); detail.tap()
-                let expected = mode == "free-unavailable" ? "Free Dictionary API 当前无可用结果" : mode == "single-failed" ? "部分来源不可用" : mode == "cache" || mode == "offline" ? "本地缓存" : "已合并"
-                let label = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", expected)).firstMatch
-                for _ in 0..<6 { if label.exists && label.isHittable { break }; app.swipeUp() }
-                XCTAssertTrue(label.waitForExistence(timeout: 15))
+                for _ in 0..<15 { if providers.exists && providers.isHittable { break }; app.swipeUp() }
+                XCTAssertTrue(providers.exists); XCTAssertTrue(providers.label.contains("内置 MDX"))
+                XCTAssertFalse(providers.label.contains("Wiktionary")); XCTAssertFalse(providers.label.contains("Free Dictionary API"))
             }
-            capture("R3-D" + String(format: "%02d", index + 1), app: app, feature: "dictionary", state: mode, origin: "explicit-original-provider-fixture-not-production-network")
+            capture("R3-D" + String(format: "%02d", index + 1), app: app, feature: "dictionary", state: mode, origin: "explicit-original-provider-fixture-not-production-MDX")
             app.terminate()
         }
     }
@@ -634,15 +627,18 @@ final class Round3UITests: XCTestCase {
             let word = app.buttons["word-" + surface].firstMatch
             for _ in 0..<8 { if word.exists && word.isHittable { break }; app.otherElements["reader-body"].firstMatch.swipeUp() }
             XCTAssertTrue(word.isHittable); word.tap()
-            XCTAssertTrue(app.staticTexts["标准词形：" + lemma].waitForExistence(timeout: 10))
-            capture("R3-D" + String(index + 10), app: app, feature: "dictionary", state: "surface-" + surface, origin: "explicit-original-context-fixture-local-real-CEDICT")
+            XCTAssertTrue(app.staticTexts["dictionary-headword"].waitForExistence(timeout: 10)); XCTAssertEqual(app.staticTexts["dictionary-headword"].label, lemma)
+            capture("R3-D" + String(index + 10), app: app, feature: "dictionary", state: "surface-" + surface, origin: "explicit-original-context-fixture-real-bundled-MDX")
             if !phrase.isEmpty {
-                XCTAssertTrue(app.buttons[phrase].waitForExistence(timeout: 10)); app.buttons[phrase].tap()
-                XCTAssertTrue(app.staticTexts["标准词形：" + phrase].waitForExistence(timeout: 10))
-                capture("R3-D" + String(index + 20), app: app, feature: "dictionary", state: "nested-phrase-" + phrase, origin: "explicit-original-context-fixture-local-real-CEDICT")
-                app.buttons["close-word"].firstMatch.tap()
-                XCTAssertTrue(app.staticTexts["标准词形：" + lemma].waitForExistence(timeout: 10))
-                capture("R3-D" + String(index + 60), app: app, feature: "dictionary", state: "returned-from-nested-phrase-" + phrase, origin: "explicit-original-context-fixture-local-real-CEDICT")
+                app.buttons["dictionary-details"].tap(); XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
+                let phraseButton = app.buttons[phrase]
+                for _ in 0..<15 { if phraseButton.exists && phraseButton.isHittable { break }; app.swipeUp() }
+                XCTAssertTrue(phraseButton.isHittable); phraseButton.tap()
+                XCTAssertTrue(app.staticTexts["dictionary-headword"].waitForExistence(timeout: 10)); XCTAssertEqual(app.staticTexts["dictionary-headword"].label, phrase)
+                capture("R3-D" + String(index + 20), app: app, feature: "dictionary", state: "nested-phrase-" + phrase, origin: "explicit-original-context-fixture-real-bundled-MDX")
+                app.buttons["close-word"].firstMatch.tap(); app.buttons["关闭详细释义"].tap()
+                XCTAssertTrue(app.staticTexts["dictionary-headword"].waitForExistence(timeout: 10)); XCTAssertEqual(app.staticTexts["dictionary-headword"].label, lemma)
+                capture("R3-D" + String(index + 60), app: app, feature: "dictionary", state: "returned-from-nested-phrase-" + phrase, origin: "explicit-original-context-fixture-real-bundled-MDX")
             }
             app.buttons["close-word"].firstMatch.tap(); XCTAssertTrue(app.otherElements["reader-body"].firstMatch.waitForExistence(timeout: 10))
         }
@@ -653,7 +649,7 @@ final class Round3UITests: XCTestCase {
             app.buttons["阅读外观"].firstMatch.tap(); app.buttons[title].tap()
             let word = app.buttons["word-Internet"].firstMatch; XCTAssertTrue(word.waitForExistence(timeout: 10)); word.tap()
             XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10))
-            capture("R3-D" + String(index + 30), app: app, feature: "dictionary", state: "reader-popup-theme-" + theme, theme: theme, origin: "real-bundled-RFC-local-real-CEDICT")
+            capture("R3-D" + String(index + 30), app: app, feature: "dictionary", state: "reader-popup-theme-" + theme, theme: theme, origin: "real-bundled-RFC-real-bundled-MDX")
             app.buttons["close-word"].tap()
             app.buttons["来源详情"].firstMatch.tap()
             XCTAssertTrue(app.navigationBars["来源详情"].waitForExistence(timeout: 10))
@@ -690,11 +686,13 @@ final class Round3UITests: XCTestCase {
             app.buttons["submit-spelling"].tap()
         }
         XCTAssertTrue(app.staticTexts["本次复习已保存"].waitForExistence(timeout: 10))
+        app.buttons["查看本次复习记录"].tap()
         let hard = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Hard' AND label CONTAINS '原定' AND label CONTAINS '下次复习'")).firstMatch
         let good = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Good' AND label CONTAINS '原定' AND label CONTAINS '下次复习'")).firstMatch
         XCTAssertTrue(hard.waitForExistence(timeout: 10)); XCTAssertTrue(good.exists)
         capture("R3-G01", app: app, feature: "review", state: "hard-good-original-and-next-due", origin: "explicit-review-seed-real-RFC-and-personal-meanings")
         app.terminate(); app.launch(); app.tabBars.buttons["复习"].tap()
+        XCTAssertTrue(app.buttons["查看本次复习记录"].waitForExistence(timeout: 10)); app.buttons["查看本次复习记录"].tap()
         XCTAssertTrue(hard.waitForExistence(timeout: 10)); XCTAssertTrue(good.exists)
         capture("R3-G02", app: app, feature: "review", state: "persisted-grade-and-schedule-after-restart", origin: "explicit-review-seed-real-RFC-and-personal-meanings")
     }
@@ -704,22 +702,23 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.buttons["word-Internet"].firstMatch.waitForExistence(timeout: 10)); app.buttons["word-Internet"].firstMatch.tap()
         XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10)); app.buttons["close-word"].tap(); app.buttons["返回今日"].tap(); app.tabBars.buttons["词汇"].tap()
         let entry = app.buttons["vocabulary-entry-internet"]; XCTAssertTrue(entry.waitForExistence(timeout: 10)); entry.tap()
-        let meaning = app.textFields["personal-meaning"]; XCTAssertTrue(meaning.waitForExistence(timeout: 10)); meaning.tap(); meaning.typeText("明确的个人释义")
-        app.buttons["保存个人释义与笔记"].tap(); XCTAssertTrue(app.staticTexts["已保存"].waitForExistence(timeout: 10))
-        capture("R3-V04", app: app, feature: "vocabulary", state: "initial-personal-meaning-save-success", origin: "explicit-Repository-third-save-fault-original-note-draft")
-        let notes = app.descendants(matching: .any)["vocabulary-notes"].firstMatch
-        XCTAssertTrue(notes.exists); notes.tap(); notes.typeText("Second note draft")
-        if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
-        XCTAssertFalse(app.staticTexts["已保存"].exists); app.buttons["保存个人释义与笔记"].tap()
+        let notes = app.textFields["vocabulary-notes"]
+        for _ in 0..<20 { if notes.exists && notes.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(notes.isHittable); notes.tap(); notes.typeText("First note")
+        app.buttons["完成输入"].tap()
+        expectation(for: NSPredicate(format: "label == %@", "已自动保存"), evaluatedWith: app.staticTexts["annotation-save-state"]); waitForExpectations(timeout: 10)
+        capture("R3-V04", app: app, feature: "vocabulary", state: "initial-note-autosave-success", origin: "explicit-Repository-note-save-fault-real-MDX")
+        notes.tap(); notes.typeText(" Second note draft"); app.buttons["完成输入"].tap()
         XCTAssertTrue(app.staticTexts["明确故障注入：释义与笔记保存失败，草稿已保留。"].waitForExistence(timeout: 10))
-        XCTAssertFalse(app.staticTexts["已保存"].exists); XCTAssertTrue((notes.value as? String)?.contains("Second note draft") == true)
-        capture("R3-V05", app: app, feature: "vocabulary", state: "note-save-failed-draft-kept-no-stale-success", origin: "explicit-Repository-third-save-fault-original-note-draft")
-        app.buttons["重试保存释义与笔记"].tap(); XCTAssertTrue(app.staticTexts["已保存"].waitForExistence(timeout: 10))
-        capture("R3-V06", app: app, feature: "vocabulary", state: "note-safe-retry-success", origin: "explicit-Repository-third-save-fault-original-note-draft")
+        XCTAssertNotEqual(app.staticTexts["annotation-save-state"].label, "已自动保存"); XCTAssertTrue((notes.value as? String)?.contains("Second note draft") == true)
+        capture("R3-V05", app: app, feature: "vocabulary", state: "note-save-failed-draft-kept-no-stale-success", origin: "explicit-Repository-note-save-fault-real-MDX")
+        app.buttons["重试保存"].tap()
+        expectation(for: NSPredicate(format: "label == %@", "已自动保存"), evaluatedWith: app.staticTexts["annotation-save-state"]); waitForExpectations(timeout: 10)
+        capture("R3-V06", app: app, feature: "vocabulary", state: "note-safe-retry-success", origin: "explicit-Repository-note-save-fault-real-MDX")
         app.terminate(); app.launch(); app.tabBars.buttons["词汇"].tap(); XCTAssertTrue(entry.waitForExistence(timeout: 10)); entry.tap()
-        let persisted = NSPredicate(format: "value CONTAINS %@", "Second note draft")
-        expectation(for: persisted, evaluatedWith: notes); waitForExpectations(timeout: 10)
-        capture("R3-V07", app: app, feature: "vocabulary", state: "note-retry-result-after-process-restart", origin: "explicit-Repository-third-save-fault-original-note-draft")
+        for _ in 0..<20 { if notes.exists && notes.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue((notes.value as? String)?.contains("Second note draft") == true)
+        capture("R3-V07", app: app, feature: "vocabulary", state: "note-retry-result-after-process-restart", origin: "explicit-Repository-note-save-fault-real-MDX")
     }
     /// Scrolling can retain offscreen accessibility elements. Exercise a word in the visible viewport.
     private func visibleWord(in app: XCUIApplication) -> XCUIElement {

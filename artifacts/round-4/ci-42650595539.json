@@ -1,0 +1,38 @@
+{
+  "sourceCommit": "d186c9f29e84c6ec91babdc624830c04fe4f7929",
+  "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539",
+  "overall": "failure",
+  "buildAllTargets": "success",
+  "mdxTests": {
+    "executed": 12,
+    "failed": 0
+  },
+  "round4Tests": {
+    "executed": 22,
+    "failed": 0,
+    "realRound3DiskMigration": "passed"
+  },
+  "uiTests": {
+    "executed": 10,
+    "passed": 8,
+    "failed": 2,
+    "failedTests": [
+      "testBilingualReferenceHierarchyCompactPopupAndReliableEditLock",
+      "testSettingsAutosaveAboutAndLibraryScopesRemainGated"
+    ]
+  },
+  "screenshots": {
+    "count": 42,
+    "status": "captured-pending-download-and-visual-review",
+    "artifactID": 13692760176,
+    "artifactURL": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539/artifacts/13692760176"
+  },
+  "platform": "iOS 26.5 compatibility Simulator, Xcode 26.6 (17F113)",
+  "notProven": [
+    "full regression",
+    "final Release",
+    "IPA",
+    "iOS 27 device",
+    "144 acceptance criteria"
+  ]
+}

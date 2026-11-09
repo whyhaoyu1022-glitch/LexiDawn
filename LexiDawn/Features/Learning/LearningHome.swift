@@ -237,7 +237,7 @@ struct LiveExploreView: View {
                         }
                     }
                 }
-                if loading { ProgressView("正在发现并导入完整文章…"); Button("停止发现") { refreshTask?.cancel() } }
+                DiscoveryProgressCard(service: learning.discovery)
                 if let error { Text(error).foregroundStyle(.red); Button("重新读取", action: load) }
             }.navigationTitle("探索").task { load() }.onReceive(learning.$revision) { _ in load() }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in load() }
@@ -254,7 +254,8 @@ struct LiveExploreView: View {
         do { try learning.content.setLibraryFlags(articleID: article.id, favorite: favorite, readLater: later); learning.changed(); load() } catch { self.error = error.localizedDescription }
     }
     private func discover() {
-        refreshTask?.cancel(); refreshTask = Task {
+        guard allowed, !loading else { return }
+        refreshTask = Task {
             loading = true; defer { loading = false }
             do { _ = try await learning.discovery.refresh(force: true, onImport: { learning.changed() }); try Task.checkCancellation(); learning.changed(); load() }
             catch is CancellationError { load() }

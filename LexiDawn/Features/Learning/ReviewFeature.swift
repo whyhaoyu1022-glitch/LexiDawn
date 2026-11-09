@@ -22,6 +22,7 @@ struct ReviewPracticeContent: View {
     @State private var cycleID: UUID?
     @State private var session: ReviewSessionView?
     @State private var selected: String?
+    @State private var matchingNeedsSelection = false
     @State private var spelling = ""
     @State private var message: String?
     @State private var feedback: String?
@@ -74,7 +75,7 @@ struct ReviewPracticeContent: View {
             }.padding(20)
         }.safeAreaPadding(.bottom, 16).scrollDismissesKeyboard(.interactively).navigationTitle("复习").navigationBarTitleDisplayMode(.inline).task { await load() }
             .reviewEntryGate(entryGate, learning: learning)
-            .onChange(of: selected) { _, _ in feedback = nil; feedbackFor = nil }
+            .onChange(of: selected) { _, _ in feedback = nil; feedbackFor = nil; matchingNeedsSelection = false }
             .onChange(of: activeQuestionKey) { _, _ in spelling = ""; feedback = nil; feedbackFor = nil; feedbackIdentity = nil; answerPhase = restoredPhase }
             .onChange(of: feedback) { _, message in if let message { UIAccessibility.post(notification: .announcement, argument: message) } }
             .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await load() } } }
@@ -96,7 +97,8 @@ struct ReviewPracticeContent: View {
             Text(verticalSizeClass == .compact ? "先点英文，再点中文；完成的两端均不可再选。" : "先点英文，再点对应中文。已完成的连接会保留。")
             MatchingBoard(session: session, selected: $selected, submit: { questionID, senseID in
                 if submit(questionID: questionID, answer: senseID) { selected = nil }
-            }, noSelection: { feedbackFor = nil; feedback = "请先选择英文词条" })
+            }, noSelection: { matchingNeedsSelection = true })
+            if matchingNeedsSelection { Label("请先选择英文词条", systemImage: "hand.tap").font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("review-feedback") }
             if let feedback, let selected, feedbackFor == selected, feedbackBelongs(to: selected, in: session) { Label(feedback, systemImage: "exclamationmark.circle").font(.subheadline).foregroundStyle(.orange).accessibilityIdentifier("review-feedback") }
         }
     }
@@ -132,8 +134,10 @@ struct ReviewPracticeContent: View {
     }
     private func load() async {
         let generation = UUID(); loadGeneration = generation
+        var preparingExtra = false
         loading = true; message = nil; selected = nil; spelling = ""; feedback = nil; feedbackFor = nil; emptyResolved = false; schedules = []; extraMode = false; extraEmpty = false; showCompletedMatches = false
         feedbackIdentity = nil; answerPhase = .answering
+        matchingNeedsSelection = false
         defer { if loadGeneration == generation { loading = false } }
         do {
             let cycles = try learning.cycles.fetchAll()
@@ -149,6 +153,7 @@ struct ReviewPracticeContent: View {
             emptyResolved = session == nil && restoredCycle?.reviewEvidence != nil
             deferredResolved = restoredCycle?.reviewEvidence?.isUserDeferral == true
             if prepared?.completedAt != nil || emptyResolved {
+                preparingExtra = true
                 let extra = try await learning.review.prepareExtra(dailyLimit: prefs.dailyReviewLimit, pairCount: prefs.matchingPairCount, clozeCount: prefs.clozeQuestionCount, at: Date())
                 guard generation == loadGeneration, !Task.isCancelled else { return }
                 if let extra { session = extra; extraMode = true; emptyResolved = false; schedules = try learning.review.extraScheduleFeedback(sessionID: extra.id) }
@@ -156,7 +161,7 @@ struct ReviewPracticeContent: View {
             }
             answerPhase = restoredPhase
             learning.changed()
-        } catch { self.message = error.localizedDescription; entryGate.adopt(error, cycleID: cycleID, completion: { Task { await load() } }) }
+        } catch { self.message = error.localizedDescription; entryGate.adopt(error, cycleID: cycleID, extra: preparingExtra, completion: { Task { await load() } }) }
         loading = false
     }
     @discardableResult private func submit(questionID: String, answer: String, reveal: Bool = false, hint: Bool = false) -> Bool {
@@ -208,8 +213,8 @@ struct ReviewEntryProblem: Identifiable {
         guard !busy else { return }
         ready = onReady; await retry(dependencies: dependencies, learning: learning)
     }
-    func adopt(_ error: Error, cycleID: UUID?, completion: @escaping () -> Void) {
-        self.cycleID = cycleID; ready = completion
+    func adopt(_ error: Error, cycleID: UUID?, extra: Bool = false, completion: @escaping () -> Void) {
+        self.cycleID = cycleID; self.extra = extra; ready = completion
         problem = ReviewEntryProblem(message: error.localizedDescription, issue: error as? ReviewMeaningIssue)
     }
     func retry(dependencies: AppDependencies, learning: LearningServices) async {
@@ -232,7 +237,6 @@ struct ReviewEntryProblem: Identifiable {
     }
     func edit(_ issue: ReviewMeaningIssue, learning: LearningServices) {
         do {
-            guard issue.canEditPersonal else { return }
             editingWord = try learning.vocabulary.entries().first { $0.id == issue.entryID }
             if editingWord == nil { throw LearningError.invalid("词条已移除，请重新检查复习队列。") }
             problem = nil
@@ -241,14 +245,18 @@ struct ReviewEntryProblem: Identifiable {
     func requestDeferral(_ issue: ReviewMeaningIssue, dependencies: AppDependencies, learning: LearningServices) async {
         do {
             guard let cycleID else { return }
-            if try learning.review.remainingPreparationCount(cycleID: cycleID) == 1 { pendingDeferral = issue; confirmAll = true }
+            let remaining: Int
+            if extra { remaining = try learning.review.remainingExtraPreparationCount(at: Date()) }
+            else { remaining = try learning.review.remainingPreparationCount(cycleID: cycleID) }
+            if remaining == 1 { pendingDeferral = issue; confirmAll = true }
             else { await deferWord(issue, dependencies: dependencies, learning: learning) }
         } catch { problem = ReviewEntryProblem(message: error.localizedDescription, issue: nil) }
     }
     func deferWord(_ issue: ReviewMeaningIssue, dependencies: AppDependencies, learning: LearningServices) async {
         do {
             guard let cycleID else { return }
-            try learning.review.deferEntry(cycleID: cycleID, issue: issue, at: Date())
+            if extra { try learning.review.deferExtraEntry(issue: issue, at: Date()) }
+            else { try learning.review.deferEntry(cycleID: cycleID, issue: issue, at: Date()) }
             problem = nil; pendingDeferral = nil
             await retry(dependencies: dependencies, learning: learning)
         } catch { problem = ReviewEntryProblem(message: error.localizedDescription, issue: nil) }
@@ -267,7 +275,8 @@ struct ReviewEntryPresentation: ViewModifier {
                 Button("取消", role: .cancel, action: gate.cancel)
                 if let issue = value.issue {
                     if issue.canEditPersonal { Button("立即填写") { gate.edit(issue, learning: learning) } }
-                    if !gate.extra { Button("本次延期该词") { Task { await gate.requestDeferral(issue, dependencies: dependencies, learning: learning) } } }
+                    else { Button("选择已有可靠义项") { gate.edit(issue, learning: learning) } }
+                    Button("本次延期该词") { Task { await gate.requestDeferral(issue, dependencies: dependencies, learning: learning) } }
                 }
                 Button("重试") { Task { await gate.retry(dependencies: dependencies, learning: learning) } }
             } message: { value in Text(value.message) }

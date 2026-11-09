@@ -22,7 +22,7 @@ enum MDXDictionaryError: Error, LocalizedError, Equatable {
 actor BundledMDXDictionaryProvider: DictionaryProvider {
     static let sourceName = "内置 MDX"
     static let sourceSHA = "095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443"
-    static let sourceVersion = sourceSHA + "-html-1"
+    static let sourceVersion = sourceSHA + "-html-2"
     private let resource: URL?
     private var reader: OpaquePointer?
     private var index: [String: [Int]] = [:]
@@ -181,18 +181,19 @@ enum MDXEntryParser {
                 }.filter { !$0.0.isEmpty }
                 let phrase = definition.ancestor(["t-pv-g", "t-id-g"])
                 let phraseHead = phrase.flatMap { ($0.descendants("t-pv") + $0.descendants("t-id")).first?.text }
-                let labels = scope.descendants("t-label").map(\.text) + scope.descendants("t-gram").map(\.text)
+                let labels = ["t-label", "t-gram", "t-reg", "t-geo", "t-use"].flatMap { scope.descendants($0).map(\.text) }
                 let collocations = scope.descendants("t-cf").map(\.text)
                 let sourceID = entry.attribute("data-hkoup-entry")
                 var sense = DictionarySense(id: "mdx|" + BundledMDXDictionaryProvider.sourceSHA + "|" + recordID + "|" + sourceID + "|" + String(ordinal),
                     en: english, zh: chinese, line: BundledMDXDictionaryProvider.sourceName,
-                    partOfSpeech: phrase != nil ? "phrase" : part, ipa: phonetics.isEmpty ? nil : phonetics.joined(separator: " · "),
+                    partOfSpeech: phrase != nil ? "phrase" : part, ipa: phrase != nil || phonetics.isEmpty ? nil : phonetics.joined(separator: " · "),
                     examples: examples.map(\.0), forms: forms.isEmpty ? nil : Array(NSOrderedSet(array: forms)) as? [String],
                     sources: [BundledMDXDictionaryProvider.sourceName], exampleTranslations: examples.map(\.1),
                     usageLabels: labels.isEmpty ? nil : labels, relatedPhrases: collocations.isEmpty ? nil : collocations,
                     sourceRevision: BundledMDXDictionaryProvider.sourceVersion, originKind: "mdx")
                 sense.lexicalHeadword = phraseHead.map(plainHeadword) ?? head
                 sense.sectionKind = phrase?.has("t-pv-g") == true ? "phrasalVerb" : phrase != nil ? "idiom" : nil
+                sense.policyVersion = BilingualMeaningPolicy.version
                 senses.append(sense)
             }
             // Some real MDX records are index/help pages. They are successful

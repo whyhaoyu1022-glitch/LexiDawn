@@ -79,9 +79,11 @@ struct DiscoveryProgress: Equatable {
     var totalSources = 0
     var processedSources = 0
     var activeSourceIDs: [String] = []
+    var stagesBySource: [String: String] = [:]
     var importedCount = 0
     var duplicateCount = 0
     var failedCount = 0
+    var failedArticleCount = 0
     var fraction: Double { totalSources == 0 ? 0 : min(1, max(0, Double(processedSources) / Double(totalSources))) }
 }
 @MainActor final class ArticleDiscoveryService: ObservableObject {
@@ -99,10 +101,13 @@ struct DiscoveryProgress: Equatable {
     }
     private struct Outcome: Sendable { let sourceID: String, count: Int, succeeded: Bool, error: FullTextImportError? }
     func refresh(force: Bool = false, at now: Date = Date(), onImport: (@MainActor () -> Void)? = nil) async throws -> Int {
-        if let operation { return try await withTaskCancellationHandler { try await operation.value } onCancel: { operation.cancel() } }
+        try Task.checkCancellation()
+        // Page lifetime does not own the shared operation. Only cancelRefresh()
+        // cancels work joined by Today, Library and Explore.
+        if let operation { let count = try await operation.value; try Task.checkCancellation(); return count }
         let task = Task { @MainActor [self] in try await performRefresh(force: force, at: now, onImport: onImport) }
         operation = task; defer { operation = nil }
-        return try await withTaskCancellationHandler { try await task.value } onCancel: { task.cancel() }
+        let count = try await task.value; try Task.checkCancellation(); return count
     }
     private func performRefresh(force: Bool, at now: Date, onImport: (@MainActor () -> Void)?) async throws -> Int {
         guard !refreshing else { return 0 }
@@ -115,11 +120,13 @@ struct DiscoveryProgress: Equatable {
             var next = 0
             func enqueue(_ id: String) { group.addTask { @MainActor [self] in
                 self.progress.activeSourceIDs.append(id)
+                self.progress.stagesBySource[id] = "发现候选"
                 do { return try await refreshSource(id, force: force, at: now, onImport: {
                     self.progress.importedCount += 1; onImport?()
                 }) } catch {
                     self.progress.phase = error is CancellationError ? .cancelled : .failed
                     self.progress.activeSourceIDs.removeAll { $0 == id }
+                    self.progress.stagesBySource.removeValue(forKey: id)
                     throw error
                 }
             } }
@@ -127,6 +134,7 @@ struct DiscoveryProgress: Equatable {
             while let outcome = try await group.next() {
                 progress.processedSources += 1
                 progress.activeSourceIDs.removeAll { $0 == outcome.sourceID }
+                progress.stagesBySource.removeValue(forKey: outcome.sourceID)
                 if outcome.error != nil { progress.failedCount += 1 }
                 total += outcome.count; if outcome.succeeded { successes += 1 }
                 if let error = outcome.error { failures.append(error) }
@@ -135,6 +143,7 @@ struct DiscoveryProgress: Equatable {
             }
         }
         progress.activeSourceIDs = []
+        progress.stagesBySource = [:]
         if total == 0 && successes == 0, let error = failures.first { progress.phase = .failed; throw error }
         progress.phase = .completed
         return total
@@ -179,17 +188,20 @@ struct DiscoveryProgress: Equatable {
                     guard let createdAt, createdAt >= Date(timeIntervalSince1970: 1734393600) else { throw FullTextImportError.rights }
                 }
                 let url = try OfficialArticleAPI.url(host: host, fields: ["action": "parse", "format": "json", "formatversion": "2", "oldid": String(revision), "prop": "text|revid|displaytitle", "disableeditsection": "1", "disabletoc": "1"])
+                progress.stagesBySource[id] = "获取完整正文"
                 let data = try await fetcher.fetch(url, allowedHost: host)
                 struct Response: Decodable { struct Page: Decodable { let text: String; let revid: Int }; let parse: Page }
                 let page = try JSONDecoder().decode(Response.self, from: data).parse
                 guard page.revid == revision, page.text.contains("mw-parser-output"), !["copyright violation", "non-free content", "additional attribution"].contains(where: page.text.lowercased().contains) else { throw FullTextImportError.rights }
+                progress.stagesBySource[id] = "提取并验证正文"
                 let document = try ArticleHTMLExtractor.extract(page.text)
                 let item = FullTextArticleImport(sourceID: id, canonicalURL: candidate.url, title: candidate.title, author: ArticleSourceRegistry.name(id) + " contributors", publishedAt: createdAt,
                     rawContent: document.text, document: document, topics: id == "wikinews" ? ["新闻"] : ["知识"], rights: rights, completeDocument: true, expectedHash: nil, verifiedAt: now)
                 try Task.checkCancellation()
+                progress.stagesBySource[id] = "保存完整原文"
                 if try content.importFullText(item, at: now) { count += 1; onImport?() } else { progress.duplicateCount += 1 }
             } catch is CancellationError { throw CancellationError() }
-            catch { failures += 1 }
+            catch { failures += 1; progress.failedArticleCount += 1 }
         }
         if failures > 0 && count == 0 { throw FullTextImportError.incomplete }
         return count
@@ -214,14 +226,17 @@ struct DiscoveryProgress: Equatable {
             try Task.checkCancellation()
             do {
                 guard let url = URL(string: candidate.url) else { throw FullTextImportError.transport }
+                progress.stagesBySource[source.id] = "获取完整正文"
                 let bytes = try await fetcher.fetch(url, allowedHosts: source.hosts)
+                progress.stagesBySource[source.id] = "提取并验证正文"
                 let result = try ArticleWebPageExtractor.extract(bytes, candidate: candidate, source: source)
                 let item = FullTextArticleImport(sourceID: source.id, canonicalURL: result.canonicalURL, title: result.title, author: result.author, publishedAt: result.publishedAt,
                     rawContent: result.document.text, document: result.document, topics: source.topics, rights: rights, completeDocument: true, expectedHash: nil, verifiedAt: now)
                 try Task.checkCancellation()
+                progress.stagesBySource[source.id] = "保存完整原文"
                 if try content.importFullText(item, at: now) { count += 1; onImport?() } else { progress.duplicateCount += 1 }
             } catch is CancellationError { throw CancellationError() }
-            catch { failures += 1 }
+            catch { failures += 1; progress.failedArticleCount += 1 }
         }
         if failures > 0 && count == 0 { throw FullTextImportError.incomplete }
         return count

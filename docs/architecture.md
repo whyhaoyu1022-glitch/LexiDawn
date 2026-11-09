@@ -22,13 +22,11 @@ ReaderTextProjection维护显示重排到原始UTF16映射，raw/hash不变；Te
 
 ## 词典与生词
 
-DictionaryAggregator并发隔离两英语Provider；本地CEDICT由actor加载。义项按原始POS/内容/来源合并，NL词性与词汇重合、可用时本机句向量排序，不生成或改写词义。DictionaryCacheRepository按语言/lemma/provider/version，30日新鲜；离线旧缓存保留实际获取日期。WordLookupModel generation丢弃过期UI结果。Provider失败不抹掉其他成功结果。
+生产查询链路为 `DictionaryLookupService → BundledMDXDictionaryProvider(actor) → MDXReader(C/zlib) → MDXEntryParser(libxml2)`；缓存回写 SwiftData 与资格凭据同事务。引擎惰性 SHA 校验和索引初始化，保留词头索引与一个记录块、128 个词条 LRU，不把完整解压库放到主线程。其他网络 Provider/CC-CEDICT 只在 DEBUG Simulator 编译供历史解析/故障夹具回归，Release 不含它们，运行时没有自动回退。
 
-VocabularyEntry保留词形/语境/个人释义/笔记及安全撤销凭据。确认的中文义项ID/原文/证据独立持久化；清缓存不丢用户选择，修改个人释义后切换，固定旧题不变。查询基于一次快照，不逐搜索字符重读数据库。JSON/CSV只由用户主动原生导出，不上传。
+MDX 有中文时个人义项锁定；只有成功无词/无中文凭据才可保存个人多词性/义项、配对例句、搭配、习语、语域、备注。资源失败撤销当前写资格但保留个人内容与笔记。旧字符串无损迁为未确认 legacyPersonal；变更/删除归档前一修订，JSON/CSV 保留历史。MDX 缓存绑定 SHA 与 HTML 解析版本，历史外部缓存不参与当前词义。
 
-VocabularyRecommendationService从真实完整正文提取实际词形与偏移、排除本中lemma，再查真实词典；锁定时拒绝，无结果不补造；详情/嵌套关闭自动加入，仅明确加入写本。
-
-生词详情将唯一释义/笔记保存动作放在导航栏，键盘存在时仍可访问；成功反馈仍依赖真实Repository写入和读回。文章库同一List行内按钮显式隔离样式；重置确认捕获呈现文章快照，避免关闭绑定时丢失对象或同行误触打开阅读器。空探索池与仅筛选无结果分别说明，均不创建替代文章。
+词汇详情、阅读器浮层与全屏、推荐复用 DictionaryResultContent；浮层最多两条中文，详情保留全部分组。AVSpeechSynthesizer 开始/停止，退出停止，不读 IPA。词汇页提供原生离线搜索，浏览不自动加入，无文章的词可明确创建，不伪造文章上下文。
 
 ## 复习
 

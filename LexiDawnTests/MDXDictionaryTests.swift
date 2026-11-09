@@ -111,6 +111,136 @@ import AVFoundation
         service.toggle(headword: "visit"); service.stop()
         XCTAssertNotEqual(service.state, .speaking)
     }
+    func testRealResourceFailureRevokesEditingPermissionWithoutLosingPersonalData() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let article = try learning.content.importArticle(.init(title: "Original fault recovery fixture", body: "A lexidawnfaultword appears here.", source: "Original XCTest author", rightsConfirmed: true), at: Date())
+        let entry = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "lexidawnfaultword", range: NSRange(location: 2, length: 17), sentence: "A lexidawnfaultword appears here."), articleID: article, autoAdd: false, explicit: true, at: Date()))
+        _ = try await learning.dictionary.lookup("lexidawnfaultword")
+        let senses = [PersonalDictionarySense(partOfSpeech: "noun", chinese: "资源恢复测试词", confirmed: true)]
+        try learning.vocabulary.savePersonalSenses(entryID: entry.entryID, senses: senses, at: Date())
+        let missing = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let failed = DictionaryLookupService(context: ModelContext(app.modelContainer), provider: BundledMDXDictionaryProvider(resource: missing))
+        do { _ = try await failed.lookup("lexidawnfaultword"); XCTFail("Missing resource must remain a resource error") }
+        catch { XCTAssertEqual(error as? MDXDictionaryError, .missingResource) }
+        XCTAssertFalse(try learning.vocabulary.personalEditingAllowed(entryID: entry.entryID))
+        XCTAssertThrowsError(try learning.vocabulary.savePersonalSenses(entryID: entry.entryID, senses: [], at: Date()))
+        try learning.vocabulary.saveNotes(entryID: entry.entryID, notes: "故障期间保留笔记", at: Date())
+        XCTAssertEqual(try learning.vocabulary.entries().first?.personalSenses, senses)
+        _ = try await learning.dictionary.lookup("lexidawnfaultword")
+        XCTAssertTrue(try learning.vocabulary.personalEditingAllowed(entryID: entry.entryID))
+    }
+    func testPersonalHistoryPreservesDeletedSenseAndPairedExampleNotesAcrossContexts() throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let article = try learning.content.importArticle(.init(title: "Original revision fixture", body: "A lexidawnrevisionword appears here.", source: "Original XCTest author", rightsConfirmed: true), at: Date())
+        let added = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "lexidawnrevisionword", range: NSRange(location: 2, length: 20), sentence: "A lexidawnrevisionword appears here."), articleID: article, autoAdd: false, explicit: true, at: Date()))
+        try learning.dictionary.recordEmptyEligibilityFixture("lexidawnrevisionword", at: Date())
+        var sense = PersonalDictionarySense(partOfSpeech: "noun", chinese: "第一版中文", confirmed: true)
+        sense.examples = [.init(english: "An original example.", chinese: "配对译文", notes: "例句备注")]
+        sense.grammar = "countable"; sense.collocations = ["original collocation"]; sense.idioms = ["original idiom"]
+        try learning.vocabulary.savePersonalSenses(entryID: added.entryID, senses: [sense], at: Date())
+        sense.chinese = "第二版中文"
+        try learning.vocabulary.savePersonalSenses(entryID: added.entryID, senses: [sense], at: Date())
+        try learning.vocabulary.savePersonalSenses(entryID: added.entryID, senses: [], at: Date())
+        let reopened = VocabularyRepository(context: ModelContext(app.modelContainer))
+        let item = try XCTUnwrap(reopened.entries().first)
+        XCTAssertEqual(item.personalSenses, [])
+        XCTAssertEqual(item.personalHistory?.count, 2)
+        XCTAssertEqual(item.personalHistory?.first?.senses.first?.chinese, "第一版中文")
+        XCTAssertEqual(item.personalHistory?.last?.senses.first?.chinese, "第二版中文")
+        XCTAssertEqual(item.personalHistory?.first?.senses.first?.examples.first?.notes, "例句备注")
+        XCTAssertEqual(item.personalHistory?.first?.senses.first?.collocations, ["original collocation"])
+        XCTAssertTrue(String(decoding: try reopened.export(.csv, at: Date()), as: UTF8.self).contains("personalMeaningHistoryJSON"))
+    }
+    func testStandalonePersonalWordUsesItsOwnExampleAndDoesNotCreateAnArticle() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        _ = try await learning.dictionary.lookup("lexidawnstandaloneword")
+        let first = try learning.vocabulary.addDictionaryEntry(headword: "lexidawnstandaloneword", at: Date())
+        let second = try learning.vocabulary.addDictionaryEntry(headword: "lexidawnstandaloneword", at: Date())
+        XCTAssertTrue(first.created); XCTAssertFalse(second.created); XCTAssertEqual(first.entryID, second.entryID)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ArticleRecord>()), 0)
+        let sense = PersonalDictionarySense(partOfSpeech: "noun", chinese: "独立个人词条", examples: [.init(english: "A lexidawnstandaloneword belongs to this personal example.", chinese: "配对的个人译文")], confirmed: true)
+        try learning.vocabulary.savePersonalSenses(entryID: first.entryID, senses: [sense], at: Date())
+        _ = try learning.content.importArticle(.init(title: "Original daily task fixture", body: "This independent original article does not supply the personal example.", source: "Original XCTest author", rightsConfirmed: true), at: Date())
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: Date(), timeZone: .current, calendar: .current) else { return XCTFail("Expected real daily cycle") }
+        let value = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: Date())
+        let session = try XCTUnwrap(value)
+        XCTAssertEqual(session.cloze.first?.contextOrigin, "personal-example")
+        XCTAssertEqual(session.cloze.first?.context, sense.examples[0].english)
+        XCTAssertEqual(session.matching.first?.meaning?.originKind, "personal")
+        XCTAssertEqual(session.matching.first?.senseID, session.cloze.first?.senseID)
+        XCTAssertNotNil(session.cloze.first?.maskSeed); XCTAssertFalse(session.cloze.first?.maskIndices?.isEmpty ?? true)
+    }
+    func testPersonalRevisionHistorySurvivesClosingAndReopeningARealDiskStore() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { do { try FileManager.default.removeItem(at: folder) } catch { XCTFail("Disk fixture cleanup failed: \(error)") } }
+        let url = folder.appendingPathComponent("personal.store")
+        var id = ""
+        do {
+            let app = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
+            let learning = try XCTUnwrap(app.learning)
+            try learning.dictionary.recordEmptyEligibilityFixture("lexidawndiskword", at: Date())
+            let entry = try learning.vocabulary.addDictionaryEntry(headword: "lexidawndiskword", at: Date()); id = entry.entryID
+            var sense = PersonalDictionarySense(partOfSpeech: "verb", chinese: "磁盘第一版", examples: [.init(english: "I lexidawndiskword this example.", chinese: "磁盘译文", notes: "磁盘备注")], confirmed: true)
+            try learning.vocabulary.savePersonalSenses(entryID: id, senses: [sense], at: Date())
+            sense.chinese = "磁盘第二版"
+            try learning.vocabulary.savePersonalSenses(entryID: id, senses: [sense], at: Date())
+            try learning.vocabulary.saveNotes(entryID: id, notes: "独立学习笔记", at: Date())
+        }
+        for _ in 0..<2 {
+            let container = try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url))
+            let context = ModelContext(container), repository = VocabularyRepository(context: context)
+            let item = try XCTUnwrap(repository.entries().first)
+            XCTAssertEqual(item.id, id); XCTAssertEqual(item.notes, "独立学习笔记")
+            XCTAssertEqual(item.personalSenses?.first?.chinese, "磁盘第二版")
+            XCTAssertEqual(item.personalHistory?.first?.senses.first?.chinese, "磁盘第一版")
+            XCTAssertEqual(item.personalSenses?.first?.examples.first?.chinese, "磁盘译文")
+            XCTAssertEqual(item.personalSenses?.first?.examples.first?.notes, "磁盘备注")
+            XCTAssertEqual(try context.fetchCount(FetchDescriptor<ArticleRecord>()), 0)
+            XCTAssertEqual(try context.fetchCount(FetchDescriptor<ReviewStateRecord>()), 1)
+        }
+    }
+    func testMonthMaySpellingRetainsRequiredCaseWhileModalMayStaysLowercase() {
+        let month = ClozeContext.make(lemma: "May", surfaces: ["May"], sentence: "We travel in May.")
+        XCTAssertEqual(month.answer, "May")
+        XCTAssertFalse(SpellingAnswerPolicy.accepts("may", expected: month.answer, alternatives: ["May"]))
+        XCTAssertTrue(SpellingAnswerPolicy.accepts("May", expected: month.answer, alternatives: ["May"]))
+        XCTAssertEqual(SpellingAnswerPolicy.variants(answer: "May", lemma: "May", senses: []), ["May"])
+        XCTAssertEqual(ClozeContext.make(lemma: "may", surfaces: ["may"], sentence: "We may travel.").answer, "may")
+    }
+    func testRealMDXPhraseAliasIsScopedToItsOwnSenses() async throws {
+        let senses = try await BundledMDXDictionaryProvider().lookup("take off")
+        XCTAssertFalse(senses.filter(BilingualMeaningPolicy.trusted).isEmpty)
+        XCTAssertTrue(senses.allSatisfy { $0.lexicalHeadword == "take off" && $0.sectionKind == "phrasalVerb" })
+        XCTAssertTrue(senses.allSatisfy { $0.ipa == nil }, "Do not assign the parent word take's IPA to the phrase take off")
+    }
+    func testExtraPreflightDeferralPersistsWithoutAnswerOrFSRSUpdate() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let now = Date()
+        let article = try learning.content.importArticle(.init(title: "Original extra deferral fixture", body: "This original article establishes the current learning cycle.", source: "Original XCTest author", rightsConfirmed: true), at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        _ = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        try learning.reader.complete(articleID: article, cycleID: cycle.cycleID, manualConfirmation: true, at: now)
+        _ = try await learning.dictionary.lookup("lexidawnextradeferral")
+        let entry = try learning.vocabulary.addDictionaryEntry(headword: "lexidawnextradeferral", at: now)
+        let before = try learning.cycles.fetchAll()
+        var problem: ReviewMeaningIssue?
+        do { _ = try await learning.review.prepareExtra(dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now); XCTFail("Missing Chinese must block practice") }
+        catch let issue as ReviewMeaningIssue { problem = issue }
+        let issue = try XCTUnwrap(problem)
+        XCTAssertEqual(issue.entryID, entry.entryID); XCTAssertTrue(issue.canEditPersonal)
+        XCTAssertEqual(try learning.review.remainingExtraPreparationCount(at: now), 1)
+        try learning.review.deferExtraEntry(issue: issue, at: now)
+        let recovered = ReviewQueueService(context: ModelContext(app.modelContainer), cycles: learning.cycles, dictionary: learning.dictionary)
+        let prepared = try await recovered.prepareExtra(dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        XCTAssertNil(prepared); XCTAssertEqual(try recovered.remainingExtraPreparationCount(at: now), 0)
+        XCTAssertEqual(try learning.cycles.fetchAll(), before)
+        let context = ModelContext(app.modelContainer)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<ReviewLogRecord>()), 0)
+        let state = try XCTUnwrap(context.fetch(FetchDescriptor<ReviewStateRecord>()).first)
+        XCTAssertEqual(state.repetitions, 0); XCTAssertNil(state.lastReviewedAt); XCTAssertEqual(state.dueAt, now)
+        XCTAssertEqual(try learning.vocabulary.entries().first?.id, entry.entryID)
+    }
     func testFrozenRound3ArchiveMappingPreservesFullHistoricalCandidate() throws {
         let now = Date(), raw = "The original historical paragraph remains intact."
         let record = FrozenRound3Schema.ArticleRecord(articleID: "archive-fixture", canonicalURL: "https://example.com/original", originalTitle: "Original title", displayTitle: "Display title", sourceID: "original-source", publishedAt: now, fetchedAt: now, licenseID: "original-license", licenseVerified: true, bodyText: raw, bodyHash: fingerprint(raw), wordCount: 7, estimatedReadMinutes: 1, topicTags: ["Science"], difficulty: "advanced", imageURL: "https://example.com/image.png", imageAttribution: "Original photographer", contentStatus: "available", createdAt: now, updatedAt: now)

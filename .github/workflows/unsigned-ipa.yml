@@ -3,6 +3,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_run:
+    workflows: [iOS CI]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: read
@@ -13,15 +17,17 @@ concurrency:
 
 jobs:
   package:
-    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[ipa-only]') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[ipa-only]') || contains(github.event.head_commit.message, '[build-ipa]') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository) }}
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Build Release for physical iPhone and package without signing
         env:
           LEXIDAWN_IPA_OUTPUT: ${{ runner.temp }}/unsigned-ipa
-          LEXIDAWN_DEVICE_MIN_IOS: '26.0'
+          LEXIDAWN_DEVICE_MIN_IOS: '27.0'
         run: bash scripts/package-unsigned-ipa.sh
       - name: Preserve IPA, verification manifest and build diagnostics
         if: always()

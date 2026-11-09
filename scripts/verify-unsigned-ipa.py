@@ -88,7 +88,7 @@ def main():
     info = inspect_app(app)
     out = Path(os.environ['LEXIDAWN_IPA_OUTPUT'])
     report = {
-        'sourceCommit': os.environ.get('GITHUB_SHA') or subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+        'sourceCommit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
         'workflowRun': os.environ.get('GITHUB_SERVER_URL', 'https://github.com') + '/' + os.environ.get('GITHUB_REPOSITORY', 'whyhaoyu1022-glitch/LexiDawn') + '/actions/runs/' + os.environ.get('GITHUB_RUN_ID', 'local'),
         'displayName': info['CFBundleDisplayName'], 'bundleIdentifier': info['CFBundleIdentifier'],
         'version': info['CFBundleShortVersionString'], 'build': info['CFBundleVersion'],
