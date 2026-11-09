@@ -232,6 +232,9 @@ import SwiftData
     var reliableChineseKnown: Bool
     var checkedAt: Date
     var evidence: String
+    var mdxSHA: String?
+    var lookupStatus: String?
+    var lookupError: String?
     init(lemma: String, at: Date, evidence: String) {
         self.lemma = lemma; reliableChineseKnown = true; checkedAt = at; self.evidence = evidence
     }

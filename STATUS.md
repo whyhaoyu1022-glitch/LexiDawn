@@ -1,3 +1,11 @@
+## 2026-11-09 · 内置 MDX 实装进行中，尚未验收
+
+已核实 main 基线 30311f806d587453c601a0a44bf5cc8a6c338ec4；直接 main，无新分支/PR。恢复冻结 Round3 ArticleRecord 的历史 candidate 映射，未改任何冻结存储字段。新增原生 C MDX 2.0 reader、Swift actor、系统 libxml2 HTML 提取、单 MDX 服务/缓存资格防线、系统发音开始/停止与资源构建校验。
+
+本地真实结果：merge.py 得到 38,774,534 字节，SHA256 095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443。C 使用 -Wall -Wextra -Werror 编译；完整扫描 203,181 索引项、151,528 跳转、51,653 HTML 记录，全部记录解压/校验/UTF-8 通过，链接完整且无环；8 个打包故障/恢复测试通过。见 artifacts/round-4/mdx-host-verification.json；报告保留工作树状态和 reader 源文件 SHA。
+
+新增 XCTest 为待执行：实际 Bundle、真实词典、多词性/例句/音标、May/may、词形、并发/缓存/取消、缺失/损坏、资格/旧缓存、系统发音及历史字段映射。Linux 无 Swift/Xcode/Simulator；此处不是 iOS 构建、原生测试或截图通过。全部旧测试保留，新规则合同迁移、UI/144 项与最终截图/IPA仍未完成。提交后继续开发，CI 不是完成标志。
+
 # CURRENT · Round 4正在开发：英中词典核心已写入，待专项原生验证（2026-11-07）
 
 

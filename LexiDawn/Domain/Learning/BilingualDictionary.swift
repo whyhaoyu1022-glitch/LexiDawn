@@ -8,12 +8,12 @@ enum BilingualMeaningPolicy {
         text.unicodeScalars.contains { (0x3400...0x9FFF).contains($0.value) || (0x20000...0x3134F).contains($0.value) }
     }
     static func trusted(_ sense: DictionarySense) -> Bool {
-        !sense.zh.isBlank && hasChinese(sense.zh) && !(sense.sources ?? []).filter {
-            ["Wiktionary", "Oxford", "Free Dictionary API"].contains($0)
-        }.isEmpty
+        !sense.zh.isBlank && hasChinese(sense.zh) && sense.originKind == "mdx" &&
+            sense.sourceRevision == BundledMDXDictionaryProvider.sourceVersion &&
+            sense.sources == [BundledMDXDictionaryProvider.sourceName]
     }
     static func displaySenses(_ senses: [DictionarySense]) -> [DictionarySense] {
-        let values = senses.filter { !$0.zh.isBlank && hasChinese($0.zh) }
+        let values = senses.filter { !$0.zh.isBlank && hasChinese($0.zh) && (trusted($0) || $0.originKind == "personal") }
         return values.filter(trusted) + values.filter { !trusted($0) }
     }
     static func permitsPersonal(senses: [DictionarySense], knownReliableChinese: Bool) -> Bool {
@@ -23,6 +23,7 @@ enum BilingualMeaningPolicy {
         switch value?.lowercased() {
         case "noun": return "n. 名词"
         case "verb": return "v. 动词"
+        case "modal verb": return "情态动词"
         case "intransitive verb": return "vi. 不及物动词"
         case "transitive verb": return "vt. 及物动词"
         case "adjective": return "adj. 形容词"
@@ -89,6 +90,7 @@ enum SpellingMaskPolicy {
 
 /// Source-scoped parser: only the English-language section of Chinese Wiktionary.
 /// No machine translation and no arbitrary Chinese text from another language section.
+#if DEBUG && targetEnvironment(simulator)
 enum WiktionaryBilingualParser {
     static func parse(_ html: String, revision: String) throws -> [DictionarySense] {
         let heading = try NSRegularExpression(pattern: #"<h2\b[^>]*>(.*?)</h2>"#, options: [.caseInsensitive, .dotMatchesLineSeparators])
@@ -173,3 +175,5 @@ enum WiktionaryChineseTranslationParser {
         return values
     }
 }
+
+#endif

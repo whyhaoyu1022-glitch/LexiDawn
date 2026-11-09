@@ -190,7 +190,6 @@ final class AppStartup: ObservableObject {
                 let dependencies = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
                 dependencies.learning?.productionNetworking = true
                 if let learning = dependencies.learning { learning.setDiscoveryForUITesting(ArticleDiscoveryService(content: learning.content, sourceIDs: ["wikipedia"])) }
-                dependencies.learning?.dictionary.enableOnlineProviders()
                 return dependencies
             }
             if scenario == "round2-disk", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
@@ -264,6 +263,7 @@ extension AppStartup {
                     guard let token = EnglishTokenizer.tokens(in: body).first(where: { $0.surface == value.0 }),
                           let added = try learning.vocabulary.add(token: token, articleID: id, autoAdd: false, explicit: true, at: Date().addingTimeInterval(Double(index) * 0.001)) else { continue }
                     if scenario != "round4-missing" {
+                        try learning.dictionary.recordEmptyEligibilityFixture(EnglishTokenizer.lemma(token.surface), at: Date())
                         try learning.vocabulary.savePersonalSenses(entryID: added.entryID, senses: [.init(partOfSpeech: value.2, chinese: value.1, examples: [.init(english: token.sentence)], confirmed: true)], at: Date())
                     }
                 }

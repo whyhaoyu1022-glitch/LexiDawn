@@ -178,17 +178,10 @@ struct ReviewSessionView: Equatable {
     }
     private func primeMeanings(_ selected: [(String, String)], at now: Date) async throws {
         for (id, lemma) in selected {
-            let ready = try writer.read { context in
-                guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == id }) else { return false }
-                return (try? resolveMeaning(entry, context: context)) != nil
-            }
-            if ready { continue }
-            do {
-                let sentence = try writer.read { context in try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).first { $0.entryID == id }?.sentence ?? "" }
-                _ = try await dictionary.lookup(lemma, context: sentence, at: now)
-            } catch is CancellationError { throw CancellationError() }
-            catch let error as PersistenceError { throw error }
-            catch { if !ready { /* Resolution below distinguishes missing meanings from an empty queue. */ } }
+            let sentence = try writer.read { context in try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).first { $0.entryID == id }?.sentence ?? "" }
+            // Every new question revalidates the sole source; a valid personal
+            // snapshot must not bypass a newly available MDX Chinese definition.
+            _ = try await dictionary.lookup(lemma, context: sentence, at: now)
             try Task.checkCancellation()
             try writer.read { context in
                 guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == id && $0.deletedAt == nil }) else { throw LearningError.invalid("词条已移除。") }
@@ -199,7 +192,7 @@ struct ReviewSessionView: Equatable {
     private func resolveMeaning(_ entry: VocabularyEntryRecord, context: ModelContext) throws -> DictionarySense {
         let caches = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
         let official = caches.flatMap { (try? JSONDecoder().decode([DictionarySense].self, from: $0.payload)) ?? [] }.filter(BilingualMeaningPolicy.trusted)
-        let known = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).contains { $0.lemma == entry.lemma && $0.reliableChineseKnown }
+        let known = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).contains { $0.lemma == entry.lemma && $0.mdxSHA == BundledMDXDictionaryProvider.sourceSHA && $0.reliableChineseKnown }
         let aliases = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.canonicalEntryID == entry.entryID }.map(\.entryID)
         let identities = Set([entry.entryID] + aliases)
         let source = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).filter { identities.contains($0.entryID) }.sorted { ($0.createdAt, $0.contextID) < ($1.createdAt, $1.contextID) }.first
@@ -210,16 +203,17 @@ struct ReviewSessionView: Equatable {
             return sense
         }
         if known { throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "的可靠英中资料暂不可用，请重新查词或本次延期。", canEditPersonal: false) }
-        if let data = entry.reviewMeaningSnapshotData, let selected = try? JSONDecoder().decode(DictionarySense.self, from: data), selected.originKind == "personal", selected.partOfSpeech != nil { return selected }
+        let eligibility = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).first { $0.lemma == entry.lemma && $0.mdxSHA == BundledMDXDictionaryProvider.sourceSHA }
+        guard ["noChinese", "notFound"].contains(eligibility?.lookupStatus ?? "") else {
+            throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "的 MDX 查询尚未成功，不能把资源或解析故障当作查无此词。", canEditPersonal: false)
+        }
+        if let data = entry.reviewMeaningSnapshotData {
+            let selected = try JSONDecoder().decode(DictionarySense.self, from: data)
+            if selected.originKind == "personal", selected.partOfSpeech != nil, BilingualMeaningPolicy.hasChinese(selected.zh) { return selected }
+        }
         if let data = entry.personalSensesData {
             let senses = try JSONDecoder().decode([PersonalDictionarySense].self, from: data)
             if let sense = senses.first(where: \.reviewReady) { return sense.dictionarySense(entryID: entry.entryID) }
-        }
-        // Explicitly selected historical Chinese candidates remain personal confirmation,
-        // never an automatically trusted reverse-index answer.
-        if let selectedID = entry.reviewMeaningSenseID, let text = entry.reviewMeaningText, BilingualMeaningPolicy.hasChinese(text), entry.reviewMeaningEvidence?.isBlank == false {
-            let record = try context.fetch(FetchDescriptor<DictionarySenseRecord>()).first { $0.senseID == selectedID }
-            if let part = record?.partOfSpeech { return DictionarySense(id: selectedID, en: "", zh: text, line: "用户确认 · " + (entry.reviewMeaningEvidence ?? ""), partOfSpeech: part, sources: ["个人确认"], originKind: "personal") }
         }
         throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "还没有可复习的英中义项。请补充词性、中文并确认学习义项，或本次延期。", canEditPersonal: true)
     }
@@ -261,7 +255,7 @@ struct ReviewSessionView: Equatable {
                 let question = ReviewExerciseRecord(sessionID: session.sessionID, entryID: entry.entryID, stage: "cloze", position: position, prompt: mask.text, answer: projection.answer, senseID: sense.id)
                 question.contextOriginKind = contextOrigin
                 question.sourceContext = projection.sentence; question.meaningSnapshot = snapshot; question.maskIndices = mask.indices; question.maskVersion = SpellingMaskPolicy.version
-                let originalSenses = providerCaches.filter { $0.lemma == entry.lemma }.flatMap { (try? JSONDecoder().decode([DictionarySense].self, from: $0.payload)) ?? [] }
+                let originalSenses = providerCaches.filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }.flatMap { (try? JSONDecoder().decode([DictionarySense].self, from: $0.payload)) ?? [] }
                 question.acceptedAnswers = SpellingAnswerPolicy.variants(answer: projection.answer, lemma: entry.lemma, senses: originalSenses)
                 context.insert(question)
             }

@@ -8,6 +8,7 @@ struct DictionaryProviderOutcome: Sendable {
     let successful: [String]
     let empty: [String]
 }
+#if DEBUG && targetEnvironment(simulator)
 struct FreeDictionaryProvider: DictionaryProvider {
     private let fetcher: ArticleFetchService
     init(fetcher: ArticleFetchService? = nil) {
@@ -127,10 +128,12 @@ struct WiktionaryDictionaryProvider: DictionaryProvider {
     }
 }
 
+#endif
+
 actor DictionaryAggregator {
-    static let versions = ["Free Dictionary API": "api-v2-schema-2", "Wiktionary": "bilingual-action-schema-7"]
+    static let versions = [BundledMDXDictionaryProvider.sourceName: BundledMDXDictionaryProvider.sourceVersion]
     private let providers: [(String, any DictionaryProvider)]
-    init(providers: [(String, any DictionaryProvider)] = [("Free Dictionary API", FreeDictionaryProvider()), ("Wiktionary", WiktionaryDictionaryProvider())]) { self.providers = providers }
+    init(providers: [(String, any DictionaryProvider)] = []) { self.providers = providers }
     func lookup(_ lemma: String) async -> DictionaryProviderOutcome {
         await withTaskGroup(of: (String, [DictionarySense]?).self) { group in
             for (name, provider) in providers { group.addTask { do { return (name, try await provider.lookup(lemma)) } catch { return (name, nil) } } }
@@ -144,7 +147,7 @@ actor DictionaryAggregator {
     nonisolated static func merge(_ senses: [DictionarySense]) -> [DictionarySense] {
         var merged: [String: DictionarySense] = [:]
         for sense in senses.sorted(by: { $0.id < $1.id }) {
-            let key = "\(sense.partOfSpeech ?? "unknown")|\(EnglishTokenizer.normalized(sense.en))|\(sense.zh)"
+            let key = sense.originKind == "mdx" ? sense.id : "\(sense.partOfSpeech ?? "unknown")|\(EnglishTokenizer.normalized(sense.en))|\(sense.zh)"
             if var old = merged[key] {
                 old.sources = Array(Set((old.sources ?? []) + (sense.sources ?? []))).sorted()
                 if old.line != sense.line { old.line += "\n" + sense.line }
@@ -185,7 +188,7 @@ actor DictionaryAggregator {
         func score(_ sense: DictionarySense) -> Double {
             let definition = sense.en + " " + (sense.examples ?? []).joined(separator: " ")
             let lexical = Double(contextWords.intersection(words(definition)).count * 10 +
-                (grammaticalPart != nil && sense.partOfSpeech == grammaticalPart ? 20 : 0) + (sense.partOfSpeech != nil ? 2 : 0))
+                (grammaticalPart != nil && (sense.partOfSpeech == grammaticalPart || grammaticalPart == "verb" && sense.partOfSpeech == "modal verb") ? 20 : 0) + (sense.partOfSpeech != nil ? 2 : 0))
             guard let embedding else { return lexical }
             let distance = embedding.distance(between: String(context.prefix(1200)), and: String(definition.prefix(1200)))
             return lexical + (distance.isFinite ? max(0, 2 - distance) * 4 : 0)
@@ -228,23 +231,41 @@ actor DictionaryAggregator {
         }
     }
     func save(_ lemma: String, senses: [DictionarySense], successful: [String], at now: Date) throws {
+        guard successful == [BundledMDXDictionaryProvider.sourceName], senses.allSatisfy({
+            $0.originKind == "mdx" && $0.sourceRevision == BundledMDXDictionaryProvider.sourceVersion && $0.sources == [BundledMDXDictionaryProvider.sourceName]
+        }) else { throw LearningError.invalid("只允许保存当前内置 MDX 的派生数据。") }
         try writer.write {
             let context = writer.context
             let reliable = senses.filter(BilingualMeaningPolicy.trusted)
-            if !reliable.isEmpty {
-                let rows = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).filter { $0.lemma == lemma }
-                if let old = rows.first { old.reliableChineseKnown = true; old.checkedAt = max(old.checkedAt, now); old.evidence = reliable.map(\.line).joined(separator: "\n") }
-                else { context.insert(DictionaryEligibilityRecord(lemma: lemma, at: now, evidence: reliable.map(\.line).joined(separator: "\n"))) }
-            }
+            let rows = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).filter { $0.lemma == lemma }
+            guard rows.count <= 1 else { throw PersistenceError.integrity("重复词典资格证据") }
+            let eligibility = rows.first ?? DictionaryEligibilityRecord(lemma: lemma, at: now, evidence: "")
+            if eligibility.modelContext == nil { context.insert(eligibility) }
+            eligibility.mdxSHA = BundledMDXDictionaryProvider.sourceSHA
+            eligibility.reliableChineseKnown = !reliable.isEmpty
+            eligibility.lookupStatus = reliable.isEmpty ? (senses.isEmpty ? "notFound" : "noChinese") : "chinese"
+            eligibility.lookupError = nil; eligibility.checkedAt = now
+            eligibility.evidence = "mdx|" + BundledMDXDictionaryProvider.sourceSHA
             for provider in successful {
                 guard let version = DictionaryAggregator.versions[provider] else { continue }
                 let values = senses.filter { ($0.sources ?? []).contains(provider) && (provider != "Free Dictionary API" || URL(string: $0.licenseURL ?? "")?.host == "creativecommons.org") }
-                guard !values.isEmpty else { continue }
                 let previous = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.key == "en|\(provider)|\(version)|\(lemma)" }
                 if previous.contains(where: { $0.fetchedAt > now }) { continue }
                 for old in previous { context.delete(old) }
                 context.insert(DictionaryProviderCacheRecord(lemma: lemma, provider: provider, version: version, data: try JSONEncoder().encode(values), at: now))
             }
+        }
+    }
+    func recordFailure(_ lemma: String, error: String, at now: Date) throws {
+        try writer.write {
+            let context = writer.context
+            let rows = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).filter { $0.lemma == lemma }
+            guard rows.count <= 1 else { throw PersistenceError.integrity("重复词典资格证据") }
+            let record = rows.first ?? DictionaryEligibilityRecord(lemma: lemma, at: now, evidence: "")
+            if record.modelContext == nil { context.insert(record) }
+            if record.mdxSHA != BundledMDXDictionaryProvider.sourceSHA { record.reliableChineseKnown = false }
+            record.mdxSHA = BundledMDXDictionaryProvider.sourceSHA; record.lookupStatus = "failed"
+            record.lookupError = error; record.checkedAt = now
         }
     }
 }

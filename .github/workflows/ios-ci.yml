@@ -36,7 +36,7 @@ jobs:
         run: |
           set -euo pipefail
           TEST_RUN_FILE="$(python3 -c 'import os,pathlib; print(next((pathlib.Path(os.environ["RUNNER_TEMP"])/"round4/Build/Products").glob("*.xctestrun")))')"
-          xcodebuild test-without-building -xctestrun "$TEST_RUN_FILE" -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/round4-core.xcresult" -only-testing:LexiDawnTests/Round4Tests 2>&1 | tee "${RUNNER_TEMP}/round4-core.log"
+          xcodebuild test-without-building -xctestrun "$TEST_RUN_FILE" -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/round4-core.xcresult" -only-testing:LexiDawnTests/Round4Tests -only-testing:LexiDawnTests/MDXDictionaryTests 2>&1 | tee "${RUNNER_TEMP}/round4-core.log"
       - name: Isolate UI simulator after core tests
         if: contains(github.event.head_commit.message, '[round4-ui]')
         run: |

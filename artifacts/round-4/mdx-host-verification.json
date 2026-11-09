@@ -1,0 +1,19 @@
+{
+  "nativeReader": "C on host; not iOS XCTest",
+  "indexedEntries": 203181,
+  "linkedRecords": 151528,
+  "htmlRecords": 51653,
+  "decompressedBytes": 270665044,
+  "largestRecordBytes": 647804,
+  "allRecordsUTF8": true,
+  "allLinkTargetsPresent": true,
+  "allLinkPathsAcyclic": true,
+  "seconds": 1.981,
+  "mdxSHA256": "095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443",
+  "packagingFixtureTests": 8,
+  "iOSBuildExecuted": false,
+  "simulatorExecuted": false,
+  "sourceCommit": "30311f806d587453c601a0a44bf5cc8a6c338ec4",
+  "workingTreeModified": true,
+  "readerSourceSHA256": "9573919d69519c903a1ca2aebe79527059bdfbe0d764fe03a425abe09dba973a"
+}

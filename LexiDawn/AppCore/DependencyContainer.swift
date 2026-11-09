@@ -54,7 +54,6 @@ final class AppDependencies: ObservableObject {
             dependencies.learning?.productionNetworking = false
         }
         #endif
-        dependencies.learning?.dictionary.enableOnlineProviders()
         if try !dependencies.articleRepository.allArticleIDs().contains(SourceRegistry.rfc.id) { try dependencies.learning?.content.installBundledRFC(at: Date()) }
         return dependencies
     }

@@ -23,6 +23,7 @@ xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn \
 
 TASK_APP="$TASK_DERIVED/Build/Products/Release-iphoneos/LexiDawn.app"
 test -d "$TASK_APP"
+python3 scripts/verify-bundled-dictionary.py --app "$TASK_APP" --report "$LEXIDAWN_IPA_OUTPUT/bundled-dictionary.json"
 TASK_STAGE="$(mktemp -d "${RUNNER_TEMP}/lexidawn-ipa-stage.XXXXXX")"
 trap 'rm -rf "$TASK_STAGE"' EXIT
 mkdir "$TASK_STAGE/Payload"
@@ -52,4 +53,5 @@ python3 scripts/verify-unsigned-ipa.py
   /usr/bin/zip -q -r -y "$LEXIDAWN_IPA_OUTPUT/LexiDawn-unsigned.ipa" Payload
 )
 python3 scripts/verify-unsigned-ipa.py --archive
+python3 scripts/verify-bundled-dictionary.py --ipa "$LEXIDAWN_IPA_OUTPUT/LexiDawn-unsigned.ipa" --report "$LEXIDAWN_IPA_OUTPUT/ipa-dictionary.json"
 cp docs/signing.md "$LEXIDAWN_IPA_OUTPUT/INSTALL-AltServer.md"

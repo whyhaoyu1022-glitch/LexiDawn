@@ -209,7 +209,6 @@ struct ReaderView: View {
         let generation = UUID(); lookupGeneration = generation; loading = true
         defer { if lookupGeneration == generation { loading = false } }
         do {
-            if let local = try? await learning.dictionary.localResult(token.surface), generation == lookupGeneration, !Task.isCancelled { result = local }
             let value = try await learning.dictionary.lookup(token.surface, context: token.sentence)
             guard generation == lookupGeneration, !Task.isCancelled else { return }
             result = value; error = nil
@@ -345,23 +344,21 @@ struct DictionaryResultContent: View {
                                 if let synonyms = sense.synonyms, !synonyms.isEmpty { Text("近义词  " + synonyms.joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary) }
                                 if let antonyms = sense.antonyms, !antonyms.isEmpty { Text("反义词  " + antonyms.joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary) }
                                 if let etymology = sense.etymology, !etymology.isBlank { DisclosureGroup("词源") { Text(etymology).font(.footnote) } }
-                                Text((sense.sources ?? ["CC-CEDICT · 待确认候选"]).joined(separator: " · "))
+                                if let headword = sense.lexicalHeadword, headword != result.headword {
+                                    Text(headword).font(.system(.headline, design: .serif))
+                                }
+                                Text((sense.sources ?? []).joined(separator: " · "))
                                     .font(.caption2).foregroundStyle(.secondary)
                             }.frame(maxWidth: .infinity, alignment: .leading)
                         }.accessibilityIdentifier("dictionary-full-sense-" + sense.id)
                     }
                 }
             }
-            let providers = Array(Set(senses.flatMap { $0.sources ?? ["CC-CEDICT"] })).sorted()
+            let providers = Array(Set(senses.flatMap { $0.sources ?? [] })).sorted()
             if !providers.isEmpty {
                 Text((providers.count > 1 ? "融合来源：" : "来源：") + providers.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("dictionary-providers")
             }
             if result.cached { Label("本地词典", systemImage: "internaldrive").font(.caption).foregroundStyle(.secondary) }
-            if !result.failedProviders.isEmpty { Label("部分词典暂不可用", systemImage: "wifi.exclamationmark").font(.caption).foregroundStyle(.secondary) }
-            if result.emptyProviders.contains("Free Dictionary API") { Text("Free Dictionary 当前不可用").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("dictionary-free-unavailable") }
-            else if result.senses.contains(where: { ($0.sources ?? []).contains("Free Dictionary API") }), !result.usableSenses.contains(where: { ($0.sources ?? []).contains("Free Dictionary API") }) {
-                Text("Free Dictionary 未提供英中释义").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("dictionary-free-no-Chinese")
-            }
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -378,7 +375,7 @@ struct DictionaryDetailView: View {
     @EnvironmentObject private var dependencies: AppDependencies
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @State private var speech = AVSpeechSynthesizer()
+    @StateObject private var speech = SystemPronunciation()
     @State private var entry: VocabularyItem?
     @State private var addition: VocabularyAddition?
     @State private var showingSynonyms = false
@@ -390,8 +387,11 @@ struct DictionaryDetailView: View {
                 HStack(alignment: .top) {
                     Text(result.headword).font(.system(.largeTitle, design: .serif).weight(.semibold)).textSelection(.enabled)
                     Spacer(minLength: 12)
-                    Button { speak() } label: { Image(systemName: "speaker.wave.2").frame(width: 44, height: 44) }.accessibilityLabel("系统英语朗读")
+                    Button { speech.toggle(headword: result.headword) } label: {
+                        Image(systemName: speech.state == .speaking ? "stop.circle" : "speaker.wave.2").frame(width: 44, height: 44)
+                    }.accessibilityLabel(speech.state == .speaking ? "停止系统朗读" : "系统英语朗读").accessibilityIdentifier("dictionary-system-pronunciation")
                 }
+                if speech.state == .unavailable { Text("系统英语语音不可用").font(.caption).foregroundStyle(.secondary) }
                 HStack {
                     if entry != nil {
                         Label("已加入生词本", systemImage: "checkmark.circle.fill").foregroundStyle(.secondary)
@@ -428,7 +428,7 @@ struct DictionaryDetailView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         ForEach(result.usableSenses) { Text($0.line).font(.caption).textSelection(.enabled) }
                         Text("更新于 " + result.updatedAt.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
-                        Text("Oxford：未配置").font(.caption).foregroundStyle(.secondary)
+                        Text("App 内置 MDX · 离线查询 · 系统发音").font(.caption).foregroundStyle(.secondary)
                     }.padding(.top, 8)
                 }.font(.subheadline)
             }.padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 24)
@@ -447,10 +447,9 @@ struct DictionaryDetailView: View {
             .toolbar(.hidden, for: .navigationBar)
             .task { refresh() }.onReceive(learning.$revision) { _ in refresh() }
             .popover(item: $selection) { WordLookupSheet(model: $0).presentationCompactAdaptation(.popover) }
-            .onDisappear { speech.stopSpeaking(at: .immediate) }
+            .onDisappear { speech.stop() }
     }
     private var background: Color { theme == "paper" ? LexiDawnColor.paperWarm : theme == "dark" ? Color(red: 0.055, green: 0.065, blue: 0.09) : Color(uiColor: .systemBackground) }
-    private func speak() { let value = AVSpeechUtterance(string: result.headword); value.voice = AVSpeechSynthesisVoice(language: "en-US"); speech.speak(value) }
     private func lookup(_ token: EnglishToken, _ sense: DictionarySense) {
         open(token, origin: .dictionary(headword: result.headword, evidence: sense.line, text: (sense.examples ?? []).first { $0.contains(token.surface) }))
     }

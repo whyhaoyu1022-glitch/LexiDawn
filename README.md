@@ -1,3 +1,5 @@
+> **2026-11-09 负责人规则覆盖：唯一词典来源为 App 内置 MDX。** 两个 ZIP 只在构建阶段由仓库 merge.py 恢复并验证；运行时原生 C 读取压缩索引与记录块，由 Swift Actor 查询，系统 libxml2 提取词义，AVSpeechSynthesizer 发音。不需要 MDD、词典图片、在线音频，不支持用户导入词典，不向任何在线词典查询。只有 MDX 成功确认无中文或无词条，才允许结构化个人义项；资源/解析故障不等于查无词条。历史外部缓存及个人数据保留，外部缓存不再参与展示或新题。下文旧多 Provider、CC-CEDICT、在线回退及未知失败可补义规则均属历史，已被本段取代。文章来源规则不变。实现及测试尚在进行，不能据此关闭 144 项验收。
+
 # 词光 LexiDawn
 
 **CURRENT · Round 4正在开发：英中词典、阅读与UI批次已写入，原生验证/复习集成/截图验收未完成。**
@@ -28,7 +30,7 @@
 
 按负责人 2026-11-01 的特别指示，个人模式尝试公开官网完整正文。BBC、Reuters、AP、Guardian、NPR、DW、VOA、NASA、ScienceDaily、Phys.org、Smithsonian 加上 Wikipedia/Wikinews 共 13 个候选适配器；可尝试不代表成功或出版社授权。登录、验证码、付费墙、403 和不完整正文均丢弃，无摘要、URL 或浏览器降级。实际已验证来源与许可调查分别记录在 [来源审查](docs/article-source-eligibility-audit.md)。
 
-词典接入 Wiktionary、Free Dictionary API 和本地 CC-CEDICT，保留原始来源及许可。某来源失败时保留其他真实结果；缺失字段不编造。词典缓存按 Provider/版本管理，清缓存不删除生词、个人释义、确认义项或复习数据。
+唯一词典来源为 App 内置 MDX。构建阶段恢复并校验完整文件，原生 C 引擎与 Swift Actor 离线查询，系统 libxml2 解析 HTML，AVSpeechSynthesizer 负责系统发音。不需要 MDD、图片或在线音频，不支持导入其他词典，没有在线回退。MDX 成功确认没有中文释义时，允许创建结构化个人词条；引擎故障不冒充查无此词。旧外部缓存保留历史，但不再用于展示和新题。
 
 ## 构建和验证
 

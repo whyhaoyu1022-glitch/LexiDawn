@@ -5,13 +5,13 @@ import SwiftData
 @MainActor final class Round4Tests: XCTestCase {
     let now = Date(timeIntervalSince1970: 1_798_300_000)
     func testEnglishOnlyDoesNotLockPersonalChineseDefinitions() {
-        let english = DictionarySense(id: "en", en: "Explicit English fixture definition", zh: "", line: "Fixture", sources: ["Wiktionary"])
+        let english = DictionarySense(id: "en", en: "Explicit English fixture definition", zh: "", line: "Fixture", sources: [BundledMDXDictionaryProvider.sourceName], sourceRevision: BundledMDXDictionaryProvider.sourceVersion, originKind: "mdx")
         XCTAssertFalse(BilingualMeaningPolicy.trusted(english))
         XCTAssertTrue(BilingualMeaningPolicy.permitsPersonal(senses: [english], knownReliableChinese: false))
         XCTAssertTrue(BilingualMeaningPolicy.displaySenses([english]).isEmpty)
     }
     func testTrustedChineseLocksButReverseIndexDoesNot() {
-        let trusted = DictionarySense(id: "trusted", en: "", zh: "明确原创中文义项夹具", line: "Fixture", sources: ["Wiktionary"])
+        let trusted = DictionarySense(id: "trusted", en: "", zh: "明确原创中文义项夹具", line: "Fixture", sources: [BundledMDXDictionaryProvider.sourceName], sourceRevision: BundledMDXDictionaryProvider.sourceVersion, originKind: "mdx")
         let reverse = DictionarySense(id: "reverse", en: "", zh: "反向候选", line: "Fixture", sources: ["CC-CEDICT"])
         XCTAssertTrue(BilingualMeaningPolicy.trusted(trusted))
         XCTAssertFalse(BilingualMeaningPolicy.permitsPersonal(senses: [trusted], knownReliableChinese: false))
@@ -23,7 +23,7 @@ import SwiftData
         let values = try WiktionaryBilingualParser.parse(html, revision: "fixture-7")
         XCTAssertEqual(values.map(\.zh), ["明确原创名词义项", "明确原创动词义项"])
         XCTAssertEqual(values.map(\.partOfSpeech), ["noun", "verb"])
-        XCTAssertTrue(values.allSatisfy { $0.sourceRevision == "fixture-7" && BilingualMeaningPolicy.trusted($0) })
+        XCTAssertTrue(values.allSatisfy { $0.sourceRevision == "fixture-7" && !BilingualMeaningPolicy.trusted($0) })
     }
     func testChineseParserRejectsOtherLanguageAndEnglishOnly() throws {
         XCTAssertTrue(try WiktionaryBilingualParser.parse("<h2>法語</h2><h3>名詞</h3><ol><li>不属于英语</li></ol>", revision: "1").isEmpty)
@@ -62,7 +62,10 @@ import SwiftData
     }
     private func entry(_ learning: LearningServices) throws -> VocabularyAddition {
         let id = try learning.content.importArticle(.init(title: "Explicit Round 4 fixture", body: "A lexidawnfixtureword appears in this original test sentence.", source: "Original XCTest fixture", rightsConfirmed: true), at: now)
-        return try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "lexidawnfixtureword", range: NSRange(location: 2, length: 18), sentence: "A lexidawnfixtureword appears in this original test sentence."), articleID: id, autoAdd: false, explicit: true, at: now))
+        let addition = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "lexidawnfixtureword", range: NSRange(location: 2, length: 18), sentence: "A lexidawnfixtureword appears in this original test sentence."), articleID: id, autoAdd: false, explicit: true, at: now))
+        // Explicit eligibility fixture, not evidence that the native MDX reader ran.
+        try learning.dictionary.recordEmptyEligibilityFixture("lexidawnfixtureword", at: now)
+        return addition
     }
     func testPersonalSensesPersistAndNotesRemainIndependent() throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
@@ -79,8 +82,8 @@ import SwiftData
         let sense = PersonalDictionarySense(partOfSpeech: "noun", chinese: "旧个人义", confirmed: true)
         try learning.vocabulary.savePersonalSenses(entryID: added.entryID, senses: [sense], at: now)
         let word = try XCTUnwrap(learning.vocabulary.entries().first?.lemma)
-        let trusted = DictionarySense(id: "explicit-trusted-fixture", en: "", zh: "可靠英中原创夹具", line: "Explicit fixture", partOfSpeech: "noun", sources: ["Wiktionary"])
-        try DictionaryCacheRepository(context: ModelContext(app.modelContainer)).save(word, senses: [trusted], successful: ["Wiktionary"], at: now)
+        let trusted = DictionarySense(id: "explicit-trusted-fixture", en: "", zh: "可靠英中原创夹具", line: "Explicit fixture", partOfSpeech: "noun", sources: [BundledMDXDictionaryProvider.sourceName], sourceRevision: BundledMDXDictionaryProvider.sourceVersion, originKind: "mdx")
+        try DictionaryCacheRepository(context: ModelContext(app.modelContainer)).save(word, senses: [trusted], successful: [BundledMDXDictionaryProvider.sourceName], at: now)
         XCTAssertFalse(try learning.vocabulary.personalEditingAllowed(entryID: added.entryID))
         XCTAssertThrowsError(try learning.vocabulary.savePersonalSenses(entryID: added.entryID, senses: [], at: now))
         XCTAssertThrowsError(try learning.vocabulary.annotate(entryID: added.entryID, meaning: "禁止覆盖", notes: "", at: now))
@@ -293,7 +296,7 @@ import SwiftData
         let values = try WiktionaryChineseTranslationParser.parse(html, revision: "original-9")
         XCTAssertEqual(values.map(\.partOfSpeech), ["noun", "verb"])
         XCTAssertEqual(values.map(\.zh), ["点头；示意", "同意"])
-        XCTAssertTrue(values.allSatisfy(BilingualMeaningPolicy.trusted)); XCTAssertTrue(values.allSatisfy { $0.sourceRevision == "original-9" })
+        XCTAssertTrue(values.allSatisfy { !BilingualMeaningPolicy.trusted($0) }); XCTAssertTrue(values.allSatisfy { $0.sourceRevision == "original-9" })
         XCTAssertTrue(try WiktionaryChineseTranslationParser.parse("<h2>French</h2><h3>Noun</h3><div class='NavFrame'><span lang='zh'>错误语言</span></div>", revision: "0").isEmpty)
     }
 

@@ -91,6 +91,22 @@ final class ArticleRecord {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
+
+    // Non-stored historical mapping from c52dd2e: Data/Repositories.swift.
+    // Keep it on the frozen type; the production ArticleRecord extension cannot
+    // apply to this distinct XCTest model. No stored schema property is changed.
+    func candidate() throws -> ArticleCandidate {
+        guard let status = ArticleContentStatus(rawValue: contentStatus) else {
+            throw PersistenceError.integrity("文章内容状态无效")
+        }
+        return ArticleCandidate(id: articleID, canonicalURL: canonicalURL, title: originalTitle, sourceID: sourceID,
+            displayTitle: displayTitle, difficulty: difficulty, imageURL: imageURL, imageAttribution: imageAttribution,
+            publishedAt: publishedAt, licenseID: licenseID, licenseVerified: licenseVerified, bodyText: bodyText,
+            contentStatus: status, topicTags: topicTags,
+            cachePermission: try cachePermissionData.map { try JSONDecoder().decode(ArticleCachePermission.self, from: $0) },
+            imageLicenseID: imageLicenseID, sourceAttribution: sourceAttribution,
+            fullTextDisplayAllowed: fullTextDisplayAllowed == true, imageLicenseVerified: imageLicenseVerified == true)
+    }
 }
 
 @Model

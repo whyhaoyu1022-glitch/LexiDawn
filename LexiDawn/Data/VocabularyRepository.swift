@@ -134,7 +134,8 @@ struct VocabularyAddition {
                 let aliases = all.filter { $0.canonicalEntryID == record.entryID }
                 let groupIDs = Set([record.entryID] + aliases.map(\.entryID))
                 let attached = contexts.filter { groupIDs.contains($0.entryID) }.sorted { ($0.createdAt, $0.contextID) < ($1.createdAt, $1.contextID) }
-                let definitions = senses.filter { $0.entryID == "cedict-reverse-v1|\(record.lemma)" }.sorted { $0.senseID < $1.senseID }.map(\.chinese)
+                // Retired external rows stay on disk for history, never as current meanings.
+                let definitions: [String] = []
                 let sourceItems: [VocabularyContextItem] = attached.map { source in
                     let article = articles.first { $0.articleID == source.articleID }
                     let dictionaryContext = source.contextKind == "dictionary"
@@ -295,8 +296,8 @@ struct VocabularyAddition {
         try writer.write {
             guard let entry = try writer.context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID }), entry.deletedAt == nil else { throw LearningError.invalid("词条已移除。") }
             let updatedMeaning = meaning.isBlank ? nil : meaning
-            if entry.userMeaning != updatedMeaning, try hasReliableChinese(lemma: entry.lemma, context: writer.context) {
-                throw LearningError.invalid("已有可靠英中释义，不能修改个人释义。你的笔记仍可保存。")
+            if entry.userMeaning != updatedMeaning, try !personalAllowed(lemma: entry.lemma, context: writer.context) {
+                throw LearningError.invalid("MDX 未确认缺少中文释义，不能修改个人释义。你的笔记仍可保存。")
             }
             if entry.userMeaning != updatedMeaning { entry.reviewMeaningSenseID = nil; entry.reviewMeaningText = nil; entry.reviewMeaningEvidence = nil; entry.reviewMeaningSnapshotData = nil }
             entry.userMeaning = updatedMeaning; entry.notes = notes.isBlank ? nil : notes
@@ -304,7 +305,7 @@ struct VocabularyAddition {
         }
     }
     private func hasReliableChinese(lemma: String, context: ModelContext) throws -> Bool {
-        if try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).contains(where: { $0.lemma == lemma && $0.reliableChineseKnown }) { return true }
+        if try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).contains(where: { $0.lemma == lemma && $0.mdxSHA == BundledMDXDictionaryProvider.sourceSHA && $0.reliableChineseKnown }) { return true }
         return try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.lemma == lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }.contains { row in
             ((try? JSONDecoder().decode([DictionarySense].self, from: row.payload)) ?? []).contains(where: BilingualMeaningPolicy.trusted)
         }
@@ -312,7 +313,13 @@ struct VocabularyAddition {
     func personalEditingAllowed(entryID: String) throws -> Bool {
         try writer.read { context in
             guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID && $0.deletedAt == nil }) else { throw LearningError.invalid("词条已移除。") }
-            return try !hasReliableChinese(lemma: entry.lemma, context: context)
+            return try personalAllowed(lemma: entry.lemma, context: context)
+        }
+    }
+    private func personalAllowed(lemma: String, context: ModelContext) throws -> Bool {
+        guard try !hasReliableChinese(lemma: lemma, context: context) else { return false }
+        return try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).contains {
+            $0.lemma == lemma && $0.mdxSHA == BundledMDXDictionaryProvider.sourceSHA && ["noChinese", "notFound"].contains($0.lookupStatus ?? "")
         }
     }
     func savePersonalSenses(entryID: String, senses: [PersonalDictionarySense], at now: Date) throws {
@@ -322,7 +329,7 @@ struct VocabularyAddition {
         try writer.write {
             let context = writer.context
             guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID && $0.deletedAt == nil }) else { throw LearningError.invalid("词条已移除。") }
-            guard try !hasReliableChinese(lemma: entry.lemma, context: context) else { throw LearningError.invalid("已取得可靠英中释义，个人释义已停止编辑；草稿保留。") }
+            guard try personalAllowed(lemma: entry.lemma, context: context) else { throw LearningError.invalid("请先完成 MDX 查询。已有中文释义或词典故障时不能编辑个人释义，草稿保留。") }
             let old = try entry.personalSensesData.map { try JSONDecoder().decode([PersonalDictionarySense].self, from: $0) } ?? []
             let updated = senses.map { draft -> PersonalDictionarySense in
                 var value = draft
@@ -356,11 +363,11 @@ struct VocabularyAddition {
             if let sense = official.first(where: { $0.id == sourceSenseID }) {
                 entry.reviewMeaningSenseID = sense.id; entry.reviewMeaningText = sense.zh; entry.reviewMeaningEvidence = sense.line; entry.reviewMeaningSnapshotData = try JSONEncoder().encode(sense); entry.revision += 1; return
             }
-            guard try !hasReliableChinese(lemma: entry.lemma, context: context) else { throw LearningError.invalid("请选择可靠来源中的中文义项。") }
-            let senses = try context.fetch(FetchDescriptor<DictionarySenseRecord>()).filter { $0.entryID == "cedict-reverse-v1|\(entry.lemma)" && !$0.chinese.isBlank && ($0.senseID == sourceSenseID || $0.senseID.hasSuffix("|" + sourceSenseID)) }
-            guard senses.count == 1, let sense = senses.first else { throw LearningError.invalid("无法唯一核实此中文义项，请重新查词或填写个人释义。") }
-            entry.reviewMeaningSenseID = sense.senseID; entry.reviewMeaningText = sense.chinese; entry.reviewMeaningEvidence = sense.sourceLine
-            entry.reviewMeaningSnapshotData = try JSONEncoder().encode(DictionarySense(id: sense.senseID, en: "", zh: sense.chinese, line: "用户确认 · " + sense.sourceLine, partOfSpeech: sense.partOfSpeech, sources: ["个人确认"], originKind: "personal"))
+            guard try personalAllowed(lemma: entry.lemma, context: context) else { throw LearningError.invalid("请选择内置 MDX 中的中文义项。") }
+            let personal = try entry.personalSensesData.map { try JSONDecoder().decode([PersonalDictionarySense].self, from: $0) } ?? []
+            guard let sense = personal.filter(\.reviewReady).map({ $0.dictionarySense(entryID: entryID) }).first(where: { $0.id == sourceSenseID }) else { throw LearningError.invalid("请选择已确认、具有词性与中文的个人义项。") }
+            entry.reviewMeaningSenseID = sense.id; entry.reviewMeaningText = sense.zh; entry.reviewMeaningEvidence = sense.line
+            entry.reviewMeaningSnapshotData = try JSONEncoder().encode(sense)
             entry.revision += 1
         }
     }
@@ -384,6 +391,8 @@ struct DictionarySense: Codable, Equatable, Identifiable, Sendable {
     var relatedPhrases: [String]? = nil
     var sourceRevision: String? = nil
     var originKind: String? = nil
+    var lexicalHeadword: String? = nil
+    var sectionKind: String? = nil
 }
 
 struct DictionaryResult: Equatable {
@@ -401,6 +410,8 @@ struct DictionaryResult: Equatable {
 }
 protocol DictionaryProvider: Sendable { func lookup(_ headword: String) async throws -> [DictionarySense] }
 /// Local, source-derived, legally redistributable index. No network or personal reading history upload.
+// Historical parser fixtures only. Never constructed by the application.
+#if DEBUG && targetEnvironment(simulator)
 actor CEDICTDictionaryProvider: DictionaryProvider {
     static let sourceVersion = "2026-10-30-reverse-v1"
     private var index: [String: [DictionarySense]]?
@@ -412,93 +423,80 @@ actor CEDICTDictionaryProvider: DictionaryProvider {
         return index?[headword] ?? []
     }
 }
+#else
+enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v1" }
+#endif
 @MainActor final class DictionaryLookupService {
     private let writer: RepositoryWriter
-    private let provider: DictionaryProvider
-    private var aggregator: DictionaryAggregator?
-    private var richCache: DictionaryCacheRepository?
-    #if DEBUG && targetEnvironment(simulator)
-    private var fixtureWithoutLocal = false
-    func configureDictionaryEvidence(providers: [(String, any DictionaryProvider)], cachedSenses: [DictionarySense] = [], stale: Bool = false) throws {
-        fixtureWithoutLocal = true; aggregator = DictionaryAggregator(providers: providers)
-        let cache = DictionaryCacheRepository(context: writer.context); richCache = cache
-        if !cachedSenses.isEmpty { try cache.save("internet", senses: cachedSenses, successful: Array(DictionaryAggregator.versions.keys), at: Date().addingTimeInterval(stale ? -31 * 86400 : 0)) }
+    private var provider: any DictionaryProvider
+    private let cache: DictionaryCacheRepository
+    init(context: ModelContext, provider: any DictionaryProvider = BundledMDXDictionaryProvider()) {
+        writer = RepositoryWriter(context: context); self.provider = provider
+        cache = DictionaryCacheRepository(context: context)
     }
-    #endif
-    var onlineEnabled: Bool { aggregator != nil }
-    func enableOnlineProviders() { aggregator = DictionaryAggregator(); richCache = DictionaryCacheRepository(context: writer.context) }
+    var onlineEnabled: Bool { false }
     func clearCaches() throws -> Int {
         try writer.write {
             let context = writer.context
             let local = try context.fetch(FetchDescriptor<DictionaryEntryRecord>())
             let remote = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>())
             for record in try context.fetch(FetchDescriptor<DictionarySenseRecord>()) { context.delete(record) }
-            for record in local { context.delete(record) }; for record in remote { context.delete(record) }
+            for record in local { context.delete(record) }
+            for record in remote { context.delete(record) }
             return local.count + remote.count
         }
     }
-    init(context: ModelContext, provider: DictionaryProvider = CEDICTDictionaryProvider()) {
-        writer = RepositoryWriter(context: context); self.provider = provider
-    }
     func lookup(_ surface: String, context: String = "", at now: Date = Date()) async throws -> DictionaryResult {
-        if let aggregator, let richCache {
-            let key = EnglishTokenizer.lemma(surface, context: context)
-            let old = try richCache.load(key, at: now)
-            if old.complete {
-                let local = try? await lookupLocal(surface, at: now)
-                return DictionaryResult(headword: key, senses: DictionaryAggregator.rank((local?.senses ?? []) + old.senses, context: context, surface: key), updatedAt: old.date, sourceURL: "https://dictionaryapi.dev/", licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/", cached: true, versions: DictionaryAggregator.versions) }
-            let outcome = await aggregator.lookup(key)
+        let key = EnglishTokenizer.lemma(surface, context: context)
+        let senses: [DictionarySense]
+        do {
+            senses = try await provider.lookup(key)
             try Task.checkCancellation()
-            let local = try? await lookupLocal(surface, at: now)
-            let all = (local?.senses ?? []) + outcome.senses
-            let fallback = old.senses.filter { !Set($0.sources ?? []).intersection(outcome.failed + outcome.empty).isEmpty }
-            let senses = DictionaryAggregator.merge(all + fallback)
-            guard !senses.isEmpty || outcome.failed.isEmpty else { throw LearningError.invalid("词典来源暂时不可用；本地没有缓存，请联网后重试。") }
-            if !outcome.senses.isEmpty { try richCache.save(key, senses: outcome.senses, successful: outcome.successful, at: now) }
-            let resultDate = outcome.senses.isEmpty ? (old.senses.isEmpty ? local?.updatedAt ?? now : old.date) : now
-            return DictionaryResult(headword: key, senses: DictionaryAggregator.rank(senses, context: context, surface: key), updatedAt: resultDate,
-                sourceURL: "https://dictionaryapi.dev/", licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/", failedProviders: outcome.failed, emptyProviders: outcome.empty,
-                cached: !fallback.isEmpty || outcome.senses.isEmpty && !(local?.senses.isEmpty ?? true), versions: DictionaryAggregator.versions)
+        } catch is CancellationError { throw CancellationError() }
+        catch {
+            try cache.recordFailure(key, error: error.localizedDescription, at: now)
+            throw error
         }
-        return try await lookupLocal(surface, at: now)
+        guard Set(senses.map(\.id)).count == senses.count else { throw MDXDictionaryError.invalidEntry("重复义项身份") }
+        try cache.save(key, senses: senses, successful: [BundledMDXDictionaryProvider.sourceName], at: now)
+        return DictionaryResult(headword: key, senses: senses, updatedAt: now, sourceURL: "", licenseURL: "", cached: true, versions: DictionaryAggregator.versions)
     }
     func localResult(_ surface: String, at now: Date = Date()) async throws -> DictionaryResult {
-        var value = try await lookupLocal(surface, at: now); value.cached = true; return value
-    }
-    private func lookupLocal(_ surface: String, at now: Date) async throws -> DictionaryResult {
-        let key = EnglishTokenizer.lemma(surface)
-        #if DEBUG && targetEnvironment(simulator)
-        if fixtureWithoutLocal { return DictionaryResult(headword: key, senses: [], updatedAt: now, sourceURL: "https://dictionaryapi.dev/", licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/") }
-        #endif
-        if let cached = try cached(key) { return cached }
-        let senses = try await provider.lookup(key)
-        try Task.checkCancellation()
-        guard Set(senses.map(\.id)).count == senses.count else { throw LearningError.invalid("词典返回重复义项，不能保存。") }
-        return try writer.write {
-            let context = writer.context
-            let record = try context.fetch(FetchDescriptor<DictionaryEntryRecord>()).first { $0.headword == key } ?? DictionaryEntryRecord(headword: key, at: now)
-            if record.modelContext == nil { context.insert(record) }
-            var old = try context.fetch(FetchDescriptor<DictionarySenseRecord>())
-            if record.sourceVersion != CEDICTDictionaryProvider.sourceVersion {
-                for stale in old where stale.entryID == record.entryID { context.delete(stale) }
-                old.removeAll { $0.entryID == record.entryID }
-                record.sourceVersion = CEDICTDictionaryProvider.sourceVersion; record.updatedAt = now
-            }
-            for sense in senses where !old.contains(where: { $0.senseID == record.entryID + "|" + sense.id }) {
-                context.insert(DictionarySenseRecord(senseID: record.entryID + "|" + sense.id, entryID: record.entryID, english: sense.en, chinese: sense.zh, sourceLine: sense.line))
-            }
-            return DictionaryResult(headword: key, senses: senses, updatedAt: record.updatedAt, sourceURL: record.sourceURL, licenseURL: record.licenseURL)
-        }
+        try await lookup(surface, at: now)
     }
     func cached(_ key: String) throws -> DictionaryResult? {
-        try writer.read { context in
-            let entries = try context.fetch(FetchDescriptor<DictionaryEntryRecord>()).filter { $0.headword == key }
-            guard entries.count <= 1 else { throw PersistenceError.integrity("重复词典缓存") }
-            guard let entry = entries.first, entry.sourceVersion == CEDICTDictionaryProvider.sourceVersion else { return nil }
-            let senses = try context.fetch(FetchDescriptor<DictionarySenseRecord>()).filter { $0.entryID == entry.entryID }
-                .sorted { $0.senseID < $1.senseID }.map { DictionarySense(id: String($0.senseID.split(separator: "|").last ?? ""), en: $0.english, zh: $0.chinese, line: $0.sourceLine) }
-            return DictionaryResult(headword: key, senses: senses, updatedAt: entry.updatedAt, sourceURL: entry.sourceURL, licenseURL: entry.licenseURL)
+        let result = try cache.load(key, at: Date())
+        guard result.complete else { return nil }
+        return DictionaryResult(headword: key, senses: result.senses, updatedAt: result.date, sourceURL: "", licenseURL: "", cached: true, versions: DictionaryAggregator.versions)
+    }
+    #if DEBUG && targetEnvironment(simulator)
+    func recordEmptyEligibilityFixture(_ lemma: String, at now: Date) throws {
+        try cache.save(lemma, senses: [], successful: [BundledMDXDictionaryProvider.sourceName], at: now)
+    }
+    func configureDictionaryEvidence(providers: [(String, any DictionaryProvider)], cachedSenses: [DictionarySense] = [], stale: Bool = false) throws {
+        provider = MDXEvidenceAdapter(providers: providers)
+        if !cachedSenses.isEmpty {
+            try cache.save("internet", senses: cachedSenses.map(MDXEvidenceAdapter.mark), successful: [BundledMDXDictionaryProvider.sourceName], at: Date().addingTimeInterval(stale ? -31 * 86400 : 0))
         }
     }
+    #endif
 }
-
+#if DEBUG && targetEnvironment(simulator)
+/// Explicit UI/transport fixtures, excluded from Release. Never proves MDX parsing.
+private struct MDXEvidenceAdapter: DictionaryProvider {
+    let providers: [(String, any DictionaryProvider)]
+    static func mark(_ sense: DictionarySense) -> DictionarySense {
+        var value = sense
+        value.line = "Explicit fixture · " + value.line
+        value.sources = [BundledMDXDictionaryProvider.sourceName]
+        value.sourceRevision = BundledMDXDictionaryProvider.sourceVersion; value.originKind = "mdx"
+        return value
+    }
+    func lookup(_ headword: String) async throws -> [DictionarySense] {
+        var values: [DictionarySense] = []
+        for (_, provider) in providers { values += try await provider.lookup(headword) }
+        var ids = Set<String>()
+        return values.map(Self.mark).filter { ids.insert($0.id).inserted }
+    }
+}
+#endif

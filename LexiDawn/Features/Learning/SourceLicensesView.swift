@@ -29,12 +29,10 @@ struct SourceLicensesView: View {
                 Text("Wikinews：仅导入2024-12-17之后创建的已发布原文，保留贡献者署名与CC BY 4.0声明。 ")
                     .font(.footnote)
             }
-            Section("开放词典与个人释义") {
-                Text("CC-CEDICT · MDBG与贡献者 · CC BY-SA 4.0；反向索引提供可能中文对应词。").font(.subheadline)
-                Link("CC-CEDICT来源与许可", destination: URL(string: "https://www.mdbg.net/chinese/dictionary?page=cc-cedict")!)
-                Text("Free Dictionary API和English Wiktionary按返回的原始义项、词性、发音及例句展示；每条来源及许可随结果保留。没有可靠中文时使用明确标记的个人释义。").font(.subheadline)
-                Link("Free Dictionary API说明", destination: URL(string: "https://dictionaryapi.dev/")!)
-                Link("Wiktionary项目许可", destination: URL(string: "https://en.wiktionary.org/wiki/Wiktionary:Copyrights")!)
+            Section("内置词典与个人释义") {
+                Text("唯一词典来源：App 内置 MDX。所有查词在设备上离线完成。").font(.subheadline)
+                Text("系统英语朗读由 iOS 提供。不需要 MDD、词典图片或在线音频。").font(.footnote)
+                Text("MDX 没有中文释义时，可创建标记为用户自建的个人义项。个人笔记始终可以编辑。").font(.footnote)
             }
             Section("随附原始声明") { DisclosureGroup("查看完整许可说明") { Text(bundledNotices).font(.body).textSelection(.enabled) } }
         }.navigationTitle("来源与许可")

@@ -1,3 +1,5 @@
+> **2026-11-09 负责人规则覆盖：唯一词典来源为 App 内置 MDX。** 两个 ZIP 只在构建阶段由仓库 merge.py 恢复并验证；运行时原生 C 读取压缩索引与记录块，由 Swift Actor 查询，系统 libxml2 提取词义，AVSpeechSynthesizer 发音。不需要 MDD、词典图片、在线音频，不支持用户导入词典，不向任何在线词典查询。只有 MDX 成功确认无中文或无词条，才允许结构化个人义项；资源/解析故障不等于查无词条。历史外部缓存及个人数据保留，外部缓存不再参与展示或新题。下文旧多 Provider、CC-CEDICT、在线回退及未知失败可补义规则均属历史，已被本段取代。文章来源规则不变。实现及测试尚在进行，不能据此关闭 144 项验收。
+
 # CURRENT · Round 3 架构与数据模型
 
 全量 CI [41436291391](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391) 已完成且成功，测试代码为 `b13d6b4e21e425472d059770319d88cd7c50a15e`。Debug/Release、186 XCTest（0失败）、49主 XCUITest（0失败）、SE7/大屏3（均0失败）、导出专项及截图合并全部通过；327张编号截图覆盖138项要求，缺失0项。当前交付自动化证据与完整截图包，最终视觉验收由负责人逐图确认；真机/iOS27/完整VoiceOver听读及Instruments未实测。本次仅文档与证据收尾，不修改应用、测试或CI代码。 [完整交付报告](reviews/round-3-final-delivery-2026-11-02.md)。
