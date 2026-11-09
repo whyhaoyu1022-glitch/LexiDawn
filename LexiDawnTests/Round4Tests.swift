@@ -7,16 +7,16 @@ import SwiftData
     func testEnglishOnlyDoesNotLockPersonalChineseDefinitions() {
         let english = DictionarySense(id: "en", en: "Explicit English fixture definition", zh: "", line: "Fixture", sources: [BundledMDXDictionaryProvider.sourceName], sourceRevision: BundledMDXDictionaryProvider.sourceVersion, originKind: "mdx")
         XCTAssertFalse(BilingualMeaningPolicy.trusted(english))
-        XCTAssertTrue(BilingualMeaningPolicy.permitsPersonal(senses: [english], knownReliableChinese: false))
+        XCTAssertTrue(BilingualMeaningPolicy.permitsPersonal(senses: [english], knownReliableChinese: false, availability: .noChinese))
         XCTAssertTrue(BilingualMeaningPolicy.displaySenses([english]).isEmpty)
     }
     func testTrustedChineseLocksButReverseIndexDoesNot() {
         let trusted = DictionarySense(id: "trusted", en: "", zh: "明确原创中文义项夹具", line: "Fixture", sources: [BundledMDXDictionaryProvider.sourceName], sourceRevision: BundledMDXDictionaryProvider.sourceVersion, originKind: "mdx")
         let reverse = DictionarySense(id: "reverse", en: "", zh: "反向候选", line: "Fixture", sources: ["CC-CEDICT"])
         XCTAssertTrue(BilingualMeaningPolicy.trusted(trusted))
-        XCTAssertFalse(BilingualMeaningPolicy.permitsPersonal(senses: [trusted], knownReliableChinese: false))
-        XCTAssertTrue(BilingualMeaningPolicy.permitsPersonal(senses: [reverse], knownReliableChinese: false))
-        XCTAssertFalse(BilingualMeaningPolicy.permitsPersonal(senses: [], knownReliableChinese: true))
+        XCTAssertFalse(BilingualMeaningPolicy.permitsPersonal(senses: [trusted], knownReliableChinese: false, availability: .noChinese))
+        XCTAssertTrue(BilingualMeaningPolicy.permitsPersonal(senses: [reverse], knownReliableChinese: false, availability: .noChinese))
+        XCTAssertFalse(BilingualMeaningPolicy.permitsPersonal(senses: [], knownReliableChinese: true, availability: .notFound))
     }
     func testChineseWiktionaryParserScopesEnglishAndPreservesPartOfSpeech() throws {
         let html = "<h2>法語</h2><h3>名詞</h3><ol><li>错误语言夹具</li></ol><h2>英語</h2><h3>名詞</h3><ol><li>明确原创名词义项</li></ol><h3>動詞</h3><ol><li>明确原创动词义项</li></ol><h2>德語</h2><h3>名詞</h3><ol><li>另一个错误语言夹具</li></ol>"
@@ -51,6 +51,16 @@ import SwiftData
         XCTAssertTrue(masks.contains { $0.contains(3) })
         XCTAssertTrue(masks.contains { $0.contains(6) })
         XCTAssertTrue(SpellingMaskPolicy.mask("an", seed: "short").indices.isEmpty)
+        for word in ["provide", "information", "long-term", "take into account", "May", "user", "visits"] {
+            for seed in 0..<64 {
+                let value = SpellingMaskPolicy.mask(word, seed: "fixed-corpus-\(seed)")
+                let characters = Array(word), letters = characters.filter(\.isLetter).count
+                let ratio = Double(value.indices.count) / Double(letters)
+                XCTAssertGreaterThanOrEqual(ratio, 0.25); XCTAssertLessThanOrEqual(ratio, 0.45)
+                for index in value.indices { XCTAssertTrue(characters[index].isLetter) }
+                XCTAssertEqual(value.indices, SpellingMaskPolicy.mask(word, seed: "fixed-corpus-\(seed)").indices)
+            }
+        }
     }
     func testCanonicalFormsKeepMonthModalAndNonPluralS() {
         XCTAssertEqual(EnglishTokenizer.lemma("users"), "user")
@@ -203,13 +213,14 @@ import SwiftData
         let url = directory.appendingPathComponent("round3.store"), articleID = UUID().uuidString
         let raw = "A user reads a complete original article.\n\nThe final paragraph remains unchanged."
         let document = ArticleDocumentNormalizer.plainText(raw)
+        let originalStructuredData = try JSONEncoder().encode(document)
         let cycle = try DailyStudyCycle(assignedLocalDate: "2026-11-06", assignedTimeZoneID: "Asia/Shanghai", articleID: articleID, createdAtUTC: now, updatedAtUTC: now, assignmentReason: "explicit-Round3-disk-fixture")
         var entryID = "", sessionID = ""
         do {
             let container = try ModelContainer(for: FrozenRound3Schema.schema, configurations: [ModelConfiguration(url: url)])
             let context = ModelContext(container)
-            let article = FrozenRound3Schema.ArticleRecord(articleID: articleID, canonicalURL: "lexidawn-local://article/" + articleID, originalTitle: "Historical complete original", sourceID: "user-import", fetchedAt: now, licenseID: "user-declared-local-use", licenseVerified: true, bodyText: raw, bodyHash: fingerprint(raw), contentStatus: "available", createdAt: now, updatedAt: now)
-            article.structuredBody = try JSONEncoder().encode(document); article.cachePermissionData = try JSONEncoder().encode(ArticleCachePermission.persistent)
+            let article = FrozenRound3Schema.ArticleRecord(articleID: articleID, canonicalURL: "lexidawn-local://article/" + articleID, originalTitle: "Historical complete original", sourceID: "user-import", fetchedAt: now, licenseID: "user-declared-local-use", licenseVerified: true, bodyText: raw, bodyHash: fingerprint(raw), wordCount: EnglishTokenizer.tokens(in: raw).count, estimatedReadMinutes: 1, topicTags: ["个人阅读"], contentStatus: "available", createdAt: now, updatedAt: now)
+            article.structuredBody = originalStructuredData; article.cachePermissionData = try JSONEncoder().encode(ArticleCachePermission.persistent)
             article.sourceAttribution = "Original XCTest author"; article.fullTextDisplayAllowed = true; article.isFavorite = true; article.readLater = true
             article.fullTextRightsEvidenceID = "user-confirmed-original"; article.extractionVersion = ArticleDocument.extractionVersion; article.completenessVerifiedAt = now
             context.insert(article); context.insert(try FrozenRound3Schema.DailyStudyCycleRecord(cycle: cycle))
@@ -234,10 +245,11 @@ import SwiftData
             try content.migrateRound3(at: now)
             let value = try XCTUnwrap(vocabulary.entries().first)
             XCTAssertEqual(value.id, entryID); XCTAssertEqual(value.lemma, "user"); XCTAssertEqual(value.notes, "真迁移保留笔记"); XCTAssertEqual(value.meaning, "历史个人义")
+            XCTAssertEqual(value.personalSenses?.first?.originalOrigin, "legacyPersonal"); XCTAssertFalse(value.personalSenses?.first?.reviewReady ?? true)
             XCTAssertEqual(value.stability, 3.7145); XCTAssertEqual(value.repetitions, 2)
             XCTAssertEqual(try content.read(articleID: articleID, at: now).body, raw)
             let article = try XCTUnwrap(context.fetch(FetchDescriptor<ArticleRecord>()).first)
-            XCTAssertEqual(article.structuredBody, try JSONEncoder().encode(document)); XCTAssertTrue(article.isFavorite); XCTAssertTrue(article.readLater)
+            XCTAssertEqual(article.structuredBody, originalStructuredData); XCTAssertTrue(article.isFavorite); XCTAssertTrue(article.readLater)
             let exercises = try context.fetch(FetchDescriptor<ReviewExerciseRecord>())
             XCTAssertEqual(exercises.count, 2); XCTAssertEqual(exercises.first { $0.stage == "cloze" }?.prompt, "us___")
             XCTAssertEqual(exercises.first { $0.stage == "cloze" }?.attempts, 1); XCTAssertNil(exercises.first?.meaningSnapshot)
@@ -316,11 +328,35 @@ import SwiftData
 
 }
 
+/// Isolated original business-rule fixtures; never real-MDX parsing evidence.
+private struct OriginalReviewDictionaryFixture: DictionaryProvider {
+    let values: [String: [DictionarySense]]
+    func lookup(_ headword: String) async throws -> [DictionarySense] { values[headword] ?? [] }
+}
+@MainActor func annotateOriginalFixture(_ learning: LearningServices, entryID: String, meaning: String, notes: String, at now: Date) throws {
+    let item = try XCTUnwrap(learning.vocabulary.entries().first { $0.id == entryID })
+    try learning.dictionary.recordEmptyEligibilityFixture(item.lemma, at: now)
+    try learning.vocabulary.annotate(entryID: entryID, meaning: meaning, notes: notes, at: now)
+}
 @MainActor func confirmOriginalReviewFixtures(_ learning: LearningServices, at now: Date) throws {
-    for item in try learning.vocabulary.entries() where item.personalSenses == nil && item.reviewMeaningSenseID == nil {
+    let items = try learning.vocabulary.entries()
+    var values: [String: [DictionarySense]] = [:]
+    for item in items { values[item.lemma] = item.dictionarySenses }
+    try learning.dictionary.configureDictionaryEvidence(providers: [("explicit-MDX-business-fixture", OriginalReviewDictionaryFixture(values: values))])
+    for item in items where item.personalSenses?.contains(where: \.reviewReady) != true && item.reviewMeaningSenseID == nil {
         let chinese = item.meaning ?? "原创测试义：" + item.lemma
         let sense = PersonalDictionarySense(partOfSpeech: item.lemma == "take" ? "verb" : "noun", chinese: chinese,
             examples: [.init(english: "This original fixture includes " + item.lemma + ".")], confirmed: true)
+        try learning.dictionary.recordEmptyEligibilityFixture(item.lemma, at: now)
         try learning.vocabulary.savePersonalSenses(entryID: item.id, senses: [sense], at: now)
     }
+}
+
+/// Source-policy fixture only; never counts as successful native MDX parsing.
+func markMDXFixture(_ sense: DictionarySense) -> DictionarySense {
+    var value = sense
+    value.sources = [BundledMDXDictionaryProvider.sourceName]
+    value.sourceRevision = BundledMDXDictionaryProvider.sourceVersion
+    value.originKind = "mdx"; value.line = "Explicit source-policy fixture · " + value.line
+    return value
 }

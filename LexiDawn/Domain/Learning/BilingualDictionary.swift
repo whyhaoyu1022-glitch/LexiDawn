@@ -1,5 +1,8 @@
 import Foundation
 
+enum MDXDefinitionAvailability: String, Codable, Sendable {
+    case chinese, noChinese, notFound, checking, failed
+}
 /// Owner 2026-11-07: English-to-Chinese only. English glosses are parser metadata,
 /// not a usable definition and never a reason to disable personal Chinese senses.
 enum BilingualMeaningPolicy {
@@ -16,8 +19,8 @@ enum BilingualMeaningPolicy {
         let values = senses.filter { !$0.zh.isBlank && hasChinese($0.zh) && (trusted($0) || $0.originKind == "personal") }
         return values.filter(trusted) + values.filter { !trusted($0) }
     }
-    static func permitsPersonal(senses: [DictionarySense], knownReliableChinese: Bool) -> Bool {
-        !knownReliableChinese && !senses.contains(where: trusted)
+    static func permitsPersonal(senses: [DictionarySense], knownReliableChinese: Bool, availability: MDXDefinitionAvailability = .checking) -> Bool {
+        [MDXDefinitionAvailability.noChinese, .notFound].contains(availability) && !knownReliableChinese && !senses.contains(where: trusted)
     }
     static func partName(_ value: String?) -> String {
         switch value?.lowercased() {
@@ -34,16 +37,17 @@ enum BilingualMeaningPolicy {
         case "interjection": return "interj. 感叹词"
         case "determiner": return "限定词"
         case "phrase": return "短语"
-        default: return "词性待补充"
+        default: return value.flatMap { $0.isBlank ? nil : $0 } ?? "词性待补充"
         }
     }
-    static let parts = ["noun", "verb", "transitive verb", "intransitive verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "interjection", "determiner", "phrase"]
+    static let parts = ["noun", "verb", "modal verb", "transitive verb", "intransitive verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "interjection", "determiner", "phrase", "other"]
 }
 
 struct PersonalDictionaryExample: Codable, Equatable, Identifiable, Sendable {
     var id = UUID().uuidString
     var english = ""
     var chinese = ""
+    var notes: String? = nil
 }
 struct PersonalDictionarySense: Codable, Equatable, Identifiable, Sendable {
     var id = UUID().uuidString
@@ -56,16 +60,33 @@ struct PersonalDictionarySense: Codable, Equatable, Identifiable, Sendable {
     var examples: [PersonalDictionaryExample] = []
     var confirmed = false
     var revision = 1
+    var englishDefinition: String? = nil
+    var grammar: String? = nil
+    var collocations: [String]? = nil
+    var idioms: [String]? = nil
+    var scenarios: String? = nil
+    var notes: String? = nil
+    var originalOrigin: String? = nil
     var reviewReady: Bool { confirmed && BilingualMeaningPolicy.parts.contains(partOfSpeech) && BilingualMeaningPolicy.hasChinese(chinese) }
     func dictionarySense(entryID: String) -> DictionarySense {
-        DictionarySense(id: "personal|" + entryID + "|" + id, en: "", zh: chinese, line: "用户填写 · 修订 \(revision)", partOfSpeech: partOfSpeech.isBlank ? nil : partOfSpeech,
+        DictionarySense(id: "personal|" + entryID + "|" + id, en: englishDefinition ?? "", zh: chinese, line: "用户自建 · 修订 \(revision)", partOfSpeech: partOfSpeech.isBlank ? nil : partOfSpeech,
                         ipa: ipa.isBlank ? nil : ipa, examples: examples.map(\.english), forms: forms.isBlank ? nil : [forms], sources: ["个人释义"],
-                        exampleTranslations: examples.map(\.chinese), usageLabels: usage.isBlank ? nil : [usage], relatedPhrases: phrases.isBlank ? nil : [phrases], originKind: "personal")
+                        exampleTranslations: examples.map(\.chinese), usageLabels: [usage, grammar ?? "", scenarios ?? ""].filter { !$0.isBlank }, relatedPhrases: (phrases.isBlank ? [] : [phrases]) + (collocations ?? []) + (idioms ?? []), sourceRevision: String(revision), originKind: "personal")
     }
     func validate() throws {
         guard chinese.count <= 500, ipa.count <= 120, usage.count <= 200, forms.count <= 500, phrases.count <= 1000, examples.count <= 20,
-              examples.allSatisfy({ $0.english.count <= 1500 && $0.chinese.count <= 1500 }) else { throw LearningError.invalid("释义、例句或用法过长，请缩短后重试。") }
+              examples.allSatisfy({ $0.english.count <= 1500 && $0.chinese.count <= 1500 && ($0.notes?.count ?? 0) <= 1000 }),
+              [englishDefinition, grammar, scenarios, notes].allSatisfy({ ($0?.count ?? 0) <= 2000 }),
+              (collocations ?? []).count <= 50, (idioms ?? []).count <= 50,
+              ((collocations ?? []) + (idioms ?? [])).allSatisfy({ $0.count <= 500 }) else { throw LearningError.invalid("释义、例句或用法过长，请缩短后重试。") }
     }
+}
+
+struct PersonalMeaningRevision: Codable, Equatable, Identifiable {
+    var id: Int { revision }
+    let revision: Int
+    let archivedAt: Date
+    let senses: [PersonalDictionarySense]
 }
 
 struct ReviewMeaningIssue: Error, LocalizedError, Identifiable, Equatable {

@@ -11,6 +11,8 @@ struct ReviewQuestion: Identifiable, Equatable {
     var revealed = false
     var meaning: DictionarySense? = nil
     var contextOrigin: String? = nil
+    var maskSeed: String? = nil
+    var maskIndices: [Int]? = nil
 }
 struct ReviewSessionView: Equatable {
     let id: String
@@ -18,6 +20,7 @@ struct ReviewSessionView: Equatable {
     let cloze: [ReviewQuestion]
     let completedAt: Date?
     var deferredCount: Int = 0
+    var revision: Int = 0
     var matchingComplete: Bool { !matching.isEmpty && matching.allSatisfy(\.completed) }
 }
 
@@ -148,11 +151,12 @@ struct ReviewSessionView: Equatable {
                 var question = ReviewQuestion(id: exercise.exerciseID, entryID: exercise.entryID, stage: stage, prompt: exercise.prompt, answer: exercise.answer, senseID: exercise.senseID, attempts: exercise.attempts, usedHint: exercise.usedHint, completed: exercise.completedAt != nil, context: exercise.sourceContext, acceptedAnswers: exercise.acceptedAnswers ?? [exercise.answer])
                 question.contextOrigin = exercise.contextOriginKind
                 question.revealed = exercise.revealed
+                question.maskSeed = exercise.maskSeed; question.maskIndices = exercise.maskIndices
                 question.meaning = exercise.meaningSnapshot.flatMap { try? JSONDecoder().decode(DictionarySense.self, from: $0) }
                 return question
             }
         }
-        return ReviewSessionView(id: session.sessionID, matching: questions("matching"), cloze: questions("cloze"), completedAt: session.completedAt, deferredCount: session.deferredEntryIDs?.count ?? 0)
+        return ReviewSessionView(id: session.sessionID, matching: questions("matching"), cloze: questions("cloze"), completedAt: session.completedAt, deferredCount: session.deferredEntryIDs?.count ?? 0, revision: session.revision)
     }
     func deferredIDs(cycleID: UUID) throws -> Set<String> {
         try writer.read { context in Set(try context.fetch(FetchDescriptor<ReviewDeferralRecord>()).filter { $0.cycleID == cycleID.uuidString }.map(\.entryID)) }
@@ -239,6 +243,7 @@ struct ReviewSessionView: Equatable {
             let snapshot = try JSONEncoder().encode(sense)
             let matching = ReviewExerciseRecord(sessionID: session.sessionID, entryID: entry.entryID, stage: "matching", position: position, prompt: entry.lemma, answer: meaning, senseID: sense.id)
             matching.meaningSnapshot = snapshot; context.insert(matching)
+            matching.sourceArticleID = source?.articleID; matching.sourceContextID = source?.contextID; matching.sourceSurface = source?.surface
             if spellingIDs.contains(entry.entryID) {
                 var projection = ClozeContext.make(lemma: entry.lemma, surfaces: source.map { [$0.surface] + entry.surfaceForms } ?? entry.surfaceForms, sentence: source?.sentence)
                 var contextOrigin = source?.contextKind == "reader" ? "article" : source?.contextKind == "dictionary" ? "dictionary" : "saved-context"
@@ -251,10 +256,12 @@ struct ReviewSessionView: Equatable {
                     }
                 }
                 guard projection.sentence != nil else { throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "缺少包含目标词的有效例句，请补充例句或本次延期。", canEditPersonal: !BilingualMeaningPolicy.trusted(sense)) }
-                let mask = SpellingMaskPolicy.mask(projection.answer, seed: session.sessionID + "|" + entry.entryID)
+                let seed = session.sessionID + "|" + entry.entryID
+                let mask = SpellingMaskPolicy.mask(projection.answer, seed: seed)
                 let question = ReviewExerciseRecord(sessionID: session.sessionID, entryID: entry.entryID, stage: "cloze", position: position, prompt: mask.text, answer: projection.answer, senseID: sense.id)
                 question.contextOriginKind = contextOrigin
                 question.sourceContext = projection.sentence; question.meaningSnapshot = snapshot; question.maskIndices = mask.indices; question.maskVersion = SpellingMaskPolicy.version
+                question.maskSeed = seed; question.sourceArticleID = source?.articleID; question.sourceContextID = source?.contextID; question.sourceSurface = projection.answer
                 let originalSenses = providerCaches.filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }.flatMap { (try? JSONDecoder().decode([DictionarySense].self, from: $0.payload)) ?? [] }
                 question.acceptedAnswers = SpellingAnswerPolicy.variants(answer: projection.answer, lemma: entry.lemma, senses: originalSenses)
                 context.insert(question)

@@ -1,3 +1,11 @@
+## 2026-11-09 · 首轮实际原生验证与继续整改
+
+main 5d54f21 的 Actions 42647936727：全部目标 build-for-testing 成功；真实 Debug Simulator App 的 BundledDictionary.mdx 已检查为 38,774,534 字节及指定 SHA。12 个 MDXDictionaryTests 全通过；Round4Tests 22 个方法中 1 个磁盘迁移方法产生4个失败断言。整体为 failure，无 UI/Release/IPA 通过结论。证据见 artifacts/round-4/ci-42647936727.json。
+
+迁移失败定位为历史测试创建了无主题标签的文章（历史生产入口不会接受），且把两次独立 JSONEncoder 的非确定键顺序当作原始字节相等。保留全部断言，按真实历史文章合同补齐主题/词数/时长，升级前捕获原结构 Data，再逐字节检查迁移后原 Data；未放宽生产读门禁。
+
+继续补充：个人义项英文解释、语法、搭配、习语、场景和例句备注；删除/排序与原子版本历史，旧单行内容无损迁成未确认 legacyPersonal。复习保存 seed/原文章/原词形/语境身份，反馈绑定 session/question/attempt/revision，完成页实际数量与返回/继续。两条新增 UI 使用真实 MDX 和真实资源故障；旧测试按单一来源规则迁移，未删除方法。新修改待下一 CI，144项与全部截图仍未完成。
+
 ## 2026-11-09 · 内置 MDX 实装进行中，尚未验收
 
 已核实 main 基线 30311f806d587453c601a0a44bf5cc8a6c338ec4；直接 main，无新分支/PR。恢复冻结 Round3 ArticleRecord 的历史 candidate 映射，未改任何冻结存储字段。新增原生 C MDX 2.0 reader、Swift actor、系统 libxml2 HTML 提取、单 MDX 服务/缓存资格防线、系统发音开始/停止与资源构建校验。

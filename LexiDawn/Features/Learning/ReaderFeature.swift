@@ -259,7 +259,10 @@ struct WordLookupSheet: View {
             }
             if model.loading && model.result?.usableSenses.isEmpty != false { ProgressView("查词中").accessibilityIdentifier("dictionary-loading") }
             if let result = model.result, !result.usableSenses.isEmpty || !model.loading { DictionaryQuickMeaning(result: result) }
-            if let error = model.error { Button("词典暂不可用，重试") { model.startLookup(force: true) }.font(.caption).accessibilityHint(error) }
+            if let error = model.error {
+                Text(error).font(.caption).foregroundStyle(.red).accessibilityIdentifier("dictionary-resource-error")
+                Button("词典暂不可用，重试") { model.startLookup(force: true) }.font(.caption).accessibilityHint(error)
+            }
             if let error = model.vocabularyError { Text(error).font(.caption).foregroundStyle(.red) }
             HStack {
                 if model.addition?.created == true {
@@ -268,7 +271,7 @@ struct WordLookupSheet: View {
                 else { Button("加入生词本", systemImage: "plus.circle") { model.add(explicit: true) }.accessibilityIdentifier("add-word") }
                 Spacer()
                 Button { showDetails = true } label: { Image(systemName: "arrow.up.right.circle.fill").font(.title2).frame(width: 44, height: 44) }
-                    .accessibilityLabel("查看详细释义").accessibilityIdentifier("dictionary-details").disabled(model.loading && model.result?.usableSenses.isEmpty != false)
+                    .accessibilityLabel("查看详细释义").accessibilityIdentifier("dictionary-details").disabled(model.loading || model.error != nil || model.result == nil)
             }.font(.subheadline)
         }.padding(16).frame(width: dynamicTypeSize.isAccessibilitySize ? 310 : 285).accessibilityElement(children: .contain).accessibilityIdentifier("compact-word-card")
             .fixedSize(horizontal: false, vertical: true)
@@ -303,7 +306,13 @@ struct DictionaryResultContent: View {
     let result: DictionaryResult
     var onExampleWord: ((EnglishToken, DictionarySense) -> Void)? = nil
     private var senses: [DictionarySense] { result.usableSenses }
-    private var parts: [String] { senses.reduce(into: []) { values, sense in let part = sense.partOfSpeech ?? ""; if !values.contains(part) { values.append(part) } } }
+    private func group(_ sense: DictionarySense) -> String { sense.sectionKind.map { "section|" + $0 } ?? "part|" + (sense.partOfSpeech ?? "") }
+    private var parts: [String] { senses.reduce(into: []) { values, sense in let key = group(sense); if !values.contains(key) { values.append(key) } } }
+    private func groupTitle(_ key: String) -> String {
+        if key == "section|phrasalVerb" { return "短语动词" }
+        if key == "section|idiom" { return "习语" }
+        return BilingualMeaningPolicy.partName(String(key.dropFirst(5)))
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             if let ipa = result.senses.compactMap(\.ipa).first {
@@ -315,13 +324,19 @@ struct DictionaryResultContent: View {
             ForEach(Array(parts.enumerated()), id: \.element) { groupIndex, part in
                 VStack(alignment: .leading, spacing: 18) {
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
-                        Text(String(UnicodeScalar(65 + groupIndex % 26)!)+".").foregroundStyle(.secondary)
-                        Text(BilingualMeaningPolicy.partName(part)).fontWeight(.medium)
+                        Text("\(groupIndex + 1).").foregroundStyle(.secondary)
+                        Text(groupTitle(part)).fontWeight(.medium)
                     }.font(.title3).accessibilityAddTraits(.isHeader)
-                    ForEach(Array(senses.filter { ($0.partOfSpeech ?? "") == part }.enumerated()), id: \.element.id) { index, sense in
+                    let grouped = senses.filter { group($0) == part }
+                    if let ipa = grouped.compactMap(\.ipa).first { Text(ipa).font(.subheadline).foregroundStyle(.secondary) }
+                    if part.hasPrefix("part|"), let forms = grouped.compactMap(\.forms).first, !forms.isEmpty { Text(forms.joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary) }
+                    ForEach(Array(grouped.enumerated()), id: \.element.id) { index, sense in
                         HStack(alignment: .top, spacing: 12) {
                             Text("\(index + 1)").font(.caption.weight(.medium)).frame(width: 24, height: 24).background(.quaternary, in: Circle()).accessibilityLabel("义项\(index + 1)")
                             VStack(alignment: .leading, spacing: 10) {
+                                if let headword = sense.lexicalHeadword, headword != result.headword {
+                                    Text(headword).font(.system(.title3, design: .serif).weight(.semibold))
+                                }
                                 if let labels = sense.usageLabels, !labels.isEmpty { Text(labels.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
                                 Text(sense.zh).font(.system(.title3, design: .serif)).fixedSize(horizontal: false, vertical: true)
                                 ForEach(Array((sense.examples ?? []).enumerated()), id: \.offset) { exampleIndex, example in
@@ -334,7 +349,6 @@ struct DictionaryResultContent: View {
                                         }
                                     }.padding(.leading, 8).padding(.vertical, 3)
                                 }
-                                if let forms = sense.forms, !forms.isEmpty { Text(forms.joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary) }
                                 if let phrases = sense.relatedPhrases, !phrases.isEmpty {
                                     VStack(alignment: .leading, spacing: 8) {
                                         Text("短语与搭配").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
@@ -344,11 +358,7 @@ struct DictionaryResultContent: View {
                                 if let synonyms = sense.synonyms, !synonyms.isEmpty { Text("近义词  " + synonyms.joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary) }
                                 if let antonyms = sense.antonyms, !antonyms.isEmpty { Text("反义词  " + antonyms.joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary) }
                                 if let etymology = sense.etymology, !etymology.isBlank { DisclosureGroup("词源") { Text(etymology).font(.footnote) } }
-                                if let headword = sense.lexicalHeadword, headword != result.headword {
-                                    Text(headword).font(.system(.headline, design: .serif))
-                                }
-                                Text((sense.sources ?? []).joined(separator: " · "))
-                                    .font(.caption2).foregroundStyle(.secondary)
+                                if sense.originKind == "personal" { Text(sense.line).font(.caption2).foregroundStyle(.secondary) }
                             }.frame(maxWidth: .infinity, alignment: .leading)
                         }.accessibilityIdentifier("dictionary-full-sense-" + sense.id)
                     }

@@ -68,6 +68,7 @@ import SwiftData
     var userMeaning: String?
     var personalSensesData: Data?
     var personalMeaningRevision: Int?
+    var personalMeaningHistoryData: Data?
     var canonicalEntryID: String?
     var reviewMeaningSenseID: String?
     var reviewMeaningText: String?
@@ -188,6 +189,10 @@ import SwiftData
     var meaningSnapshot: Data?
     var maskIndices: [Int]?
     var maskVersion: String?
+    var maskSeed: String?
+    var sourceArticleID: String?
+    var sourceContextID: String?
+    var sourceSurface: String?
     var correctionCompletedAt: Date?
     init(sessionID: String, entryID: String, stage: String, position: Int, prompt: String, answer: String, senseID: String) {
         exerciseID = "\(sessionID)|\(stage)|\(entryID)"; self.sessionID = sessionID; self.entryID = entryID

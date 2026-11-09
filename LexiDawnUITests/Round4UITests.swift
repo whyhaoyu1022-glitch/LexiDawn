@@ -37,7 +37,7 @@ final class Round4UITests: XCTestCase {
         XCTAssertTrue(field.isHittable); field.tap()
         field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: min(200, (field.value as? String)?.count ?? 0))); field.typeText(value)
     }
-    private func capture(_ id: String, app: XCUIApplication, feature: String, state: String, theme: String = "system") {
+    private func capture(_ id: String, app: XCUIApplication, feature: String, state: String, theme: String = "system", provenance: String = "explicit-original-Round4-UI-fixture-real-Repository-not-live-provider") {
         let device = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? UIDevice.current.name
         let safe = device.map { $0.isLetter || $0.isNumber || $0 == "-" ? String($0) : "-" }.joined()
         let orientation = XCUIDevice.shared.orientation.isLandscape ? "landscape" : "portrait"
@@ -45,7 +45,7 @@ final class Round4UITests: XCTestCase {
         let image = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); image.name = identifier; image.lifetime = .keepAlways; add(image)
         let row: [String: String] = ["screenshotID": identifier, "featureID": feature, "screenName": feature, "state": state, "device": device,
             "orientation": orientation, "theme": theme, "osVersion": UIDevice.current.systemVersion, "testName": name,
-            "fixtureOrProduction": "explicit-original-Round4-UI-fixture-real-Repository-not-live-provider", "fileName": identifier + ".png", "notes": "Actual native Simulator capture. Reference images and generated images are not screenshots."]
+            "fixtureOrProduction": provenance, "fileName": identifier + ".png", "notes": "Actual native Simulator capture. Reference images and generated images are not screenshots."]
         let data = try! JSONSerialization.data(withJSONObject: row, options: [.sortedKeys])
         let metadata = XCTAttachment(data: data, uniformTypeIdentifier: "public.json"); metadata.name = identifier + "-metadata"; metadata.lifetime = .keepAlways; add(metadata)
     }
@@ -204,6 +204,34 @@ final class Round4UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["已停止发现；已完整入库的文章保留。"].waitForExistence(timeout: 10))
         capture("R4-P05-cancelled", app: app, feature: "article-discovery", state: "cancelled-candidate-not-imported")
     }
+    func testActualBundledMDXDetailAndSystemPronunciation() throws {
+        let app = launch("round4-mdx-production"); reader(app); tapWord("nod", app: app)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "点头")).firstMatch.waitForExistence(timeout: 20))
+        capture("R4-P21-real-MDX", app: app, feature: "reader-dictionary", state: "actual-bundled-MDX-compact", provenance: "real-bundled-MDX-with-explicit-original-article")
+        app.buttons["dictionary-details"].tap()
+        XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["v. 动词"].exists)
+        capture("R4-F22-real-top", app: app, feature: "dictionary-detail", state: "actual-MDX-verb-IPA-examples", provenance: "real-bundled-MDX-with-explicit-original-article")
+        let speak = app.buttons["dictionary-system-pronunciation"]; XCTAssertTrue(speak.exists); speak.tap()
+        capture("R4-F22-system-pronunciation", app: app, feature: "dictionary-detail", state: "actual-system-pronunciation-start-or-unavailable", provenance: "real-bundled-MDX-and-iOS-system-TTS")
+        if speak.label == "停止系统朗读" { speak.tap() }
+        let noun = app.staticTexts["n. 名词"]; reach(noun, app: app)
+        capture("R4-F22-real-middle", app: app, feature: "dictionary-detail", state: "actual-MDX-noun-section", provenance: "real-bundled-MDX-with-explicit-original-article")
+        let phrases = app.staticTexts["短语动词"]; reach(phrases, app: app)
+        capture("R4-F22-real-phrases", app: app, feature: "dictionary-detail", state: "actual-MDX-phrasal-verbs", provenance: "real-bundled-MDX-with-explicit-original-article")
+        app.buttons["关闭详细释义"].tap(); app.buttons["close-word"].tap()
+        XCTAssertTrue(app.otherElements["reader-body"].firstMatch.exists)
+    }
+    func testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails() throws {
+        for scenario in ["round4-mdx-missing", "round4-mdx-corrupt"] {
+            let app = launch(scenario); reader(app); tapWord("nod", app: app)
+            XCTAssertTrue(app.staticTexts["dictionary-resource-error"].waitForExistence(timeout: 15))
+            XCTAssertFalse(app.buttons["dictionary-details"].isEnabled)
+            XCTAssertFalse(app.staticTexts["暂无英中释义"].exists)
+            capture("R4-F23-" + scenario, app: app, feature: "dictionary-error", state: "actual-native-resource-error-not-notFound", provenance: "real-native-MDX-provider-explicit-file-fault")
+            app.terminate()
+        }
+    }
     func testDictionaryPartialEmptyAndFailedStatesRemainCompact() throws {
         for mode in ["partial", "empty", "all-failed", "loading"] {
             let app = launch("round4-" + mode); reader(app); tapWord("nod", app: app)
@@ -226,7 +254,7 @@ final class Round4UITests: XCTestCase {
         let mid = Int(Double(board.frame.midX) * sx), first = max(0, Int(Double(board.frame.minY) * sy)), last = min(height, Int(Double(board.frame.maxY) * sy))
         guard first < last, mid > 4, mid < width - 4 else { return 0 }
         var count = 0
-        for y in first..<last { for x in (mid-3)...(mid+3) { let i = (y*width+x)*4; if Int(bytes[i+1]) > Int(bytes[i])+25 && Int(bytes[i+1]) > Int(bytes[i+2])+15 { count += 1 } } }
+        for y in first..<last { for x in (mid-3)...(mid+3) { let i = (y*width+x)*4; if max(Int(bytes[i]), Int(bytes[i+1]), Int(bytes[i+2])) - min(Int(bytes[i]), Int(bytes[i+1]), Int(bytes[i+2])) > 40 { count += 1 } } }
         return count
     }
 }

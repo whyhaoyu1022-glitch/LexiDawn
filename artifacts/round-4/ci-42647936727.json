@@ -1,0 +1,27 @@
+{
+  "commit": "5d54f21f410ebadd43c2ceed548075ae5362fcb3",
+  "runURL": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42647936727",
+  "overall": "failure",
+  "buildAllTargets": "success",
+  "bundleMDXVerified": true,
+  "mdxTests": {
+    "executed": 12,
+    "failures": 0
+  },
+  "round4Tests": {
+    "executed": 22,
+    "failedAssertions": 4,
+    "failedMethods": 1
+  },
+  "failedMethod": "testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice",
+  "uiTests": "not-run",
+  "platform": "iOS 26.5 compatibility Simulator, Xcode 26.6 (17F113)",
+  "evidence": [
+    "2026-11-09T15:48:51.2925220Z   \"sha256\": \"095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443\",",
+    "2026-11-09T15:48:51.2947310Z   \"sha256\": \"095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443\",",
+    "2026-11-09T15:48:51.2953900Z   \"inspectedPath\": \"/Users/runner/work/_temp/round4/Build/Products/Debug-iphonesimulator/LexiDawn.app\"",
+    "2026-11-09T15:50:04.1052290Z ** TEST BUILD SUCCEEDED **",
+    "2026-11-09T15:55:17.7900400Z \t Executed 12 tests, with 0 failures (0 unexpected) in 2.274 (2.284) seconds"
+  ],
+  "fullLogsURL": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42647936727/artifacts/13687569899"
+}

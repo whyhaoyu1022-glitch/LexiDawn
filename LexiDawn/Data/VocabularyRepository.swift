@@ -38,6 +38,7 @@ struct VocabularyItem: Identifiable, Equatable, Codable {
     var dictionarySenses: [DictionarySense] = []
     var legacyAnnotations: [VocabularyLegacyAnnotation]? = nil
     var personalSenses: [PersonalDictionarySense]? = nil
+    var personalHistory: [PersonalMeaningRevision]? = nil
     var reliableChineseKnown: Bool? = nil
     var reviewMeaningSenseID: String? = nil
     var reviewMeaningText: String? = nil
@@ -52,7 +53,7 @@ struct VocabularyItem: Identifiable, Equatable, Codable {
     var primaryChinese: String? {
         if let sense = dictionarySenses.first(where: BilingualMeaningPolicy.trusted) { return sense.zh }
         if reliableChineseKnown == true { return nil }
-        return personalSenses?.first(where: \.reviewReady)?.chinese ?? reviewMeaningText ?? meaning ?? dictionaryMeanings.first
+        return personalSenses?.first(where: \.reviewReady)?.chinese
     }
 }
 enum VocabularyStatusFilter: String, CaseIterable { case all = "全部状态", due = "待复习", overdue = "逾期", recent = "近7日添加", familiar = "较熟悉" }
@@ -120,6 +121,7 @@ struct VocabularyAddition {
     init(context: ModelContext, saveContext: @escaping (ModelContext) throws -> Void = { try $0.save() }) { writer = RepositoryWriter(context: context, saveContext: saveContext) }
     func entries(search: String = "", type: String? = nil) throws -> [VocabularyItem] {
         try normalizeIdentities()
+        try migrateLegacyPersonalSenses()
         return try writer.read { context in
             let all = try context.fetch(FetchDescriptor<VocabularyEntryRecord>())
             guard Set(all.map(\.normalizedKey)).count == all.count else { throw PersistenceError.integrity("重复生词身份") }
@@ -152,6 +154,7 @@ struct VocabularyAddition {
                 value.dictionarySenses = DictionaryAggregator.merge(providerRows.flatMap { (try? JSONDecoder().decode([DictionarySense].self, from: $0.payload)) ?? [] })
                 value.legacyAnnotations = aliases.map { VocabularyLegacyAnnotation(id: $0.entryID, originalLemma: $0.lemma, meaning: $0.userMeaning, notes: $0.notes) }
                 value.personalSenses = try record.personalSensesData.map { try JSONDecoder().decode([PersonalDictionarySense].self, from: $0) }
+                value.personalHistory = try record.personalMeaningHistoryData.map { try JSONDecoder().decode([PersonalMeaningRevision].self, from: $0) }
                 value.reliableChineseKnown = try hasReliableChinese(lemma: record.lemma, context: context)
                 value.ipa = value.dictionarySenses.compactMap(\.ipa).first
                 value.reviewMeaningSenseID = record.reviewMeaningSenseID
@@ -165,6 +168,23 @@ struct VocabularyAddition {
                 return value
             }
             return values.filter { item in search.isBlank || item.searchableText.contains { $0.localizedCaseInsensitiveContains(search) } }.sorted { $0.addedAt > $1.addedAt }
+        }
+    }
+    /// Additive and repeatable: legacy strings retain their exact text, ID and origin.
+    /// Unknown POS stays unconfirmed and cannot become a new review answer.
+    private func migrateLegacyPersonalSenses() throws {
+        let needed = try writer.read { context in
+            try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).contains { $0.personalSensesData == nil && $0.userMeaning?.isBlank == false }
+        }
+        guard needed else { return }
+        try writer.write {
+            for entry in try writer.context.fetch(FetchDescriptor<VocabularyEntryRecord>()) where entry.personalSensesData == nil {
+                guard let meaning = entry.userMeaning, !meaning.isBlank else { continue }
+                var sense = PersonalDictionarySense(id: "legacyPersonal|" + entry.entryID, chinese: meaning)
+                sense.originalOrigin = "legacyPersonal"
+                entry.personalSensesData = try JSONEncoder().encode([sense])
+                entry.personalMeaningRevision = 1
+            }
         }
     }
     /// Additive canonical aliases preserve old IDs, annotations, sources, logs and sessions.
@@ -227,11 +247,11 @@ struct VocabularyAddition {
         }
         let date = ISO8601DateFormatter()
         func quote(_ text: String) -> String { "\"" + text.replacingOccurrences(of: "\"", with: "\"\"") + "\"" }
-        var rows = [["entryID", "lemma", "surfaceForms", "type", "personalMeaning", "dictionaryMeanings", "notes", "sourceContextsJSON", "addedAt", "lastReviewedAt", "nextDueAt", "algorithmVersion", "repetitions", "lapses", "stability", "difficulty", "dictionarySensesJSON", "reviewLogsJSON", "reviewMeaningSenseID", "reviewMeaningText", "reviewMeaningEvidence", "personalSensesJSON", "reliableChineseKnown", "legacyAnnotationsJSON"]]
+        var rows = [["entryID", "lemma", "surfaceForms", "type", "personalMeaning", "dictionaryMeanings", "notes", "sourceContextsJSON", "addedAt", "lastReviewedAt", "nextDueAt", "algorithmVersion", "repetitions", "lapses", "stability", "difficulty", "dictionarySensesJSON", "reviewLogsJSON", "reviewMeaningSenseID", "reviewMeaningText", "reviewMeaningEvidence", "personalSensesJSON", "reliableChineseKnown", "legacyAnnotationsJSON", "personalMeaningHistoryJSON"]]
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601; encoder.outputFormatting = .sortedKeys
         for item in items {
             rows.append([item.id, item.lemma, item.surfaces.joined(separator: " | "), item.type, item.meaning ?? "", item.dictionaryMeanings.joined(separator: " | "), item.notes ?? "",
-                String(decoding: try encoder.encode(item.sourceContexts), as: UTF8.self), date.string(from: item.addedAt), item.lastReviewedAt.map { date.string(from: $0) } ?? "", item.dueAt.map { date.string(from: $0) } ?? "", item.algorithmVersion ?? "", String(item.repetitions), String(item.lapses), item.stability.map { String($0) } ?? "", item.difficulty.map { String($0) } ?? "", String(decoding: try encoder.encode(item.dictionarySenses), as: UTF8.self), String(decoding: try encoder.encode(logs.filter { $0.entryID == item.id }), as: UTF8.self), item.reviewMeaningSenseID ?? "", item.reviewMeaningText ?? "", item.reviewMeaningEvidence ?? "", String(decoding: try encoder.encode(item.personalSenses ?? []), as: UTF8.self), String(item.reliableChineseKnown ?? false), String(decoding: try encoder.encode(item.legacyAnnotations ?? []), as: UTF8.self)])
+                String(decoding: try encoder.encode(item.sourceContexts), as: UTF8.self), date.string(from: item.addedAt), item.lastReviewedAt.map { date.string(from: $0) } ?? "", item.dueAt.map { date.string(from: $0) } ?? "", item.algorithmVersion ?? "", String(item.repetitions), String(item.lapses), item.stability.map { String($0) } ?? "", item.difficulty.map { String($0) } ?? "", String(decoding: try encoder.encode(item.dictionarySenses), as: UTF8.self), String(decoding: try encoder.encode(logs.filter { $0.entryID == item.id }), as: UTF8.self), item.reviewMeaningSenseID ?? "", item.reviewMeaningText ?? "", item.reviewMeaningEvidence ?? "", String(decoding: try encoder.encode(item.personalSenses ?? []), as: UTF8.self), String(item.reliableChineseKnown ?? false), String(decoding: try encoder.encode(item.legacyAnnotations ?? []), as: UTF8.self), String(decoding: try encoder.encode(item.personalHistory ?? []), as: UTF8.self)])
         }
         return Data((rows.map { $0.map(quote).joined(separator: ",") }.joined(separator: "\r\n") + "\r\n").utf8)
     }
@@ -319,7 +339,8 @@ struct VocabularyAddition {
     private func personalAllowed(lemma: String, context: ModelContext) throws -> Bool {
         guard try !hasReliableChinese(lemma: lemma, context: context) else { return false }
         return try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).contains {
-            $0.lemma == lemma && $0.mdxSHA == BundledMDXDictionaryProvider.sourceSHA && ["noChinese", "notFound"].contains($0.lookupStatus ?? "")
+            $0.lemma == lemma && $0.mdxSHA == BundledMDXDictionaryProvider.sourceSHA &&
+                BilingualMeaningPolicy.permitsPersonal(senses: [], knownReliableChinese: $0.reliableChineseKnown, availability: MDXDefinitionAvailability(rawValue: $0.lookupStatus ?? "") ?? .checking)
         }
     }
     func savePersonalSenses(entryID: String, senses: [PersonalDictionarySense], at now: Date) throws {
@@ -341,6 +362,11 @@ struct VocabularyAddition {
             }
             let data = try encoder.encode(updated)
             if entry.personalSensesData == data { return }
+            if entry.personalSensesData != nil {
+                var history = try entry.personalMeaningHistoryData.map { try JSONDecoder().decode([PersonalMeaningRevision].self, from: $0) } ?? []
+                history.append(PersonalMeaningRevision(revision: entry.personalMeaningRevision ?? 0, archivedAt: now, senses: old))
+                entry.personalMeaningHistoryData = try encoder.encode(history)
+            }
             entry.personalSensesData = data; entry.personalMeaningRevision = (entry.personalMeaningRevision ?? 0) + 1
             entry.userMeaning = senses.first(where: { !$0.chinese.isBlank })?.chinese
             entry.reviewMeaningSenseID = nil; entry.reviewMeaningText = nil; entry.reviewMeaningEvidence = nil; entry.reviewMeaningSnapshotData = nil
@@ -470,6 +496,7 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
         return DictionaryResult(headword: key, senses: result.senses, updatedAt: result.date, sourceURL: "", licenseURL: "", cached: true, versions: DictionaryAggregator.versions)
     }
     #if DEBUG && targetEnvironment(simulator)
+    func configureMDXResourceForEvidence(_ url: URL) { provider = BundledMDXDictionaryProvider(resource: url) }
     func recordEmptyEligibilityFixture(_ lemma: String, at now: Date) throws {
         try cache.save(lemma, senses: [], successful: [BundledMDXDictionaryProvider.sourceName], at: now)
     }

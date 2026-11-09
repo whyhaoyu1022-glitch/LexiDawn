@@ -62,12 +62,18 @@ private actor CacheRequestProbe: DictionaryProvider {
             let fixture = DictionarySenseRecord(senseID: "cedict-reverse-v1|book|" + key, entryID: "cedict-reverse-v1|book", english: en, chinese: zh, sourceLine: "Explicit original fixture; not dictionary content.")
             fixture.partOfSpeech = key == "one" ? "noun" : "verb"; context.insert(fixture)
         }
-        try context.save(); try learning.vocabulary.confirmReviewMeaning(entryID: entry.entryID, sourceSenseID: "two")
+        try context.save()
+        XCTAssertThrowsError(try learning.vocabulary.confirmReviewMeaning(entryID: entry.entryID, sourceSenseID: "two"))
+        try learning.dictionary.recordEmptyEligibilityFixture("book", at: now)
+        let personal = PersonalDictionarySense(partOfSpeech: "verb", chinese: "预订（明确原创义项夹具）", confirmed: true)
+        try learning.vocabulary.savePersonalSenses(entryID: entry.entryID, senses: [personal], at: now)
+        try learning.vocabulary.confirmReviewMeaning(entryID: entry.entryID, sourceSenseID: personal.dictionarySense(entryID: entry.entryID).id)
+        try confirmOriginalReviewFixtures(learning, at: now)
         _ = try learning.dictionary.clearCaches()
         XCTAssertEqual(try learning.vocabulary.find(surface: "book")?.reviewMeaningText, "预订（明确原创义项夹具）")
         let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
         XCTAssertEqual(prepared?.matching.first?.answer, "预订（明确原创义项夹具）")
-        try learning.vocabulary.annotate(entryID: entry.entryID, meaning: "后来修改的个人释义", notes: "", at: now)
+        try annotateOriginalFixture(learning, entryID: entry.entryID, meaning: "后来修改的个人释义", notes: "", at: now)
         XCTAssertNil(try learning.vocabulary.find(surface: "book")?.reviewMeaningSenseID)
         XCTAssertEqual(try learning.review.session(cycleID: cycle.cycleID)?.matching.first?.answer, prepared?.matching.first?.answer)
     }
@@ -76,9 +82,9 @@ private actor CacheRequestProbe: DictionaryProvider {
         let id = try learning.content.importArticle(.init(title: "Explicit spelling fixture", body: "The colour is clear.", source: "Fixture author", rightsConfirmed: true), at: now)
         guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
         let entry = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "colour", range: NSRange(location: 4, length: 6), sentence: "The colour is clear."), articleID: id, autoAdd: true, at: now))
-        try learning.vocabulary.annotate(entryID: entry.entryID, meaning: "颜色（明确个人释义）", notes: "", at: now)
+        try annotateOriginalFixture(learning, entryID: entry.entryID, meaning: "颜色（明确个人释义）", notes: "", at: now)
         let sense = DictionarySense(id: "explicit-spelling-fixture", en: "Alternative spelling of color.", zh: "", line: "Explicit original relation fixture, not live dictionary content.", sources: ["Wiktionary"], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/")
-        try DictionaryCacheRepository(context: ModelContext(app.modelContainer)).save("colour", senses: [sense], successful: ["Wiktionary"], at: now)
+        try DictionaryCacheRepository(context: ModelContext(app.modelContainer)).save("colour", senses: [markMDXFixture(sense)], successful: [BundledMDXDictionaryProvider.sourceName], at: now)
         try confirmOriginalReviewFixtures(learning, at: now)
         let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
         let session = try XCTUnwrap(prepared)
@@ -149,7 +155,7 @@ private actor CacheRequestProbe: DictionaryProvider {
         try learning.reader.complete(articleID: articleID, cycleID: cycle.cycleID, manualConfirmation: true, at: now)
         let before = try learning.cycles.fetchAll()
         let word = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "book", range: NSRange(location: 2, length: 4), sentence: "A book helps readers learn."), articleID: articleID, autoAdd: true, at: now))
-        try learning.vocabulary.annotate(entryID: word.entryID, meaning: "书（明确个人释义）", notes: "", at: now)
+        try annotateOriginalFixture(learning, entryID: word.entryID, meaning: "书（明确个人释义）", notes: "", at: now)
         try confirmOriginalReviewFixtures(learning, at: now)
         let prepared = try await learning.review.prepareExtra(dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
         let extra = try XCTUnwrap(prepared)
@@ -170,7 +176,7 @@ private actor CacheRequestProbe: DictionaryProvider {
         let id = try learning.content.importArticle(.init(title: "Explicit offline review fixture", body: "A book helps.", source: "Fixture author", rightsConfirmed: true), at: now)
         guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
         let addition = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "book", range: NSRange(location: 2, length: 4), sentence: "A book helps."), articleID: id, autoAdd: true, at: now))
-        try learning.vocabulary.annotate(entryID: addition.entryID, meaning: "书（个人）", notes: "", at: now)
+        try annotateOriginalFixture(learning, entryID: addition.entryID, meaning: "书（个人）", notes: "", at: now)
         let provider = CacheRequestProbe()
         try learning.dictionary.configureDictionaryEvidence(providers: [("Free Dictionary API", provider), ("Wiktionary", provider)])
         try confirmOriginalReviewFixtures(learning, at: now)
@@ -184,7 +190,7 @@ private actor CacheRequestProbe: DictionaryProvider {
         let id = try learning.content.importArticle(.init(title: "Explicit export source", body: "A book uses the Internet.", source: "Fixture author", rightsConfirmed: true), at: now.addingTimeInterval(-10 * 86400))
         let book = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "book", range: NSRange(location: 2, length: 4), sentence: "A book uses the Internet."), articleID: id, autoAdd: true, at: now.addingTimeInterval(-10 * 86400)))
         _ = try learning.vocabulary.add(token: .init(surface: "Internet", range: NSRange(location: 16, length: 8), sentence: "A book uses the Internet."), articleID: id, autoAdd: true, at: now)
-        try learning.vocabulary.annotate(entryID: book.entryID, meaning: "书，册", notes: "A \"quoted\" note\nwith another line.", at: now)
+        try annotateOriginalFixture(learning, entryID: book.entryID, meaning: "书，册", notes: "A \"quoted\" note\nwith another line.", at: now)
         let context = ModelContext(app.modelContainer), state = try XCTUnwrap(context.fetch(FetchDescriptor<ReviewStateRecord>()).first { $0.entryID == book.entryID })
         state.dueAt = now.addingTimeInterval(-2 * 86400); try context.save()
         let entries = try learning.vocabulary.entries()
@@ -204,7 +210,7 @@ private actor CacheRequestProbe: DictionaryProvider {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
         let articleID = try learning.content.importArticle(.init(title: "Original export fixture", body: "A book helps.", source: "Fixture author", rightsConfirmed: true), at: now)
         let entry = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "book", range: NSRange(location: 2, length: 4), sentence: "A book helps."), articleID: articleID, autoAdd: true, at: now))
-        try learning.vocabulary.annotate(entryID: entry.entryID, meaning: "书（个人释义）", notes: "Quoted \"note\"\n第二行", at: now)
+        try annotateOriginalFixture(learning, entryID: entry.entryID, meaning: "书（个人释义）", notes: "Quoted \"note\"\n第二行", at: now)
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: directory) }
         let files = VocabularyExportFileService(directory: directory)
@@ -374,26 +380,22 @@ private actor CacheRequestProbe: DictionaryProvider {
         XCTAssertNil(ClozeContext.make(lemma: "take", surfaces: ["took"], sentence: "No verified target occurs here.").sentence)
     }
     func testFreshCacheAvoidsProviderRequestsAndOfflineFallbackKeepsRealFetchDate() async throws {
-        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
-        let first = CacheRequestProbe(), second = CacheRequestProbe()
-        let names = Array(DictionaryAggregator.versions.keys).sorted()
-        let senses = names.map { name in DictionarySense(id: name + "|explicit-cache-fixture", en: "Explicit original cache fixture definition.", zh: "", line: "Explicit cache fixture, not production content.", partOfSpeech: "noun", sources: [name], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/") }
-        try learning.dictionary.configureDictionaryEvidence(providers: [(names[0], first), (names[1], second)], cachedSenses: senses)
-        let date = try DictionaryCacheRepository(context: ModelContext(app.modelContainer)).load("internet", at: Date()).date
-        for _ in 0..<25 { let value = try await learning.dictionary.lookup("internet"); XCTAssertTrue(value.cached); XCTAssertFalse(value.senses.isEmpty) }
-        let initial = await (first.requests, second.requests)
-        XCTAssertEqual(initial.0, 0); XCTAssertEqual(initial.1, 0)
-        let offline = try await learning.dictionary.lookup("internet", at: Date().addingTimeInterval(31 * 86400))
-        XCTAssertTrue(offline.cached); XCTAssertEqual(offline.updatedAt, date); XCTAssertEqual(offline.failedProviders.count, 2)
-        let retried = await (first.requests, second.requests)
-        XCTAssertEqual(retried.0, 1); XCTAssertEqual(retried.1, 1)
+        // Updated owner contract: no online fallback or expiring external source.
+        // The real MDX actor owns the parsed-entry cache; identity is bound to its SHA.
+        let provider = BundledMDXDictionaryProvider()
+        let first = try await provider.lookup("user")
+        XCTAssertFalse(first.filter(BilingualMeaningPolicy.trusted).isEmpty)
+        for _ in 0..<25 { let cached = try await provider.lookup("user"); XCTAssertEqual(cached, first) }
+        let hits = await provider.cacheHits
+        XCTAssertGreaterThanOrEqual(hits, 25)
+        XCTAssertEqual(Set(first.compactMap(\.sourceRevision)), [BundledMDXDictionaryProvider.sourceVersion])
     }
     func testReviewContextIsFrozenAndLegacyBackfillKeepsAnswerAttemptsAndHint() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
         let id = try learning.content.importArticle(.init(title: "Explicit original context fixture", body: "I took a book home.", source: "Fixture author", rightsConfirmed: true), at: now)
         guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected real cycle assignment") }
         let addition = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "took", range: NSRange(location: 2, length: 4), sentence: "I took a book home."), articleID: id, autoAdd: true, at: now))
-        try learning.vocabulary.annotate(entryID: addition.entryID, meaning: "拿走（明确个人释义）", notes: "", at: now)
+        try annotateOriginalFixture(learning, entryID: addition.entryID, meaning: "拿走（明确个人释义）", notes: "", at: now)
         try confirmOriginalReviewFixtures(learning, at: now)
         let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
         let original = try XCTUnwrap(prepared)
@@ -712,12 +714,13 @@ private actor CacheRequestProbe: DictionaryProvider {
         for (isEmpty, free) in [(true, Empty() as any DictionaryProvider), (false, Failed() as any DictionaryProvider)] {
             let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
             try learning.dictionary.configureDictionaryEvidence(providers: [("Free Dictionary API", free), ("Wiktionary", Wiki())])
-            let result = try await learning.dictionary.lookup("book", at: now)
+            XCTAssertFalse(learning.dictionary.onlineEnabled)
+            let result = await DictionaryAggregator(providers: [("Free Dictionary API", free), ("Wiktionary", Wiki())]).lookup("book")
             XCTAssertEqual(result.senses.map(\.en), ["Explicit original Wiktionary provider test definition."])
             XCTAssertEqual(result.senses.first?.sources, ["Wiktionary"])
             XCTAssertTrue(result.senses.allSatisfy { $0.zh.isEmpty })
-            XCTAssertEqual(result.failedProviders, isEmpty ? [] : ["Free Dictionary API"])
-            XCTAssertEqual(result.emptyProviders, isEmpty ? ["Free Dictionary API"] : [])
+            XCTAssertEqual(result.failed, isEmpty ? [] : ["Free Dictionary API"])
+            XCTAssertEqual(result.empty, isEmpty ? ["Free Dictionary API"] : [])
         }
     }
     func testSingleProviderFailureDoesNotDiscardSuccess() async {
@@ -731,9 +734,9 @@ private actor CacheRequestProbe: DictionaryProvider {
         let id = try learning.content.importArticle(.init(title: "Explicit corrupt-cache fixture", body: "A book helps people learn.", source: "Fixture author", rightsConfirmed: true), at: now)
         guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected actual cycle") }
         let word = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "book", range: NSRange(location: 2, length: 4), sentence: "A book helps people learn."), articleID: id, autoAdd: true, at: now))
-        try learning.vocabulary.annotate(entryID: word.entryID, meaning: "书（明确个人释义）", notes: "Personal notes must remain accessible.", at: now)
+        try annotateOriginalFixture(learning, entryID: word.entryID, meaning: "书（明确个人释义）", notes: "Personal notes must remain accessible.", at: now)
         let context = ModelContext(app.modelContainer)
-        context.insert(DictionaryProviderCacheRecord(lemma: "book", provider: "Free Dictionary API", version: DictionaryAggregator.versions["Free Dictionary API"]!, data: Data("Damaged disposable fixture payload".utf8), at: now)); try context.save()
+        context.insert(DictionaryProviderCacheRecord(lemma: "book", provider: "Free Dictionary API", version: "api-v2-schema-2", data: Data("Damaged disposable fixture payload".utf8), at: now)); try context.save()
         XCTAssertEqual(try learning.vocabulary.find(surface: "book")?.notes, "Personal notes must remain accessible.")
         let exported = String(decoding: try learning.vocabulary.export(.json, at: now), as: UTF8.self)
         XCTAssertTrue(exported.contains("Personal notes must remain accessible."))
@@ -746,31 +749,36 @@ private actor CacheRequestProbe: DictionaryProvider {
     func testCorruptDisposableProviderCacheDoesNotHideOtherProviderAndCanBeRepaired() throws {
         let app = try AppDependencies.makeLearningInMemory(), context = ModelContext(app.modelContainer)
         let valid = DictionarySense(id: "explicit-valid-cache", en: "Explicit original cache fixture.", zh: "", line: "Explicit fixture", sources: ["Wiktionary"])
-        context.insert(DictionaryProviderCacheRecord(lemma: "book", provider: "Wiktionary", version: DictionaryAggregator.versions["Wiktionary"]!, data: try JSONEncoder().encode([valid]), at: now))
-        context.insert(DictionaryProviderCacheRecord(lemma: "book", provider: "Free Dictionary API", version: DictionaryAggregator.versions["Free Dictionary API"]!, data: Data("Damaged disposable fixture payload".utf8), at: now))
+        context.insert(DictionaryProviderCacheRecord(lemma: "book", provider: "Wiktionary", version: "bilingual-action-schema-7", data: try JSONEncoder().encode([valid]), at: now))
+        context.insert(DictionaryProviderCacheRecord(lemma: "book", provider: "Free Dictionary API", version: "api-v2-schema-2", data: Data("Damaged retired fixture payload".utf8), at: now))
         try context.save()
         let cache = DictionaryCacheRepository(context: context), loaded = try cache.load("book", at: now)
-        XCTAssertEqual(loaded.senses.map(\.id), [valid.id]); XCTAssertFalse(loaded.complete)
-        let repaired = DictionarySense(id: "explicit-repair", en: "Explicit original repair fixture.", zh: "", line: "Explicit fixture", sources: ["Free Dictionary API"], licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/")
-        try cache.save("book", senses: [repaired], successful: ["Free Dictionary API"], at: now.addingTimeInterval(1))
+        // Retired providers cannot be promoted to MDX, including valid old rows.
+        XCTAssertTrue(loaded.senses.isEmpty); XCTAssertFalse(loaded.complete)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<DictionaryProviderCacheRecord>()), 2)
+        let repaired = markMDXFixture(DictionarySense(id: "explicit-repair", en: "Explicit original repair fixture.", zh: "", line: "Explicit fixture"))
+        try cache.save("book", senses: [repaired], successful: [BundledMDXDictionaryProvider.sourceName], at: now.addingTimeInterval(1))
         let current = try cache.load("book", at: now.addingTimeInterval(2))
-        XCTAssertTrue(current.complete); XCTAssertEqual(Set(current.senses.map(\.id)), Set([valid.id, repaired.id]))
+        XCTAssertTrue(current.complete); XCTAssertEqual(current.senses.map(\.id), [repaired.id])
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<DictionaryProviderCacheRecord>()), 3)
     }
     func testVersionedDictionaryCacheDoesNotEraseVocabulary() throws {
         let app = try AppDependencies.makeLearningInMemory(), context = ModelContext(app.modelContainer)
         let cache = DictionaryCacheRepository(context: context)
-        try cache.save("book", senses: [DictionarySense(id: "test", en: "A book.", zh: "", line: "English Wiktionary contributors", sources: ["Wiktionary"])], successful: ["Wiktionary"], at: now)
+        let sense = markMDXFixture(DictionarySense(id: "test", en: "A book.", zh: "", line: "Explicit MDX cache-version fixture"))
+        try cache.save("book", senses: [sense], successful: [BundledMDXDictionaryProvider.sourceName], at: now)
         XCTAssertEqual(try cache.load("book", at: now).senses.count, 1)
         let row = try XCTUnwrap(context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).first)
         row.sourceVersion = "obsolete"; try context.save()
         XCTAssertTrue(try cache.load("book", at: now).senses.isEmpty)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<DictionaryProviderCacheRecord>()), 1)
     }
     func testNewReviewStateAndFirstAgainPersistLearningWithoutPretendingPriorMastery() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
         let id = try learning.content.importArticle(.init(title: "Explicit new-card fixture", body: "A book helps people learn.", source: "Fixture author", rightsConfirmed: true), at: now)
         guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected actual cycle") }
         let word = try XCTUnwrap(learning.vocabulary.add(token: .init(surface: "book", range: NSRange(location: 2, length: 4), sentence: "A book helps people learn."), articleID: id, autoAdd: true, at: now))
-        try learning.vocabulary.annotate(entryID: word.entryID, meaning: "书（明确个人释义）", notes: "", at: now)
+        try annotateOriginalFixture(learning, entryID: word.entryID, meaning: "书（明确个人释义）", notes: "", at: now)
         let initial = try XCTUnwrap(ModelContext(app.modelContainer).fetch(FetchDescriptor<ReviewStateRecord>()).first)
         XCTAssertEqual(initial.cardState, "new"); XCTAssertEqual(initial.successfulReviews, 0)
         try confirmOriginalReviewFixtures(learning, at: now)
@@ -816,7 +824,7 @@ private actor CacheRequestProbe: DictionaryProvider {
         guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected real saved cycle") }
         for (word, meaning) in [("book", "书（个人释义）"), ("science", "科学（个人释义）")] {
             let addition = try XCTUnwrap(learning.vocabulary.add(token: EnglishToken(surface: word, range: NSRange(location: 0, length: word.count), sentence: "A book explains science."), articleID: id, autoAdd: true, at: now))
-            try learning.vocabulary.annotate(entryID: addition.entryID, meaning: meaning, notes: "", at: now)
+            try annotateOriginalFixture(learning, entryID: addition.entryID, meaning: meaning, notes: "", at: now)
         }
         try confirmOriginalReviewFixtures(learning, at: now)
         let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 2, pairCount: 2, clozeCount: 2, at: now)

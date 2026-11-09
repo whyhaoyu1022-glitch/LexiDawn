@@ -79,7 +79,7 @@ final class AppStartup: ObservableObject {
                     if scenario == "round3-extra-review" {
                         for (surface, meaning) in [("Internet", "互联网（额外复习夹具）"), ("document", "文档（额外复习夹具）")] {
                             let addition = try learning.vocabulary.add(token: .init(surface: surface, range: NSRange(location: 0, length: surface.count), sentence: "Explicit original context fixture: the \(surface) supports learning."), articleID: SourceRegistry.rfc.id, autoAdd: true, at: Date())
-                            if let addition { try learning.vocabulary.savePersonalSenses(entryID: addition.entryID, senses: [.init(partOfSpeech: "noun", chinese: meaning, confirmed: true)], at: Date()); try learning.vocabulary.saveNotes(entryID: addition.entryID, notes: "Explicit extra-review fixture, not a live cold start.", at: Date()) }
+                            if let addition { try learning.dictionary.recordEmptyEligibilityFixture(EnglishTokenizer.lemma(surface), at: Date()); try learning.vocabulary.savePersonalSenses(entryID: addition.entryID, senses: [.init(partOfSpeech: "noun", chinese: meaning, confirmed: true)], at: Date()); try learning.vocabulary.saveNotes(entryID: addition.entryID, notes: "Explicit extra-review fixture, not a live cold start.", at: Date()) }
                         }
                     } else if scenario == "round3-history-gate" {
                         _ = try learning.content.importArticle(.init(title: "Explicit original current-task fixture", body: "A new original task remains unfinished. Only this task article can be opened until its cycle is complete.", source: "Explicit UI fixture author", rightsConfirmed: true), at: Date())
@@ -125,6 +125,7 @@ final class AppStartup: ObservableObject {
                         for (index, pair) in pairs.enumerated() {
                             if let token = EnglishTokenizer.tokens(in: article.body).first(where: { $0.surface == pair.0 }) ?? (scenario == "gallery-round3-review" && pair.0 == "book" ? EnglishToken(surface: "book", range: NSRange(location: 0, length: 4), sentence: "Explicit test fixture: read a book.") : nil),
                                let added = try learning.vocabulary.add(token: token, articleID: article.id, autoAdd: true, at: now.addingTimeInterval(Double(index) * 0.001)) {
+                                try learning.dictionary.recordEmptyEligibilityFixture(EnglishTokenizer.lemma(pair.0), at: Date())
                                 try learning.vocabulary.savePersonalSenses(entryID: added.entryID, senses: [.init(partOfSpeech: "noun", chinese: pair.1, confirmed: true)], at: Date()); try learning.vocabulary.saveNotes(entryID: added.entryID, notes: "Explicit screenshot fixture; actual RFC context or labeled original book example", at: Date())
                             }
                         }
@@ -274,7 +275,13 @@ extension AppStartup {
             }
         }
         let mode = scenario.replacingOccurrences(of: "round4-", with: "")
-        try learning.dictionary.configureDictionaryEvidence(providers: [("Wiktionary", Round4DictionaryFixture(mode: mode, source: "Wiktionary")), ("Free Dictionary API", Round4DictionaryFixture(mode: mode, source: "Free Dictionary API"))])
+        if scenario == "round4-mdx-missing" || scenario == "round4-mdx-corrupt" {
+            let resource = FileManager.default.temporaryDirectory.appendingPathComponent("explicit-mdx-fault-" + storeID.uuidString + ".mdx")
+            if scenario == "round4-mdx-corrupt" { try Data("Explicit corrupt resource fixture".utf8).write(to: resource) }
+            learning.dictionary.configureMDXResourceForEvidence(resource)
+        } else if !scenario.hasPrefix("round4-mdx-") {
+            try learning.dictionary.configureDictionaryEvidence(providers: [("explicit-layout", Round4DictionaryFixture(mode: mode, source: "Wiktionary"))])
+        }
         if scenario == "round4-note-failed" { learning.injectVocabularySaveFailureForEvidence() }
         return app
     }

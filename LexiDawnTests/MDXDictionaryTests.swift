@@ -73,7 +73,7 @@ import AVFoundation
         let values = try MDXEntryParser.parse(html, requested: "fixture", recordID: "fixture")
         XCTAssertEqual(values.count, 1); XCTAssertTrue(values[0].zh.isEmpty)
         XCTAssertFalse(BilingualMeaningPolicy.trusted(values[0]))
-        XCTAssertTrue(BilingualMeaningPolicy.permitsPersonal(senses: values, knownReliableChinese: false))
+        XCTAssertTrue(BilingualMeaningPolicy.permitsPersonal(senses: values, knownReliableChinese: false, availability: .noChinese))
     }
     func testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)

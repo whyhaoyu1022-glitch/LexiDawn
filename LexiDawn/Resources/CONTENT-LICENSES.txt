@@ -4,17 +4,12 @@ IETF TLP 5 section 3(c)(i) permits full unmodified copying, publication, display
 https://trustee.ietf.org/documents/trust-legal-provisions/tlp-5/
 No image permissions or general derivative-work rights claimed. Reader formatting does not modify original stored text.
 
-CC-CEDICT reverse English index: derived from MDBG CC-CEDICT release 2026-10-30T01:44:55Z (125325 entries).
-Credit: CC-CEDICT editors and contributors, MDBG; based on CEDICT, Copyright (C) 1997, 1998 Paul Andrew Denisowski.
-Source: https://www.mdbg.net/chinese/dictionary?page=cc-cedict
-License: Creative Commons Attribution-ShareAlike 4.0 International, https://creativecommons.org/licenses/by-sa/4.0/
-This derived JSON index is distributed under the same CC BY-SA 4.0 license. The application code is separate.
-Changes: index exact English glosses, split semicolon gloss groups, remove leading "to " for lookup keys, limit to three entries per key. No invented translations.
-This is reverse lookup of a Chinese-English dictionary, not context disambiguation or an authoritative English-Chinese dictionary. Chinese forms are possible counterparts.
-Reproduce with scripts/build-cedict-index.py using the official downloadable gzip (no website scraping).
-Original gzip SHA-256: 216f40bc26d65cb074f89d243fe2ec379ac29ad6fccb93f57ee1c9414892902f
-
-
+Bundled dictionary
+Only BundledDictionary.mdx supplies current dictionary entries. The two repository ZIP packages are reassembled and SHA-256 verified at build time.
+MDX SHA-256: 095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443
+No dictionary network provider, user dictionary import, MDD, image, or audio dependency is used. Pronunciation uses iOS system speech.
+User-created senses are labelled personal content and remain distinct from the MDX source.
+Historical external-provider records remain in upgraded databases for provenance only and are excluded from current lookup and new review questions.
 
 HTML named character reference data
 html-entities.json maps standard HTML5 character-reference names to Unicode characters, generated from Python standard library html.entities.html5 (PSF-licensed standard-library data; WHATWG HTML named character reference mappings). It contains character mappings only, not article or dictionary content. No network calls are made while decoding entities.

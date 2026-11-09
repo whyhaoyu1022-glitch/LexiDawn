@@ -13,7 +13,7 @@ struct LearningRootView: View {
             LiveTodayView(dependencies: dependencies, learning: learning).tabItem { Label("今日", systemImage: "sun.max") }.tag(0)
             LiveExploreView(learning: learning, continueToday: { tab = 0 }).tabItem { Label("探索", systemImage: "safari") }.tag(1)
             VocabularyListView(learning: learning, continueToday: { tab = 0 }).tabItem { Label("词汇", systemImage: "text.book.closed") }.tag(2)
-            ReviewPracticeView(learning: learning).tabItem { Label("复习", systemImage: "rectangle.stack") }.tag(3)
+            ReviewPracticeView(learning: learning, returnToday: { tab = 0 }).tabItem { Label("复习", systemImage: "rectangle.stack") }.tag(3)
             LearningSettingsView(learning: learning).tabItem { Label("我的", systemImage: "person") }.tag(4)
         }.tint(LexiDawnColor.dawn500).reviewEntryGate(reviewGate, learning: learning)
     }

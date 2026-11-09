@@ -95,7 +95,7 @@ import UIKit
         XCTAssertTrue(article.body.contains("Copyright")); XCTAssertTrue(article.body.contains("IETF Trust")); XCTAssertGreaterThan(EnglishTokenizer.tokens(in: article.body).count, 2500)
         let dictionary = try await learning.dictionary.lookup("book")
         XCTAssertFalse(dictionary.senses.isEmpty); XCTAssertTrue(dictionary.senses.allSatisfy { !$0.line.isEmpty && !$0.zh.isEmpty })
-        XCTAssertEqual(dictionary.licenseURL, "https://creativecommons.org/licenses/by-sa/4.0/")
+        XCTAssertEqual(dictionary.versions, DictionaryAggregator.versions); XCTAssertTrue(dictionary.senses.allSatisfy { $0.originKind == "mdx" })
         let missing = try await learning.dictionary.lookup("zzzzunverifiableword")
         XCTAssertTrue(missing.senses.isEmpty)
     }
@@ -377,7 +377,7 @@ extension Round2Tests {
         let (app, id, cycle) = try setup(); let learning = try XCTUnwrap(app.learning)
         for (index, word) in ["book", "science", "world"].enumerated() {
             let added = try XCTUnwrap(learning.vocabulary.add(token: EnglishToken(surface: word, range: NSRange(location: index * 10, length: word.count), sentence: "A test sentence."), articleID: id, autoAdd: true, at: now))
-            try learning.vocabulary.annotate(entryID: added.entryID, meaning: "个人释义\(index)", notes: "Explicit test-owned meaning", at: now)
+            try annotateOriginalFixture(learning, entryID: added.entryID, meaning: "个人释义\(index)", notes: "Explicit test-owned meaning", at: now)
         }
         let context = ModelContext(app.modelContainer)
         let world = try XCTUnwrap(context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first { $0.lemma == "world" })

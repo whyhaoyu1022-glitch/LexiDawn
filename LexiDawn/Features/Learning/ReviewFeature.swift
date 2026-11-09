@@ -1,13 +1,24 @@
 import SwiftUI
 import UIKit
 
+enum ReviewAnswerPhase: String { case answering, submitting, incorrect, hinted, revealedAwaitingCorrection, answered, saveFailed, completed }
+struct ReviewFeedbackIdentity: Equatable {
+    let sessionID: String
+    let questionID: String
+    let attemptID: UUID
+    let revision: Int
+}
+
 struct ReviewPracticeView: View {
     @ObservedObject var learning: LearningServices
-    var body: some View { NavigationStack { ReviewPracticeContent(learning: learning) } }
+    var returnToday: (() -> Void)? = nil
+    var body: some View { NavigationStack { ReviewPracticeContent(learning: learning, returnToday: returnToday) } }
 }
 struct ReviewPracticeContent: View {
     @EnvironmentObject private var dependencies: AppDependencies
     @ObservedObject var learning: LearningServices
+    var returnToday: (() -> Void)? = nil
+    @Environment(\.dismiss) private var dismiss
     @State private var cycleID: UUID?
     @State private var session: ReviewSessionView?
     @State private var selected: String?
@@ -15,6 +26,8 @@ struct ReviewPracticeContent: View {
     @State private var message: String?
     @State private var feedback: String?
     @State private var feedbackFor: String?
+    @State private var feedbackIdentity: ReviewFeedbackIdentity?
+    @State private var answerPhase = ReviewAnswerPhase.answering
     @StateObject private var entryGate = ReviewEntryCoordinator()
     @State private var deferredResolved = false
     @State private var loading = false
@@ -38,7 +51,11 @@ struct ReviewPracticeContent: View {
                 else if let session {
                     if extraMode { Label("额外复习 · 不创建每日任务", systemImage: "plus.circle").font(.headline).accessibilityIdentifier("extra-review-label") }
                     if session.completedAt != nil {
-                        ContentUnavailableView("本次复习已保存", systemImage: "checkmark.seal.fill", description: Text(session.deferredCount > 0 ? "本次另有\(session.deferredCount)个词延期，生词本继续保留。" : "今天的积累，下次再见。")).accessibilityIdentifier("review-completed")
+                        ContentUnavailableView("本次复习已保存", systemImage: "checkmark.seal.fill", description: Text("完成 \(session.matching.filter(\.completed).count) 个词 · 延期 \(session.deferredCount) 个词")).accessibilityIdentifier("review-completed")
+                        HStack {
+                            Button("返回") { if let returnToday { returnToday() } else { dismiss() } }.buttonStyle(.bordered)
+                            Button("继续") { Task { await load() } }.buttonStyle(.borderedProminent)
+                        }.frame(maxWidth: .infinity)
                     } else if !session.matchingComplete { matching(session) }
                     else {
                         Button { showCompletedMatches.toggle() } label: {
@@ -58,8 +75,20 @@ struct ReviewPracticeContent: View {
         }.safeAreaPadding(.bottom, 16).scrollDismissesKeyboard(.interactively).navigationTitle("复习").navigationBarTitleDisplayMode(.inline).task { await load() }
             .reviewEntryGate(entryGate, learning: learning)
             .onChange(of: selected) { _, _ in feedback = nil; feedbackFor = nil }
+            .onChange(of: activeQuestionKey) { _, _ in spelling = ""; feedback = nil; feedbackFor = nil; feedbackIdentity = nil; answerPhase = restoredPhase }
             .onChange(of: feedback) { _, message in if let message { UIAccessibility.post(notification: .announcement, argument: message) } }
             .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await load() } } }
+    }
+    private var activeQuestionKey: String {
+        guard let session else { return "" }
+        return session.id + "|" + (session.cloze.first(where: { !$0.completed })?.id ?? "completed")
+    }
+    private var restoredPhase: ReviewAnswerPhase {
+        if session?.completedAt != nil { return .completed }
+        return session?.cloze.first(where: { !$0.completed })?.revealed == true ? .revealedAwaitingCorrection : .answering
+    }
+    private func feedbackBelongs(to questionID: String, in session: ReviewSessionView) -> Bool {
+        feedbackIdentity?.sessionID == session.id && feedbackIdentity?.questionID == questionID && feedbackIdentity?.revision == session.revision
     }
     private func matching(_ session: ReviewSessionView) -> some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -68,7 +97,7 @@ struct ReviewPracticeContent: View {
             MatchingBoard(session: session, selected: $selected, submit: { questionID, senseID in
                 if submit(questionID: questionID, answer: senseID) { selected = nil }
             }, noSelection: { feedbackFor = nil; feedback = "请先选择英文词条" })
-            if let feedback, feedbackFor == selected { Label(feedback, systemImage: "exclamationmark.circle").font(.subheadline).foregroundStyle(.orange).accessibilityIdentifier("review-feedback") }
+            if let feedback, let selected, feedbackFor == selected, feedbackBelongs(to: selected, in: session) { Label(feedback, systemImage: "exclamationmark.circle").font(.subheadline).foregroundStyle(.orange).accessibilityIdentifier("review-feedback") }
         }
     }
     @ViewBuilder private func cloze(_ session: ReviewSessionView) -> some View {
@@ -87,7 +116,7 @@ struct ReviewPracticeContent: View {
                         Text("亲自正确输入一次后继续 · 本题仍计 Again").font(.caption).foregroundStyle(.secondary)
                     }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(.quaternary, in: RoundedRectangle(cornerRadius: 14)).accessibilityIdentifier("cloze-correction-required")
                 } else { Text("输入原句中的完整词形").font(.subheadline).foregroundStyle(.secondary) }
-                if let feedback, feedbackFor == question.id { Label(feedback, systemImage: "exclamationmark.circle").font(.subheadline).foregroundStyle(.orange).accessibilityIdentifier("review-feedback") }
+                if let feedback, feedbackFor == question.id, feedbackBelongs(to: question.id, in: session) { Label(feedback, systemImage: "exclamationmark.circle").font(.subheadline).foregroundStyle(.orange).accessibilityIdentifier("review-feedback") }
                 if question.acceptedAnswers.count > 1 { Text("本题接受词典明确标注的英美拼写变体。").font(.caption).foregroundStyle(.secondary) }
                 TextField("完整拼写", text: $spelling).textInputAutocapitalization(.never).autocorrectionDisabled().textFieldStyle(.roundedBorder).accessibilityIdentifier("cloze-answer").submitLabel(.done).onSubmit { if submit(questionID: question.id, answer: spelling) { spelling = "" } }
                 Button("提交答案") { if submit(questionID: question.id, answer: spelling) { spelling = "" } }.buttonStyle(.borderedProminent).accessibilityIdentifier("submit-spelling")
@@ -104,6 +133,7 @@ struct ReviewPracticeContent: View {
     private func load() async {
         let generation = UUID(); loadGeneration = generation
         loading = true; message = nil; selected = nil; spelling = ""; feedback = nil; feedbackFor = nil; emptyResolved = false; schedules = []; extraMode = false; extraEmpty = false; showCompletedMatches = false
+        feedbackIdentity = nil; answerPhase = .answering
         defer { if loadGeneration == generation { loading = false } }
         do {
             let cycles = try learning.cycles.fetchAll()
@@ -124,12 +154,16 @@ struct ReviewPracticeContent: View {
                 if let extra { session = extra; extraMode = true; emptyResolved = false; schedules = try learning.review.extraScheduleFeedback(sessionID: extra.id) }
                 else { extraEmpty = true }
             }
+            answerPhase = restoredPhase
             learning.changed()
         } catch { self.message = error.localizedDescription; entryGate.adopt(error, cycleID: cycleID, completion: { Task { await load() } }) }
         loading = false
     }
     @discardableResult private func submit(questionID: String, answer: String, reveal: Bool = false, hint: Bool = false) -> Bool {
         guard let cycleID else { return false }
+        guard answerPhase != .submitting, let currentSession = session else { return false }
+        let attempt = UUID(); answerPhase = .submitting
+        feedbackIdentity = ReviewFeedbackIdentity(sessionID: currentSession.id, questionID: questionID, attemptID: attempt, revision: currentSession.revision)
         feedback = nil; feedbackFor = questionID
         do {
             let correct: Bool
@@ -143,9 +177,13 @@ struct ReviewPracticeContent: View {
                 schedules = try learning.review.scheduleFeedback(cycleID: cycleID)
             }
             feedback = correct ? nil : reveal ? "请按显示答案亲自输入一次" : hint ? "首字母：" + (session?.cloze.first { $0.id == questionID }?.answer.first.map(String.init) ?? "") : "还不正确，请再试一次"
+            if let saved = session {
+                feedbackIdentity = ReviewFeedbackIdentity(sessionID: saved.id, questionID: questionID, attemptID: attempt, revision: saved.revision)
+                answerPhase = saved.completedAt != nil ? .completed : correct ? .answered : reveal ? .revealedAwaitingCorrection : hint ? .hinted : .incorrect
+            }
             learning.changed(); message = nil
             return correct
-        } catch { message = error.localizedDescription; return false }
+        } catch { feedback = nil; answerPhase = .saveFailed; message = error.localizedDescription; return false }
     }
 }
 

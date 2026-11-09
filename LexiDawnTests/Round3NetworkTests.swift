@@ -151,21 +151,17 @@ private final class Round3FaultURLProtocol: URLProtocol, @unchecked Sendable {
         }
     }
     func testLiveFreeDictionaryEnglishDefinition() async throws {
-        // Owner-authorized optional availability probe. Never skip parsing bugs or
-        // claim an unavailable service as a successful external lookup.
-        let senses: [DictionarySense]
-        do { senses = try await FreeDictionaryProvider().lookup("book") }
-        catch let error as FullTextImportError where error == .transport || error == .rateLimited || error == .notFound {
-            throw XCTSkip("Optional Free Dictionary currently unavailable; Wiktionary remains a required live test.")
-        }
-        guard !senses.isEmpty else { throw XCTSkip("Optional Free Dictionary returned no definitions; not a successful live lookup.") }
-        XCTAssertTrue(senses.contains { $0.partOfSpeech == "noun" && !$0.en.isBlank })
+        // Historical selector retained; obsolete online probe migrated to real bundled MDX.
+        let senses = try await BundledMDXDictionaryProvider().lookup("book")
+        XCTAssertTrue(senses.contains { $0.partOfSpeech == "noun" && BilingualMeaningPolicy.trusted($0) && !$0.en.isBlank })
+        XCTAssertTrue(senses.allSatisfy { $0.sources == [BundledMDXDictionaryProvider.sourceName] && $0.audioURL == nil })
     }
     func testLiveWiktionaryEnglishDefinition() async throws {
-        // Historical method name retained; current owner contract requires English -> Chinese.
-        let senses = try await WiktionaryDictionaryProvider().lookup("book")
-        XCTAssertTrue(senses.contains { $0.partOfSpeech == "noun" && BilingualMeaningPolicy.trusted($0) && $0.sourceRevision != nil })
-        XCTAssertFalse(BilingualMeaningPolicy.displaySenses(senses).isEmpty)
+        // Historical selector retained; the only current dictionary is the local MDX.
+        let senses = try await BundledMDXDictionaryProvider().lookup("take off")
+        XCTAssertFalse(senses.filter(BilingualMeaningPolicy.trusted).isEmpty)
+        XCTAssertTrue(senses.allSatisfy { $0.lexicalHeadword == "take off" && $0.sectionKind == "phrasalVerb" })
+        XCTAssertEqual(Set(senses.compactMap(\.sourceRevision)), [BundledMDXDictionaryProvider.sourceVersion])
     }
     func testLiveWikipediaDiscoveryImportsCompleteOriginalIntoEmptyDatabase() async throws {
         let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)
