@@ -59,6 +59,8 @@ def inspect_app(app):
     for marker in [b'-UITest', b'-forceStartupFailure', b'LEXIDAWN_SCREENSHOT_FIXTURE', b'-failNextPersistenceSave']:
         assert marker not in (app / info['CFBundleExecutable']).read_bytes(), 'Debug fixture marker included'
     binary = (app / info['CFBundleExecutable']).read_bytes()
+    for endpoint in [b'api.dictionaryapi.dev', b'en.wiktionary.org', b'zh.wiktionary.org', b'od-api.oxforddictionaries.com']:
+        assert endpoint not in binary, 'Retired dictionary network endpoint included in Release executable'
     assert struct.unpack_from('<I', binary)[0] == 0xFEEDFACF, 'Expected thin 64-bit Mach-O'
     assert struct.unpack_from('<I', binary, 4)[0] == 0x0100000C, 'Expected arm64'
     count = struct.unpack_from('<I', binary, 16)[0]
@@ -94,6 +96,7 @@ def main():
         'version': info['CFBundleShortVersionString'], 'build': info['CFBundleVersion'],
         'minimumOSVersion': info['MinimumOSVersion'], 'platform': 'iPhoneOS', 'architecture': 'arm64',
         'signed': False, 'installedOnDevice': False, 'testsRerun': False, 'appIconSHA256': icon_hash,
+        'retiredDictionaryEndpointsAbsentFromExecutable': True,
         'xcode': (out / 'xcode-version.txt').read_text().strip(), 'sdk': (out / 'iphoneos-sdk.txt').read_text().strip(),
     }
     if args.archive:

@@ -1,0 +1,10 @@
+{
+  "sourceCommit": "00f287e7722ee9d35215d43e70973c231683dc52",
+  "runURL": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42922034693",
+  "compileAllTargets": "failure",
+  "compileError": "MDXDictionaryTests.swift:250 cannot assign to let zh",
+  "unitTests": "not-executed",
+  "uiTests": "not-executed",
+  "fix": "Construct a separate historical DictionarySense fixture; immutable production fields preserved. Pending new native run.",
+  "round4Accepted": false
+}

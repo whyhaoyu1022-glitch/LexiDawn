@@ -35,7 +35,7 @@ enum MDXEntryIdentity {
 actor BundledMDXDictionaryProvider: DictionaryProvider {
     static let sourceName = "内置 MDX"
     static let sourceSHA = "095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443"
-    static let sourceVersion = sourceSHA + "-html-5"
+    static let sourceVersion = sourceSHA + "-html-6"
     private let resource: URL?
     private var reader: OpaquePointer?
     private var index: [String: [Int]] = [:]
@@ -97,7 +97,27 @@ actor BundledMDXDictionaryProvider: DictionaryProvider {
         for number in numbers {
                 for (target, html) in try records(number, path: []) {
                     try Task.checkCancellation()
-                    for sense in try MDXEntryParser.parse(html, requested: headword, recordID: target, subentryOnly: subentryOnly) where seen.insert(sense.id).inserted { values.append(sense) }
+                    for var sense in try MDXEntryParser.parse(html, requested: headword, recordID: target, subentryOnly: subentryOnly) where seen.insert(sense.id).inserted {
+                        if let links = sense.supplementLinks, !links.isEmpty {
+                            var notes = sense.usageNotes ?? [], noteIDs = Set(notes.map(\.id)), warnings: [String] = []
+                            for link in links {
+                                try Task.checkCancellation()
+                                do {
+                                    let targets = index[link] ?? (folded[link.lowercased()] ?? []).flatMap { index[$0] ?? [] }
+                                    guard !targets.isEmpty else { throw MDXDictionaryError.invalidEntry("补充用法页未收录") }
+                                    for number in targets {
+                                        for (noteRecord, noteHTML) in try records(number, path: []) {
+                                            for note in try MDXEntryParser.supplementalNotes(noteHTML, recordID: noteRecord) where noteIDs.insert(note.id).inserted { notes.append(note) }
+                                        }
+                                    }
+                                } catch is CancellationError { throw CancellationError() }
+                                catch { warnings.append(error.localizedDescription) }
+                            }
+                            sense.usageNotes = notes.isEmpty ? nil : notes
+                            sense.sourceWarnings = warnings.isEmpty ? nil : warnings
+                        }
+                        values.append(sense)
+                    }
                 }
         }
         try Task.checkCancellation(); return values
@@ -202,6 +222,17 @@ enum MDXEntryParser {
         value.replacingOccurrences(of: "ˌ", with: "").replacingOccurrences(of: "ˈ", with: "").replacingOccurrences(of: "↔", with: " ")
             .split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
+    static func supplementalNotes(_ html: String, recordID: String) throws -> [DictionaryTextNote] {
+        let data = Array(html.utf8)
+        guard let document = data.withUnsafeBytes({ ld_html_parse($0.baseAddress?.assumingMemoryBound(to: CChar.self), $0.count) }) else { throw MDXDictionaryError.invalidEntry("补充用法页无法解析") }
+        defer { ld_html_close(document) }
+        guard let root = ld_html_root(document) else { throw MDXDictionaryError.invalidEntry("补充用法页结构缺失") }
+        let node = Node(pointer: root), groups = node.descendants("t-unbox")
+        guard !groups.isEmpty else { throw MDXDictionaryError.invalidEntry("补充用法页缺少原始内容结构") }
+        let notes = groups.flatMap { $0.notePairs(prefix: "mdx-note|" + BundledMDXDictionaryProvider.sourceSHA + "|" + recordID, label: "用法补充") }
+        guard !notes.isEmpty else { throw MDXDictionaryError.invalidEntry("补充用法页没有可展示的文本") }
+        return notes
+    }
     static func parse(_ html: String, requested: String, recordID: String, subentryOnly: Bool = false) throws -> [DictionarySense] {
         let data = Array(html.utf8)
         guard let document = data.withUnsafeBytes({ raw in ld_html_parse(raw.baseAddress?.assumingMemoryBound(to: CChar.self), raw.count) }) else { throw MDXDictionaryError.invalidEntry("HTML 无法解析") }
@@ -273,6 +304,11 @@ enum MDXEntryParser {
                 var noteIDs = Set<String>()
                 let notes = noteGroups.flatMap { $0.notePairs(prefix: sense.id, label: $0.has("t-unbox") ? "用法补充" : "用法提示") }.filter { noteIDs.insert($0.id).inserted }
                 sense.usageNotes = notes.isEmpty ? nil : notes
+                var supplementNodes = scope.descendants("t-unboxlink")
+                if ordinal == 0 { supplementNodes += entry.descendants("t-unboxlink").filter { $0.ancestor(["t-sn-g", "t-licontent", "t-pv-g", "t-idm-g"]) == nil } }
+                let links = Array(NSOrderedSet(array: supplementNodes.flatMap(\.entryTargets))) as? [String] ?? []
+                guard links.count <= 100 else { throw MDXDictionaryError.invalidEntry("补充用法链接数量异常") }
+                sense.supplementLinks = links.isEmpty ? nil : links
                 var referenceNodes = scope.descendants("t-xr-g")
                 if ordinal == 0 { referenceNodes += entry.descendants("t-xr-g").filter { $0.ancestor(["t-sn-g", "t-licontent", "t-pv-g", "t-idm-g"]) == nil } }
                 var synonyms: [String] = [], antonyms: [String] = [], references: [String] = []

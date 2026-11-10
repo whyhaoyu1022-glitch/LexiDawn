@@ -25,6 +25,12 @@
       "requirementIDs": [
         "R4-F22"
       ],
+      "acceptanceIDs": [
+        "R4-A22-12"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [
         "R4-R01",
         "R4-R02",
@@ -54,6 +60,12 @@
       "requirementIDs": [
         "R4-F22"
       ],
+      "acceptanceIDs": [
+        "R4-A22-12"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [
         "R4-R01",
         "R4-R02",
@@ -83,6 +95,12 @@
       "requirementIDs": [
         "R4-F22"
       ],
+      "acceptanceIDs": [
+        "R4-A22-12"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [
         "R4-R01",
         "R4-R02",
@@ -112,6 +130,12 @@
       "requirementIDs": [
         "R4-F22"
       ],
+      "acceptanceIDs": [
+        "R4-A22-04"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [
         "R4-R01",
         "R4-R02",
@@ -141,6 +165,13 @@
       "requirementIDs": [
         "R4-F22"
       ],
+      "acceptanceIDs": [
+        "R4-A22-02",
+        "R4-A22-04"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [
         "R4-R01",
         "R4-R02",
@@ -170,6 +201,13 @@
       "requirementIDs": [
         "R4-F22"
       ],
+      "acceptanceIDs": [
+        "R4-A22-05",
+        "R4-A22-09"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [
         "R4-R01",
         "R4-R02",
@@ -199,6 +237,14 @@
       "requirementIDs": [
         "R4-F22"
       ],
+      "acceptanceIDs": [
+        "R4-A22-02",
+        "R4-A22-03",
+        "R4-A22-04"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [
         "R4-R01",
         "R4-R02",
@@ -228,6 +274,14 @@
       "requirementIDs": [
         "R4-F22"
       ],
+      "acceptanceIDs": [
+        "R4-A22-02",
+        "R4-A22-03",
+        "R4-A22-04"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "failed",
       "referenceImageIDs": [
         "R4-R01",
         "R4-R02",
@@ -255,8 +309,15 @@
       "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539",
       "feedbackImageID": "",
       "requirementIDs": [
-        "R4-F22"
+        "R4-F22",
+        "R4-F23"
       ],
+      "acceptanceIDs": [
+        "R4-A23-02"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [
         "R4-R01",
         "R4-R02",
@@ -286,6 +347,12 @@
       "requirementIDs": [
         "R4-F23"
       ],
+      "acceptanceIDs": [
+        "R4-A23-11"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [
         "R4-R01",
         "R4-R02",
@@ -313,8 +380,16 @@
       "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539",
       "feedbackImageID": "",
       "requirementIDs": [
-        "R4-F23"
+        "R4-F23",
+        "R4-F16"
       ],
+      "acceptanceIDs": [
+        "R4-A16-02",
+        "R4-A23-05"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [
         "R4-R01",
         "R4-R02",
@@ -342,8 +417,16 @@
       "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539",
       "feedbackImageID": "",
       "requirementIDs": [
-        "R4-F23"
+        "R4-F23",
+        "R4-F16"
       ],
+      "acceptanceIDs": [
+        "R4-A16-02",
+        "R4-A23-05"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [
         "R4-R01",
         "R4-R02",
@@ -373,6 +456,12 @@
       "requirementIDs": [
         "R4-F05"
       ],
+      "acceptanceIDs": [
+        "R4-A05-04"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "显示已停止、实际processed/total和保留入库结果；非编造百分比。",
@@ -398,6 +487,14 @@
       "requirementIDs": [
         "R4-F05"
       ],
+      "acceptanceIDs": [
+        "R4-A05-01",
+        "R4-A05-02",
+        "R4-A05-03"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "1个配置测试来源访问状态可见；不是所有真实新闻源成功导入证据。",
@@ -423,6 +520,12 @@
       "requirementIDs": [
         "R4-F06"
       ],
+      "acceptanceIDs": [
+        "R4-A06-05"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "十次旋转后的横屏正文仍有高度且可读，关闭/外观/完成可用；不是横屏首标题截图。",
@@ -448,6 +551,12 @@
       "requirementIDs": [
         "R4-F06"
       ],
+      "acceptanceIDs": [
+        "R4-A06-05"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "深色正文清楚、底部完成按钮可见；图已滚至末页。",
@@ -473,6 +582,12 @@
       "requirementIDs": [
         "R4-F06"
       ],
+      "acceptanceIDs": [
+        "R4-A06-05"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "外观面板仍覆盖正文，不能证明完整浅色阅读器。",
@@ -498,6 +613,12 @@
       "requirementIDs": [
         "R4-F06"
       ],
+      "acceptanceIDs": [
+        "R4-A06-05"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "暖纸色正文被残留深色外观面板遮挡，不能验收该主题。",
@@ -523,6 +644,13 @@
       "requirementIDs": [
         "R4-F06"
       ],
+      "acceptanceIDs": [
+        "R4-A06-01",
+        "R4-A06-02"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "完整长标题自然换行，正文仍可见；无一两行固定截断。",
@@ -548,6 +676,13 @@
       "requirementIDs": [
         "R4-F08"
       ],
+      "acceptanceIDs": [
+        "R4-A08-03",
+        "R4-A08-04"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "有明确全部延期确认、保留生词/排程的说明；系统popover与今日卡区分。",
@@ -573,6 +708,12 @@
       "requirementIDs": [
         "R4-F08"
       ],
+      "acceptanceIDs": [
+        "R4-A08-04"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "明确未计答对，但后面刚完成题组文字会把延期误写为完成。",
@@ -598,6 +739,13 @@
       "requirementIDs": [
         "R4-F08"
       ],
+      "acceptanceIDs": [
+        "R4-A08-01",
+        "R4-A08-02"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "进入练习前显示缺义错误、立即填写/延期/重试/取消，没有进入空白题组。",
@@ -621,8 +769,17 @@
       "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539",
       "feedbackImageID": "R4-P09",
       "requirementIDs": [
-        "R4-F09"
+        "R4-F09",
+        "R4-F23"
       ],
+      "acceptanceIDs": [
+        "R4-A09-01",
+        "R4-A09-03",
+        "R4-A23-08"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "笔记输入和完成输入可达，结构化编辑的可选字段过多导致长空表。",
@@ -646,8 +803,17 @@
       "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539",
       "feedbackImageID": "R4-P09",
       "requirementIDs": [
-        "R4-F09"
+        "R4-F09",
+        "R4-F23"
       ],
+      "acceptanceIDs": [
+        "R4-A09-01",
+        "R4-A09-03",
+        "R4-A23-08"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "真实进程重开后中文/确认/笔记已恢复，底部上下文可折叠。",
@@ -671,8 +837,16 @@
       "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539",
       "feedbackImageID": "R4-P10",
       "requirementIDs": [
-        "R4-F10"
+        "R4-F10",
+        "R4-F24"
       ],
+      "acceptanceIDs": [
+        "R4-A10-05",
+        "R4-A24-08"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "两列三组目标清楚，尚未作答，非全绿假状态。",
@@ -696,8 +870,16 @@
       "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539",
       "feedbackImageID": "R4-P10",
       "requirementIDs": [
-        "R4-F10"
+        "R4-F10",
+        "R4-F24"
       ],
+      "acceptanceIDs": [
+        "R4-A10-05",
+        "R4-A24-08"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "绿实线和靛虚线同时存在，编号区分；第二个右卡处于过渡按压态。",
@@ -721,8 +903,16 @@
       "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539",
       "feedbackImageID": "R4-P10",
       "requirementIDs": [
-        "R4-F10"
+        "R4-F10",
+        "R4-F24"
       ],
+      "acceptanceIDs": [
+        "R4-A10-05",
+        "R4-A24-08"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "nod到点头真实可见曲线，连接1编号、两端禁用，线在卡片间无遮挡。",
@@ -746,8 +936,16 @@
       "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539",
       "feedbackImageID": "R4-P10",
       "requirementIDs": [
-        "R4-F10"
+        "R4-F10",
+        "R4-F24"
       ],
+      "acceptanceIDs": [
+        "R4-A10-05",
+        "R4-A24-08"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "真实重启后2/3条连接恢复，节点和线清晰，未完成provide仍可用。",
@@ -771,8 +969,16 @@
       "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539",
       "feedbackImageID": "R4-P10",
       "requirementIDs": [
-        "R4-F10"
+        "R4-F10",
+        "R4-F24"
       ],
+      "acceptanceIDs": [
+        "R4-A10-05",
+        "R4-A24-08"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "已选圆点刚变化但纯色差不够明显，截图可能处于按压动画。",
@@ -796,8 +1002,16 @@
       "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539",
       "feedbackImageID": "R4-P10",
       "requirementIDs": [
-        "R4-F10"
+        "R4-F10",
+        "R4-F24"
       ],
+      "acceptanceIDs": [
+        "R4-A10-05",
+        "R4-A24-08"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "错误提示只在当前选择下，未连错线，nod仍可重试。",
@@ -823,6 +1037,14 @@
       "requirementIDs": [
         "R4-F12"
       ],
+      "acceptanceIDs": [
+        "R4-A12-01",
+        "R4-A12-03",
+        "R4-A12-05"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "真实完成3/延期0，返回继续，排程默认折叠，没有成功重试墙。",
@@ -846,8 +1068,16 @@
       "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539",
       "feedbackImageID": "R4-P12",
       "requirementIDs": [
-        "R4-F12"
+        "R4-F12",
+        "R4-F19"
       ],
+      "acceptanceIDs": [
+        "R4-A12-02",
+        "R4-A19-03"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "展开后3个Again排程仍可查，完成页默认简洁与历史数据并存。",
@@ -873,6 +1103,13 @@
       "requirementIDs": [
         "R4-F18"
       ],
+      "acceptanceIDs": [
+        "R4-A18-02",
+        "R4-A18-03"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "当前错误反馈可见，但键盘滚动后提交按钮与输入框重叠，不能直接验收。",
@@ -898,6 +1135,13 @@
       "requirementIDs": [
         "R4-F18"
       ],
+      "acceptanceIDs": [
+        "R4-A18-01",
+        "R4-A18-04"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "新题无上题绿色反馈，输入w时键盘可用；提交按钮在键盘下方。",
@@ -923,6 +1167,14 @@
       "requirementIDs": [
         "R4-F19"
       ],
+      "acceptanceIDs": [
+        "R4-A19-01",
+        "R4-A19-02",
+        "R4-A19-03"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "显示nod答案但输入仍wrong，未自动填入；等待纠正和Again提示明确。",
@@ -948,6 +1200,14 @@
       "requirementIDs": [
         "R4-F19"
       ],
+      "acceptanceIDs": [
+        "R4-A19-01",
+        "R4-A19-02",
+        "R4-A19-03"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "下一题book展示答案时输入为空，未继承上题输入或成功反馈。",
@@ -973,6 +1233,14 @@
       "requirementIDs": [
         "R4-F19"
       ],
+      "acceptanceIDs": [
+        "R4-A19-01",
+        "R4-A19-02",
+        "R4-A19-03"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "provide掩码中部两字母隐藏，答案展示仍在本题，没有自动跳过。",
@@ -998,6 +1266,12 @@
       "requirementIDs": [
         "R4-F20"
       ],
+      "acceptanceIDs": [
+        "R4-A20-01"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "failed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "没有保存设置按钮，真实输入/Stepper/Slider/自动加入开关清楚。",
@@ -1023,6 +1297,13 @@
       "requirementIDs": [
         "R4-F21"
       ],
+      "acceptanceIDs": [
+        "R4-A21-01",
+        "R4-A21-02"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "failed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "小原生浮层位于原词下，含两简义/POS/IPA/已加入撤销和详情箭头。",
@@ -1048,6 +1329,13 @@
       "requirementIDs": [
         "R4-F21"
       ],
+      "acceptanceIDs": [
+        "R4-A21-01",
+        "R4-A21-02"
+      ],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "passed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "真实MDX简明浮层，原文章正文仍在，2条真实中文与IPA。",
@@ -1071,6 +1359,10 @@
       "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539",
       "feedbackImageID": "",
       "requirementIDs": [],
+      "acceptanceIDs": [],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "failed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "失败停在v.可见位置附近，旧reach向下越过目标；不是词性未实现。",
@@ -1094,6 +1386,10 @@
       "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539",
       "feedbackImageID": "",
       "requirementIDs": [],
+      "acceptanceIDs": [],
+      "acceptanceAssociationOnly": true,
+      "fontSize": "not-recorded-by-historical-test",
+      "actualTestResult": "failed",
       "referenceImageIDs": [],
       "visualReviewStatus": "viewed-individually-issues-recorded-not-final-acceptance",
       "visualFinding": "关于页实际Why Haoyu和版本可见；旧StaticText定位未命中组合LabeledContent。",

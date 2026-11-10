@@ -37,7 +37,7 @@ Round 4 正在开发，尚未完成144项最终验收。直接在原 main 开发
 
 `4739708` 的 [42657203329](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42657203329) 完成全目标编译、Release Simulator、227 XCTest/0失败；该轮UI被跳过，不能称完整通过。相同提交的[未签名IPA](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42659832536/artifacts/13692674476) 已下载检查，实际Bundle包含批准MDX，版本0.1.0(20)、最低iOS27.0，未真机安装。
 
-最新已提交布局/上下文批次 `567840f` 的[完整验证](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42918659786)编译成功，230单元229通过/1历史夹具失败，UI未运行。该夹具及逐图发现的问题已继续修改，待新提交验证。当前源码232单元/62UI方法，数量不是执行结果。
+最新已提交布局/上下文批次 `567840f` 的[完整验证](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42918659786)编译成功，230单元229通过/1历史夹具失败，UI未运行。该夹具及逐图发现的问题已继续修改，待新提交验证。当前源码233单元/62UI方法，数量不是执行结果。
 
 产品最低iOS27.0。当前CI Xcode26.6/SDK26.5及临时iOS26.5 Simulator仅为兼容验证，不能冒充iOS27真机验收。Linux开发容器无Xcode/Simulator，真实原生运行由macOS Actions完成。所有旧测试保留；4主UI分组和SE/大屏专项穷尽分配，fail-fast关闭，逐方法核对实际执行，失败也导出原始PNG/xcresult。
 

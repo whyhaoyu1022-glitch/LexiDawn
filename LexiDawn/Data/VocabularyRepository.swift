@@ -467,6 +467,8 @@ struct DictionarySense: Codable, Equatable, Identifiable, Sendable {
     var exampleCollocations: [String]? = nil
     var usageNotes: [DictionaryTextNote]? = nil
     var seeAlso: [String]? = nil
+    var supplementLinks: [String]? = nil
+    var sourceWarnings: [String]? = nil
 }
 
 struct DictionaryResult: Equatable {

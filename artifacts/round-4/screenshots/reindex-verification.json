@@ -1,0 +1,15 @@
+{
+  "sourceCommit": "d186c9f29e84c6ec91babdc624830c04fe4f7929",
+  "runURL": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539",
+  "actualPNGCount": 42,
+  "actualDifferentUIMethods": 10,
+  "passingUIMethods": 8,
+  "failingUIMethods": 2,
+  "PNGsFromPassingMethods": 37,
+  "PNGsFromFailingMethods": 5,
+  "everyPNGSHAUnchanged": true,
+  "CSVColumnNamesUnique": true,
+  "pixelsReencoded": false,
+  "acceptanceAssociationsOnly": true,
+  "round4Accepted": false
+}

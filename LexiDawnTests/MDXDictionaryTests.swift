@@ -247,7 +247,8 @@ import AVFoundation
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
         let context = ModelContext(app.modelContainer)
         let obsolete = parent.filter { $0.lexicalHeadword == "get the nod" }.map { sense in
-            var old = sense; old.zh = "旧缓存不能直接展示"; old.sourceRevision = BundledMDXDictionaryProvider.sourceSHA + "-html-1"; return old
+            DictionarySense(id: sense.id, en: sense.en, zh: "旧缓存不能直接展示", line: "明确历史派生缓存测试数据", partOfSpeech: sense.partOfSpeech,
+                sources: [BundledMDXDictionaryProvider.sourceName], sourceRevision: BundledMDXDictionaryProvider.sourceSHA + "-html-1", originKind: "mdx")
         }
         XCTAssertFalse(obsolete.isEmpty)
         context.insert(DictionaryProviderCacheRecord(lemma: "get the nod", provider: BundledMDXDictionaryProvider.sourceName, version: BundledMDXDictionaryProvider.sourceSHA + "-html-1", data: try JSONEncoder().encode(obsolete), at: Date()))
@@ -272,6 +273,14 @@ import AVFoundation
         XCTAssertTrue(parent.senses.flatMap { $0.seeAlso ?? [] }.contains("end user"))
         let related = try await learning.dictionary.subentry("end user", from: parent)
         XCTAssertEqual(related.headword, "end user"); XCTAssertFalse(related.reliableChinese.isEmpty)
+    }
+    func testRealMDXLinkedUsageBoxIsReadFromTheSameDictionaryAndKeepsExamplePairs() async throws {
+        let values = try await BundledMDXDictionaryProvider().lookup("hospital")
+        XCTAssertTrue(values.allSatisfy { ($0.sourceWarnings ?? []).isEmpty })
+        let notes = values.flatMap { $0.usageNotes ?? [] }
+        XCTAssertTrue(notes.contains { $0.english.contains("to hospital") && $0.chinese.contains("英式英语") })
+        XCTAssertTrue(notes.contains { $0.label == "例句" && $0.english.contains("two weeks") && $0.chinese.contains("两周") })
+        XCTAssertEqual(Set(notes.map(\.id)).count, notes.count)
     }
     func testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)

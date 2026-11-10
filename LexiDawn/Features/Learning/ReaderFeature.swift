@@ -476,6 +476,11 @@ private struct DictionarySupplementContent: View {
                 }.padding(.leading, 9)
             }
             if let etymology = sense.etymology, !etymology.isBlank { DisclosureGroup("词源") { Text(etymology).font(.footnote) } }
+            if let warnings = sense.sourceWarnings, !warnings.isEmpty {
+                DisclosureGroup("部分补充资料未能读取") {
+                    ForEach(Array(warnings.enumerated()), id: \.offset) { _, warning in Text(warning).font(.caption).foregroundStyle(.red) }
+                }.font(.footnote).accessibilityIdentifier("dictionary-supplement-error")
+            }
         }
     }
 }
