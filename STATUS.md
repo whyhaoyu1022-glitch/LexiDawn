@@ -1,3 +1,13 @@
+## 2026-11-10 · 逐图42张复核与新原生回归问题
+
+`567840f3f04b4182f31c7853278cf1034a1f340b` 的 [42918659786](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42918659786) Debug全目标/Release编译成功；230 XCTest中229通过、1失败，22个MDX专项全部通过，真实文章网络15项全部通过。UI依赖单元关卡而未执行，整体失败。
+
+失败是历史夹具在清空sourceContext模拟旧schema时，仍带本轮新加range字段；生产完整性校验正确拒绝。已在该历史夹具同时清空当时不存在的range/exampleID可选列，所有原answer/prompt/attempts/hint/恢复断言保留；另用真实已保存新题破坏range验证必须报错且不删题组。修复尚待新原生运行。
+
+旧提交d186c9f的42张实际PNG已全部逐张查看及SHA核对，[逐张发现/修改记录](artifacts/round-4/screenshots/VISUAL-REVIEW.md)。它们不是新修改后的最终截图。原21张HEIC缺失，依原逐图审阅与机器清单；三张词典JPEG已实际查看。新增[原21项逐项整改矩阵](docs/reviews/round-4-image-remediation-matrix.md)与[144项逐条未关闭状态](docs/reviews/round-4-acceptance-status.json)，不把关联索引当通过。
+
+本批继续实际修复：选择连线的文字提示、键盘/拼写区自然高度、显示答案收键盘及纠正状态、延期专用文案、真实全部本地数量；结构化个人编辑收起高级可选项但保留全部字段。解析HTML5保留词条内原始义项位置、双语用法提示/真实参见，例句点词携带实际所在例句全文。旧MDX缓存只作经相同SHA校验后的记录号索引提示，内容必须重读；同一SHA已知中文不会被后续空结果解除锁定。当前232单元/62UI源码，不代表本批已经执行通过。
+
 ## 2026-11-10 · 全量单元与实际 IPA 证据，逐图整改继续
 
 main `47397084871c8fff6db9932674f6777c42d75b29` 的 [42657203329](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42657203329) 完成 Debug 全目标、Release Simulator 和全部 227 XCTest（0失败，包括19 MDX专项）。该轮 UI 与截图合并因 skipped 祖先的隐式 success 条件被跳过；整体绿色**不等于完整 UI 通过**。本批为 UI 显式声明 always/未取消/构建成功条件，新增所有分片必须成功的门禁和逐方法实际执行核对。

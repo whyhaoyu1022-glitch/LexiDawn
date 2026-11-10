@@ -16,13 +16,26 @@ enum MDXDictionaryError: Error, LocalizedError, Equatable {
     }
 }
 
+enum MDXEntryIdentity {
+    /// An old parser revision may supply a record number as an index hint, never
+    /// definitions. The native reader validates the file and reads it again.
+    static func recordNumber(_ sense: DictionarySense) -> Int? {
+        guard sense.originKind == "mdx", sense.sources == [BundledMDXDictionaryProvider.sourceName],
+              sense.sourceRevision?.hasPrefix(BundledMDXDictionaryProvider.sourceSHA + "-html-") == true else { return nil }
+        let fields = sense.id.split(separator: "|", omittingEmptySubsequences: false)
+        guard fields.count >= 5, fields[0] == "mdx", fields[1] == BundledMDXDictionaryProvider.sourceSHA,
+              let number = Int(fields[2]), number >= 0 else { return nil }
+        return number
+    }
+}
+
 /// A single local source. The C reader retains only the headword index and one
 /// decompressed record block, never the complete 270 MB uncompressed dictionary.
 /// Actor isolation serializes FILE access; initialization/HTML parsing is off MainActor.
 actor BundledMDXDictionaryProvider: DictionaryProvider {
     static let sourceName = "内置 MDX"
     static let sourceSHA = "095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443"
-    static let sourceVersion = sourceSHA + "-html-3"
+    static let sourceVersion = sourceSHA + "-html-5"
     private let resource: URL?
     private var reader: OpaquePointer?
     private var index: [String: [Int]] = [:]
@@ -150,6 +163,40 @@ enum MDXEntryParser {
             }
             return nil
         }
+        var entryTargets: [String] {
+            var pending = [self], values: [String] = []
+            while let node = pending.popLast() {
+                let href = node.attribute("href")
+                if href.hasPrefix("entry://") {
+                    let raw = String(href.dropFirst(8)).components(separatedBy: "#")[0]
+                    if let decoded = raw.removingPercentEncoding, !decoded.isEmpty { values.append(decoded) }
+                }
+                pending.append(contentsOf: node.children.reversed())
+            }
+            return values
+        }
+        var referenceLabel: String {
+            var child = self, next = ld_html_parent(pointer)
+            while let pointer = next {
+                let parent = Node(pointer: pointer)
+                let preceding = parent.children.prefix { $0.pointer != child.pointer }
+                if let label = preceding.last(where: { $0.has("t-xrlabel") }) { return label.text }
+                if parent.has("entry") { break }
+                child = parent; next = ld_html_parent(pointer)
+            }
+            return ""
+        }
+        func notePairs(prefix: String, label: String) -> [DictionaryTextNote] {
+            var pending = children.reversed().map { $0 }, values: [DictionaryTextNote] = []
+            while let node = pending.popLast() {
+                if node.has("t-trans-g") || node.has("t-x") {
+                    let en = node.descendants("t-eng").map(\.text).joined(separator: " ")
+                    let zh = node.descendants("t-chn").map(\.text).joined(separator: " ")
+                    if !en.isEmpty || !zh.isEmpty { values.append(DictionaryTextNote(id: prefix + "|" + fingerprint(en + "|" + zh), label: node.has("t-x") ? "例句" : label, english: en, chinese: zh)) }
+                } else { pending.append(contentsOf: node.children.reversed()) }
+            }
+            return values
+        }
     }
     private static func plainHeadword(_ value: String) -> String {
         value.replacingOccurrences(of: "ˌ", with: "").replacingOccurrences(of: "ˈ", with: "").replacingOccurrences(of: "↔", with: " ")
@@ -173,7 +220,8 @@ enum MDXEntryParser {
                 return accent + " /" + ipa + "/"
             } ?? []
             let forms = entry.descendants("t-vp").map(\.text)
-            var definitions = entry.descendants("t-def")
+            let originalDefinitions = entry.descendants("t-def")
+            var definitions = originalDefinitions
             // Phrase aliases can point at their parent page. Isolate matching
             // phrase/idiom subtrees instead of assigning all parent senses to it.
             if plainHeadword(head).lowercased() != requested.lowercased() && (requested.contains(" ") || subentryOnly) {
@@ -186,11 +234,12 @@ enum MDXEntryParser {
                 if definitions.isEmpty { continue }
                 matchedEntry = true
             } else { matchedEntry = true }
-            for (ordinal, definition) in definitions.enumerated() {
+            for definition in definitions {
+                guard let ordinal = originalDefinitions.firstIndex(where: { $0.pointer == definition.pointer }) else { throw MDXDictionaryError.invalidEntry("原始义项位置缺失") }
                 let scope = definition.ancestor(["t-sn-g", "t-licontent", "t-sn-blk-nolist", "t-sn-blk", "t-pv-g", "t-idm-g", "t-id-g"]) ?? definition
                 let chinese = definition.descendants("t-chn").map(\.text).joined(separator: "；")
                 let english = definition.descendants("t-eng").map(\.text).joined(separator: " ")
-                let examples = scope.descendants("t-x").map { node in
+                let examples = scope.descendants("t-x").filter { $0.ancestor(["t-un", "t-unbox"]) == nil }.map { node in
                     (node.descendants("t-eng").map(\.text).joined(separator: " "), node.descendants("t-chn").map(\.text).joined(separator: " "),
                      node.ancestor(["t-x-g-blk"])?.descendants("t-cf").map(\.text).joined(separator: " · ") ?? "")
                 }.filter { !$0.0.isEmpty }
@@ -216,6 +265,27 @@ enum MDXEntryParser {
                 sense.policyVersion = BilingualMeaningPolicy.version
                 sense.entryGroupID = recordID + "|" + sourceID
                 sense.exampleCollocations = examples.map(\.2)
+                var noteGroups = scope.descendants("t-un")
+                if ordinal == 0 {
+                    noteGroups += entry.descendants("t-un").filter { $0.ancestor(["t-sn-g", "t-licontent"]) == nil }
+                    noteGroups += entry.descendants("t-unbox")
+                }
+                var noteIDs = Set<String>()
+                let notes = noteGroups.flatMap { $0.notePairs(prefix: sense.id, label: $0.has("t-unbox") ? "用法补充" : "用法提示") }.filter { noteIDs.insert($0.id).inserted }
+                sense.usageNotes = notes.isEmpty ? nil : notes
+                var referenceNodes = scope.descendants("t-xr-g")
+                if ordinal == 0 { referenceNodes += entry.descendants("t-xr-g").filter { $0.ancestor(["t-sn-g", "t-licontent", "t-pv-g", "t-idm-g"]) == nil } }
+                var synonyms: [String] = [], antonyms: [String] = [], references: [String] = []
+                for reference in referenceNodes {
+                    let labels = reference.referenceLabel
+                    let heads = reference.descendants("t-xh").flatMap(\.entryTargets)
+                    if labels.split(whereSeparator: \.isWhitespace).contains("SYN") { synonyms += heads }
+                    else if labels.split(whereSeparator: \.isWhitespace).contains("OPP") { antonyms += heads }
+                    else { references += heads }
+                }
+                sense.synonyms = synonyms.isEmpty ? nil : Array(NSOrderedSet(array: synonyms)) as? [String]
+                sense.antonyms = antonyms.isEmpty ? nil : Array(NSOrderedSet(array: antonyms)) as? [String]
+                sense.seeAlso = references.isEmpty ? nil : Array(NSOrderedSet(array: references)) as? [String]
                 senses.append(sense)
             }
             // Some real MDX records are index/help pages. They are successful

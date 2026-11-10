@@ -255,6 +255,7 @@ struct WordLookupSheet: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showDetails = false
     @State private var theme = "system"
+    @State private var preferencesError: String?
     init(token: EnglishToken, articleID: String, autoAdd: Bool, learning: LearningServices) {
         _model = StateObject(wrappedValue: WordLookupModel(token: token, articleID: articleID, autoAdd: autoAdd, learning: learning))
     }
@@ -274,6 +275,7 @@ struct WordLookupSheet: View {
                 Button("词典暂不可用，重试") { model.startLookup(force: true) }.font(.caption).accessibilityHint(error)
             }
             if let error = model.vocabularyError { Text(error).font(.caption).foregroundStyle(.red) }
+            if let preferencesError { Text(preferencesError).font(.caption).foregroundStyle(.red) }
             HStack {
                 if model.addition?.created == true {
                     Button { model.undo() } label: { Label("撤销", systemImage: "checkmark.circle.fill") }.accessibilityIdentifier("undo-word")
@@ -285,7 +287,7 @@ struct WordLookupSheet: View {
             }.font(.subheadline)
         }.padding(16).frame(width: dynamicTypeSize.isAccessibilitySize ? 310 : 285).accessibilityElement(children: .contain).accessibilityIdentifier("compact-word-card")
             .fixedSize(horizontal: false, vertical: true)
-            .task { if let prefs = try? dependencies.preferencesRepository.load() { theme = prefs.readerTheme } }
+            .task { do { theme = try dependencies.preferencesRepository.load().readerTheme } catch { preferencesError = "阅读设置读取失败：" + error.localizedDescription } }
             .onAppear { model.startLookup() }
             .onDisappear { if !showDetails { model.cancelLookup() } }
             .onReceive(model.learning.$revision) { _ in model.refreshMembership() }
@@ -347,7 +349,7 @@ struct DictionaryEntryHeader: View {
 }
 struct DictionaryResultContent: View {
     let result: DictionaryResult
-    var onExampleWord: ((EnglishToken, DictionarySense) -> Void)? = nil
+    var onExampleWord: ((EnglishToken, DictionarySense, String) -> Void)? = nil
     var onRelatedEntry: ((String) -> Void)? = nil
     private var senses: [DictionarySense] { result.usableSenses }
     private func group(_ sense: DictionarySense) -> String {
@@ -405,7 +407,7 @@ struct DictionaryResultContent: View {
 private struct DictionarySenseBody: View {
     let sense: DictionarySense
     let headword: String
-    let onExampleWord: ((EnglishToken, DictionarySense) -> Void)?
+    let onExampleWord: ((EnglishToken, DictionarySense, String) -> Void)?
     let onRelatedEntry: ((String) -> Void)?
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
@@ -430,7 +432,7 @@ private struct DictionarySenseBody: View {
                         if let collocations = sense.exampleCollocations, collocations.indices.contains(index), !collocations[index].isBlank {
                             Text(collocations[index]).font(.system(.body, design: .serif).weight(.semibold))
                         }
-                        if let onExampleWord { InlineEnglishText(text: example, onWord: { onExampleWord($0, sense) }, emphasized: true) }
+                        if let onExampleWord { InlineEnglishText(text: example, onWord: { onExampleWord($0, sense, example) }, emphasized: true) }
                         else { Text(example).font(.system(.body, design: .serif).weight(.medium)) }
                         if let translations = sense.exampleTranslations, translations.indices.contains(index), !translations[index].isBlank {
                             Text(translations[index]).font(.body).foregroundStyle(.primary.opacity(0.78))
@@ -438,11 +440,43 @@ private struct DictionarySenseBody: View {
                     }.fixedSize(horizontal: false, vertical: true)
                 }.padding(.leading, 9).padding(.vertical, 3)
             }
-            if let synonyms = sense.synonyms, !synonyms.isEmpty { Text("近义词  " + synonyms.joined(separator: " · ")).font(.footnote).foregroundStyle(.primary.opacity(0.65)) }
-            if let antonyms = sense.antonyms, !antonyms.isEmpty { Text("反义词  " + antonyms.joined(separator: " · ")).font(.footnote).foregroundStyle(.primary.opacity(0.65)) }
-            if let etymology = sense.etymology, !etymology.isBlank { DisclosureGroup("词源") { Text(etymology).font(.footnote) } }
+            DictionarySupplementContent(sense: sense, onExampleWord: onExampleWord, onRelatedEntry: onRelatedEntry)
             if sense.originKind == "personal" { Text(sense.line).font(.caption2).foregroundStyle(.primary.opacity(0.65)) }
         }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+private struct DictionarySupplementContent: View {
+    let sense: DictionarySense
+    let onExampleWord: ((EnglishToken, DictionarySense, String) -> Void)?
+    let onRelatedEntry: ((String) -> Void)?
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if let synonyms = sense.synonyms, !synonyms.isEmpty { Text("近义词  " + synonyms.joined(separator: " · ")).font(.footnote).foregroundStyle(.primary.opacity(0.65)) }
+            if let antonyms = sense.antonyms, !antonyms.isEmpty { Text("反义词  " + antonyms.joined(separator: " · ")).font(.footnote).foregroundStyle(.primary.opacity(0.65)) }
+            if let references = sense.seeAlso, !references.isEmpty {
+                DisclosureGroup("另见") {
+                    ForEach(references, id: \.self) { word in
+                        if let onRelatedEntry { Button(word) { onRelatedEntry(word) }.accessibilityIdentifier("dictionary-reference-" + word) }
+                        else { Text(word) }
+                    }
+                }.font(.subheadline)
+            }
+            if let notes = sense.usageNotes, !notes.isEmpty {
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(notes) { note in
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(note.label).font(.caption.weight(.semibold)).foregroundStyle(.primary.opacity(0.65))
+                            if !note.english.isBlank {
+                                if let onExampleWord { InlineEnglishText(text: note.english, onWord: { onExampleWord($0, sense, note.english) }) }
+                                else { Text(note.english).font(.system(.body, design: .serif)) }
+                            }
+                            if !note.chinese.isBlank { Text(note.chinese).foregroundStyle(.primary.opacity(0.78)) }
+                        }
+                    }
+                }.padding(.leading, 9)
+            }
+            if let etymology = sense.etymology, !etymology.isBlank { DisclosureGroup("词源") { Text(etymology).font(.footnote) } }
+        }
     }
 }
 struct DictionaryRelatedRoute: Identifiable {
@@ -553,8 +587,8 @@ struct DictionaryDetailView: View {
             catch { if !Task.isCancelled { self.error = error.localizedDescription } }
         }
     }
-    private func lookup(_ token: EnglishToken, _ sense: DictionarySense) {
-        open(token, origin: .dictionary(headword: result.headword, evidence: sense.line, text: (sense.examples ?? []).first { $0.contains(token.surface) }))
+    private func lookup(_ token: EnglishToken, _ sense: DictionarySense, _ sourceText: String) {
+        open(token, origin: .dictionary(headword: result.headword, evidence: sense.line, text: sourceText))
     }
     private func lookupContext(_ token: EnglishToken) { open(token, origin: contextOrigin.withText(context)) }
     private func open(_ token: EnglishToken, origin: VocabularyContextOrigin) {

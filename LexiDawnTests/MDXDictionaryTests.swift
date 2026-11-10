@@ -223,6 +223,7 @@ import AVFoundation
         let child = try await learning.dictionary.subentry("get the nod", from: parent)
         XCTAssertFalse(child.reliableChinese.isEmpty)
         XCTAssertTrue(child.senses.allSatisfy { $0.lexicalHeadword == "get the nod" && $0.sectionKind == "idiom" })
+        XCTAssertEqual(Set(child.senses.map(\.id)), Set(parent.senses.filter { $0.lexicalHeadword == "get the nod" }.map(\.id)), "Parent detail, internal link and review must share the same sense identity")
         XCTAssertTrue(child.senses.contains { $0.examples?.contains(where: { $0.contains("team manager") }) == true })
         let fresh = DictionaryLookupService(context: ModelContext(app.modelContainer))
         let reopened = try await fresh.lookup("get the nod")
@@ -240,6 +241,37 @@ import AVFoundation
         XCTAssertEqual(ClozeContext.mask(sentence, answer: value.answer, targetRange: value.targetRange), "We visit and _____.")
         XCTAssertNil(ClozeContext.make(lemma: "visit", surfaces: ["visit"], sentence: sentence).sentence)
         XCTAssertFalse(ClozeContext.validates(NSRange(location: 3, length: 100), answer: "visit", sentence: sentence))
+    }
+    func testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese() async throws {
+        let parent = try await BundledMDXDictionaryProvider().lookup("nod")
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let context = ModelContext(app.modelContainer)
+        let obsolete = parent.filter { $0.lexicalHeadword == "get the nod" }.map { sense in
+            var old = sense; old.zh = "旧缓存不能直接展示"; old.sourceRevision = BundledMDXDictionaryProvider.sourceSHA + "-html-1"; return old
+        }
+        XCTAssertFalse(obsolete.isEmpty)
+        context.insert(DictionaryProviderCacheRecord(lemma: "get the nod", provider: BundledMDXDictionaryProvider.sourceName, version: BundledMDXDictionaryProvider.sourceSHA + "-html-1", data: try JSONEncoder().encode(obsolete), at: Date()))
+        try context.save()
+        XCTAssertTrue(try DictionaryCacheRepository(context: context).load("get the nod", at: Date()).senses.isEmpty)
+        let actual = try await learning.dictionary.lookup("get the nod")
+        XCTAssertTrue(actual.senses.contains { $0.zh.contains("许可") })
+        XCTAssertFalse(actual.senses.contains { $0.zh == "旧缓存不能直接展示" })
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<DictionaryProviderCacheRecord>()), 2, "Preserve old derived data as history")
+        let entry = try learning.vocabulary.addDictionaryEntry(headword: "get the nod", at: Date())
+        try DictionaryCacheRepository(context: context).save("get the nod", senses: [], successful: [BundledMDXDictionaryProvider.sourceName], at: Date())
+        XCTAssertFalse(try learning.vocabulary.personalEditingAllowed(entryID: entry.entryID))
+        XCTAssertThrowsError(try learning.vocabulary.savePersonalSenses(entryID: entry.entryID, senses: [.init(partOfSpeech: "noun", chinese: "不可绕过", confirmed: true)], at: Date()))
+    }
+    func testRealMDXUsageNotesAndCrossReferencesKeepBilingualPairs() async throws {
+        let provider = BundledMDXDictionaryProvider()
+        let month = try await provider.lookup("May")
+        let notes = month.flatMap { $0.usageNotes ?? [] }
+        XCTAssertTrue(notes.contains { $0.english.contains("April") && $0.chinese.contains("April") })
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let parent = try await learning.dictionary.lookup("user")
+        XCTAssertTrue(parent.senses.flatMap { $0.seeAlso ?? [] }.contains("end user"))
+        let related = try await learning.dictionary.subentry("end user", from: parent)
+        XCTAssertEqual(related.headword, "end user"); XCTAssertFalse(related.reliableChinese.isEmpty)
     }
     func testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
@@ -263,6 +295,13 @@ import AVFoundation
         XCTAssertEqual(session.cloze.first?.context, selected.examples[0].english)
         XCTAssertEqual(session.cloze.first?.sourceExampleID, selected.examples[0].id)
         XCTAssertNotNil(session.cloze.first?.sourceRange)
+        let damaged = ModelContext(app.modelContainer)
+        let question = try XCTUnwrap(damaged.fetch(FetchDescriptor<ReviewExerciseRecord>()).first { $0.stage == "cloze" })
+        question.sourceRangeLength = 1000; try damaged.save()
+        XCTAssertThrowsError(try learning.review.session(cycleID: cycle.cycleID)) { error in
+            guard let failure = error as? PersistenceError, case .integrity = failure else { return XCTFail("Corrupt range must remain a typed integrity error: \(error)") }
+        }
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ReviewExerciseRecord>()), 2, "Do not erase the damaged session to manufacture recovery")
     }
     func testExtraPreflightDeferralPersistsWithoutAnswerOrFSRSUpdate() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)

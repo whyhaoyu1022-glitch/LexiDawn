@@ -62,7 +62,7 @@ struct LiveTodayView: View {
                             HStack {
                                 Label("文章库", systemImage: "books.vertical").font(.headline)
                                 Spacer()
-                                Text("\(articles.filter(\.readable).count) 篇").foregroundStyle(.secondary)
+                                Text("\(articles.count) 篇").foregroundStyle(.secondary)
                                 Image(systemName: "chevron.right").font(.caption)
                             }
                         }.accessibilityIdentifier("article-library-body")

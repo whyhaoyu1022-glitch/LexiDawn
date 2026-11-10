@@ -1,0 +1,3269 @@
+{
+  "status": "in-progress-not-final-accepted",
+  "requirements": 24,
+  "testFamilies": 24,
+  "acceptanceCriteria": 144,
+  "rows": [
+    {
+      "acceptanceID": "R4-A01-01",
+      "criterion": "同一DW文章的今日卡只出现简短来源名，不出现圈中的技术政策长文、URL或截断尾巴。",
+      "requirementID": "R4-F01",
+      "testSuiteID": "R4-T01",
+      "feedbackImageID": "R4-P01",
+      "originalFile": "IMG_8854.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Domain/Learning/PublisherSources.swift",
+        "LexiDawn/Data/ContentRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes",
+        "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
+      ],
+      "implementationReview": "今日来源用注册名与真实可选作者；原元数据保留，日期/时区精简。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A01-02",
+      "criterion": "来源名不是通过切割attribution前几个字符猜得，而是使用sourceID注册信息；作者缺失不补造。",
+      "requirementID": "R4-F01",
+      "testSuiteID": "R4-T01",
+      "feedbackImageID": "R4-P01",
+      "originalFile": "IMG_8854.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Domain/Learning/PublisherSources.swift",
+        "LexiDawn/Data/ContentRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes",
+        "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
+      ],
+      "implementationReview": "今日来源用注册名与真实可选作者；原元数据保留，日期/时区精简。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A01-03",
+      "criterion": "原有版权、rights evidence、canonical URL、原文及bodyHash均未被删除或改写。",
+      "requirementID": "R4-F01",
+      "testSuiteID": "R4-T01",
+      "feedbackImageID": "R4-P01",
+      "originalFile": "IMG_8854.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Domain/Learning/PublisherSources.swift",
+        "LexiDawn/Data/ContentRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes",
+        "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
+      ],
+      "implementationReview": "今日来源用注册名与真实可选作者；原元数据保留，日期/时区精简。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A01-04",
+      "criterion": "阅读/配对/拼写状态、进度与继续入口保持真实；未完成周期不被刷新覆盖。",
+      "requirementID": "R4-F01",
+      "testSuiteID": "R4-T01",
+      "feedbackImageID": "R4-P01",
+      "originalFile": "IMG_8854.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Domain/Learning/PublisherSources.swift",
+        "LexiDawn/Data/ContentRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes",
+        "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
+      ],
+      "implementationReview": "今日来源用注册名与真实可选作者；原元数据保留，日期/时区精简。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A01-05",
+      "criterion": "长标题、大字体、浅/深/暖纸主题下卡片不重叠，最后一个按钮可滚动到完整可点。",
+      "requirementID": "R4-F01",
+      "testSuiteID": "R4-T01",
+      "feedbackImageID": "R4-P01",
+      "originalFile": "IMG_8854.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Domain/Learning/PublisherSources.swift",
+        "LexiDawn/Data/ContentRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes",
+        "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
+      ],
+      "implementationReview": "今日来源用注册名与真实可选作者；原元数据保留，日期/时区精简。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A02-01",
+      "criterion": "点今日刷新时可观察BBC/NPR等实际配置来源进入同一发现管线，而非只请求RFC Editor。",
+      "requirementID": "R4-F02",
+      "testSuiteID": "R4-T02",
+      "feedbackImageID": "R4-P02",
+      "originalFile": "IMG_8857.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift",
+        "LexiDawn/Data/ArticleNetwork.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "implementationReview": "三个入口共用真实发现服务；RFC在次级技术文档中。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A02-02",
+      "criterion": "RFC示例入口不创建或替换已有未完成任务；原RFC词条/进度/复习历史保留。",
+      "requirementID": "R4-F02",
+      "testSuiteID": "R4-T02",
+      "feedbackImageID": "R4-P02",
+      "originalFile": "IMG_8857.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift",
+        "LexiDawn/Data/ArticleNetwork.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "implementationReview": "三个入口共用真实发现服务；RFC在次级技术文档中。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A02-03",
+      "criterion": "不再出现“从官方来源刷新”实际仅刷新RFC的歧义；无网时提示重试并保留本地全文。",
+      "requirementID": "R4-F02",
+      "testSuiteID": "R4-T02",
+      "feedbackImageID": "R4-P02",
+      "originalFile": "IMG_8857.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift",
+        "LexiDawn/Data/ArticleNetwork.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "implementationReview": "三个入口共用真实发现服务；RFC在次级技术文档中。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A02-04",
+      "criterion": "任务锁定时仍可管理/发现本地文章，但打不开其他正文；刷新不绕过中央门禁。",
+      "requirementID": "R4-F02",
+      "testSuiteID": "R4-T02",
+      "feedbackImageID": "R4-P02",
+      "originalFile": "IMG_8857.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift",
+        "LexiDawn/Data/ArticleNetwork.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "implementationReview": "三个入口共用真实发现服务；RFC在次级技术文档中。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A02-05",
+      "criterion": "一处主入口可到书库及个人导入，不要求用户猜图标或在多个相同入口间试错。",
+      "requirementID": "R4-F02",
+      "testSuiteID": "R4-T02",
+      "feedbackImageID": "R4-P02",
+      "originalFile": "IMG_8857.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift",
+        "LexiDawn/Data/ArticleNetwork.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "implementationReview": "三个入口共用真实发现服务；RFC在次级技术文档中。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A03-01",
+      "criterion": "库存29篇时今日摘要与文章库总数同为29，不能因只预览6篇而报6；筛选命中数另列。",
+      "requirementID": "R4-F03",
+      "testSuiteID": "R4-T03",
+      "feedbackImageID": "R4-P03",
+      "originalFile": "IMG_8858.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift",
+        "LexiDawn/Data/ArticleNetwork.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes"
+      ],
+      "implementationReview": "今日删除重复库存；摘要和书库读取完整本地数量，标题仅展示投影解码。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A03-02",
+      "criterion": "今日不再出现整块重复新闻列表，书库仍能查看全部本地完整文章。",
+      "requirementID": "R4-F03",
+      "testSuiteID": "R4-T03",
+      "feedbackImageID": "R4-P03",
+      "originalFile": "IMG_8858.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift",
+        "LexiDawn/Data/ArticleNetwork.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes"
+      ],
+      "implementationReview": "今日删除重复库存；摘要和书库读取完整本地数量，标题仅展示投影解码。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A03-03",
+      "criterion": "ScienceDaily示例的撇号正常显示，不泄露&apos;/&amp;apos;等编码；合法字面符号不被过度解码。",
+      "requirementID": "R4-F03",
+      "testSuiteID": "R4-T03",
+      "feedbackImageID": "R4-P03",
+      "originalFile": "IMG_8858.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift",
+        "LexiDawn/Data/ArticleNetwork.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes"
+      ],
+      "implementationReview": "今日删除重复库存；摘要和书库读取完整本地数量，标题仅展示投影解码。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A03-04",
+      "criterion": "修复标题显示不改文章正文/哈希、URL去重和周期分配；重复刷新不增长虚假计数。",
+      "requirementID": "R4-F03",
+      "testSuiteID": "R4-T03",
+      "feedbackImageID": "R4-P03",
+      "originalFile": "IMG_8858.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift",
+        "LexiDawn/Data/ArticleNetwork.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes"
+      ],
+      "implementationReview": "今日删除重复库存；摘要和书库读取完整本地数量，标题仅展示投影解码。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A03-05",
+      "criterion": "零库存、全部过滤、连续导入、部分失败和重启后的计数语义一致。",
+      "requirementID": "R4-F03",
+      "testSuiteID": "R4-T03",
+      "feedbackImageID": "R4-P03",
+      "originalFile": "IMG_8858.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift",
+        "LexiDawn/Data/ArticleNetwork.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes"
+      ],
+      "implementationReview": "今日删除重复库存；摘要和书库读取完整本地数量，标题仅展示投影解码。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A04-01",
+      "criterion": "用户收藏一篇后可在当前页面一跳进入收藏并找到；稍后同理，不能靠知道隐藏菜单才能完成。",
+      "requirementID": "R4-F04",
+      "testSuiteID": "R4-T04",
+      "feedbackImageID": "R4-P04",
+      "originalFile": "IMG_8859.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift",
+        "LexiDawn/Data/FullTextRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated",
+        "LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart"
+      ],
+      "implementationReview": "四类明显入口、独立收藏/稍后、数量与筛选即时读回。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A04-02",
+      "criterion": "搜索/主题/来源与四类视图交集正确；N为总可读库存，M为当前交集。",
+      "requirementID": "R4-F04",
+      "testSuiteID": "R4-T04",
+      "feedbackImageID": "R4-P04",
+      "originalFile": "IMG_8859.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift",
+        "LexiDawn/Data/FullTextRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated",
+        "LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart"
+      ],
+      "implementationReview": "四类明显入口、独立收藏/稍后、数量与筛选即时读回。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A04-03",
+      "criterion": "取消收藏或移出稍后后对应集合和数字立即变化，重启读回一致。",
+      "requirementID": "R4-F04",
+      "testSuiteID": "R4-T04",
+      "feedbackImageID": "R4-P04",
+      "originalFile": "IMG_8859.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift",
+        "LexiDawn/Data/FullTextRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated",
+        "LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart"
+      ],
+      "implementationReview": "四类明显入口、独立收藏/稍后、数量与筛选即时读回。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A04-04",
+      "criterion": "写入失败不显示已收藏/已移出，保留原状态并可重试。",
+      "requirementID": "R4-F04",
+      "testSuiteID": "R4-T04",
+      "feedbackImageID": "R4-P04",
+      "originalFile": "IMG_8859.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift",
+        "LexiDawn/Data/FullTextRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated",
+        "LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart"
+      ],
+      "implementationReview": "四类明显入口、独立收藏/稍后、数量与筛选即时读回。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A04-05",
+      "criterion": "收藏/稍后不创建每日周期，未完成任务时这些入口仍不能打开非任务正文。",
+      "requirementID": "R4-F04",
+      "testSuiteID": "R4-T04",
+      "feedbackImageID": "R4-P04",
+      "originalFile": "IMG_8859.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift",
+        "LexiDawn/Data/FullTextRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated",
+        "LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart"
+      ],
+      "implementationReview": "四类明显入口、独立收藏/稍后、数量与筛选即时读回。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A05-01",
+      "criterion": "3路并发时能显示当前所有活跃来源或“BBC、NPR，另1个”，不能虚报只有一家在访问。",
+      "requirementID": "R4-F05",
+      "testSuiteID": "R4-T05",
+      "feedbackImageID": "R4-P05",
+      "originalFile": "IMG_8860.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Data/ArticleNetwork.swift",
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "implementationReview": "runID/活跃来源/真实阶段与计数；明确停止、迟到run隔离。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A05-02",
+      "criterion": "进度单调、分母稳定；失败/无新文/被退避来源计为已处理但不计导入成功。",
+      "requirementID": "R4-F05",
+      "testSuiteID": "R4-T05",
+      "feedbackImageID": "R4-P05",
+      "originalFile": "IMG_8860.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Data/ArticleNetwork.swift",
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "implementationReview": "runID/活跃来源/真实阶段与计数；明确停止、迟到run隔离。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A05-03",
+      "criterion": "展示实际新增N篇和阶段（检查/下载/验证/保存），未入库候选标题和URL不曝光。",
+      "requirementID": "R4-F05",
+      "testSuiteID": "R4-T05",
+      "feedbackImageID": "R4-P05",
+      "originalFile": "IMG_8860.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Data/ArticleNetwork.swift",
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "implementationReview": "runID/活跃来源/真实阶段与计数；明确停止、迟到run隔离。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A05-04",
+      "criterion": "取消后在网络取消信号后合理时间内结束UI，保留已完整入库文章；不会显示取消后的成功。",
+      "requirementID": "R4-F05",
+      "testSuiteID": "R4-T05",
+      "feedbackImageID": "R4-P05",
+      "originalFile": "IMG_8860.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Data/ArticleNetwork.swift",
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "implementationReview": "runID/活跃来源/真实阶段与计数；明确停止、迟到run隔离。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A05-05",
+      "criterion": "重试切新runID；迟到旧事件不覆盖新进度；429/超时/全失败/无新文均有终态和安全重试。",
+      "requirementID": "R4-F05",
+      "testSuiteID": "R4-T05",
+      "feedbackImageID": "R4-P05",
+      "originalFile": "IMG_8860.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Data/ArticleNetwork.swift",
+        "LexiDawn/Features/Learning/ArticleLibraryFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "implementationReview": "runID/活跃来源/真实阶段与计数；明确停止、迟到run隔离。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A06-01",
+      "criterion": "同一DW完整标题可逐字看到，不出现必须省略的“…”，也不横向出屏。",
+      "requirementID": "R4-F06",
+      "testSuiteID": "R4-T06",
+      "feedbackImageID": "R4-P06",
+      "originalFile": "IMG_8862.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/InteractiveEnglishText.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testReaderCompleteTitleTenRotationsAndThreeCompactThemes"
+      ],
+      "implementationReview": "完整标题进入可滚动原生正文区，保留原始offset与主题。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A06-02",
+      "criterion": "超长标题、无空格长词及最大字号下仍能滚动进入真实正文并点击单词。",
+      "requirementID": "R4-F06",
+      "testSuiteID": "R4-T06",
+      "feedbackImageID": "R4-P06",
+      "originalFile": "IMG_8862.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/InteractiveEnglishText.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testReaderCompleteTitleTenRotationsAndThreeCompactThemes"
+      ],
+      "implementationReview": "完整标题进入可滚动原生正文区，保留原始offset与主题。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A06-03",
+      "criterion": "标题展开/旋转/返回详情不破坏原文offset、阅读进度或已完成状态。",
+      "requirementID": "R4-F06",
+      "testSuiteID": "R4-T06",
+      "feedbackImageID": "R4-P06",
+      "originalFile": "IMG_8862.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/InteractiveEnglishText.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testReaderCompleteTitleTenRotationsAndThreeCompactThemes"
+      ],
+      "implementationReview": "完整标题进入可滚动原生正文区，保留原始offset与主题。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A06-04",
+      "criterion": "来源/作者/日期仍可找到，不重复显示整段导入说明或多个许可入口。",
+      "requirementID": "R4-F06",
+      "testSuiteID": "R4-T06",
+      "feedbackImageID": "R4-P06",
+      "originalFile": "IMG_8862.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/InteractiveEnglishText.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testReaderCompleteTitleTenRotationsAndThreeCompactThemes"
+      ],
+      "implementationReview": "完整标题进入可滚动原生正文区，保留原始offset与主题。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A06-05",
+      "criterion": "小/大屏、横竖屏、三主题均验证标题和正文可见，而非仅断言工具栏存在。",
+      "requirementID": "R4-F06",
+      "testSuiteID": "R4-T06",
+      "feedbackImageID": "R4-P06",
+      "originalFile": "IMG_8862.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/InteractiveEnglishText.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testReaderCompleteTitleTenRotationsAndThreeCompactThemes"
+      ],
+      "implementationReview": "完整标题进入可滚动原生正文区，保留原始offset与主题。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A07-01",
+      "criterion": "DW复现中圈出的播放器提示消失，提示前后真实段落完整相接，非隐藏全部文章。",
+      "requirementID": "R4-F07",
+      "testSuiteID": "R4-T07",
+      "feedbackImageID": "R4-P07",
+      "originalFile": "IMG_8863.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/ArticleHTMLExtractor.swift",
+        "LexiDawn/Domain/Learning/ArticleWebPageExtractor.swift",
+        "LexiDawn/Domain/Learning/ReaderTextProjection.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testMediaFallbackExcludedWithoutDeletingJavaScriptReporting",
+        "LexiDawnTests/Round4Tests/testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets",
+        "LexiDawnUITests/Round3UITests/testStructuredOriginalReaderShowsHeadingsQuoteAndList"
+      ],
+      "implementationReview": "DOM来源规则清理新文；旧文可恢复投影不改raw/hash。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A07-02",
+      "criterion": "正文中正常引用JavaScript/HTML5或技术讨论不被误删，列表/图注/引用内容保留。",
+      "requirementID": "R4-F07",
+      "testSuiteID": "R4-T07",
+      "feedbackImageID": "R4-P07",
+      "originalFile": "IMG_8863.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/ArticleHTMLExtractor.swift",
+        "LexiDawn/Domain/Learning/ArticleWebPageExtractor.swift",
+        "LexiDawn/Domain/Learning/ReaderTextProjection.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testMediaFallbackExcludedWithoutDeletingJavaScriptReporting",
+        "LexiDawnTests/Round4Tests/testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets",
+        "LexiDawnUITests/Round3UITests/testStructuredOriginalReaderShowsHeadingsQuoteAndList"
+      ],
+      "implementationReview": "DOM来源规则清理新文；旧文可恢复投影不改raw/hash。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A07-03",
+      "criterion": "清理不构成摘要、截断或网页降级；无法证明完整仍丢弃新候选，不覆盖旧全文。",
+      "requirementID": "R4-F07",
+      "testSuiteID": "R4-T07",
+      "feedbackImageID": "R4-P07",
+      "originalFile": "IMG_8863.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/ArticleHTMLExtractor.swift",
+        "LexiDawn/Domain/Learning/ArticleWebPageExtractor.swift",
+        "LexiDawn/Domain/Learning/ReaderTextProjection.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testMediaFallbackExcludedWithoutDeletingJavaScriptReporting",
+        "LexiDawnTests/Round4Tests/testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets",
+        "LexiDawnUITests/Round3UITests/testStructuredOriginalReaderShowsHeadingsQuoteAndList"
+      ],
+      "implementationReview": "DOM来源规则清理新文；旧文可恢复投影不改raw/hash。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A07-04",
+      "criterion": "旧文章进度、词元位置、生词来源和冻结题组均仍指向正确原始文本；写入失败保留原版本。",
+      "requirementID": "R4-F07",
+      "testSuiteID": "R4-T07",
+      "feedbackImageID": "R4-P07",
+      "originalFile": "IMG_8863.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/ArticleHTMLExtractor.swift",
+        "LexiDawn/Domain/Learning/ArticleWebPageExtractor.swift",
+        "LexiDawn/Domain/Learning/ReaderTextProjection.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testMediaFallbackExcludedWithoutDeletingJavaScriptReporting",
+        "LexiDawnTests/Round4Tests/testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets",
+        "LexiDawnUITests/Round3UITests/testStructuredOriginalReaderShowsHeadingsQuoteAndList"
+      ],
+      "implementationReview": "DOM来源规则清理新文；旧文可恢复投影不改raw/hash。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A07-05",
+      "criterion": "统计词数和阅读时长基于实际新闻正文，缓存版本变更有回归证据。",
+      "requirementID": "R4-F07",
+      "testSuiteID": "R4-T07",
+      "feedbackImageID": "R4-P07",
+      "originalFile": "IMG_8863.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/ArticleHTMLExtractor.swift",
+        "LexiDawn/Domain/Learning/ArticleWebPageExtractor.swift",
+        "LexiDawn/Domain/Learning/ReaderTextProjection.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testMediaFallbackExcludedWithoutDeletingJavaScriptReporting",
+        "LexiDawnTests/Round4Tests/testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets",
+        "LexiDawnUITests/Round3UITests/testStructuredOriginalReaderShowsHeadingsQuoteAndList"
+      ],
+      "implementationReview": "DOM来源规则清理新文；旧文可恢复投影不改raw/hash。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A08-01",
+      "criterion": "缺义错误弹窗出现时练习板/拼写输入框未进入，取消返回原页面且不产生完成证据。",
+      "requirementID": "R4-F08",
+      "testSuiteID": "R4-T08",
+      "feedbackImageID": "R4-P08",
+      "originalFile": "IMG_8864.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer",
+        "LexiDawnUITests/Round4UITests/testPreflightCancelAndExplicitAllDeferralDoNotPretendAnswers"
+      ],
+      "implementationReview": "统一预检，词条错误补录资格/选义/延期，存储错误不忽略。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A08-02",
+      "criterion": "仅在无可靠英中来源资格成立时立即填写对应条目，保存失败保留草稿，成功/确认后再预检；effectively只有英英时允许结构化个人英中补录，有可靠中文时选原义/重试/延期。",
+      "requirementID": "R4-F08",
+      "testSuiteID": "R4-T08",
+      "feedbackImageID": "R4-P08",
+      "originalFile": "IMG_8864.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer",
+        "LexiDawnUITests/Round4UITests/testPreflightCancelAndExplicitAllDeferralDoNotPretendAnswers"
+      ],
+      "implementationReview": "统一预检，词条错误补录资格/选义/延期，存储错误不忽略。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A08-03",
+      "criterion": "跳过仅作用本次选择的词；其余词正常复习，原词和历史日志保持；跳过集合重启可恢复。",
+      "requirementID": "R4-F08",
+      "testSuiteID": "R4-T08",
+      "feedbackImageID": "R4-P08",
+      "originalFile": "IMG_8864.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer",
+        "LexiDawnUITests/Round4UITests/testPreflightCancelAndExplicitAllDeferralDoNotPretendAnswers"
+      ],
+      "implementationReview": "统一预检，词条错误补录资格/选义/延期，存储错误不忽略。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A08-04",
+      "criterion": "全词跳过显示确切延期说明，不记成0词成功复习；周期门禁仅依据明确完成/合法延期处理。",
+      "requirementID": "R4-F08",
+      "testSuiteID": "R4-T08",
+      "feedbackImageID": "R4-P08",
+      "originalFile": "IMG_8864.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer",
+        "LexiDawnUITests/Round4UITests/testPreflightCancelAndExplicitAllDeferralDoNotPretendAnswers"
+      ],
+      "implementationReview": "统一预检，词条错误补录资格/选义/延期，存储错误不忽略。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A08-05",
+      "criterion": "非词条型失败不出现危险的“忽略整个数据库错误”操作；重试有上限，旧有效会话不被清空。",
+      "requirementID": "R4-F08",
+      "testSuiteID": "R4-T08",
+      "feedbackImageID": "R4-P08",
+      "originalFile": "IMG_8864.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer",
+        "LexiDawnUITests/Round4UITests/testPreflightCancelAndExplicitAllDeferralDoNotPretendAnswers"
+      ],
+      "implementationReview": "统一预检，词条错误补录资格/选义/延期，存储错误不忽略。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A09-01",
+      "criterion": "在已确认无可靠英中来源的个人词中输入释义后，仅拖动收键盘再退出/重进/重启仍保留；有可靠英中的词改验证笔记自动保存，不允许为测“用户”而开放可靠词个人释义。",
+      "requirementID": "R4-F09",
+      "testSuiteID": "R4-T09",
+      "feedbackImageID": "R4-P09",
+      "originalFile": "IMG_8866.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/LearningRules.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/VocabularyRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS",
+        "LexiDawnUITests/Round4UITests/testEnglishOnlyAllowsStructuredPersonalAutosaveAndNotesRestore",
+        "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
+      ],
+      "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A09-02",
+      "criterion": "未修改时不触发写入；中文拼音未上屏的合成文本不被当最终释义提交。",
+      "requirementID": "R4-F09",
+      "testSuiteID": "R4-T09",
+      "feedbackImageID": "R4-P09",
+      "originalFile": "IMG_8866.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/LearningRules.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/VocabularyRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS",
+        "LexiDawnUITests/Round4UITests/testEnglishOnlyAllowsStructuredPersonalAutosaveAndNotesRestore",
+        "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
+      ],
+      "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A09-03",
+      "criterion": "两次快速编辑、失焦与键盘通知重复、保存中导航都不会旧值覆盖新值或重复成功提示。",
+      "requirementID": "R4-F09",
+      "testSuiteID": "R4-T09",
+      "feedbackImageID": "R4-P09",
+      "originalFile": "IMG_8866.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/LearningRules.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/VocabularyRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS",
+        "LexiDawnUITests/Round4UITests/testEnglishOnlyAllowsStructuredPersonalAutosaveAndNotesRestore",
+        "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
+      ],
+      "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A09-04",
+      "criterion": "真实持久化失败时不能显示已保存，编辑内容仍可找回并重试；崩溃草稿恢复按独立草稿策略验收。",
+      "requirementID": "R4-F09",
+      "testSuiteID": "R4-T09",
+      "feedbackImageID": "R4-P09",
+      "originalFile": "IMG_8866.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/LearningRules.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/VocabularyRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS",
+        "LexiDawnUITests/Round4UITests/testEnglishOnlyAllowsStructuredPersonalAutosaveAndNotesRestore",
+        "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
+      ],
+      "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A09-05",
+      "criterion": "users→user、visits→visit；news/series/US不被错误去尾，专名May与情态may不混同；原始上下文保持。",
+      "requirementID": "R4-F09",
+      "testSuiteID": "R4-T09",
+      "feedbackImageID": "R4-P09",
+      "originalFile": "IMG_8866.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/LearningRules.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/VocabularyRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS",
+        "LexiDawnUITests/Round4UITests/testEnglishOnlyAllowsStructuredPersonalAutosaveAndNotesRestore",
+        "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
+      ],
+      "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A09-06",
+      "criterion": "词头/连线用lemma；原句拼写若要求users必须明确“原句词形users”，不能破坏语法强行改为user。",
+      "requirementID": "R4-F09",
+      "testSuiteID": "R4-T09",
+      "feedbackImageID": "R4-P09",
+      "originalFile": "IMG_8866.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/LearningRules.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/VocabularyRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS",
+        "LexiDawnUITests/Round4UITests/testEnglishOnlyAllowsStructuredPersonalAutosaveAndNotesRestore",
+        "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
+      ],
+      "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A10-01",
+      "criterion": "情态may不会配“五月份”；月份May有明确大写身份；两者不可在缓存或题组中错用。",
+      "requirementID": "R4-F10",
+      "testSuiteID": "R4-T10",
+      "feedbackImageID": "R4-P10",
+      "originalFile": "IMG_8867.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/MatchingBoard.swift",
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities",
+        "LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates"
+      ],
+      "implementationReview": "真实曲线/编号/虚线，选中可取消；May和may独立来源身份。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A10-02",
+      "criterion": "visits/user(s)词头规范，并按实际上下文选“访问/参观”“用户”等可靠义，不能仅凭尾字母猜词性。",
+      "requirementID": "R4-F10",
+      "testSuiteID": "R4-T10",
+      "feedbackImageID": "R4-P10",
+      "originalFile": "IMG_8867.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/MatchingBoard.swift",
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities",
+        "LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates"
+      ],
+      "implementationReview": "真实曲线/编号/虚线，选中可取消；May和may独立来源身份。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A10-03",
+      "criterion": "provide/need等不能自动把孤立“具/待/得要”作为高可信答案；缺可信数据时按F08处理。",
+      "requirementID": "R4-F10",
+      "testSuiteID": "R4-T10",
+      "feedbackImageID": "R4-P10",
+      "originalFile": "IMG_8867.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/MatchingBoard.swift",
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities",
+        "LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates"
+      ],
+      "implementationReview": "真实曲线/编号/虚线，选中可取消；May和may独立来源身份。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A10-04",
+      "criterion": "人工核对金标的意义正确与自动senseID正确均通过，不能只点预设错误答案让测试变绿。",
+      "requirementID": "R4-F10",
+      "testSuiteID": "R4-T10",
+      "feedbackImageID": "R4-P10",
+      "originalFile": "IMG_8867.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/MatchingBoard.swift",
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities",
+        "LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates"
+      ],
+      "implementationReview": "真实曲线/编号/虚线，选中可取消；May和may独立来源身份。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A10-05",
+      "criterion": "旋转、滚动、动态字体、恢复后连接线存在；完成两端不可重复消费，错误后可再试。",
+      "requirementID": "R4-F10",
+      "testSuiteID": "R4-T10",
+      "feedbackImageID": "R4-P10",
+      "originalFile": "IMG_8867.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/MatchingBoard.swift",
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities",
+        "LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates"
+      ],
+      "implementationReview": "真实曲线/编号/虚线，选中可取消；May和may独立来源身份。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A11-01",
+      "criterion": "固定测试语料的足够长词能覆盖前/中/后挖空，不全部为连续尾缀。",
+      "requirementID": "R4-F11",
+      "testSuiteID": "R4-T11",
+      "feedbackImageID": "R4-P11",
+      "originalFile": "IMG_8869.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testSeededMaskIsStableDistributedAndRetainsSeparators",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
+      ],
+      "implementationReview": "保存seed/mask，分散前中后，保留分隔；原句重复词冻结实际选择位置。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A11-02",
+      "criterion": "同一题退出重进、旋转或重启掩码完全一致；同一seed可确定性复现。",
+      "requirementID": "R4-F11",
+      "testSuiteID": "R4-T11",
+      "feedbackImageID": "R4-P11",
+      "originalFile": "IMG_8869.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testSeededMaskIsStableDistributedAndRetainsSeparators",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
+      ],
+      "implementationReview": "保存seed/mask，分散前中后，保留分隔；原句重复词冻结实际选择位置。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A11-03",
+      "criterion": "短语、撇号、连字符及Unicode词形不隐藏分隔符，不越界，不出现全词原答案泄漏。",
+      "requirementID": "R4-F11",
+      "testSuiteID": "R4-T11",
+      "feedbackImageID": "R4-P11",
+      "originalFile": "IMG_8869.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testSeededMaskIsStableDistributedAndRetainsSeparators",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
+      ],
+      "implementationReview": "保存seed/mask，分散前中后，保留分隔；原句重复词冻结实际选择位置。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A11-04",
+      "criterion": "掩码位置与冻结答案属于同一题ID；正确答案判定不随显示变化。",
+      "requirementID": "R4-F11",
+      "testSuiteID": "R4-T11",
+      "feedbackImageID": "R4-P11",
+      "originalFile": "IMG_8869.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testSeededMaskIsStableDistributedAndRetainsSeparators",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
+      ],
+      "implementationReview": "保存seed/mask，分散前中后，保留分隔；原句重复词冻结实际选择位置。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A11-05",
+      "criterion": "旧会话沿用已保存prompt，不在迁移时重随机或改答案。",
+      "requirementID": "R4-F11",
+      "testSuiteID": "R4-T11",
+      "feedbackImageID": "R4-P11",
+      "originalFile": "IMG_8869.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testSeededMaskIsStableDistributedAndRetainsSeparators",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
+      ],
+      "implementationReview": "保存seed/mask，分散前中后，保留分隔；原句重复词冻结实际选择位置。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A12-01",
+      "criterion": "默认完成首屏没有圈中的逐词日期长列表，不靠缩到极小字号掩盖。",
+      "requirementID": "R4-F12",
+      "testSuiteID": "R4-T12",
+      "feedbackImageID": "R4-P12",
+      "originalFile": "IMG_8870.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
+      ],
+      "implementationReview": "实际完成/延期数量，日志次级折叠、无成功重试墙。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A12-02",
+      "criterion": "所有原作答、评分、dueAt和ReviewLog仍可查询；次级详情显示真实数据。",
+      "requirementID": "R4-F12",
+      "testSuiteID": "R4-T12",
+      "feedbackImageID": "R4-P12",
+      "originalFile": "IMG_8870.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
+      ],
+      "implementationReview": "实际完成/延期数量，日志次级折叠、无成功重试墙。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A12-03",
+      "criterion": "完成页数量与已答/延期证据一致，失败事务不得进入完成态。",
+      "requirementID": "R4-F12",
+      "testSuiteID": "R4-T12",
+      "feedbackImageID": "R4-P12",
+      "originalFile": "IMG_8870.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
+      ],
+      "implementationReview": "实际完成/延期数量，日志次级折叠、无成功重试墙。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A12-04",
+      "criterion": "重启回到完成页不再次生成本轮日志或重复推进排程。",
+      "requirementID": "R4-F12",
+      "testSuiteID": "R4-T12",
+      "feedbackImageID": "R4-P12",
+      "originalFile": "IMG_8870.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
+      ],
+      "implementationReview": "实际完成/延期数量，日志次级折叠、无成功重试墙。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A12-05",
+      "criterion": "完成后的主动作清楚，默认无重新读取/重试及上题反馈残留。",
+      "requirementID": "R4-F12",
+      "testSuiteID": "R4-T12",
+      "feedbackImageID": "R4-P12",
+      "originalFile": "IMG_8870.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
+      ],
+      "implementationReview": "实际完成/延期数量，日志次级折叠、无成功重试墙。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A13-01",
+      "criterion": "NPR示例标题位于渐变框内，每篇仅一个外容器，不再出现上彩条+下白字散页。",
+      "requirementID": "R4-F13",
+      "testSuiteID": "R4-T13",
+      "feedbackImageID": "R4-P13",
+      "originalFile": "IMG_8872.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Data/ContentRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testExploreCardsFavoritesAndConfirmedResetPreserveNativeReadingFlow"
+      ],
+      "implementationReview": "单篇完整主题渐变卡，标题/元数据/操作在卡内，门禁继续。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A13-02",
+      "criterion": "全标题可读，正文色与渐变各区对比合格；浅/深/暖纸和大字不重叠。",
+      "requirementID": "R4-F13",
+      "testSuiteID": "R4-T13",
+      "feedbackImageID": "R4-P13",
+      "originalFile": "IMG_8872.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Data/ContentRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testExploreCardsFavoritesAndConfirmedResetPreserveNativeReadingFlow"
+      ],
+      "implementationReview": "单篇完整主题渐变卡，标题/元数据/操作在卡内，门禁继续。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A13-03",
+      "criterion": "同主题颜色稳定、不同主题有区分，中文分类也能正确映射。",
+      "requirementID": "R4-F13",
+      "testSuiteID": "R4-T13",
+      "feedbackImageID": "R4-P13",
+      "originalFile": "IMG_8872.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Data/ContentRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testExploreCardsFavoritesAndConfirmedResetPreserveNativeReadingFlow"
+      ],
+      "implementationReview": "单篇完整主题渐变卡，标题/元数据/操作在卡内，门禁继续。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A13-04",
+      "criterion": "收藏/稍后各自生效且不误开正文、不建每日周期；主卡点击只开本篇。",
+      "requirementID": "R4-F13",
+      "testSuiteID": "R4-T13",
+      "feedbackImageID": "R4-P13",
+      "originalFile": "IMG_8872.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Data/ContentRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testExploreCardsFavoritesAndConfirmedResetPreserveNativeReadingFlow"
+      ],
+      "implementationReview": "单篇完整主题渐变卡，标题/元数据/操作在卡内，门禁继续。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A13-05",
+      "criterion": "空/加载/锁定/失败/部分成功均使用同一视觉规范，锁定时不能因新卡绕过学习门禁。",
+      "requirementID": "R4-F13",
+      "testSuiteID": "R4-T13",
+      "feedbackImageID": "R4-P13",
+      "originalFile": "IMG_8872.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/LearningHome.swift",
+        "LexiDawn/Data/ContentRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testExploreCardsFavoritesAndConfirmedResetPreserveNativeReadingFlow"
+      ],
+      "implementationReview": "单篇完整主题渐变卡，标题/元数据/操作在卡内，门禁继续。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A14-01",
+      "criterion": "need示例中圈出的多条URL和技术说明不在默认页面出现。",
+      "requirementID": "R4-F14",
+      "testSuiteID": "R4-T14",
+      "feedbackImageID": "R4-P14",
+      "originalFile": "IMG_8873.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/VocabularyRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary"
+      ],
+      "implementationReview": "按文章分组真实原句，去重复语境和URL，源记录未删除。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A14-02",
+      "criterion": "同一文章标题/短来源只显示一次；真正不同的遇词句子仍可查看。",
+      "requirementID": "R4-F14",
+      "testSuiteID": "R4-T14",
+      "feedbackImageID": "R4-P14",
+      "originalFile": "IMG_8873.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/VocabularyRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary"
+      ],
+      "implementationReview": "按文章分组真实原句，去重复语境和URL，源记录未删除。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A14-03",
+      "criterion": "文章ID、原始URL、sourceContext、原文证据及旧日志都未丢失；不增加原站阅读入口。",
+      "requirementID": "R4-F14",
+      "testSuiteID": "R4-T14",
+      "feedbackImageID": "R4-P14",
+      "originalFile": "IMG_8873.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/VocabularyRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary"
+      ],
+      "implementationReview": "按文章分组真实原句，去重复语境和URL，源记录未删除。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A14-04",
+      "criterion": "上下文中的英文依然能查词，返回后仍停在原位置。",
+      "requirementID": "R4-F14",
+      "testSuiteID": "R4-T14",
+      "feedbackImageID": "R4-P14",
+      "originalFile": "IMG_8873.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/VocabularyRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary"
+      ],
+      "implementationReview": "按文章分组真实原句，去重复语境和URL，源记录未删除。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A14-05",
+      "criterion": "多来源/历史未知/无来源/失败读取均展示简洁且真实，不靠占位来源补齐。",
+      "requirementID": "R4-F14",
+      "testSuiteID": "R4-T14",
+      "feedbackImageID": "R4-P14",
+      "originalFile": "IMG_8873.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/VocabularyRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary"
+      ],
+      "implementationReview": "按文章分组真实原句，去重复语境和URL，源记录未删除。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A15-01",
+      "criterion": "生词页不再需要二次进入详细词典才能看原来该详情中的可靠字段。",
+      "requirementID": "R4-F15",
+      "testSuiteID": "R4-T15",
+      "feedbackImageID": "R4-P15",
+      "originalFile": "IMG_8875.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Features/Learning/ReaderFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock"
+      ],
+      "implementationReview": "生词与全屏共用词头和完整内容；无重复详细词典入口。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A15-02",
+      "criterion": "全义项、来源、词性、例句等可用内容实际仍可访问，不用只删按钮冒充合并。",
+      "requirementID": "R4-F15",
+      "testSuiteID": "R4-T15",
+      "feedbackImageID": "R4-P15",
+      "originalFile": "IMG_8875.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Features/Learning/ReaderFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock"
+      ],
+      "implementationReview": "生词与全屏共用词头和完整内容；无重复详细词典入口。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A15-03",
+      "criterion": "按F23区分可靠词义、资格允许的个人义和始终可用的笔记；有可靠英中来源禁用个人编辑，旧个人义保留只读；有效自动保存和选义不被布局覆盖。",
+      "requirementID": "R4-F15",
+      "testSuiteID": "R4-T15",
+      "feedbackImageID": "R4-P15",
+      "originalFile": "IMG_8875.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Features/Learning/ReaderFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock"
+      ],
+      "implementationReview": "生词与全屏共用词头和完整内容；无重复详细词典入口。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A15-04",
+      "criterion": "嵌套查词/返回/滚动位置和已有生词标记同步，页面不重复出现相同义项。",
+      "requirementID": "R4-F15",
+      "testSuiteID": "R4-T15",
+      "feedbackImageID": "R4-P15",
+      "originalFile": "IMG_8875.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Features/Learning/ReaderFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock"
+      ],
+      "implementationReview": "生词与全屏共用词头和完整内容；无重复详细词典入口。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A15-05",
+      "criterion": "缺失字段优雅隐藏；失败或部分来源状态明确，不能编造字段填满版面。",
+      "requirementID": "R4-F15",
+      "testSuiteID": "R4-T15",
+      "feedbackImageID": "R4-P15",
+      "originalFile": "IMG_8875.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Features/Learning/ReaderFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock"
+      ],
+      "implementationReview": "生词与全屏共用词头和完整内容；无重复详细词典入口。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A16-01",
+      "criterion": "真实 App Bundle 含完整、校验通过的 MDX；need 等真实词条可离线返回词性、中文和实际音标，不用 fixture 证明生产解析。",
+      "requirementID": "R4-F16",
+      "testSuiteID": "R4-T16",
+      "feedbackImageID": "R4-P16",
+      "originalFile": "IMG_8876.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Data/BundledMDXDictionary.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Data/MDX/MDXReader.c"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+        "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+      ],
+      "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A16-02",
+      "criterion": "MDX 缺失、损坏、解析失败、查询中、查无此词和仅英英有不同真实状态；任何情况不调用其他词典回退。",
+      "requirementID": "R4-F16",
+      "testSuiteID": "R4-T16",
+      "feedbackImageID": "R4-P16",
+      "originalFile": "IMG_8876.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Data/BundledMDXDictionary.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Data/MDX/MDXReader.c"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+        "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+      ],
+      "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A16-03",
+      "criterion": "生产仅接入内置 MDX。Wiktionary、Free、Oxford 在线、CC-CEDICT 及其他旧缓存均不能参与展示或新题，不支持用户导入词典。",
+      "requirementID": "R4-F16",
+      "testSuiteID": "R4-T16",
+      "feedbackImageID": "R4-P16",
+      "originalFile": "IMG_8876.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Data/BundledMDXDictionary.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Data/MDX/MDXReader.c"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+        "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+      ],
+      "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A16-04",
+      "criterion": "MDX 词性、音标、例句对应原词条和义项；缺失字段不编造，不借用无关词性的数据。",
+      "requirementID": "R4-F16",
+      "testSuiteID": "R4-T16",
+      "feedbackImageID": "R4-P16",
+      "originalFile": "IMG_8876.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Data/BundledMDXDictionary.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Data/MDX/MDXReader.c"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+        "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+      ],
+      "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A16-05",
+      "criterion": "惰性后台初始化、Actor 并发、取消和有界缓存真实有效；派生缓存关联 MDX SHA/解析版本，旧请求不覆盖当前词。",
+      "requirementID": "R4-F16",
+      "testSuiteID": "R4-T16",
+      "feedbackImageID": "R4-P16",
+      "originalFile": "IMG_8876.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Data/BundledMDXDictionary.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Data/MDX/MDXReader.c"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+        "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+      ],
+      "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A16-06",
+      "criterion": "旧个人义、旧题组/日志不被删改；可靠英中来源出现后旧个人义只读且不用于新题，有效进行中题按冻结快照恢复，已证实错误题按F24暂停处理。",
+      "requirementID": "R4-F16",
+      "testSuiteID": "R4-T16",
+      "feedbackImageID": "R4-P16",
+      "originalFile": "IMG_8876.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Data/BundledMDXDictionary.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Data/MDX/MDXReader.c"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+        "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+      ],
+      "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A17-01",
+      "criterion": "anti-corruption和administration卡面符合三项信息，不显示长理由、原句段落和冗余导航行。",
+      "requirementID": "R4-F17",
+      "testSuiteID": "R4-T17",
+      "feedbackImageID": "R4-P17",
+      "originalFile": "IMG_8878.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/VocabularyRecommendationFeature.swift",
+        "LexiDawn/Data/VocabularyRecommendations.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationsLockAndRequireExplicitAddAfterDetail",
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationLoadingEmptyAndFailureStates"
+      ],
+      "implementationReview": "紧凑词头/真实IPA/中文，详情复用，只有主动加入才写入。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A17-02",
+      "criterion": "点击每一词卡进入对应完整详情，返回保持列表位置。",
+      "requirementID": "R4-F17",
+      "testSuiteID": "R4-T17",
+      "feedbackImageID": "R4-P17",
+      "originalFile": "IMG_8878.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/VocabularyRecommendationFeature.swift",
+        "LexiDawn/Data/VocabularyRecommendations.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationsLockAndRequireExplicitAddAfterDetail",
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationLoadingEmptyAndFailureStates"
+      ],
+      "implementationReview": "紧凑词头/真实IPA/中文，详情复用，只有主动加入才写入。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A17-03",
+      "criterion": "仅浏览推荐和详情不增加生词；主动加入后状态正确并排除后续重复推荐。",
+      "requirementID": "R4-F17",
+      "testSuiteID": "R4-T17",
+      "feedbackImageID": "R4-P17",
+      "originalFile": "IMG_8878.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/VocabularyRecommendationFeature.swift",
+        "LexiDawn/Data/VocabularyRecommendations.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationsLockAndRequireExplicitAddAfterDetail",
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationLoadingEmptyAndFailureStates"
+      ],
+      "implementationReview": "紧凑词头/真实IPA/中文，详情复用，只有主动加入才写入。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A17-04",
+      "criterion": "有IPA显示真实音标，无IPA允许省略/短缺失标记；不能用系统语音当IPA。",
+      "requirementID": "R4-F17",
+      "testSuiteID": "R4-T17",
+      "feedbackImageID": "R4-P17",
+      "originalFile": "IMG_8878.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/VocabularyRecommendationFeature.swift",
+        "LexiDawn/Data/VocabularyRecommendations.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationsLockAndRequireExplicitAddAfterDetail",
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationLoadingEmptyAndFailureStates"
+      ],
+      "implementationReview": "紧凑词头/真实IPA/中文，详情复用，只有主动加入才写入。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A17-05",
+      "criterion": "加载中已有结果可用，取消/离线/失败/空列表均无巨大解释墙且可恢复。",
+      "requirementID": "R4-F17",
+      "testSuiteID": "R4-T17",
+      "feedbackImageID": "R4-P17",
+      "originalFile": "IMG_8878.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/VocabularyRecommendationFeature.swift",
+        "LexiDawn/Data/VocabularyRecommendations.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationsLockAndRequireExplicitAddAfterDetail",
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationLoadingEmptyAndFailureStates"
+      ],
+      "implementationReview": "紧凑词头/真实IPA/中文，详情复用，只有主动加入才写入。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A18-01",
+      "criterion": "上一题答对后进入observer空输入，绝不显示上题的绿色正确或旧答案。",
+      "requirementID": "R4-F18",
+      "testSuiteID": "R4-T18",
+      "feedbackImageID": "R4-P18",
+      "originalFile": "IMG_8879.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce"
+      ],
+      "implementationReview": "反馈session/question/attempt/revision绑定，输入清理，保存失败无成功。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A18-02",
+      "criterion": "每题题干、中文、提示、答案和反馈属于同一个questionID；重复/迟到提交不覆盖新题。",
+      "requirementID": "R4-F18",
+      "testSuiteID": "R4-T18",
+      "feedbackImageID": "R4-P18",
+      "originalFile": "IMG_8879.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce"
+      ],
+      "implementationReview": "反馈session/question/attempt/revision绑定，输入清理，保存失败无成功。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A18-03",
+      "criterion": "提交中禁用重复操作，失败保留输入且显示可重试错误，不显示成功。",
+      "requirementID": "R4-F18",
+      "testSuiteID": "R4-T18",
+      "feedbackImageID": "R4-P18",
+      "originalFile": "IMG_8879.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce"
+      ],
+      "implementationReview": "反馈session/question/attempt/revision绑定，输入清理，保存失败无成功。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A18-04",
+      "criterion": "使用提示与显示答案有清楚边框、完整标签及VoiceOver名称；小屏键盘上方可完整点击。",
+      "requirementID": "R4-F18",
+      "testSuiteID": "R4-T18",
+      "feedbackImageID": "R4-P18",
+      "originalFile": "IMG_8879.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce"
+      ],
+      "implementationReview": "反馈session/question/attempt/revision绑定，输入清理，保存失败无成功。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A18-05",
+      "criterion": "正常输入状态没有重新读取/重试；仅相应加载/保存失败时提供对应重试动作。",
+      "requirementID": "R4-F18",
+      "testSuiteID": "R4-T18",
+      "feedbackImageID": "R4-P18",
+      "originalFile": "IMG_8879.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round3UITests/testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce"
+      ],
+      "implementationReview": "反馈session/question/attempt/revision绑定，输入清理，保存失败无成功。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A19-01",
+      "criterion": "点显示答案后题ID、题干和正确答案保持同一题，不立即跳到commo____等下一题。",
+      "requirementID": "R4-F19",
+      "testSuiteID": "R4-T19",
+      "feedbackImageID": "R4-P19",
+      "originalFile": "IMG_8880.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "揭示保持题目、不自动填入，亲自纠正、Again、事务幂等和恢复。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A19-02",
+      "criterion": "不自动填入用户输入框；空输入/错误拼写不能通过，用户正确输入后才推进。",
+      "requirementID": "R4-F19",
+      "testSuiteID": "R4-T19",
+      "feedbackImageID": "R4-P19",
+      "originalFile": "IMG_8880.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "揭示保持题目、不自动填入，亲自纠正、Again、事务幂等和恢复。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A19-03",
+      "criterion": "揭示后即使一次抄对仍记Again；不会增加一次独立复习或生成两份日志。",
+      "requirementID": "R4-F19",
+      "testSuiteID": "R4-T19",
+      "feedbackImageID": "R4-P19",
+      "originalFile": "IMG_8880.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "揭示保持题目、不自动填入，亲自纠正、Again、事务幂等和恢复。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A19-04",
+      "criterion": "揭示/输入一半/写入失败/重启均能恢复待纠正状态，未纠正不计任务完成或探索解锁。",
+      "requirementID": "R4-F19",
+      "testSuiteID": "R4-T19",
+      "feedbackImageID": "R4-P19",
+      "originalFile": "IMG_8880.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "揭示保持题目、不自动填入，亲自纠正、Again、事务幂等和恢复。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A19-05",
+      "criterion": "旧已完成历史不回滚或假补纠正证据；未完成旧会话按兼容策略恢复原答案。",
+      "requirementID": "R4-F19",
+      "testSuiteID": "R4-T19",
+      "feedbackImageID": "R4-P19",
+      "originalFile": "IMG_8880.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReviewFeature.swift",
+        "LexiDawn/Data/ReviewRepository.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "揭示保持题目、不自动填入，亲自纠正、Again、事务幂等和恢复。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A20-01",
+      "criterion": "修改主题/自动加入/每日上限后不点保存，切页重启仍生效。",
+      "requirementID": "R4-F20",
+      "testSuiteID": "R4-T20",
+      "feedbackImageID": "R4-P20",
+      "originalFile": "IMG_8881.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/SettingsFeature.swift",
+        "LexiDawn/Data/Repositories.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated"
+      ],
+      "implementationReview": "偏好自动保存、草稿/失败恢复、真实Bundle和Why Haoyu。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A20-02",
+      "criterion": "无效时区/超长文本不覆盖旧有效设置；失败可修正/重试，无虚假成功。",
+      "requirementID": "R4-F20",
+      "testSuiteID": "R4-T20",
+      "feedbackImageID": "R4-P20",
+      "originalFile": "IMG_8881.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/SettingsFeature.swift",
+        "LexiDawn/Data/Repositories.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated"
+      ],
+      "implementationReview": "偏好自动保存、草稿/失败恢复、真实Bundle和Why Haoyu。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A20-03",
+      "criterion": "快速滑动/连续切换时最后值胜出；加载初值不误触发写回，返回导航不丢修改。",
+      "requirementID": "R4-F20",
+      "testSuiteID": "R4-T20",
+      "feedbackImageID": "R4-P20",
+      "originalFile": "IMG_8881.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/SettingsFeature.swift",
+        "LexiDawn/Data/Repositories.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated"
+      ],
+      "implementationReview": "偏好自动保存、草稿/失败恢复、真实Bundle和Why Haoyu。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A20-04",
+      "criterion": "既有周期的日期/时区与冻结题量不重写；自动加入设置不批量改已有生词。",
+      "requirementID": "R4-F20",
+      "testSuiteID": "R4-T20",
+      "feedbackImageID": "R4-P20",
+      "originalFile": "IMG_8881.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/SettingsFeature.swift",
+        "LexiDawn/Data/Repositories.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated"
+      ],
+      "implementationReview": "偏好自动保存、草稿/失败恢复、真实Bundle和Why Haoyu。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A20-05",
+      "criterion": "关于入口明显，开发者逐字为Why Haoyu；版本/build从Bundle读取，许可内容仍可访问。",
+      "requirementID": "R4-F20",
+      "testSuiteID": "R4-T20",
+      "feedbackImageID": "R4-P20",
+      "originalFile": "IMG_8881.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/SettingsFeature.swift",
+        "LexiDawn/Data/Repositories.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated"
+      ],
+      "implementationReview": "偏好自动保存、草稿/失败恢复、真实Bundle和Why Haoyu。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A21-01",
+      "criterion": "prices点词后显示示意所需小卡，正常字号不默认占半屏/整屏；正文上下文仍可辨。",
+      "requirementID": "R4-F21",
+      "testSuiteID": "R4-T21",
+      "feedbackImageID": "R4-P21",
+      "originalFile": "IMG_8883.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/InteractiveEnglishText.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation",
+        "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
+      ],
+      "implementationReview": "锚定小popover，全屏详情，44pt控件，真实保存勾号和限定撤销。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A21-02",
+      "criterion": "音标/词性/义项真实且紧凑；未找到可靠中文时有短缺失状态，不塞整段技术说明或伪造翻译。",
+      "requirementID": "R4-F21",
+      "testSuiteID": "R4-T21",
+      "feedbackImageID": "R4-P21",
+      "originalFile": "IMG_8883.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/InteractiveEnglishText.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation",
+        "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
+      ],
+      "implementationReview": "锚定小popover，全屏详情，44pt控件，真实保存勾号和限定撤销。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A21-03",
+      "criterion": "加入失败无勾号；原有词不出现可误删的撤销本次加入；本次新建可准确撤销。",
+      "requirementID": "R4-F21",
+      "testSuiteID": "R4-T21",
+      "feedbackImageID": "R4-P21",
+      "originalFile": "IMG_8883.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/InteractiveEnglishText.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation",
+        "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
+      ],
+      "implementationReview": "锚定小popover，全屏详情，44pt控件，真实保存勾号和限定撤销。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A21-04",
+      "criterion": "右下箭头实际进入新全屏页面，完整义项/来源/例句可查看；返回原阅读位置与进度保持。",
+      "requirementID": "R4-F21",
+      "testSuiteID": "R4-T21",
+      "feedbackImageID": "R4-P21",
+      "originalFile": "IMG_8883.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/InteractiveEnglishText.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation",
+        "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
+      ],
+      "implementationReview": "锚定小popover，全屏详情，44pt控件，真实保存勾号和限定撤销。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A21-05",
+      "criterion": "首词/末词、屏幕四边、长短语、大字、横屏、三主题、连续点不同词和VoiceOver均不越界/串词。",
+      "requirementID": "R4-F21",
+      "testSuiteID": "R4-T21",
+      "feedbackImageID": "R4-P21",
+      "originalFile": "IMG_8883.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/InteractiveEnglishText.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation",
+        "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
+      ],
+      "implementationReview": "锚定小popover，全屏详情，44pt控件，真实保存勾号和限定撤销。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A21-06",
+      "criterion": "点外部关闭/切词后旧请求取消或结果被隔离，旧词反馈不能覆盖新词；不新增学习周期或改变阅读完成。",
+      "requirementID": "R4-F21",
+      "testSuiteID": "R4-T21",
+      "feedbackImageID": "R4-P21",
+      "originalFile": "IMG_8883.heic",
+      "referenceImageIDs": [],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/InteractiveEnglishText.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation",
+        "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
+      ],
+      "implementationReview": "锚定小popover，全屏详情，44pt控件，真实保存勾号和限定撤销。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A22-01",
+      "criterion": "阅读器、生词本、推荐三个入口使用同一完整释义内容层，均为可滚动详细页；小浮层仍保持简明。",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A22-02",
+      "criterion": "词头、英美音标/真实发音、词性、编号义项、例句与短语形成与参考图对应的清晰层级，长文不堆成无分组字符串。",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A22-03",
+      "criterion": "同一词不同词性/词源/读音保持边界；及物/不及物、语域和地域只在有原始证据时标注。",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A22-04",
+      "criterion": "例句和已有中文译文成对显示，搭配缩进；无译文时保留英文，不借用其他义项的中文或人工伪造。",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A22-05",
+      "criterion": "独立短语动词/习语区块可见、可导航、可返回；短语身份和其词形不被错误拆成普通单词。",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A22-06",
+      "criterion": "实际返回的IPA、词形、词源、近反义词、用法及所有可靠义项均可找到；缺失区块优雅省略，不能只显示前几条即声称完整。",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A22-07",
+      "criterion": "来源按真实内容标注，可追溯字段归属；只有一个来源时不称多源融合，不把截图文字写入生产fixture。",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A22-08",
+      "criterion": "加入生词本、已加入/失败及撤销本次新增排版清楚且真实落盘，返回路径和已有生词不受新底栏影响。",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A22-09",
+      "criterion": "底栏、安全区、键盘与Tab不遮住最后义项；关闭/后退、嵌套查词返回保持原阅读及详情位置。",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A22-10",
+      "criterion": "浅色、深色、暖纸色、横竖屏及辅助大字下文字可读；降低透明度时使用稳定实色背景，无障碍能读词性与义项顺序。",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A22-11",
+      "criterion": "按三张参考的首/中/末层级提供实际原生截图，以及缺失字段、部分失败、离线缓存和生词操作失败截图，不能用参考图冒充整改效果。",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A22-12",
+      "criterion": "单一 MDX 查询具有真实加载状态；取消、换词与迟到结果不把新词页面替换成旧词，加载失败保留明确错误。",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Features/Learning/ReaderFeature.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift",
+        "LexiDawn/Data/BundledMDXDictionary.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A23-01",
+      "criterion": "两个 ZIP 经现成 merge.py 按 manifest 恢复；分块/最终大小及 SHA 严格校验，完整 MDX 实际进入 App 与 IPA，不只检查项目引用。",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Data/VocabularyRepository.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A23-02",
+      "criterion": "唯一词典为内置 MDX，运行时无需下载/联网/导入；不含 MDD、词典图片或在线音频依赖，系统发音支持开始/停止及不可用状态。",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Data/VocabularyRepository.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A23-03",
+      "criterion": "MDX 的多义项、多词性、词形、大小写和内部链接保持原身份；中文相同不能作为同义合并依据，例句和译文不得错配。",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Data/VocabularyRepository.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A23-04",
+      "criterion": "MDX 已有中文时 Domain/Service/Repository/UI 均禁止新增或改写个人义项；只有英英不锁定个人英中，独立笔记仍可保存。",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Data/VocabularyRepository.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A23-05",
+      "criterion": "资源缺失、损坏和解析失败不冒充查无此词；已知 MDX 中文不会因清缓存、切页或失败而开放个人释义。",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Data/VocabularyRepository.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A23-06",
+      "criterion": "只有 MDX 成功确认无词或无中文时才允许结构化个人词；旧外部 Provider 和未确认旧反向候选保留历史，不转换成 MDX 或新题答案。",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Data/VocabularyRepository.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A23-07",
+      "criterion": "自建支持多词性/多义项、中文释义、英文例句及译文、用法标签、搭配/短语和可选发音/词形；不要求英英释义，缺字段不补造。",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Data/VocabularyRepository.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A23-08",
+      "criterion": "结构化编辑沿用自动保存、IME保护、最后版本胜出、事务和失败草稿恢复；父义项与例句不得半写入。",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Data/VocabularyRepository.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A23-09",
+      "criterion": "可靠结果在编辑/保存期间到达时策略版本重新校验；未获允许的个人义不能迟到落盘，草稿保留为只读待处理，笔记不丢失。",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Data/VocabularyRepository.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A23-10",
+      "criterion": "旧userMeaning、选义、笔记、来源与导出数据无损迁移；有可靠英中来源时旧个人义只读保留，新题不回用，旧历史记录不改写。",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Data/VocabularyRepository.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A23-11",
+      "criterion": "只有英英的词不展示英英定义，也不视为有可用释义；允许补录个人英中sense，确认词性/中文及语境后进入复习；有可靠英中时只选真实源义项。",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Data/VocabularyRepository.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A23-12",
+      "criterion": "Domain、Repository、各UI入口、导出/备份恢复入口执行同一策略，不能通过旧页面、直接写入或把笔记冒充答案绕过禁用。",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Domain/Learning/BilingualDictionary.swift",
+        "LexiDawn/Data/VocabularyRepository.swift",
+        "LexiDawn/Data/DictionaryAggregation.swift",
+        "LexiDawn/Features/Learning/VocabularyFeature.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A24-01",
+      "criterion": "小浮层、完整页、生词、连线和拼写共享同一 MDX/个人词身份、senseID、词性和来源版本，不回退旧外部缓存。",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/LearningModels.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Features/Learning/MatchingBoard.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A24-02",
+      "criterion": "noun/verb、及物/不及物、may/May、nod/nod off和不同词源不串题；个人义同样按sense而非整串文本匹配。",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/LearningModels.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Features/Learning/MatchingBoard.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A24-03",
+      "criterion": "官方只有英英时不直接生成英中连线；可补录并确认结构化个人英中义、查询可靠中文或本次延期，不把英英自动翻译成答案。",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/LearningModels.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Features/Learning/MatchingBoard.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A24-04",
+      "criterion": "无可靠英中来源的个人词只有达到最小复习合同并确认后才出题；缺中文/POS/可用语境分别返回可定位原因，不让用户进入错误练习板。",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/LearningModels.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Features/Learning/MatchingBoard.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A24-05",
+      "criterion": "个人例句与真实文章原句分开标识；无文章时可用明确标注的个人例句，目标词/短语必须有唯一可校验范围和合法词形。",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/LearningModels.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Features/Learning/MatchingBoard.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A24-06",
+      "criterion": "题组建立时原子冻结meaning/source/policy版本、答案与掩码；编辑、可靠英中来源新增、缓存刷新或重启不自动换当前答案。",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/LearningModels.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Features/Learning/MatchingBoard.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A24-07",
+      "criterion": "可靠英中来源出现后新题停用旧个人义，旧会话/日志有原始来源快照；已证实语义错误的题暂停并明确处理，不继续要求错误答案或改写历史。",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/LearningModels.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Features/Learning/MatchingBoard.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A24-08",
+      "criterion": "连线相同中文导致歧义时以真实词性/语境区分或预检解决；真实绘线、双端禁用和重复消费保护均保持。",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/LearningModels.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Features/Learning/MatchingBoard.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A24-09",
+      "criterion": "揭示官方或个人词答案后都需亲自正确输入一次，仍计Again；按题反馈和跨题重置无残留，重复提交只产生一次有效排程事件。",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/LearningModels.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Features/Learning/MatchingBoard.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A24-10",
+      "criterion": "来源暂不可用、个人义保存失败、题组/日志写入失败、迁移中断均保留旧有效状态与草稿，无孤立记录、伪完成或提前解锁。",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/LearningModels.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Features/Learning/MatchingBoard.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A24-11",
+      "criterion": "完成阅读/真实复习或明确合法延期后门禁按已有规则处理；收藏、选义、填写、加入、Provider返回本身均不能算复习完成。",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/LearningModels.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Features/Learning/MatchingBoard.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    },
+    {
+      "acceptanceID": "R4-A24-12",
+      "criterion": "MDX 可靠中文词和确认自建词各有完整原生 E2E/重启/离线/失败证据；真实 MDX、界面布局 fixture 与故障注入明确区分。",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "feedbackImageID": null,
+      "originalFile": null,
+      "referenceImageIDs": [
+        "R4-R01",
+        "R4-R02",
+        "R4-R03"
+      ],
+      "implementationFiles": [
+        "LexiDawn/Data/ReviewRepository.swift",
+        "LexiDawn/Data/LearningModels.swift",
+        "LexiDawn/Domain/Learning/ClozeContext.swift",
+        "LexiDawn/Features/Learning/MatchingBoard.swift"
+      ],
+      "candidateTestSelectors": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
+      "status": "open-final-native-and-visual-verification-required",
+      "passed": false,
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+    }
+  ]
+}

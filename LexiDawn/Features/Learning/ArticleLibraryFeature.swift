@@ -29,7 +29,8 @@ struct ArticleLibraryView: View {
         List {
             LibrarySearchCompletion { searchFocused = false }
             Section {
-                HStack { Text("共 \(items.filter(\.readable).count) 篇").font(.headline); Spacer(); Text("当前 \(visible.count) 篇").font(.caption).foregroundStyle(.secondary) }.accessibilityIdentifier("library-count")
+                HStack { Text("共 \(items.count) 篇").font(.headline); Spacer(); Text("当前 \(visible.count) 篇").font(.caption).foregroundStyle(.secondary) }.accessibilityIdentifier("library-count")
+                if items.contains(where: { !$0.readable }) { Text("可读 \(items.filter(\.readable).count) 篇 · 历史元数据保留").font(.caption).foregroundStyle(.secondary) }
                 Picker("阅读内容", selection: $mode) {
                     Text("全部").tag("all")
                     Text("收藏 \(items.filter { $0.readable && $0.favorite }.count)").tag("favorite")

@@ -1,0 +1,19 @@
+{
+  "commit": "567840f3f04b4182f31c7853278cf1034a1f340b",
+  "runURL": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42918659786",
+  "debugBuild": "success",
+  "releaseSimulatorBuild": "success",
+  "xctest": {
+    "executed": 230,
+    "failures": 1,
+    "mdxExecuted": 22,
+    "mdxFailures": 0,
+    "networkExecuted": 15,
+    "networkFailures": 0,
+    "failedMethod": "Round3Tests.testReviewContextIsFrozenAndLegacyBackfillKeepsAnswerAttemptsAndHint",
+    "failure": "Legacy fixture cleared sentence but retained new Round4 sourceRange columns; integrity guard rejected this inconsistent row."
+  },
+  "ui": "not-run-unit-gate-failed",
+  "round4Acceptance": false,
+  "fixtureFix": "Clear columns absent from simulated historical schema; preserve all original assertions. Verify corrupt new range is still rejected without erasing session. Pending new execution."
+}

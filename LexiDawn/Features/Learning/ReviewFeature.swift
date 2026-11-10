@@ -24,6 +24,7 @@ struct ReviewPracticeContent: View {
     @State private var selected: String?
     @State private var matchingNeedsSelection = false
     @State private var spelling = ""
+    @FocusState private var spellingFocused: Bool
     @State private var message: String?
     @State private var feedback: String?
     @State private var feedbackFor: String?
@@ -70,10 +71,11 @@ struct ReviewPracticeContent: View {
                 if session?.completedAt != nil, !schedules.isEmpty {
                     DisclosureGroup("查看本次复习记录") { ForEach(schedules, id: \.self) { Text($0).font(.footnote).accessibilityIdentifier("review-next-due") } }
                 }
-                if extraEmpty { Text("额外复习暂无到期词条，刚完成的题组不会立即重复。").font(.footnote) }
+                if extraEmpty { Text(deferredResolved ? "本次延期的词会在后续复习中再次出现。" : "额外复习暂无到期词条，刚完成的题组不会立即重复。").font(.footnote) }
                 if message != nil { Button("重试", action: { Task { await load() } }).buttonStyle(.bordered).disabled(loading) }
             }.padding(20)
         }.safeAreaPadding(.bottom, 16).scrollDismissesKeyboard(.interactively).navigationTitle("复习").navigationBarTitleDisplayMode(.inline).task { await load() }
+            .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { spellingFocused = false } } }
             .reviewEntryGate(entryGate, learning: learning)
             .onChange(of: selected) { _, _ in feedback = nil; feedbackFor = nil; matchingNeedsSelection = false }
             .onChange(of: activeQuestionKey) { _, _ in spelling = ""; feedback = nil; feedbackFor = nil; feedbackIdentity = nil; answerPhase = restoredPhase }
@@ -120,17 +122,14 @@ struct ReviewPracticeContent: View {
                 } else { Text("输入原句中的完整词形").font(.subheadline).foregroundStyle(.secondary) }
                 if let feedback, feedbackFor == question.id, feedbackBelongs(to: question.id, in: session) { Label(feedback, systemImage: "exclamationmark.circle").font(.subheadline).foregroundStyle(.orange).accessibilityIdentifier("review-feedback") }
                 if question.acceptedAnswers.count > 1 { Text("本题接受词典明确标注的英美拼写变体。").font(.caption).foregroundStyle(.secondary) }
-                TextField("完整拼写", text: $spelling).textInputAutocapitalization(.never).autocorrectionDisabled().textFieldStyle(.roundedBorder).accessibilityIdentifier("cloze-answer").submitLabel(.done).onSubmit { if submit(questionID: question.id, answer: spelling) { spelling = "" } }
-                Button("提交答案") { if submit(questionID: question.id, answer: spelling) { spelling = "" } }.buttonStyle(.borderedProminent).accessibilityIdentifier("submit-spelling")
+                TextField("完整拼写", text: $spelling).focused($spellingFocused).textInputAutocapitalization(.never).autocorrectionDisabled().textFieldStyle(.roundedBorder).accessibilityIdentifier("cloze-answer").submitLabel(.done).onSubmit { if submit(questionID: question.id, answer: spelling) { spelling = "" } }
+                Button { if submit(questionID: question.id, answer: spelling) { spelling = "" } } label: { Text("提交答案").frame(minHeight: 32) }.buttonStyle(.borderedProminent).accessibilityIdentifier("submit-spelling")
                 HStack {
                     Button("首字母提示") { _ = submit(questionID: question.id, answer: "", hint: true) }
                     Button("显示答案") { _ = submit(questionID: question.id, answer: "", reveal: true) }.disabled(question.revealed)
                 }.font(.footnote).buttonStyle(.bordered)
-            }
+            }.fixedSize(horizontal: false, vertical: true)
         }
-    }
-    private func maskedContext(_ sentence: String, answer: String) -> String {
-        ClozeContext.mask(sentence, answer: answer)
     }
     private func load() async {
         let generation = UUID(); loadGeneration = generation
@@ -184,8 +183,10 @@ struct ReviewPracticeContent: View {
             feedback = correct ? nil : reveal ? "请按显示答案亲自输入一次" : hint ? "首字母：" + (session?.cloze.first { $0.id == questionID }?.answer.first.map(String.init) ?? "") : "还不正确，请再试一次"
             if let saved = session {
                 feedbackIdentity = ReviewFeedbackIdentity(sessionID: saved.id, questionID: questionID, attemptID: attempt, revision: saved.revision)
-                answerPhase = saved.completedAt != nil ? .completed : correct ? .answered : reveal ? .revealedAwaitingCorrection : hint ? .hinted : .incorrect
+                let correctionRequired = saved.cloze.first { $0.id == questionID }?.revealed == true
+                answerPhase = saved.completedAt != nil ? .completed : correct ? .answered : correctionRequired ? .revealedAwaitingCorrection : hint ? .hinted : .incorrect
             }
+            if reveal || correct { spellingFocused = false }
             learning.changed(); message = nil
             return correct
         } catch { feedback = nil; answerPhase = .saveFailed; message = error.localizedDescription; return false }

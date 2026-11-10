@@ -194,16 +194,17 @@ private struct VocabularyDraft: Codable {
     private var draftURL: URL {
         URL.applicationSupportDirectory.appendingPathComponent("LexiDawn/annotation-drafts", isDirectory: true).appendingPathComponent(item.id + ".json")
     }
-    private static func signature(_ notes: String, _ senses: [PersonalDictionarySense]) -> String {
+    private static func signature(_ notes: String, _ senses: [PersonalDictionarySense]) throws -> String {
         let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
-        return fingerprint(notes + String(decoding: (try? encoder.encode(senses)) ?? Data(), as: UTF8.self))
+        return fingerprint(notes + String(decoding: try encoder.encode(senses), as: UTF8.self))
     }
     init(item: VocabularyItem, learning: LearningServices) {
         self.item = item; self.learning = learning
         let initial = item.personalSenses ?? item.meaning.map { [PersonalDictionarySense(chinese: $0)] } ?? []
         senses = initial; persistedSenses = initial; notes = item.notes ?? ""; allowed = false
-        base = Self.signature(item.notes ?? "", initial)
+        base = ""
         do {
+            base = try Self.signature(item.notes ?? "", initial)
             if FileManager.default.fileExists(atPath: draftURL.path) {
                 let draft = try JSONDecoder().decode(VocabularyDraft.self, from: Data(contentsOf: draftURL))
                 if draft.entryID == item.id, draft.base == base { senses = draft.senses; notes = draft.notes; state = "已恢复未保存草稿" }
@@ -233,7 +234,9 @@ private struct VocabularyDraft: Codable {
         guard ready else { return }; state = "尚未保存"
         checkpoint?.cancel()
         checkpoint = Task { [weak self] in
-            do { try await Task.sleep(for: .milliseconds(250)); try Task.checkCancellation(); self?.persistDraft() } catch { }
+            do { try await Task.sleep(for: .milliseconds(250)); try Task.checkCancellation(); self?.persistDraft() }
+            catch is CancellationError { }
+            catch { self?.error = error.localizedDescription }
         }
     }
     private func persistDraft() {
@@ -247,9 +250,9 @@ private struct VocabularyDraft: Codable {
         guard !hasDraftConflict else { return }
         guard ready, !InputComposition.hasMarkedText else { persistDraft(); return }
         checkpoint?.cancel()
-        guard Self.signature(notes, senses) != base else { return }
-        persistDraft()
         do {
+            guard try Self.signature(notes, senses) != base else { return }
+            persistDraft()
             refreshPolicy()
             // Separate transactions: a source-policy change must not prevent saving ordinary notes.
             try learning.vocabulary.saveNotes(entryID: item.id, notes: notes, at: Date())
@@ -258,7 +261,7 @@ private struct VocabularyDraft: Codable {
                 state = "笔记已保存；个人释义草稿只读保留"; return
             }
             if allowed, let updated = try learning.vocabulary.entries().first(where: { $0.id == item.id }) { senses = updated.personalSenses ?? [] }
-            persistedSenses = senses; base = Self.signature(notes, senses); state = "已自动保存"; error = nil
+            persistedSenses = senses; base = try Self.signature(notes, senses); state = "已自动保存"; error = nil
             if FileManager.default.fileExists(atPath: draftURL.path) { try FileManager.default.removeItem(at: draftURL) }
             learning.changed()
         } catch { state = "未保存"; self.error = error.localizedDescription }
@@ -302,7 +305,7 @@ struct VocabularyDetailView: View {
                 DictionaryEntryHeader(headword: item.lemma, ipa: DictionaryPresentation.sharedIPA(result?.senses ?? item.dictionarySenses), speech: speech)
                 if speech.state == .unavailable { Text("系统英语语音不可用").font(.caption).foregroundStyle(.secondary) }
                 if item.surfaces != [item.lemma] { Text(item.surfaces.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
-                if let result, !result.usableSenses.isEmpty { DictionaryResultContent(result: result, onExampleWord: { token, sense in lookupWord(token, origin: .dictionary(headword: item.lemma, evidence: sense.line, text: token.sentence)) }, onRelatedEntry: openRelated) }
+                if let result, !result.usableSenses.isEmpty { DictionaryResultContent(result: result, onExampleWord: { token, sense, text in lookupWord(token, origin: .dictionary(headword: item.lemma, evidence: sense.line, text: text)) }, onRelatedEntry: openRelated) }
                 else if result != nil { Label("暂无可靠英中释义，可在下方补充。", systemImage: "text.book.closed").font(.subheadline).foregroundStyle(.secondary) }
                 else if dictionaryError == nil { ProgressView("正在查询英中释义…") }
                 if result == nil, let cacheError = item.dictionaryCacheError { Text(cacheError).font(.caption).foregroundStyle(.secondary) }
@@ -371,7 +374,8 @@ struct VocabularyDetailView: View {
             }
             .popover(item: $selection) { WordLookupSheet(model: $0).presentationCompactAdaptation(.popover) }
             .fullScreenCover(item: $relatedRoute) { route in
-                NavigationStack { DictionaryDetailView(result: route.result, context: "", learning: learning, articleID: item.sourceArticleID, theme: theme, automaticAdditionAllowed: false) }
+                NavigationStack { DictionaryDetailView(result: route.result, context: "", learning: learning, articleID: nil, theme: theme, automaticAdditionAllowed: false,
+                    contextOrigin: .dictionary(headword: item.lemma, evidence: BundledMDXDictionaryProvider.sourceName, text: nil)) }
             }
             .alert("确认移除词条", isPresented: $removeConfirmation) {
                 Button("取消", role: .cancel) { }
@@ -444,6 +448,7 @@ private struct PersonalSenseEditor: View {
     let moveDown: () -> Void
     let remove: () -> Void
     let select: () -> Void
+    @State private var showingDetails = false
     private func optional(_ path: WritableKeyPath<PersonalDictionarySense, String?>) -> Binding<String> {
         Binding(get: { sense[keyPath: path] ?? "" }, set: { sense[keyPath: path] = $0.isBlank ? nil : $0 })
     }
@@ -466,14 +471,18 @@ private struct PersonalSenseEditor: View {
             if sense.reviewReady { Button("用这一义项复习", action: select).buttonStyle(.bordered).accessibilityIdentifier("personal-select-" + sense.id) }
             TextField("中文释义", text: $sense.chinese, axis: .vertical).focused($focusedField, equals: sense.id + "zh").accessibilityIdentifier("personal-meaning")
             TextField("英文解释（可选）", text: optional(\.englishDefinition), axis: .vertical).focused($focusedField, equals: sense.id + "en")
-            TextField("语法标签（可选）", text: optional(\.grammar)).focused($focusedField, equals: sense.id + "grammar")
-            TextField("音标（可选）", text: $sense.ipa).focused($focusedField, equals: sense.id + "ipa")
-            TextField("用法 / 语域（可选）", text: $sense.usage).focused($focusedField, equals: sense.id + "usage")
-            TextField("使用场景（可选）", text: optional(\.scenarios), axis: .vertical).focused($focusedField, equals: sense.id + "scenarios")
-            TextField("词形变化（可选）", text: $sense.forms).focused($focusedField, equals: sense.id + "forms")
-            TextField("常见短语（可选）", text: $sense.phrases, axis: .vertical).focused($focusedField, equals: sense.id + "phrases")
-            TextField("固定搭配，每行一条", text: lines(\.collocations), axis: .vertical).focused($focusedField, equals: sense.id + "collocations")
-            TextField("习语，每行一条", text: lines(\.idioms), axis: .vertical).focused($focusedField, equals: sense.id + "idioms")
+            DisclosureGroup("语法、搭配和更多", isExpanded: $showingDetails) {
+                VStack(alignment: .leading, spacing: 12) {
+                    TextField("语法标签（可选）", text: optional(\.grammar)).focused($focusedField, equals: sense.id + "grammar")
+                    TextField("音标（可选）", text: $sense.ipa).focused($focusedField, equals: sense.id + "ipa")
+                    TextField("用法 / 语域（可选）", text: $sense.usage).focused($focusedField, equals: sense.id + "usage")
+                    TextField("使用场景（可选）", text: optional(\.scenarios), axis: .vertical).focused($focusedField, equals: sense.id + "scenarios")
+                    TextField("词形变化（可选）", text: $sense.forms).focused($focusedField, equals: sense.id + "forms")
+                    TextField("常见短语（可选）", text: $sense.phrases, axis: .vertical).focused($focusedField, equals: sense.id + "phrases")
+                    TextField("固定搭配，每行一条", text: lines(\.collocations), axis: .vertical).focused($focusedField, equals: sense.id + "collocations")
+                    TextField("习语，每行一条", text: lines(\.idioms), axis: .vertical).focused($focusedField, equals: sense.id + "idioms")
+                }.padding(.top, 10)
+            }.font(.subheadline).accessibilityIdentifier("personal-more-" + sense.id)
             ForEach($sense.examples) { $example in
                 PersonalExampleEditor(example: $example, focusedField: $focusedField, remove: { sense.examples.removeAll { $0.id == example.id } })
             }

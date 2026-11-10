@@ -99,4 +99,14 @@ main `47397084871c8fff6db9932674f6777c42d75b29` 的 [42657203329](https://github
 
 真实 IPA artifact：[13692674476](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42659832536/artifacts/13692674476)。下载实际IPA后运行 `scripts/verify-bundled-dictionary.py --ipa` 通过，确认资源进入最终 `.app`，不是只检查pbxproj。Xcode26.6(17F113)/SDK26.5兼容工具链，signed=false、installedOnDevice=false。
 
-词典本批解析版本为批准MDX SHA + `-html-3`。`t-idm-g` 与 `t-idm` 按实际HTML识别；父词音标不赋给短语/习语，搭配与双语例句一一分组；名词/动词 A/B、圆圈编号、PHRASAL VERBS/IDIOMS分节、44pt发音/关闭按钮与底部胶囊，仍须实际新图验证。没有按参考图编造实际MDX不存在的词性或字段。
+词典当前解析版本为批准MDX SHA + `-html-5`。`t-idm-g` 与 `t-idm` 按实际HTML识别；父词音标不赋给短语/习语，搭配与双语例句一一分组；名词/动词 A/B、圆圈编号、PHRASAL VERBS/IDIOMS分节、44pt发音/关闭按钮与底部胶囊，仍须实际新图验证。没有按参考图编造实际MDX不存在的词性或字段。
+
+## 2026-11-10 · 逐图42张复核与新原生回归问题
+
+`567840f3f04b4182f31c7853278cf1034a1f340b` 的 [42918659786](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42918659786) Debug全目标/Release编译成功；230 XCTest中229通过、1失败，22个MDX专项全部通过，真实文章网络15项全部通过。UI依赖单元关卡而未执行，整体失败。
+
+失败是历史夹具在清空sourceContext模拟旧schema时，仍带本轮新加range字段；生产完整性校验正确拒绝。已在该历史夹具同时清空当时不存在的range/exampleID可选列，所有原answer/prompt/attempts/hint/恢复断言保留；另用真实已保存新题破坏range验证必须报错且不删题组。修复尚待新原生运行。
+
+旧提交d186c9f的42张实际PNG已全部逐张查看及SHA核对，[逐张发现/修改记录](../../artifacts/round-4/screenshots/VISUAL-REVIEW.md)。它们不是新修改后的最终截图。原21张HEIC缺失，依原逐图审阅与机器清单；三张词典JPEG已实际查看。新增[原21项逐项整改矩阵](round-4-image-remediation-matrix.md)与[144项逐条未关闭状态](round-4-acceptance-status.json)，不把关联索引当通过。
+
+本批继续实际修复：选择连线的文字提示、键盘/拼写区自然高度、显示答案收键盘及纠正状态、延期专用文案、真实全部本地数量；结构化个人编辑收起高级可选项但保留全部字段。解析HTML5保留词条内原始义项位置、双语用法提示/真实参见，例句点词携带实际所在例句全文。旧MDX缓存只作经相同SHA校验后的记录号索引提示，内容必须重读；同一SHA已知中文不会被后续空结果解除锁定。当前232单元/62UI源码，不代表本批已经执行通过。

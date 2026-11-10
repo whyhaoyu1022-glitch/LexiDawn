@@ -40,7 +40,8 @@ extension ArticleSourceRegistry {
     static func personalSource(_ id: String) -> PublisherArticleSource? { personalSources.first { $0.id == id } }
     static func canAttempt(_ id: String) -> Bool { enabled(id) || id == "wikinews" || personalSource(id) != nil }
     static func name(_ id: String) -> String {
-        personalSource(id)?.name ?? (id == "wikipedia" ? "Wikipedia" : id == "wikinews" ? "Wikinews" : id == SourceRegistry.rfc.id ? SourceRegistry.rfc.name : id)
+        if id == "user-import" { return "个人导入" }
+        return personalSource(id)?.name ?? (id == "wikipedia" ? "Wikipedia" : id == "wikinews" ? "Wikinews" : id == SourceRegistry.rfc.id ? SourceRegistry.rfc.name : id)
     }
     static func evidence(for id: String) -> FullTextRightsEvidence? {
         if id == "wikipedia" { return wikipediaRights }

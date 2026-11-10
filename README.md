@@ -1,59 +1,50 @@
-## 2026-11-09 · 第二轮原生证据与当前实现
-
-直接 main：`d186c9f29e84c6ec91babdc624830c04fe4f7929` 的 [42650595539](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42650595539) 全目标编译成功，34 项核心测试（12 真实 MDX/边界 + 22 Round4）全部通过，包含真实 Round3 磁盘升级。10 个原生 UI 方法中 8 通过、2 失败；42 张真实 PNG 已导出，尚待下载和逐图检查。整体 CI 为 failure，不能称 Round4 完成。
-
-继续实现原生离线词典搜索、无虚构文章的独立词条、个人修订/删除历史与真实磁盘重开、短语 IPA 归属、May 拼写大小写、额外复习按词延期、三入口共享发现进度/阶段及明确停止、自动保存失败恢复。旧 UI 步骤按新交互迁移，保存/恢复/失败/FSRS 断言保留。新修改尚待完整 CI；源码计数为 227 单元、60 UI，不代表已执行数量。
-
-唯一词典为 App 内置 MDX；原生 TTS，无 MDD、词典图片/在线音频、其他 Provider 或用户词典导入。只有 MDX 成功无中文/无词时允许结构化个人词。144 项/24 测试族及完整截图、Release/IPA 与 iOS27 真机尚未全部验收。[持续更新交付报告](docs/reviews/round-4-final-delivery.md)。
-
-> **2026-11-09 负责人规则覆盖：唯一词典来源为 App 内置 MDX。** 两个 ZIP 只在构建阶段由仓库 merge.py 恢复并验证；运行时原生 C 读取压缩索引与记录块，由 Swift Actor 查询，系统 libxml2 提取词义，AVSpeechSynthesizer 发音。不需要 MDD、词典图片、在线音频，不支持用户导入词典，不向任何在线词典查询。只有 MDX 成功确认无中文或无词条，才允许结构化个人义项；资源/解析故障不等于查无词条。历史外部缓存及个人数据保留，外部缓存不再参与展示或新题。下文旧多 Provider、CC-CEDICT、在线回退及未知失败可补义规则均属历史，已被本段取代。文章来源规则不变。实现及测试尚在进行，不能据此关闭 144 项验收。
-
 # 词光 LexiDawn
 
-**CURRENT · Round 4正在开发：英中词典、阅读与UI批次已写入，原生验证/复习集成/截图验收未完成。**
+原生 iOS 英文全文阅读、离线查词、生词管理和间隔复习应用。SwiftUI、SwiftData，保持 Domain / Service / Repository 分层。
 
-[Round 4详细任务书](docs/plans/round-4-development-specification.md) · [21图逐张审阅](docs/reviews/round-4-first-device-21-image-audit-2026-11-06.md) · [CURRENT状态](STATUS.md)。原21图独立编号；新增[词典详细页补充规范](docs/plans/round-4-dictionary-detail-addendum.md)及[三图审阅](docs/reviews/round-4-dictionary-reference-audit-2026-11-07.md)，当前合计144条验收、24个测试族。可靠来源词禁用用户释义，无可靠来源才支持结构化个人词；两类词与复习统一合同。本次只提交计划文档。
+Round 4 正在开发，尚未完成144项最终验收。直接在原 main 开发，无新分支或PR。[当前状态](STATUS.md) · [持续交付记录](docs/reviews/round-4-final-delivery.md) · [原21图问题](docs/reviews/round-4-first-device-21-image-audit-2026-11-06.md) · [42张实际运行截图逐张复核](artifacts/round-4/screenshots/VISUAL-REVIEW.md)。原HEIC包当前不在仓库，依据既有逐图报告和清单；三张词典JPEG参考可实际查看。
 
-## Round 3历史交付与现有产品说明
+## 当前词典规则
 
-全量 CI [41436291391](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391) 已完成且成功，测试代码为 `b13d6b4e21e425472d059770319d88cd7c50a15e`。Debug/Release、186 XCTest（0失败）、49主 XCUITest（0失败）、SE7/大屏3（均0失败）、导出专项及截图合并全部通过；327张编号截图覆盖138项要求，缺失0项。当前交付自动化证据与完整截图包，最终视觉验收由负责人逐图确认；真机/iOS27/完整VoiceOver听读及Instruments未实测。本次仅文档与证据收尾，不修改应用、测试或CI代码。 [完整交付报告](docs/reviews/round-3-final-delivery-2026-11-02.md)。
+唯一词典来源：App 内置 MDX。`Dictionary Data/` 中两个ZIP是同一文件的分块，构建时由原 `merge.py` 按manifest恢复、验证，完整单一文件进入App Bundle。运行时不下载、不访问GitHub，不支持用户导入词典，无其他词典Provider或自动回退。
 
-原生 iOS 英文全文阅读、查词、生词管理和间隔复习应用。使用 SwiftUI、SwiftData、Domain、Service 和 Repository，不依赖网页阅读器或大型 UI 框架。
+批准MDX为38,774,534字节，SHA256 `095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443`。实际MDX2.0/UTF8 HTML/未加密，原生C/zlib按需读块，Swift Actor管理索引和128词LRU，系统libxml2解析结构。只声明支持这份实测格式，不宣称通用加密/LZO支持。App不包含Python解释器。
 
-**Round 3历史结果 · 全量自动化通过，截图包已交付；后续真机反馈见Round 4。**
+系统发音使用 AVSpeechSynthesizer，可开始、停止和报告系统语音不可用。不需要MDD、词典图片、音频文件或在线发音API。音标只展示，不当普通英文朗读。
 
-本次真实通过结果与完整下载入口见[交付报告](docs/reviews/round-3-final-delivery-2026-11-02.md)；历史失败保留在Actions与Git历史中。
+只有MDX成功确认没有中文释义或没有词条，才允许结构化个人词。支持多词性、多义项、配对例句/翻译、搭配/短语/习语、语法/语域/场景/备注、确认和修订历史。MDX已有中文时所有个人义写入口锁定，独立笔记仍可编辑；旧个人内容只读保留。资源缺失/损坏/解析错误绝不冒充无词。
 
-## 使用入口与任务融合
+完整词典、阅读浮层、生词和复习共享词义身份。新题冻结义项、来源版本、原句/原词形/位置、答案和seed/mask；进行中题不因新查询暗换答案。显示答案后必须亲自输入正确答案，仍计Again，FSRS事件幂等。
 
-- **今日**：继续最早未完成周期，明确区分阅读、连线和拼写状态。新文章不会覆盖旧周期；已指派文章不重复分配。顶部书库图标进入“文章库与历史”，导入按钮粘贴个人完整原文。
-- **文章库与历史**：发现完整文章、标题搜索、来源/分类筛选、时间排序、收藏、稍后阅读和历史。标记收藏不会创建每日周期。任务完成前，所有库、历史、收藏及稍后入口均只能打开当前任务文章；Reader 打开和进度写入再次执行同一门禁。
-- **探索**：完成当前学习日全部必做任务后解锁。完整本地文章按兴趣等因素排序，支持分类、收藏、稍后和发现；打开即记录开始。重新标记为未开始需确认，原进度归档。每日文章不能重置。
-- **阅读器**：全文离线阅读、标题/段落/引用/列表、词级点击、位置恢复、横竖屏、动态字体、浅色/深色/暖纸色。查词浮窗展示最多两条原始简明释义，工具栏词典进入含全部原始义项的独立详情，支持有限深度嵌套查词。
-- **词汇**：生词本搜索、类型/复习状态筛选、排序、个人释义/笔记、明确选择词典中文义项、确认移除、JSON/CSV 导出。上方“高级词汇与短语推荐”在完成任务后开放，从真实本地全文提取并查询词典，只有主动加入才写入生词本。
-- **复习**：真实双列连线与持久化拼写。拼写固定原句实际词形，遮住整词或整段短语；没有可靠中文答案时阻止生成。FSRS 4.5 保存排程、反馈和下次时间；额外复习使用独立会话，不新增每日周期或重新锁定探索。
-- **个人原文更新**：解锁后可在库中更新未指派的个人原文，必须重新确认完整原文。旧全文与署名保留；新正文按唯一原段落恢复位置，无法定位时回到开头。每日已指派原文禁止更新。
+## 产品入口
 
-## 内容与词典
+- 今日：继续最早未完成周期，精简来源、真实阅读/连线/拼写状态，只保留文章库总量摘要。
+- 文章库：完整本地库存、当前结果数、全部/收藏/稍后/历史可见筛选；收藏和稍后独立持久化。
+- 发现：今日、书库和探索共用 ArticleDiscoveryService，展示真实runID、来源数/阶段/活跃来源、导入/去重/失败及停止。
+- 阅读器：完整离线原文、自然段落/标题/列表/引用、原始offset映射、阅读恢复、三主题/横屏/动态字体；点词显示附近小浮层，箭头进入完整词典。
+- 探索和词汇推荐：完成当前必做后解锁；主题渐变卡、收藏/稍后和紧凑词卡；浏览推荐不会自动加入。
+- 生词：离线搜索、多词性个人编辑、笔记自动保存/草稿恢复、版本历史、安全撤销、JSON/CSV导出。
+- 复习：真实可见曲线连线、按题反馈、持久化拼写与纠正、FSRS4.5、明确延期、简洁完成页和次级日志。
+- 设置：自动保存及失败重试，关于页开发者Why Haoyu、实际Bundle版本/build。
 
-按负责人 2026-11-01 的特别指示，个人模式尝试公开官网完整正文。BBC、Reuters、AP、Guardian、NPR、DW、VOA、NASA、ScienceDaily、Phys.org、Smithsonian 加上 Wikipedia/Wikinews 共 13 个候选适配器；可尝试不代表成功或出版社授权。登录、验证码、付费墙、403 和不完整正文均丢弃，无摘要、URL 或浏览器降级。实际已验证来源与许可调查分别记录在 [来源审查](docs/article-source-eligibility-audit.md)。
+已有周期、全文、笔记、词汇、上下文、排程、已完成及未完成题组保留；升级前备份，失败报错，不删除数据库或要求重装清库。
 
-唯一词典来源为 App 内置 MDX。构建阶段恢复并校验完整文件，原生 C 引擎与 Swift Actor 离线查询，系统 libxml2 解析 HTML，AVSpeechSynthesizer 负责系统发音。不需要 MDD、图片或在线音频，不支持导入其他词典，没有在线回退。MDX 成功确认没有中文释义时，允许创建结构化个人词条；引擎故障不冒充查无此词。旧外部缓存保留历史，但不再用于展示和新题。
+## 文章数据
 
-## 构建和验证
+继续尝试已登记的BBC、Reuters、AP、Guardian、NPR、DW、VOA、NASA、ScienceDaily、Phys.org、Smithsonian、Wikipedia/Wikinews公开完整正文。配置不代表实际成功，逐源尝试/结果分别记录。不绕过登录、验证码或付费墙；完整性/事务检查不通过就放弃，无摘要、链接或WebView阅读降级。原始来源元数据保留在数据层及次级详情。
 
-产品 Debug/Release 目标保持 iOS 27.0；当前 Actions 在 checkout 中临时采用已批准的 iOS 26.5 兼容环境与 Xcode 26.6，不能替代 iOS 27 或真机验收。本地开发容器没有 Swift/Xcode/Simulator，原生运行证据来自 Actions。
+## 实际验证与构建
+
+`4739708` 的 [42657203329](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42657203329) 完成全目标编译、Release Simulator、227 XCTest/0失败；该轮UI被跳过，不能称完整通过。相同提交的[未签名IPA](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42659832536/artifacts/13692674476) 已下载检查，实际Bundle包含批准MDX，版本0.1.0(20)、最低iOS27.0，未真机安装。
+
+最新已提交布局/上下文批次 `567840f` 的[完整验证](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42918659786)编译成功，230单元229通过/1历史夹具失败，UI未运行。该夹具及逐图发现的问题已继续修改，待新提交验证。当前源码232单元/62UI方法，数量不是执行结果。
+
+产品最低iOS27.0。当前CI Xcode26.6/SDK26.5及临时iOS26.5 Simulator仅为兼容验证，不能冒充iOS27真机验收。Linux开发容器无Xcode/Simulator，真实原生运行由macOS Actions完成。所有旧测试保留；4主UI分组和SE/大屏专项穷尽分配，fail-fast关闭，逐方法核对实际执行，失败也导出原始PNG/xcresult。
 
 ```sh
-xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
 python3 scripts/ci-test-plan.py verify
+python3 scripts/test-bundled-dictionary.py
+xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
 ```
 
-CI 一次编译所有测试，完整单元/真实网络/Release 关卡通过后，4 个穷尽 UI 分组与 SE/大屏专项共享相同编译产物；新 main 提交取消旧运行，任一分组失败取消其余分组。失败日志、原生截图和 xcresult 仍保留。完整 PNG 包由同一次运行合并并核验 SHA，含 manifest、CSV 和逐张索引。尚未完成的最终证据不以历史绿色运行代替。
-
-规范：[SPEC](SPEC.md)、[补充规范](docs/spec-addendum-content-and-dictionary.md)、[本轮计划](docs/plans/round-3-development-plan.md)、[需求追踪](docs/requirements-traceability.md)、[测试计划](docs/test-plan.md)、[架构](docs/architecture.md)。Round 2 历史结果保留在原始独立审核和交付报告中，不作为当前提交结果。
-
-
-## Round 3截图下载
-
-[完整原生截图artifact](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391/artifacts/13139234028)；[327张逐图编号与文件名](artifacts/round-3/screenshots/INDEX.md)；[138项覆盖核对](artifacts/round-3/screenshots/COVERAGE.md)。该产物属于上述已通过代码，后续仅文档提交不会改变其来源。
+[主规范](SPEC.md) · [Round4规范](docs/plans/round-4-development-specification.md) · [词典补充](docs/plans/round-4-dictionary-detail-addendum.md) · [架构](docs/architecture.md) · [追踪](docs/requirements-traceability.md) · [测试计划](docs/test-plan.md) · [安装说明](docs/signing.md)。历史Round3结果单独保留于[原交付报告](docs/reviews/round-3-final-delivery-2026-11-02.md)，不得作为本轮通过证据。

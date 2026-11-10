@@ -81,6 +81,25 @@ final class Round4UITests: XCTestCase {
         XCTAssertFalse(app.textFields["personal-meaning"].exists)
         capture("R4-F23-reliable-lock", app: app, feature: "vocabulary-detail", state: "reliable-Chinese-locks-personal-senses-not-notes")
     }
+    func testTodayCompactSourceInventoryAndVisibleLibraryScopes() throws {
+        let app = launch("round4-mdx-production")
+        XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["个人导入"].exists)
+        for fragment in ["按负责人", "原始版权归属保留", "local-user-confirmation"] {
+            XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", fragment)).count, 0)
+        }
+        capture("R4-P01-today", app: app, feature: "today", state: "compact-registered-source-no-internal-attribution", provenance: "explicit-original-article-real-Repository-real-MDX-production-path-not-live-publisher")
+        let summary = app.buttons["article-library-body"]; reach(summary, app: app)
+        XCTAssertTrue(summary.label.contains("1 篇"))
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 0)
+        capture("R4-P03-inventory-summary", app: app, feature: "today-library", state: "one-local-article-summary-without-duplicate-article-list")
+        summary.tap()
+        XCTAssertTrue(app.staticTexts["共 1 篇"].waitForExistence(timeout: 10))
+        let scopes = app.segmentedControls["library-mode-filter"]
+        XCTAssertTrue(scopes.exists); XCTAssertEqual(scopes.buttons.count, 4)
+        XCTAssertTrue(scopes.buttons["全部"].exists); XCTAssertTrue(scopes.buttons["历史"].exists)
+        capture("R4-P04-library-scopes", app: app, feature: "library", state: "full-inventory-and-four-visible-scopes")
+    }
     func testReaderCompleteTitleTenRotationsAndThreeCompactThemes() throws {
         let app = launch("round4-reader"); reader(app)
         let title = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS 'A complete original English title'")).firstMatch

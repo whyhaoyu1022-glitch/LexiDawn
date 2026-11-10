@@ -218,9 +218,21 @@ actor DictionaryAggregator {
 @MainActor final class DictionaryCacheRepository {
     private let writer: RepositoryWriter
     init(context: ModelContext) { writer = RepositoryWriter(context: context) }
+    func mdxRecordHints(_ lemma: String) throws -> [Int] {
+        try writer.read { context in
+            let requested = lemma
+            let records = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>(predicate: #Predicate { $0.lemma == requested })).filter {
+                $0.lemma == lemma && $0.providerID == BundledMDXDictionaryProvider.sourceName &&
+                $0.sourceVersion.hasPrefix(BundledMDXDictionaryProvider.sourceSHA + "-html-")
+            }
+            let senses = try records.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) }
+            return Array(Set(senses.compactMap(MDXEntryIdentity.recordNumber))).sorted()
+        }
+    }
     func load(_ lemma: String, at now: Date) throws -> (senses: [DictionarySense], complete: Bool, date: Date) {
         try writer.read { context in
-            let records = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.lemma == lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
+            let requested = lemma
+            let records = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>(predicate: #Predicate { $0.lemma == requested })).filter { DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
             let valid = try records.map { record -> (DictionaryProviderCacheRecord, [DictionarySense]) in
                 (record, try JSONDecoder().decode([DictionarySense].self, from: record.payload))
             }
@@ -238,15 +250,17 @@ actor DictionaryAggregator {
             guard rows.count <= 1 else { throw PersistenceError.integrity("重复词典资格证据") }
             let eligibility = rows.first ?? DictionaryEligibilityRecord(lemma: lemma, at: now, evidence: "")
             if eligibility.modelContext == nil { context.insert(eligibility) }
+            let previouslyKnown = eligibility.mdxSHA == BundledMDXDictionaryProvider.sourceSHA && eligibility.reliableChineseKnown
             eligibility.mdxSHA = BundledMDXDictionaryProvider.sourceSHA
-            eligibility.reliableChineseKnown = !reliable.isEmpty
+            eligibility.reliableChineseKnown = previouslyKnown || !reliable.isEmpty
             eligibility.lookupStatus = reliable.isEmpty ? (senses.isEmpty ? "notFound" : "noChinese") : "chinese"
             eligibility.lookupError = nil; eligibility.checkedAt = now
             eligibility.evidence = "mdx|" + BundledMDXDictionaryProvider.sourceSHA
             for provider in successful {
                 guard let version = DictionaryAggregator.versions[provider] else { continue }
                 let values = senses.filter { ($0.sources ?? []).contains(provider) && (provider != "Free Dictionary API" || URL(string: $0.licenseURL ?? "")?.host == "creativecommons.org") }
-                let previous = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.key == "en|\(provider)|\(version)|\(lemma)" }
+                let requestedKey = "en|\(provider)|\(version)|\(lemma)"
+                let previous = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>(predicate: #Predicate { $0.key == requestedKey }))
                 if previous.contains(where: { $0.fetchedAt > now }) { continue }
                 for old in previous { context.delete(old) }
                 context.insert(DictionaryProviderCacheRecord(lemma: lemma, provider: provider, version: version, data: try JSONEncoder().encode(values), at: now))

@@ -22,8 +22,10 @@ struct MatchingBoard: View {
             VStack(spacing: 16) {
                 ForEach(left) { question in
                     Button { selected = selected == question.id ? nil : question.id } label: {
-                        Label(question.completed ? "\(number(question)) · " + question.prompt : question.prompt, systemImage: question.completed ? "checkmark.circle.fill" : selected == question.id ? "circle.inset.filled" : "circle")
-                            .frame(maxWidth: .infinity, minHeight: 48)
+                        VStack(spacing: 4) {
+                            Label(question.completed ? "\(number(question)) · " + question.prompt : question.prompt, systemImage: question.completed ? "checkmark.circle.fill" : selected == question.id ? "circle.inset.filled" : "circle")
+                            if !question.completed, selected == question.id { Text("已选择 · 再点一次取消").font(.caption2) }
+                        }.frame(maxWidth: .infinity, minHeight: 48)
                     }.buttonStyle(MatchingOptionStyle(completed: question.completed, selected: selected == question.id))
                         .disabled(question.completed).accessibilityIdentifier("match-word-\(question.prompt)")
                         .accessibilityValue(question.completed ? "已配对" : selected == question.id ? "已选择" : "未配对")
@@ -65,10 +67,10 @@ private struct MatchingOptionStyle: ButtonStyle {
     let completed: Bool, selected: Bool
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .foregroundStyle(completed ? Color.primary : selected ? Color.orange : Color.accentColor)
+            .foregroundStyle(completed ? Color.primary : Color.accentColor)
             .padding(.horizontal, 10).padding(.vertical, 6)
-            .background(completed ? Color.green.opacity(0.12) : selected ? Color.orange.opacity(0.16) : Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
-            .overlay { RoundedRectangle(cornerRadius: 16).strokeBorder(completed ? Color.green : selected ? Color.orange : Color.accentColor.opacity(0.25), lineWidth: selected || completed ? 2 : 1) }
+            .background(completed ? Color.green.opacity(0.12) : Color.accentColor.opacity(selected ? 0.16 : 0.08), in: RoundedRectangle(cornerRadius: 16))
+            .overlay { RoundedRectangle(cornerRadius: 16).strokeBorder(completed ? Color.green : selected ? Color.accentColor : Color.accentColor.opacity(0.25), lineWidth: selected || completed ? 2 : 1) }
             .opacity(configuration.isPressed ? 0.8 : 1)
     }
 }

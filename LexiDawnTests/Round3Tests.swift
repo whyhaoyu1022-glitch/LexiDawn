@@ -407,7 +407,11 @@ private actor CacheRequestProbe: DictionaryProvider {
         try learning.review.submit(cycleID: cycle.cycleID, questionID: original.cloze[0].id, answer: "wrong", at: now)
         try learning.review.submit(cycleID: cycle.cycleID, questionID: original.cloze[0].id, answer: "", hint: true, at: now)
         let legacyContext = ModelContext(app.modelContainer), legacy = try XCTUnwrap(legacyContext.fetch(FetchDescriptor<ReviewExerciseRecord>()).first { $0.stage == "cloze" })
-        legacy.answer = "take"; legacy.prompt = "ta__"; legacy.sourceContext = nil; legacy.contextSnapshotVersion = nil; try legacyContext.save()
+        legacy.answer = "take"; legacy.prompt = "ta__"; legacy.sourceContext = nil; legacy.contextSnapshotVersion = nil
+        // This pre-context historical schema had none of the Round4 range/example columns.
+        // Leaving a current range attached to a nil sentence correctly represents corruption, not a legacy row.
+        legacy.sourceRangeLocation = nil; legacy.sourceRangeLength = nil; legacy.sourceExampleID = nil
+        try legacyContext.save()
         let resumed = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 99, pairCount: 9, clozeCount: 9, at: now)
         let restored = try XCTUnwrap(resumed)
         XCTAssertEqual(restored.cloze[0].answer, "take"); XCTAssertEqual(restored.cloze[0].attempts, 1); XCTAssertTrue(restored.cloze[0].usedHint)

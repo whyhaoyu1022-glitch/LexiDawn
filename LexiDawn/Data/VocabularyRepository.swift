@@ -436,6 +436,12 @@ struct VocabularyAddition {
     }
 }
 
+struct DictionaryTextNote: Codable, Equatable, Identifiable, Sendable {
+    let id: String
+    let label: String
+    let english: String
+    let chinese: String
+}
 struct DictionarySense: Codable, Equatable, Identifiable, Sendable {
     let id: String, en: String, zh: String
     var line: String
@@ -459,6 +465,8 @@ struct DictionarySense: Codable, Equatable, Identifiable, Sendable {
     var policyVersion: String? = nil
     var entryGroupID: String? = nil
     var exampleCollocations: [String]? = nil
+    var usageNotes: [DictionaryTextNote]? = nil
+    var seeAlso: [String]? = nil
 }
 
 struct DictionaryResult: Equatable {
@@ -518,8 +526,7 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
         do {
             senses = try await provider.lookup(key)
             if senses.isEmpty, let native = provider as? BundledMDXDictionaryProvider {
-                let previous = try cache.load(key, at: now).senses
-                let hints = Self.recordHints(previous)
+                let hints = try cache.mdxRecordHints(key)
                 if !hints.isEmpty { senses = try await native.lookupSubentry(key, recordHints: hints) }
             }
             try Task.checkCancellation()
@@ -534,6 +541,9 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
     }
     func subentry(_ headword: String, from parent: DictionaryResult, at now: Date = Date()) async throws -> DictionaryResult {
         let candidates = parent.senses.filter { $0.lexicalHeadword?.caseInsensitiveCompare(headword) == .orderedSame }
+        if candidates.isEmpty, parent.senses.contains(where: { sense in
+            ((sense.seeAlso ?? []) + (sense.synonyms ?? []) + (sense.antonyms ?? [])).contains { $0.caseInsensitiveCompare(headword) == .orderedSame }
+        }) { return try await lookup(headword, at: now) }
         let hints = Self.recordHints(candidates)
         guard let native = provider as? BundledMDXDictionaryProvider, !hints.isEmpty else { throw MDXDictionaryError.invalidEntry("此内部词条缺少 MDX 记录身份") }
         let senses = try await native.lookupSubentry(headword, recordHints: hints)
@@ -543,11 +553,7 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
         return DictionaryResult(headword: key, senses: senses, updatedAt: now, sourceURL: "", licenseURL: "", cached: true, versions: DictionaryAggregator.versions)
     }
     private static func recordHints(_ senses: [DictionarySense]) -> [Int] {
-        Array(Set(senses.filter(BilingualMeaningPolicy.trusted).compactMap { sense -> Int? in
-            let fields = sense.id.split(separator: "|", omittingEmptySubsequences: false)
-            guard fields.count >= 5, fields[0] == "mdx", fields[1] == BundledMDXDictionaryProvider.sourceSHA, let number = Int(fields[2]), number >= 0 else { return nil }
-            return number
-        })).sorted()
+        Array(Set(senses.filter(BilingualMeaningPolicy.trusted).compactMap(MDXEntryIdentity.recordNumber))).sorted()
     }
     func localResult(_ surface: String, at now: Date = Date()) async throws -> DictionaryResult {
         try await lookup(surface, at: now)
