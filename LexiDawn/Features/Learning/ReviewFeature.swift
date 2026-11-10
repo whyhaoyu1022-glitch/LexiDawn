@@ -108,7 +108,7 @@ struct ReviewPracticeContent: View {
                 Text("2 · 拼写 \(session.cloze.filter(\.completed).count)/\(session.cloze.count)").font(.headline)
                 if let sentence = question.context {
                     Text(question.contextOrigin == "personal-example" ? "个人例句" : question.contextOrigin == "dictionary" ? "词典例句" : "保存的原句").font(.caption).foregroundStyle(.secondary)
-                    Text(maskedContext(sentence, answer: question.answer)).font(.body).accessibilityIdentifier("cloze-context")
+                    Text(ClozeContext.mask(sentence, answer: question.answer, targetRange: question.sourceRange)).font(.body).accessibilityIdentifier("cloze-context")
                 }
                 Text(question.prompt).font(.largeTitle.monospaced()).accessibilityIdentifier("cloze-prompt")
                 if let meaning = session.matching.first(where: { $0.entryID == question.entryID })?.answer { Text(meaning).font(.headline) }

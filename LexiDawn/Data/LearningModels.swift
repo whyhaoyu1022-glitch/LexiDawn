@@ -193,6 +193,9 @@ import SwiftData
     var sourceArticleID: String?
     var sourceContextID: String?
     var sourceSurface: String?
+    var sourceRangeLocation: Int?
+    var sourceRangeLength: Int?
+    var sourceExampleID: String?
     var correctionCompletedAt: Date?
     init(sessionID: String, entryID: String, stage: String, position: Int, prompt: String, answer: String, senseID: String) {
         exerciseID = "\(sessionID)|\(stage)|\(entryID)"; self.sessionID = sessionID; self.entryID = entryID

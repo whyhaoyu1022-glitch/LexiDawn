@@ -13,6 +13,8 @@ struct ReviewQuestion: Identifiable, Equatable {
     var contextOrigin: String? = nil
     var maskSeed: String? = nil
     var maskIndices: [Int]? = nil
+    var sourceRange: NSRange? = nil
+    var sourceExampleID: String? = nil
 }
 struct ReviewSessionView: Equatable {
     let id: String
@@ -152,6 +154,8 @@ struct ReviewSessionView: Equatable {
                 question.contextOrigin = exercise.contextOriginKind
                 question.revealed = exercise.revealed
                 question.maskSeed = exercise.maskSeed; question.maskIndices = exercise.maskIndices
+                if let location = exercise.sourceRangeLocation, let length = exercise.sourceRangeLength { question.sourceRange = NSRange(location: location, length: length) }
+                question.sourceExampleID = exercise.sourceExampleID
                 question.meaning = try exercise.meaningSnapshot.map { try JSONDecoder().decode(DictionarySense.self, from: $0) }
                 return question
             }
@@ -225,6 +229,7 @@ struct ReviewSessionView: Equatable {
         let sources = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).sorted { ($0.createdAt, $0.contextID) < ($1.createdAt, $1.contextID) }
         let states = try context.fetch(FetchDescriptor<ReviewStateRecord>())
         let providerCaches = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>())
+        let articles = try context.fetch(FetchDescriptor<ArticleRecord>())
         let ranked = chosen.filter { $0.lemma.filter(\.isLetter).count >= 3 }.sorted { a, b in
             let aLapses = states.first { $0.entryID == a.entryID }?.lapses ?? 0
             let bLapses = states.first { $0.entryID == b.entryID }?.lapses ?? 0
@@ -245,20 +250,25 @@ struct ReviewSessionView: Equatable {
             matching.meaningSnapshot = snapshot; context.insert(matching)
             matching.sourceArticleID = source?.articleID; matching.sourceContextID = source?.contextID; matching.sourceSurface = source?.surface
             if spellingIDs.contains(entry.entryID) {
-                var projection = ClozeContext.make(lemma: entry.lemma, surfaces: source.map { [$0.surface] + entry.surfaceForms } ?? entry.surfaceForms, sentence: source?.sentence)
+                let relativeLocation = source.flatMap { saved -> Int? in
+                    guard saved.contextKind == "reader", let article = articles.first(where: { $0.articleID == saved.articleID }) else { return nil }
+                    return ClozeContext.relativeLocation(sentence: saved.sentence, in: article.rawContent, absoluteLocation: saved.tokenLocation)
+                }
+                var projection = ClozeContext.make(lemma: entry.lemma, surfaces: source.map { [$0.surface] + entry.surfaceForms } ?? entry.surfaceForms, sentence: source?.sentence, preferredLocation: relativeLocation)
                 var contextOrigin = source?.contextKind == "reader" ? "article" : source?.contextKind == "dictionary" ? "dictionary" : "saved-context"
+                var exampleID: String?
                 if projection.sentence == nil, BilingualMeaningPolicy.trusted(sense) {
-                    for example in sense.examples ?? [] {
+                    for (index, example) in (sense.examples ?? []).enumerated() {
                         let value = ClozeContext.make(lemma: entry.lemma, surfaces: entry.surfaceForms, sentence: example)
-                        if value.sentence != nil { projection = value; contextOrigin = "dictionary"; break }
+                        if value.sentence != nil { projection = value; contextOrigin = "dictionary"; exampleID = sense.id + "|example|" + String(index); break }
                     }
                 }
-                if projection.sentence == nil, let data = entry.personalSensesData {
+                if projection.sentence == nil, sense.originKind == "personal", let data = entry.personalSensesData {
                     let personal = try JSONDecoder().decode([PersonalDictionarySense].self, from: data)
-                    let examples = personal.filter(\.reviewReady).flatMap(\.examples)
+                    let examples = personal.filter { $0.reviewReady && $0.dictionarySense(entryID: entry.entryID).id == sense.id }.flatMap(\.examples)
                     for example in examples {
                         let value = ClozeContext.make(lemma: entry.lemma, surfaces: entry.surfaceForms, sentence: example.english)
-                        if value.sentence != nil { projection = value; contextOrigin = "personal-example"; break }
+                        if value.sentence != nil { projection = value; contextOrigin = "personal-example"; exampleID = example.id; break }
                     }
                 }
                 guard projection.sentence != nil else { throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "缺少包含目标词的有效例句，请补充例句或本次延期。", canEditPersonal: !BilingualMeaningPolicy.trusted(sense)) }
@@ -268,6 +278,8 @@ struct ReviewSessionView: Equatable {
                 question.contextOriginKind = contextOrigin
                 question.sourceContext = projection.sentence; question.meaningSnapshot = snapshot; question.maskIndices = mask.indices; question.maskVersion = SpellingMaskPolicy.version
                 question.maskSeed = seed; question.sourceArticleID = source?.articleID; question.sourceContextID = source?.contextID; question.sourceSurface = projection.answer
+                question.sourceRangeLocation = projection.targetRange?.location; question.sourceRangeLength = projection.targetRange?.length
+                question.sourceExampleID = exampleID
                 let originalSenses = try providerCaches.filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) }
                 question.acceptedAnswers = SpellingAnswerPolicy.variants(answer: projection.answer, lemma: entry.lemma, senses: originalSenses)
                 context.insert(question)
@@ -445,6 +457,10 @@ struct ReviewSessionView: Equatable {
     private func validatedExercises(_ session: ReviewSessionRecord, context: ModelContext) throws -> [ReviewExerciseRecord] {
         let exercises = try context.fetch(FetchDescriptor<ReviewExerciseRecord>()).filter { $0.sessionID == session.sessionID }
         let matching = exercises.filter { $0.stage == "matching" }, cloze = exercises.filter { $0.stage == "cloze" }
+        for question in cloze where question.sourceRangeLocation != nil || question.sourceRangeLength != nil {
+            guard let sentence = question.sourceContext, let location = question.sourceRangeLocation, let length = question.sourceRangeLength,
+                  ClozeContext.validates(NSRange(location: location, length: length), answer: question.answer, sentence: sentence) else { throw PersistenceError.integrity("冻结的原句位置无效，保留题组并停止提交") }
+        }
         guard !matching.isEmpty, (!cloze.isEmpty || session.clozeExclusionReason == "targets-under-three-letters" && matching.allSatisfy { $0.prompt.filter(\.isLetter).count < 3 }), Set(matching.map(\.entryID)) == Set(session.selectedEntryIDs),
               matching.count == session.selectedEntryIDs.count, Set(cloze.map(\.entryID)).isSubset(of: Set(session.selectedEntryIDs)),
               Set(exercises.map(\.exerciseID)).count == exercises.count,

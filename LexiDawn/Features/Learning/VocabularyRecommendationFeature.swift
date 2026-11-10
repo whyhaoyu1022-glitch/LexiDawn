@@ -51,7 +51,8 @@ struct VocabularyRecommendationView: View {
                 if model.loading { ProgressView("正在寻找新的词汇…").accessibilityIdentifier("recommendation-loading") }
                 ForEach(model.items) { item in
                     NavigationLink {
-                        DictionaryDetailView(result: item.result, context: item.candidate.sentence, learning: learning, articleID: item.candidate.articleID, automaticAdditionAllowed: false)
+                        DictionaryDetailView(result: item.result, context: item.candidate.sentence, learning: learning, articleID: item.candidate.articleID, automaticAdditionAllowed: false,
+                            sourceToken: .init(surface: item.candidate.surface, range: item.candidate.range, sentence: item.candidate.sentence))
                     } label: {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(item.candidate.lemma).font(.system(.title3, design: .serif).weight(.semibold))

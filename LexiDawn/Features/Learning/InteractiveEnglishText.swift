@@ -246,6 +246,7 @@ final class EnglishTextContainer: UIView {
 struct InlineEnglishText: View {
     let text: String
     let onWord: (EnglishToken) -> Void
+    var emphasized = false
     private var tokens: [EnglishToken] { EnglishTokenizer.tokens(in: text) }
     private var linkedText: AttributedString {
         var value = AttributedString(text)
@@ -258,7 +259,7 @@ struct InlineEnglishText: View {
         return value
     }
     var body: some View {
-        Text(linkedText).font(.system(.body, design: .serif)).lineSpacing(7)
+        Text(linkedText).font(.system(.body, design: .serif).weight(emphasized ? .medium : .regular)).lineSpacing(4).tint(.primary)
             .fixedSize(horizontal: false, vertical: true)
             .environment(\.openURL, OpenURLAction { url in
                 guard url.scheme == "lexidawn-word", let offset = Int(url.lastPathComponent),

@@ -1,0 +1,26 @@
+{
+  "commit": "47397084871c8fff6db9932674f6777c42d75b29",
+  "runURL": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42657203329",
+  "debugBuild": "success",
+  "releaseSimulatorBuild": "success",
+  "xctest": {
+    "executed": 227,
+    "failures": 0,
+    "mdxExecuted": 19
+  },
+  "ui": "skipped-workflow-ancestor-condition-defect",
+  "fullRound4Acceptance": false,
+  "ipa": {
+    "runURL": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42659832536",
+    "artifactID": 13692674476,
+    "bytes": 43719709,
+    "sha256": "06b6eb6d9552221d6387b77893d23476d7edb9f0d746d35f761af6b6aadb04f6",
+    "minimumOSVersion": "27.0",
+    "version": "0.1.0",
+    "build": "20",
+    "architecture": "arm64",
+    "bundleMDXVerifiedAfterDownload": true,
+    "signed": false,
+    "installedOnDevice": false
+  }
+}

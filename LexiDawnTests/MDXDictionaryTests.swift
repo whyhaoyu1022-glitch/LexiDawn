@@ -214,6 +214,56 @@ import AVFoundation
         XCTAssertTrue(senses.allSatisfy { $0.lexicalHeadword == "take off" && $0.sectionKind == "phrasalVerb" })
         XCTAssertTrue(senses.allSatisfy { $0.ipa == nil }, "Do not assign the parent word take's IPA to the phrase take off")
     }
+    func testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let parent = try await learning.dictionary.lookup("nod")
+        let idioms = parent.senses.filter { $0.sectionKind == "idiom" }
+        XCTAssertTrue(idioms.contains { $0.lexicalHeadword == "get the nod" && $0.zh.contains("许可") })
+        XCTAssertTrue(idioms.allSatisfy { $0.ipa == nil && $0.entryGroupID != nil })
+        let child = try await learning.dictionary.subentry("get the nod", from: parent)
+        XCTAssertFalse(child.reliableChinese.isEmpty)
+        XCTAssertTrue(child.senses.allSatisfy { $0.lexicalHeadword == "get the nod" && $0.sectionKind == "idiom" })
+        XCTAssertTrue(child.senses.contains { $0.examples?.contains(where: { $0.contains("team manager") }) == true })
+        let fresh = DictionaryLookupService(context: ModelContext(app.modelContainer))
+        let reopened = try await fresh.lookup("get the nod")
+        XCTAssertEqual(reopened.senses.map(\.id), child.senses.map(\.id))
+        XCTAssertTrue(parent.senses.allSatisfy { ($0.examples ?? []).count == ($0.exampleCollocations ?? []).count })
+    }
+    func testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples() {
+        let sentence = "We visit and visit."
+        let body = sentence + "\n\n" + sentence
+        let absolute = (body as NSString).range(of: "visit", options: .backwards).location
+        let relative = ClozeContext.relativeLocation(sentence: sentence, in: body, absoluteLocation: absolute)
+        XCTAssertEqual(relative, 13)
+        let value = ClozeContext.make(lemma: "visit", surfaces: ["visit"], sentence: sentence, preferredLocation: relative)
+        XCTAssertEqual(value.targetRange, NSRange(location: 13, length: 5))
+        XCTAssertEqual(ClozeContext.mask(sentence, answer: value.answer, targetRange: value.targetRange), "We visit and _____.")
+        XCTAssertNil(ClozeContext.make(lemma: "visit", surfaces: ["visit"], sentence: sentence).sentence)
+        XCTAssertFalse(ClozeContext.validates(NSRange(location: 3, length: 100), answer: "visit", sentence: sentence))
+    }
+    func testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        _ = try await learning.dictionary.lookup("lexidawnselectedexample")
+        let entry = try learning.vocabulary.addDictionaryEntry(headword: "lexidawnselectedexample", at: Date())
+        let first = PersonalDictionarySense(partOfSpeech: "noun", chinese: "第一义", examples: [.init(english: "A lexidawnselectedexample is in the first sense.")], confirmed: true)
+        var selected = PersonalDictionarySense(partOfSpeech: "verb", chinese: "第二义", confirmed: true)
+        try learning.vocabulary.savePersonalSenses(entryID: entry.entryID, senses: [first, selected], at: Date())
+        try learning.vocabulary.confirmReviewMeaning(entryID: entry.entryID, sourceSenseID: selected.dictionarySense(entryID: entry.entryID).id)
+        _ = try learning.content.importArticle(.init(title: "Original sense isolation fixture", body: "This original article establishes a cycle without supplying the target word.", source: "Original XCTest author", rightsConfirmed: true), at: Date())
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: Date(), timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        do { _ = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: Date()); XCTFail("Selected sense has no example") }
+        catch let issue as ReviewMeaningIssue { XCTAssertEqual(issue.entryID, entry.entryID); XCTAssertTrue(issue.canEditPersonal) }
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ReviewExerciseRecord>()), 0)
+        selected.examples = [.init(english: "We lexidawnselectedexample the second sense.", chinese: "第二义的配对例句")]
+        try learning.vocabulary.savePersonalSenses(entryID: entry.entryID, senses: [first, selected], at: Date())
+        try learning.vocabulary.confirmReviewMeaning(entryID: entry.entryID, sourceSenseID: selected.dictionarySense(entryID: entry.entryID).id)
+        let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: Date())
+        let session = try XCTUnwrap(prepared)
+        XCTAssertEqual(session.matching.first?.answer, "第二义")
+        XCTAssertEqual(session.cloze.first?.context, selected.examples[0].english)
+        XCTAssertEqual(session.cloze.first?.sourceExampleID, selected.examples[0].id)
+        XCTAssertNotNil(session.cloze.first?.sourceRange)
+    }
     func testExtraPreflightDeferralPersistsWithoutAnswerOrFSRSUpdate() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
         let now = Date()

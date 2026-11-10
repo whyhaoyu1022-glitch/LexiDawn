@@ -28,6 +28,7 @@ struct ArticleLibraryItem: Identifiable {
     var fetchedAt: Date = .distantPast
     var publishedAt: Date? = nil
     var wordCount: Int = 0
+    var author: String? = nil
 }
 
 struct ArticleAccessError: LocalizedError {
@@ -166,7 +167,7 @@ struct ArticleAccessError: LocalizedError {
                 return ArticleLibraryItem(id: article.articleID, title: article.originalTitle, source: article.sourceAttribution ?? article.sourceID,
                     topics: article.topicTags, minutes: article.estimatedReadMinutes, originalURL: grant?.originalURL,
                     cycleID: cycle.flatMap { UUID(uuidString: $0.cycleID) }, percent: progress?.readingPercent ?? 0,
-                    completed: progress?.completedAt != nil || cycle?.articleTaskStatusRaw == "completed", started: progress != nil, readable: readable, favorite: article.isFavorite, readLater: article.readLater, sourceID: article.sourceID, fetchedAt: article.fetchedAt, publishedAt: article.publishedAt, wordCount: article.wordCount)
+                    completed: progress?.completedAt != nil || cycle?.articleTaskStatusRaw == "completed", started: progress != nil, readable: readable, favorite: article.isFavorite, readLater: article.readLater, sourceID: article.sourceID, fetchedAt: article.fetchedAt, publishedAt: article.publishedAt, wordCount: article.wordCount, author: article.author)
             }
         }
     }

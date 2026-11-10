@@ -10,8 +10,9 @@ final class Round4UITests: XCTestCase {
             capture("R4-diagnostic-" + name.components(separatedBy: " ").last!.replacingOccurrences(of: "]", with: ""), app: XCUIApplication(), feature: "diagnostic", state: "failed-test-actual-screen-not-feature-acceptance") }
         XCUIDevice.shared.orientation = .portrait
     }
-    private func launch(_ scenario: String) -> XCUIApplication {
+    private func launch(_ scenario: String, fontSize: String? = nil) -> XCUIApplication {
         let app = XCUIApplication(); app.launchEnvironment["LEXIDAWN_UI_SCENARIO"] = scenario
+        if let fontSize { app.launchArguments += ["-UIPreferredContentSizeCategoryName", fontSize] }
         app.launchEnvironment["LEXIDAWN_UI_STORE_ID"] = UUID().uuidString; app.launch(); return app
     }
     private func reach(_ element: XCUIElement, app: XCUIApplication, upward: Bool = true, count: Int = 12) {
@@ -45,11 +46,13 @@ final class Round4UITests: XCTestCase {
         let device = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? UIDevice.current.name
         let safe = device.map { $0.isLetter || $0.isNumber || $0 == "-" ? String($0) : "-" }.joined()
         let orientation = XCUIDevice.shared.orientation.isLandscape ? "landscape" : "portrait"
+        let categoryIndex = app.launchArguments.firstIndex(of: "-UIPreferredContentSizeCategoryName")
+        let category = categoryIndex.flatMap { app.launchArguments.indices.contains($0 + 1) ? app.launchArguments[$0 + 1] : nil } ?? UITraitCollection.current.preferredContentSizeCategory.rawValue
         let identifier = id + "-" + theme + "-" + orientation + "-" + safe
         let image = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); image.name = identifier; image.lifetime = .keepAlways; add(image)
         let row: [String: String] = ["screenshotID": identifier, "featureID": feature, "screenName": feature, "state": state, "device": device,
             "orientation": orientation, "theme": theme, "osVersion": UIDevice.current.systemVersion, "testName": name,
-            "fontSize": UITraitCollection.current.preferredContentSizeCategory.rawValue,
+            "fontSize": category,
             "fixtureOrProduction": provenance, "fileName": identifier + ".png", "notes": "Actual native Simulator capture. Reference images and generated images are not screenshots."]
         let data = try! JSONSerialization.data(withJSONObject: row, options: [.sortedKeys])
         let metadata = XCTAttachment(data: data, uniformTypeIdentifier: "public.json"); metadata.name = identifier + "-metadata"; metadata.lifetime = .keepAlways; add(metadata)
@@ -96,6 +99,10 @@ final class Round4UITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         for (theme, label) in [("light", "浅色"), ("dark", "深色"), ("paper", "暖纸色")] {
             app.buttons["reader-appearance"].tap(); app.buttons[label].tap()
+            let dismissed = NSPredicate(format: "exists == false")
+            expectation(for: dismissed, evaluatedWith: app.buttons["关闭外观设置"])
+            waitForExpectations(timeout: 10)
+            XCTAssertTrue(app.buttons["reader-appearance"].isHittable)
             capture("R4-P06-theme-" + theme, app: app, feature: "reader", state: "whole-native-reader-theme", theme: theme)
         }
     }
@@ -217,17 +224,42 @@ final class Round4UITests: XCTestCase {
         capture("R4-P21-real-MDX", app: app, feature: "reader-dictionary", state: "actual-bundled-MDX-compact", provenance: "real-bundled-MDX-with-explicit-original-article")
         app.buttons["dictionary-details"].tap()
         XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.staticTexts["v. 动词"].exists)
-        capture("R4-F22-real-top", app: app, feature: "dictionary-detail", state: "actual-MDX-verb-IPA-examples", provenance: "real-bundled-MDX-with-explicit-original-article")
+        XCTAssertTrue(app.staticTexts["n. 名词"].exists)
+        capture("R4-F22-real-top", app: app, feature: "dictionary-detail", state: "actual-MDX-noun-IPA-examples-reference-hierarchy", provenance: "real-bundled-MDX-with-explicit-original-article")
         let speak = app.buttons["dictionary-system-pronunciation"]; XCTAssertTrue(speak.exists); speak.tap()
         capture("R4-F22-system-pronunciation", app: app, feature: "dictionary-detail", state: "actual-system-pronunciation-start-or-unavailable", provenance: "real-bundled-MDX-and-iOS-system-TTS")
         if speak.label == "停止系统朗读" { speak.tap() }
-        let noun = app.staticTexts["n. 名词"]; reach(noun, app: app)
-        capture("R4-F22-real-middle", app: app, feature: "dictionary-detail", state: "actual-MDX-noun-section", provenance: "real-bundled-MDX-with-explicit-original-article")
+        let verb = app.staticTexts["v. 动词"]; reach(verb, app: app)
+        capture("R4-F22-real-middle", app: app, feature: "dictionary-detail", state: "actual-MDX-verb-section-reference-hierarchy", provenance: "real-bundled-MDX-with-explicit-original-article")
         let phrases = app.staticTexts["短语动词"]; reach(phrases, app: app)
         capture("R4-F22-real-phrases", app: app, feature: "dictionary-detail", state: "actual-MDX-phrasal-verbs", provenance: "real-bundled-MDX-with-explicit-original-article")
+        let nested = app.buttons["dictionary-related-entry-nod off"].firstMatch; reach(nested, app: app); nested.tap()
+        XCTAssertTrue(app.staticTexts["dictionary-full-headword"].waitForExistence(timeout: 10)); XCTAssertEqual(app.staticTexts["dictionary-full-headword"].label, "nod off")
+        capture("R4-F22-real-internal-link", app: app, feature: "dictionary-detail", state: "actual-MDX-subentry-native-navigation", provenance: "real-bundled-MDX-internal-record")
+        app.buttons["关闭详细释义"].tap()
+        XCTAssertTrue(app.buttons["dictionary-related-entry-nod off"].firstMatch.waitForExistence(timeout: 10))
         app.buttons["关闭详细释义"].tap(); app.buttons["close-word"].tap()
         XCTAssertTrue(app.otherElements["reader-body"].firstMatch.exists)
+    }
+    func testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont() throws {
+        let app = launch("round4-mdx-production"); reader(app)
+        for (theme, label) in [("light", "浅色"), ("dark", "深色"), ("paper", "暖纸色")] {
+            app.buttons["reader-appearance"].tap(); app.buttons[label].tap(); tapWord("nod", app: app)
+            expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: app.buttons["dictionary-details"]); waitForExpectations(timeout: 20)
+            app.buttons["dictionary-details"].tap(); XCTAssertTrue(app.staticTexts["dictionary-ipa-summary"].waitForExistence(timeout: 10))
+            capture("R4-F22-reference-top-" + theme, app: app, feature: "dictionary-detail", state: "actual-MDX-reference-headword-POS-numbered-senses", theme: theme, provenance: "real-bundled-MDX")
+            reach(app.staticTexts["v. 动词"], app: app, count: 20)
+            capture("R4-F22-reference-middle-" + theme, app: app, feature: "dictionary-detail", state: "actual-MDX-reference-verb-forms-paired-examples", theme: theme, provenance: "real-bundled-MDX")
+            reach(app.staticTexts["来源：内置 MDX"], app: app, count: 25)
+            capture("R4-F22-reference-end-" + theme, app: app, feature: "dictionary-detail", state: "actual-MDX-idioms-final-sense-bottom-controls-unobscured", theme: theme, provenance: "real-bundled-MDX")
+            app.buttons["关闭详细释义"].tap(); app.buttons["close-word"].tap()
+        }
+        app.terminate()
+        let large = launch("round4-mdx-production", fontSize: "UICTContentSizeCategoryAccessibilityXXXL"); reader(large); tapWord("nod", app: large)
+        expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: large.buttons["dictionary-details"]); waitForExpectations(timeout: 20)
+        large.buttons["dictionary-details"].tap(); XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertTrue(large.buttons["关闭详细释义"].waitForExistence(timeout: 10)); reach(large.staticTexts["n. 名词"], app: large, count: 20)
+        capture("R4-F22-accessibility-landscape", app: large, feature: "dictionary-detail", state: "actual-MDX-AXXXL-landscape-readable-content-and-close-control", provenance: "real-bundled-MDX-explicit-Dynamic-Type-setting")
     }
     func testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails() throws {
         for scenario in ["round4-mdx-missing", "round4-mdx-corrupt"] {

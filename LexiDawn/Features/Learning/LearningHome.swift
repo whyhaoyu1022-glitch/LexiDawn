@@ -66,7 +66,7 @@ struct LiveTodayView: View {
                                 Image(systemName: "chevron.right").font(.caption)
                             }
                         }.accessibilityIdentifier("article-library-body")
-                        Button("发现新文章", systemImage: "arrow.clockwise") { Task { await refreshDiscovered(force: true) } }.disabled(fetching)
+                        Button("发现新文章", systemImage: "arrow.clockwise") { Task { await refreshDiscovered(force: true) } }.disabled(fetching).accessibilityIdentifier("today-discover")
                         DiscoveryProgressCard(service: learning.discovery)
                         if let sourceMessage { Text(sourceMessage).font(.caption).foregroundStyle(.secondary) }
                     }.padding(20).background(.thinMaterial, in: RoundedRectangle(cornerRadius: 22))
@@ -89,10 +89,6 @@ struct LiveTodayView: View {
             .sheet(isPresented: $review) { NavigationStack { ReviewPracticeContent(learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("返回今日") { review = false; reload() } } } } }
         }.reviewEntryGate(reviewGate, learning: learning)
     }
-    private var highlightedArticles: [ArticleLibraryItem] {
-        var seen = Set<String>()
-        return Array(articles.filter { $0.readable && seen.insert($0.sourceID).inserted }.prefix(6))
-    }
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
         return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"
@@ -111,9 +107,10 @@ struct LiveTodayView: View {
             Text(ArticleTitlePresentation.display(snapshot.articleTitle ?? snapshot.cycle.articleID)).font(.system(.title, design: .serif).bold()).fixedSize(horizontal: false, vertical: true)
             if let article = articles.first(where: { $0.id == snapshot.cycle.articleID }) {
                 Text("\(article.topics.joined(separator: " · ")) · 预计 \(article.minutes) 分钟").font(.subheadline)
-                Text(ArticleSourceRegistry.name(article.sourceID)).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                Text([ArticleSourceRegistry.name(article.sourceID), article.author?.isBlank == false ? article.author : nil].compactMap { $0 }.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 ProgressView(value: article.percent) { Text("阅读进度 \(Int(article.percent * 100))%") }.font(.caption)
             }
+            Text("任务日期 " + snapshot.cycle.assignedLocalDate + " · " + (TimeZone(identifier: snapshot.cycle.assignedTimeZoneID)?.abbreviation(for: snapshot.cycle.createdAtUTC) ?? snapshot.cycle.assignedTimeZoneID)).font(.caption).foregroundStyle(.secondary)
             if snapshot.isOverdue { Label("已跨过 \(snapshot.cycle.carryOverCount) 个学习日期，继续原文章", systemImage: "clock").font(.footnote) }
             Button(snapshot.cycle.articleTaskStatus == .completed ? "重新阅读" : snapshot.cycle.articleTaskStatus == .inProgress ? "继续阅读" : "开始阅读") {
                 reader = ReaderRoute(articleID: snapshot.cycle.articleID, cycleID: snapshot.cycle.cycleID)
@@ -275,7 +272,7 @@ struct ExploreArticleCard: View {
                 Image(systemName: "arrow.up.right")
             }.opacity(0.85)
             Text(ArticleTitlePresentation.display(article.title)).font(.system(prominent ? .title2 : .title3, design: .serif).weight(.semibold)).fixedSize(horizontal: false, vertical: true)
-            Text([ArticleSourceRegistry.name(article.sourceID), article.publishedAt.map { $0.formatted(date: .abbreviated, time: .omitted) }, "\(article.minutes)分钟"].compactMap { $0 }.joined(separator: " · "))
+            Text([ArticleSourceRegistry.name(article.sourceID), article.author?.isBlank == false ? article.author : nil, article.publishedAt.map { $0.formatted(date: .abbreviated, time: .omitted) }, "\(article.minutes)分钟"].compactMap { $0 }.joined(separator: " · "))
                 .font(.caption).opacity(0.85).fixedSize(horizontal: false, vertical: true)
         }.frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(.white)
     }

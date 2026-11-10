@@ -319,9 +319,11 @@ struct VocabularyAddition {
         }
     }
     /// Explicit dictionary action. A dictionary word does not need a fabricated article.
-    func addDictionaryEntry(headword: String, at now: Date) throws -> VocabularyAddition {
+    func addDictionaryEntry(headword: String, surface: String? = nil, context sentence: String = "", at now: Date) throws -> VocabularyAddition {
         let lemma = EnglishTokenizer.lemma(headword), type = lemma.contains(" ") ? "phrase" : "word"
+        let original = surface?.trimmingCharacters(in: .whitespacesAndNewlines) ?? headword
         guard !lemma.isBlank, lemma.count <= 100, !EnglishTokenizer.tokens(in: lemma).isEmpty else { throw LearningError.invalid("请输入有效英文词头。") }
+        guard !original.isBlank, original.count <= 100, EnglishTokenizer.lemma(original, context: sentence) == lemma else { throw LearningError.invalid("原始词形与规范词头不一致，请重新查词。") }
         try normalizeIdentities()
         return try writer.write {
             let context = writer.context
@@ -334,12 +336,13 @@ struct VocabularyAddition {
             if let existing = rows.first {
                 let states = try context.fetch(FetchDescriptor<ReviewStateRecord>()).filter { $0.entryID == existing.entryID }
                 guard states.count == 1 else { throw PersistenceError.integrity("生词复习状态缺失或重复，不能重新添加") }
+                if !existing.surfaceForms.contains(original) { existing.surfaceForms.append(original); existing.revision += 1 }
                 if existing.deletedAt == nil { return VocabularyAddition(entryID: existing.entryID, created: false, token: nil, revision: existing.revision) }
                 existing.deletedAt = nil; existing.addedAt = now; existing.creationToken = token; existing.revision += 1
                 if let state = states.first { state.dueAt = min(state.dueAt, now) }
                 return VocabularyAddition(entryID: existing.entryID, created: true, token: token, revision: existing.revision)
             }
-            let entry = VocabularyEntryRecord(lemma: lemma, surface: headword, type: type, at: now, from: "dictionary", token: token)
+            let entry = VocabularyEntryRecord(lemma: lemma, surface: original, type: type, at: now, from: "dictionary", token: token)
             context.insert(entry); context.insert(ReviewStateRecord(entryID: entry.entryID, at: now))
             return VocabularyAddition(entryID: entry.entryID, created: true, token: token, revision: entry.revision)
         }
@@ -454,6 +457,8 @@ struct DictionarySense: Codable, Equatable, Identifiable, Sendable {
     var lexicalHeadword: String? = nil
     var sectionKind: String? = nil
     var policyVersion: String? = nil
+    var entryGroupID: String? = nil
+    var exampleCollocations: [String]? = nil
 }
 
 struct DictionaryResult: Equatable {
@@ -509,9 +514,14 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
     }
     func lookup(_ surface: String, context: String = "", at now: Date = Date()) async throws -> DictionaryResult {
         let key = EnglishTokenizer.lemma(surface, context: context)
-        let senses: [DictionarySense]
+        var senses: [DictionarySense]
         do {
             senses = try await provider.lookup(key)
+            if senses.isEmpty, let native = provider as? BundledMDXDictionaryProvider {
+                let previous = try cache.load(key, at: now).senses
+                let hints = Self.recordHints(previous)
+                if !hints.isEmpty { senses = try await native.lookupSubentry(key, recordHints: hints) }
+            }
             try Task.checkCancellation()
         } catch is CancellationError { throw CancellationError() }
         catch {
@@ -521,6 +531,23 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
         guard Set(senses.map(\.id)).count == senses.count else { throw MDXDictionaryError.invalidEntry("重复义项身份") }
         try cache.save(key, senses: senses, successful: [BundledMDXDictionaryProvider.sourceName], at: now)
         return DictionaryResult(headword: key, senses: senses, updatedAt: now, sourceURL: "", licenseURL: "", cached: true, versions: DictionaryAggregator.versions)
+    }
+    func subentry(_ headword: String, from parent: DictionaryResult, at now: Date = Date()) async throws -> DictionaryResult {
+        let candidates = parent.senses.filter { $0.lexicalHeadword?.caseInsensitiveCompare(headword) == .orderedSame }
+        let hints = Self.recordHints(candidates)
+        guard let native = provider as? BundledMDXDictionaryProvider, !hints.isEmpty else { throw MDXDictionaryError.invalidEntry("此内部词条缺少 MDX 记录身份") }
+        let senses = try await native.lookupSubentry(headword, recordHints: hints)
+        try Task.checkCancellation()
+        let key = EnglishTokenizer.lemma(headword)
+        try cache.save(key, senses: senses, successful: [BundledMDXDictionaryProvider.sourceName], at: now)
+        return DictionaryResult(headword: key, senses: senses, updatedAt: now, sourceURL: "", licenseURL: "", cached: true, versions: DictionaryAggregator.versions)
+    }
+    private static func recordHints(_ senses: [DictionarySense]) -> [Int] {
+        Array(Set(senses.filter(BilingualMeaningPolicy.trusted).compactMap { sense -> Int? in
+            let fields = sense.id.split(separator: "|", omittingEmptySubsequences: false)
+            guard fields.count >= 5, fields[0] == "mdx", fields[1] == BundledMDXDictionaryProvider.sourceSHA, let number = Int(fields[2]), number >= 0 else { return nil }
+            return number
+        })).sorted()
     }
     func localResult(_ surface: String, at now: Date = Date()) async throws -> DictionaryResult {
         try await lookup(surface, at: now)

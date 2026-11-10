@@ -287,6 +287,8 @@ struct VocabularyDetailView: View {
     @State private var choosingMeaning = false
     @State private var chosenMeaningText: String?
     @State private var selection: WordLookupModel?
+    @State private var relatedRoute: DictionaryRelatedRoute?
+    @State private var relatedTask: Task<Void, Never>?
     @FocusState private var focusedField: String?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dismiss) private var dismiss
@@ -297,16 +299,10 @@ struct VocabularyDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
-                HStack {
-                    Text(item.lemma).font(.system(.largeTitle, design: .serif).weight(.semibold))
-                    Spacer()
-                    Button { speech.toggle(headword: item.lemma) } label: {
-                        Image(systemName: speech.state == .speaking ? "stop.circle" : "speaker.wave.2").frame(width: 44, height: 44)
-                    }.accessibilityLabel(speech.state == .speaking ? "停止系统朗读" : "系统英语朗读")
-                }
+                DictionaryEntryHeader(headword: item.lemma, ipa: DictionaryPresentation.sharedIPA(result?.senses ?? item.dictionarySenses), speech: speech)
                 if speech.state == .unavailable { Text("系统英语语音不可用").font(.caption).foregroundStyle(.secondary) }
                 if item.surfaces != [item.lemma] { Text(item.surfaces.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
-                if let result, !result.usableSenses.isEmpty { DictionaryResultContent(result: result, onExampleWord: { token, sense in lookupWord(token, origin: .dictionary(headword: item.lemma, evidence: sense.line, text: token.sentence)) }) }
+                if let result, !result.usableSenses.isEmpty { DictionaryResultContent(result: result, onExampleWord: { token, sense in lookupWord(token, origin: .dictionary(headword: item.lemma, evidence: sense.line, text: token.sentence)) }, onRelatedEntry: openRelated) }
                 else if result != nil { Label("暂无可靠英中释义，可在下方补充。", systemImage: "text.book.closed").font(.subheadline).foregroundStyle(.secondary) }
                 else if dictionaryError == nil { ProgressView("正在查询英中释义…") }
                 if result == nil, let cacheError = item.dictionaryCacheError { Text(cacheError).font(.caption).foregroundStyle(.secondary) }
@@ -367,13 +363,16 @@ struct VocabularyDetailView: View {
             .onChange(of: focusedField) { _, value in if value == nil { annotation.flush() } }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidHideNotification)) { _ in annotation.flush() }
             .onChange(of: scenePhase) { _, phase in if phase != .active { annotation.flush() } }
-            .onDisappear { annotation.flush(); speech.stop() }
+            .onDisappear { annotation.flush(); speech.stop(); relatedTask?.cancel() }
             .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { focusedField = nil } } }
             .task {
                 do { theme = try dependencies.preferencesRepository.load().readerTheme } catch { annotation.error = error.localizedDescription }
                 chosenMeaningText = item.reviewMeaningText; annotation.refreshPolicy(); await lookup()
             }
             .popover(item: $selection) { WordLookupSheet(model: $0).presentationCompactAdaptation(.popover) }
+            .fullScreenCover(item: $relatedRoute) { route in
+                NavigationStack { DictionaryDetailView(result: route.result, context: "", learning: learning, articleID: item.sourceArticleID, theme: theme, automaticAdditionAllowed: false) }
+            }
             .alert("确认移除词条", isPresented: $removeConfirmation) {
                 Button("取消", role: .cancel) { }
                 Button("确认移除", role: .destructive) { do { annotation.flush(); try learning.vocabulary.remove(entryID: item.id, at: Date()); learning.changed(); dismiss() } catch { annotation.error = error.localizedDescription } }
@@ -383,6 +382,18 @@ struct VocabularyDetailView: View {
         var seen = Set<String>()
         return contexts.filter { seen.insert(($0.originKind ?? "historical") + "|" + $0.sentence).inserted }
     }
+    private func openRelated(_ headword: String) {
+        guard let result else { return }
+        relatedTask?.cancel()
+        relatedTask = Task {
+            do {
+                let value = try await learning.dictionary.subentry(headword, from: result)
+                guard !Task.isCancelled else { return }
+                relatedRoute = DictionaryRelatedRoute(result: value)
+            } catch is CancellationError { }
+            catch { if !Task.isCancelled { annotation.error = error.localizedDescription } }
+        }
+    }
     private var personalEditor: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
@@ -391,10 +402,12 @@ struct VocabularyDetailView: View {
                 Button("添加义项", systemImage: "plus") { annotation.senses.append(PersonalDictionarySense()) }.font(.subheadline)
             }
             Text("MDX 已确认没有中文释义。个人义项需确认词性和中文后才用于新题，已有题目保持原答案。").font(.caption).foregroundStyle(.secondary)
+            if let chosenMeaningText { Text("当前学习义项：" + chosenMeaningText).font(.subheadline).foregroundStyle(.secondary) }
             ForEach($annotation.senses) { $sense in
                 PersonalSenseEditor(sense: $sense, focusedField: $focusedField,
                     moveUp: { moveSense(sense.id, delta: -1) }, moveDown: { moveSense(sense.id, delta: 1) },
-                    remove: { focusedField = nil; annotation.senses.removeAll { $0.id == sense.id } })
+                    remove: { focusedField = nil; annotation.senses.removeAll { $0.id == sense.id } },
+                    select: { choosePersonal(sense.id) })
             }
         }
     }
@@ -410,9 +423,17 @@ struct VocabularyDetailView: View {
         do { try learning.vocabulary.confirmReviewMeaning(entryID: item.id, sourceSenseID: sense.id); chosenMeaningText = sense.zh; choosingMeaning = false; learning.changed() }
         catch { annotation.error = error.localizedDescription }
     }
+    private func choosePersonal(_ senseID: String) {
+        focusedField = nil; annotation.flush()
+        guard annotation.error == nil else { return }
+        do {
+            guard let current = try learning.vocabulary.entries().first(where: { $0.id == item.id }),
+                  let sense = current.personalSenses?.first(where: { $0.id == senseID && $0.reviewReady }) else { throw LearningError.invalid("请先保存并确认这一义项。") }
+            choose(sense.dictionarySense(entryID: item.id))
+        } catch { annotation.error = error.localizedDescription }
+    }
     private func lookupWord(_ token: EnglishToken, origin: VocabularyContextOrigin) {
-        guard let articleID = item.sourceArticleID else { return }
-        selection = WordLookupModel(token: token, articleID: articleID, autoAdd: false, learning: learning, depth: 1, origin: origin)
+        selection = WordLookupModel(token: token, articleID: item.sourceArticleID, autoAdd: false, learning: learning, depth: 1, origin: origin)
     }
 }
 
@@ -422,6 +443,7 @@ private struct PersonalSenseEditor: View {
     let moveUp: () -> Void
     let moveDown: () -> Void
     let remove: () -> Void
+    let select: () -> Void
     private func optional(_ path: WritableKeyPath<PersonalDictionarySense, String?>) -> Binding<String> {
         Binding(get: { sense[keyPath: path] ?? "" }, set: { sense[keyPath: path] = $0.isBlank ? nil : $0 })
     }
@@ -441,6 +463,7 @@ private struct PersonalSenseEditor: View {
                 Text("待补充").tag("")
                 ForEach(BilingualMeaningPolicy.parts, id: \.self) { Text(BilingualMeaningPolicy.partName($0)).tag($0) }
             }.accessibilityIdentifier("personal-part-of-speech")
+            if sense.reviewReady { Button("用这一义项复习", action: select).buttonStyle(.bordered).accessibilityIdentifier("personal-select-" + sense.id) }
             TextField("中文释义", text: $sense.chinese, axis: .vertical).focused($focusedField, equals: sense.id + "zh").accessibilityIdentifier("personal-meaning")
             TextField("英文解释（可选）", text: optional(\.englishDefinition), axis: .vertical).focused($focusedField, equals: sense.id + "en")
             TextField("语法标签（可选）", text: optional(\.grammar)).focused($focusedField, equals: sense.id + "grammar")

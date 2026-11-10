@@ -22,7 +22,7 @@ enum MDXDictionaryError: Error, LocalizedError, Equatable {
 actor BundledMDXDictionaryProvider: DictionaryProvider {
     static let sourceName = "内置 MDX"
     static let sourceSHA = "095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443"
-    static let sourceVersion = sourceSHA + "-html-2"
+    static let sourceVersion = sourceSHA + "-html-3"
     private let resource: URL?
     private var reader: OpaquePointer?
     private var index: [String: [Int]] = [:]
@@ -67,19 +67,31 @@ actor BundledMDXDictionaryProvider: DictionaryProvider {
         if let value = cache[headword] { cacheHits += 1; touch(headword); return value }
         // Exact spelling wins: May never merges the modal may or the hawthorn noun.
         let keys = index[headword] != nil ? [headword] : folded[headword.lowercased()] ?? []
+        let values = try parseRecords(keys.flatMap { index[$0] ?? [] }, headword: headword, subentryOnly: false)
+        remember(values, headword: headword)
+        return values
+    }
+    /// Cache supplies record numbers only as an index hint. Definitions are
+    /// re-read from the SHA-verified MDX and scoped to the requested subentry.
+    func lookupSubentry(_ headword: String, recordHints: [Int]) async throws -> [DictionarySense] {
+        try initialize(); try Task.checkCancellation()
+        let values = try parseRecords(recordHints, headword: headword, subentryOnly: true)
+        guard !values.isEmpty else { throw MDXDictionaryError.invalidEntry("内部词条链接没有可验证内容") }
+        remember(values, headword: headword); return values
+    }
+    private func parseRecords(_ numbers: [Int], headword: String, subentryOnly: Bool) throws -> [DictionarySense] {
         var values: [DictionarySense] = [], seen = Set<String>()
-        for key in keys {
-            for number in index[key] ?? [] {
+        for number in numbers {
                 for (target, html) in try records(number, path: []) {
                     try Task.checkCancellation()
-                    for sense in try MDXEntryParser.parse(html, requested: headword, recordID: target) where seen.insert(sense.id).inserted { values.append(sense) }
+                    for sense in try MDXEntryParser.parse(html, requested: headword, recordID: target, subentryOnly: subentryOnly) where seen.insert(sense.id).inserted { values.append(sense) }
                 }
-            }
         }
-        try Task.checkCancellation()
+        try Task.checkCancellation(); return values
+    }
+    private func remember(_ values: [DictionarySense], headword: String) {
         cache[headword] = values; touch(headword)
         while recent.count > 128 { let oldest = recent.removeFirst(); cache.removeValue(forKey: oldest) }
-        return values
     }
     private func touch(_ key: String) { recent.removeAll { $0 == key }; recent.append(key) }
     private func records(_ number: Int, path: Set<Int>) throws -> [(String, String)] {
@@ -143,7 +155,7 @@ enum MDXEntryParser {
         value.replacingOccurrences(of: "ˌ", with: "").replacingOccurrences(of: "ˈ", with: "").replacingOccurrences(of: "↔", with: " ")
             .split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
-    static func parse(_ html: String, requested: String, recordID: String) throws -> [DictionarySense] {
+    static func parse(_ html: String, requested: String, recordID: String, subentryOnly: Bool = false) throws -> [DictionarySense] {
         let data = Array(html.utf8)
         guard let document = data.withUnsafeBytes({ raw in ld_html_parse(raw.baseAddress?.assumingMemoryBound(to: CChar.self), raw.count) }) else { throw MDXDictionaryError.invalidEntry("HTML 无法解析") }
         defer { ld_html_close(document) }
@@ -151,7 +163,7 @@ enum MDXEntryParser {
         let root = Node(pointer: pointer)
         let entries = root.has("entry") ? [root] : root.descendants("entry")
         guard !entries.isEmpty else { throw MDXDictionaryError.invalidEntry("词条结构缺失") }
-        var senses: [DictionarySense] = []
+        var senses: [DictionarySense] = [], requiresSubentry = false, matchedEntry = false
         for entry in entries {
             let head = entry.descendants("t-h").first?.text ?? requested
             let part = entry.descendants("t-pos").first?.text
@@ -164,25 +176,33 @@ enum MDXEntryParser {
             var definitions = entry.descendants("t-def")
             // Phrase aliases can point at their parent page. Isolate matching
             // phrase/idiom subtrees instead of assigning all parent senses to it.
-            if plainHeadword(head).lowercased() != requested.lowercased() && requested.contains(" ") {
-                let phraseGroups = entry.descendants("t-pv-g") + entry.descendants("t-id-g")
+            if plainHeadword(head).lowercased() != requested.lowercased() && (requested.contains(" ") || subentryOnly) {
+                requiresSubentry = true
+                let phraseGroups = entry.descendants("t-pv-g") + entry.descendants("t-idm-g") + entry.descendants("t-id-g")
                 let selected = phraseGroups.filter { group in
-                    (group.descendants("t-pv") + group.descendants("t-id")).contains { plainHeadword($0.text).lowercased() == requested.lowercased() }
+                    (group.descendants("t-pv") + group.descendants("t-idm") + group.descendants("t-id")).contains { plainHeadword($0.text).lowercased() == requested.lowercased() }
                 }
                 definitions = selected.flatMap { $0.descendants("t-def") }
-                guard !definitions.isEmpty else { throw MDXDictionaryError.invalidEntry("该短语链接未能唯一对应原词条，请重试完整词头") }
-            }
+                if definitions.isEmpty { continue }
+                matchedEntry = true
+            } else { matchedEntry = true }
             for (ordinal, definition) in definitions.enumerated() {
-                let scope = definition.ancestor(["t-licontent", "t-sn-blk", "t-pv-g", "t-id-g"]) ?? definition
+                let scope = definition.ancestor(["t-sn-g", "t-licontent", "t-sn-blk-nolist", "t-sn-blk", "t-pv-g", "t-idm-g", "t-id-g"]) ?? definition
                 let chinese = definition.descendants("t-chn").map(\.text).joined(separator: "；")
                 let english = definition.descendants("t-eng").map(\.text).joined(separator: " ")
                 let examples = scope.descendants("t-x").map { node in
-                    (node.descendants("t-eng").map(\.text).joined(separator: " "), node.descendants("t-chn").map(\.text).joined(separator: " "))
+                    (node.descendants("t-eng").map(\.text).joined(separator: " "), node.descendants("t-chn").map(\.text).joined(separator: " "),
+                     node.ancestor(["t-x-g-blk"])?.descendants("t-cf").map(\.text).joined(separator: " · ") ?? "")
                 }.filter { !$0.0.isEmpty }
-                let phrase = definition.ancestor(["t-pv-g", "t-id-g"])
-                let phraseHead = phrase.flatMap { ($0.descendants("t-pv") + $0.descendants("t-id")).first?.text }
-                let labels = ["t-label", "t-gram", "t-reg", "t-geo", "t-use"].flatMap { scope.descendants($0).map(\.text) }
-                let collocations = scope.descendants("t-cf").map(\.text)
+                let phrase = definition.ancestor(["t-pv-g", "t-idm-g", "t-id-g"])
+                let phraseHead = phrase.flatMap { ($0.descendants("t-pv") + $0.descendants("t-idm") + $0.descendants("t-id")).first?.text }
+                let localLabels = ["t-label", "t-gram", "t-reg", "t-geo", "t-use"].flatMap { scope.descendants($0).map(\.text) }
+                let groupLabels = phrase?.children.first(where: { $0.has("t-top-g") }).map { top in
+                    ["t-label", "t-gram", "t-reg", "t-geo", "t-use"].flatMap { top.descendants($0).map(\.text) }
+                } ?? []
+                let labels = Array(NSOrderedSet(array: localLabels + groupLabels)) as? [String] ?? []
+                let pairedCollocations = Set(examples.flatMap { $0.2.components(separatedBy: " · ") }.filter { !$0.isEmpty })
+                let collocations = scope.descendants("t-cf").map(\.text).filter { !pairedCollocations.contains($0) }
                 let sourceID = entry.attribute("data-hkoup-entry")
                 var sense = DictionarySense(id: "mdx|" + BundledMDXDictionaryProvider.sourceSHA + "|" + recordID + "|" + sourceID + "|" + String(ordinal),
                     en: english, zh: chinese, line: BundledMDXDictionaryProvider.sourceName,
@@ -194,11 +214,14 @@ enum MDXEntryParser {
                 sense.lexicalHeadword = phraseHead.map(plainHeadword) ?? head
                 sense.sectionKind = phrase?.has("t-pv-g") == true ? "phrasalVerb" : phrase != nil ? "idiom" : nil
                 sense.policyVersion = BilingualMeaningPolicy.version
+                sense.entryGroupID = recordID + "|" + sourceID
+                sense.exampleCollocations = examples.map(\.2)
                 senses.append(sense)
             }
             // Some real MDX records are index/help pages. They are successful
             // records with no Chinese senses, distinct from parser/resource errors.
         }
+        if requiresSubentry && !matchedEntry { throw MDXDictionaryError.invalidEntry("该短语链接未能对应原词条，请重试完整词头") }
         return senses
     }
 }

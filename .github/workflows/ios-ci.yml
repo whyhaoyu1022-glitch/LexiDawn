@@ -252,6 +252,7 @@ jobs:
   ui-tests:
     name: Native UI · ${{ matrix.suite }} · ${{ matrix.device }}
     needs: build-and-test
+    if: ${{ always() && !cancelled() && needs.build-and-test.result == 'success' }}
     runs-on: macos-latest
     strategy:
       fail-fast: false
@@ -282,6 +283,7 @@ jobs:
           test "${#TEST_SELECTORS[@]}" -gt 0
           TEST_RUN_FILE="$(python3 -c 'import os,pathlib; print(next((pathlib.Path(os.environ["RUNNER_TEMP"])/"LexiDawn-derived/Build/Products").glob("*.xctestrun")))')"
           xcodebuild test-without-building -xctestrun "$TEST_RUN_FILE" -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/ui.xcresult" "${TEST_SELECTORS[@]}" 2>&1 | tee "${RUNNER_TEMP}/ui.log"
+          python3 scripts/verify-ui-execution.py "${RUNNER_TEMP}/ci-tests.txt" "${RUNNER_TEMP}/ui.log"
       - name: Export untouched native screenshots and metadata on success or failure
         if: always()
         run: |
@@ -320,6 +322,18 @@ jobs:
             ${{ runner.temp }}/ui.log
             ${{ runner.temp }}/ci-tests.txt
           if-no-files-found: error
+
+  ui-completion-gate:
+    name: Require all native UI shards to finish
+    needs: [build-and-test, ui-tests]
+    if: ${{ always() && !cancelled() && needs.build-and-test.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject skipped or failed native verification
+        env:
+          UI_RESULT: ${{ needs.ui-tests.result }}
+        run: |
+          test "$UI_RESULT" = success || { echo "Native UI verification is $UI_RESULT, not passed."; exit 1; }
 
   combined-native-evidence:
     name: Combine original PNG evidence and complete index

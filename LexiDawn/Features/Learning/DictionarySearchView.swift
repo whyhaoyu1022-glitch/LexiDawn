@@ -83,14 +83,15 @@ struct DictionarySearchView: View {
                     do { theme = try dependencies.preferencesRepository.load().readerTheme } catch { saveError = error.localizedDescription }
                 }
                 .fullScreenCover(isPresented: $details) {
-                    if let result = model.result { NavigationStack { DictionaryDetailView(result: result, context: "", learning: learning, articleID: nil, theme: theme, automaticAdditionAllowed: false) } }
+                    if let result = model.result { NavigationStack { DictionaryDetailView(result: result, context: "", learning: learning, articleID: nil, theme: theme, automaticAdditionAllowed: false,
+                        sourceToken: .init(surface: model.query.trimmingCharacters(in: .whitespacesAndNewlines), range: NSRange(location: 0, length: (model.query as NSString).length), sentence: "")) } }
                 }
                 .sheet(item: $editing) { item in NavigationStack { VocabularyDetailView(item: item, learning: learning) } }
         }
     }
     private func createPersonal(_ result: DictionaryResult) {
         do {
-            let addition = try learning.vocabulary.addDictionaryEntry(headword: result.headword, at: Date())
+            let addition = try learning.vocabulary.addDictionaryEntry(headword: result.headword, surface: model.query, at: Date())
             guard try learning.vocabulary.personalEditingAllowed(entryID: addition.entryID) else { throw LearningError.invalid("该词已有 MDX 中文释义，不能创建个人义项。") }
             guard let item = try learning.vocabulary.entries().first(where: { $0.id == addition.entryID }) else { throw LearningError.invalid("保存的词条尚未读取成功，请重试。") }
             editing = item; saveError = nil; learning.changed()
