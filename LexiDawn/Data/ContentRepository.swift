@@ -273,10 +273,14 @@ struct URLSessionArticleClient: ArticleHTTPClient {
 
 /// Display-only normalization preserves stored provenance and article identity.
 enum ArticleTitlePresentation {
-    static func display(_ title: String) -> String {
+    static func display(_ title: String, sourceID: String? = nil) -> String {
+        let sourceText: String
+        if sourceID == "sciencedaily" {
+            sourceText = title.replacingOccurrences(of: #"(?<=\p{L})&amp;(?:apos|#39|#x27);(?=\p{L})"#, with: "'", options: [.regularExpression])
+        } else { sourceText = title }
         let decoded: String
-        do { decoded = title.contains("&") ? try ArticleHTMLExtractor.decodeEntities(title) : title }
-        catch { decoded = title } // Preserve the publisher's visible text if an entity is malformed.
+        do { decoded = sourceID != "user-import" && sourceText.contains("&") ? try ArticleHTMLExtractor.decodeEntities(sourceText) : sourceText }
+        catch { decoded = sourceText } // Keep visible text if a reference is malformed.
         // Repair a feed line break inside an English contraction before collapsing whitespace.
         let joined = decoded.replacingOccurrences(of: #"(?<=\p{L}['’])\h*\R\h*(?=(?:s|t|re|ve|ll|d|m)\b)"#, with: "", options: [.regularExpression, .caseInsensitive])
         return joined.split(whereSeparator: \.isWhitespace).joined(separator: " ")

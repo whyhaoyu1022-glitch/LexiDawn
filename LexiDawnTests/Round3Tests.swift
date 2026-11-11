@@ -523,6 +523,8 @@ private actor CacheRequestProbe: DictionaryProvider {
         XCTAssertEqual(ArticleTitlePresentation.display("  Don&apos;\nt miss:  November&apos;s\r\nnight sky "), "Don't miss: November's night sky")
         XCTAssertEqual(ArticleTitlePresentation.display("What does Trump’\ns election loss mean?"), "What does Trump’s election loss mean?")
         XCTAssertEqual(ArticleTitlePresentation.display("'News'\nreturns on Friday"), "'News' returns on Friday")
+        XCTAssertEqual(ArticleTitlePresentation.display("Don&amp;apos;t miss November&amp;apos;s night sky", sourceID: "sciencedaily"), "Don't miss November's night sky")
+        XCTAssertEqual(ArticleTitlePresentation.display("How to write &amp;apos; in HTML", sourceID: "user-import"), "How to write &amp;apos; in HTML")
     }
     func testSchemaArticleBodyHTMLIsCleanedAndPreservesFinalParagraph() throws {
         let source = try XCTUnwrap(ArticleSourceRegistry.personalSource("bbc"))

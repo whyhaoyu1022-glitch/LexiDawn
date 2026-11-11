@@ -21,7 +21,7 @@ struct ArticleLibraryView: View {
     @State private var editing: ReaderRoute?
     private var visible: [ArticleLibraryItem] {
         let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        return items.filter { $0.readable && (term.isEmpty || ArticleTitlePresentation.display($0.title).localizedStandardContains(term)) &&
+        return items.filter { $0.readable && (term.isEmpty || ArticleTitlePresentation.display($0.title, sourceID: $0.sourceID).localizedStandardContains(term)) &&
             (source == "all" || $0.sourceID == source) && (topic == "all" || $0.topics.contains(topic)) &&
             (mode == "all" || mode == "favorite" && $0.favorite || mode == "later" && $0.readLater || mode == "history" && $0.started) }
             .sorted { newestFirst ? $0.fetchedAt > $1.fetchedAt : $0.fetchedAt < $1.fetchedAt }
@@ -30,8 +30,7 @@ struct ArticleLibraryView: View {
         List {
             LibrarySearchCompletion { searchFocused = false }
             Section {
-                HStack { Text("共 \(items.count) 篇").font(.headline); Spacer(); Text("当前 \(visible.count) 篇").font(.caption).foregroundStyle(.secondary) }.accessibilityIdentifier("library-count")
-                if items.contains(where: { !$0.readable }) { Text("可读 \(items.filter(\.readable).count) 篇 · 历史元数据保留").font(.caption).foregroundStyle(.secondary) }
+                HStack { Text("共 \(items.filter(\.readable).count) 篇").font(.headline); Spacer(); Text("当前 \(visible.count) 篇").font(.caption).foregroundStyle(.secondary) }.accessibilityIdentifier("library-count")
                 Picker("阅读内容", selection: $mode) {
                     Text("全部").tag("all")
                     Text("收藏 \(items.filter { $0.readable && $0.favorite }.count)").tag("favorite")
@@ -45,9 +44,16 @@ struct ArticleLibraryView: View {
             DiscoveryProgressCard(service: learning.discovery)
             if let notice { Text(notice).font(.footnote).accessibilityIdentifier("article-notice") }
             if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red); Button(importFailed ? "重试导入" : "重新读取本地数据") { if importFailed { beginRefresh() } else { load() } } }.accessibilityIdentifier("article-import-error") }
+            if visible.isEmpty, !loading {
+                ContentUnavailableView {
+                    Label("没有匹配的完整文章", systemImage: "books.vertical")
+                } description: {
+                    Text("调整筛选，或导入完整英文原文。")
+                }.accessibilityIdentifier("library-empty")
+            }
             ForEach(visible) { item in
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(ArticleTitlePresentation.display(item.title)).font(.system(.headline, design: .serif))
+                    Text(ArticleTitlePresentation.display(item.title, sourceID: item.sourceID)).font(.system(.headline, design: .serif))
                     Text(([ArticleSourceRegistry.name(item.sourceID)] + item.topics + ["\(item.minutes) 分钟"]).joined(separator: " · "))
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     Text(item.completed ? "已完成 · 可重读" : item.started ? "进行中 \(Int(item.percent * 100))%" : item.cycleID != nil ? "每日必做" : "未读").font(.subheadline)
@@ -73,7 +79,6 @@ struct ArticleLibraryView: View {
                     Button("导入 RFC 8890 完整原文") { do { try learning.content.installBundledRFC(at: Date()); learning.changed(); load() } catch { self.error = error.localizedDescription } }
                 }
             }
-            if visible.isEmpty, !loading { ContentUnavailableView("没有匹配的完整文章", systemImage: "books.vertical", description: Text("调整筛选，或导入有权在本地保存的完整英文原文。")) }
         }
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索完整文章标题")
         .searchFocused($searchFocused)
@@ -108,7 +113,7 @@ struct ArticleLibraryView: View {
         guard !loading else { return }; loading = true; notice = nil; error = nil; importFailed = false; defer { loading = false }
         do { let count = try await learning.discovery.refresh(force: true); try Task.checkCancellation(); learning.changed(); notice = count == 0 ? "没有新文章；本地完整版本保持可读。" : "已导入 \(count) 篇完整原文。"; error = nil }
         catch is CancellationError { load(); learning.changed(); notice = "已停止发现；已完整入库的文章保留。" }
-        catch { importFailed = true; self.error = FullTextImportError.transport.localizedDescription }
+        catch { importFailed = true; self.error = error.localizedDescription }
     }
 }
 
@@ -133,7 +138,7 @@ struct DiscoveryProgressCard: View {
         if service.progress.phase != .idle {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text(service.progress.phase == .running ? "正在发现文章" : service.progress.phase == .cancelled ? "已停止发现" : service.progress.phase == .failed ? "部分来源暂不可用" : "来源检查完成").font(.subheadline.weight(.medium))
+                    Text(service.progress.phase == .running ? "正在发现文章" : service.progress.phase == .cancelled ? "已停止发现" : service.progress.phase == .failed ? "发现未完成" : "来源检查完成").font(.subheadline.weight(.medium))
                     Spacer()
                     Text("\(service.progress.processedSources)/\(service.progress.totalSources)").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                 }
@@ -144,6 +149,16 @@ struct DiscoveryProgressCard: View {
                 }
                 Text("新增\(service.progress.importedCount)篇 · 重复\(service.progress.duplicateCount)篇 · 未导入\(service.progress.failedArticleCount)篇" + (service.progress.failedCount > 0 ? " · \(service.progress.failedCount)个来源未完成" : "")).font(.caption).foregroundStyle(.secondary)
                 if service.progress.phase == .running { Button("停止本次发现") { service.cancelRefresh() }.accessibilityIdentifier("cancel-article-discovery") }
+                if !service.progress.sourceResults.isEmpty {
+                    DisclosureGroup("本次来源结果") {
+                        ForEach(service.progress.sourceResults) { source in
+                            Label(ArticleSourceRegistry.name(source.id) + " · " + sourceStatus(source.state),
+                                  systemImage: source.checked ? "checkmark.circle" : source.error != nil ? "exclamationmark.circle" : "clock")
+                                .font(.caption).foregroundStyle(.secondary).padding(.vertical, 4)
+                                .accessibilityIdentifier("article-discovery-result-" + source.id)
+                        }
+                    }.font(.subheadline).accessibilityIdentifier("article-discovery-results")
+                }
             }.padding(.vertical, 8)
         }
     }
@@ -151,5 +166,23 @@ struct DiscoveryProgressCard: View {
         service.progress.activeSourceIDs.map { id in
             [ArticleSourceRegistry.name(id), service.progress.stagesBySource[id]].compactMap { $0 }.joined(separator: " · ")
         }.joined(separator: "\n")
+    }
+
+    private func sourceStatus(_ state: DiscoverySourceResult.State) -> String {
+        switch state {
+        case .imported(let count): return "已导入 \(count) 篇"
+        case .noNew: return "没有新文章"
+        case .recentlyChecked: return "近期已检查"
+        case .waitingToRetry: return "等待重试"
+        case .failed(let error, let imported):
+            let status: String
+            switch error {
+            case .storage: status = "本地保存失败"
+            case .transport: status = "连接失败"
+            case .rateLimited: status = "来源暂限流"
+            default: status = "无法取得完整原文"
+            }
+            return imported == 0 ? status : "已导入 \(imported) 篇 · " + status
+        }
     }
 }

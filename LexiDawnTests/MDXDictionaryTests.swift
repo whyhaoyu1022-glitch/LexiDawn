@@ -43,6 +43,8 @@ import AVFoundation
         let visits = try await learning.dictionary.lookup("visits", context: "She visits us every week.")
         XCTAssertEqual(users.headword, "user"); XCTAssertEqual(visits.headword, "visit")
         XCTAssertFalse(users.reliableChinese.isEmpty); XCTAssertFalse(visits.reliableChinese.isEmpty)
+        XCTAssertEqual(visits.quickSenses.first?.partOfSpeech, "verb")
+        XCTAssertTrue(visits.senses.contains { $0.partOfSpeech == "noun" })
         XCTAssertEqual(Set(users.versions.keys), [BundledMDXDictionaryProvider.sourceName])
     }
     func testRealMDXConcurrentRapidQueriesAndCacheKeepStableSenseIDs() async throws {

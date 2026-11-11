@@ -312,6 +312,38 @@ import SwiftData
         XCTAssertEqual((raw as NSString).substring(with: projection.rawRange(displayRange)), "final")
         XCTAssertEqual(projection.displayOffset(projection.rawOffset(displayRange.location)), displayRange.location)
         XCTAssertTrue(ReaderTextProjection(raw: raw, sourceID: "nasa").text.contains("To view this video"))
+        let player = "To view this video please enable JavaScript, and consider upgrading to a web browser that supports HTML5 video."
+        let document = ArticleDocument(blocks: [
+            .init(kind: .heading, text: "Media technology"),
+            .init(kind: .paragraph, text: player),
+            .init(kind: .quotation, text: "A real explanation of JavaScript and HTML5."),
+            .init(kind: .caption, text: "📷 Caption"),
+            .init(kind: .listItem, text: "Final item", listOrdinal: 3),
+            .init(kind: .paragraph, text: player),
+        ])
+        let wrapped = document.text.replacingOccurrences(of: "JavaScript, and", with: "JavaScript,\r\n and")
+        let projected = ReaderTextProjection(raw: wrapped, document: document, sourceID: "dw")
+        XCTAssertEqual(projected.document?.blocks.map(\.kind), [.heading, .quotation, .caption, .listItem])
+        XCTAssertEqual(projected.document?.blocks.last?.listOrdinal, 3)
+        XCTAssertTrue(projected.text.contains("A real explanation of JavaScript and HTML5."))
+        let final = (projected.text as NSString).range(of: "item")
+        XCTAssertEqual((wrapped as NSString).substring(with: projected.rawRange(final)), "item")
+    }
+
+    func testVocabularyDisplayGroupsPreserveDistinctSentencesAndSeparateDictionaryEvidence() {
+        let url = "https://www.dw.com/en/example/a-1234"
+        let first = VocabularyContextItem(id: "first", articleID: "a", sentence: "Readers need context.", title: "A complete article", attribution: "Original publisher metadata", originalURL: url, originKind: "reader", displaySourceName: "Deutsche Welle")
+        let repeated = VocabularyContextItem(id: "repeat", articleID: "a", sentence: first.sentence, title: first.title, attribution: first.attribution, originalURL: url, originKind: "reader")
+        let another = VocabularyContextItem(id: "another", articleID: "a", sentence: "People need a real example.", title: first.title, attribution: first.attribution, originalURL: url, originKind: "reader")
+        let oldLink = VocabularyContextItem(id: "url", articleID: "a", sentence: url, title: first.title, attribution: first.attribution, originalURL: url)
+        let dictionary = VocabularyContextItem(id: "dict", articleID: "a", sentence: first.sentence, title: "词典释义：need", attribution: "内置 MDX", originalURL: nil, originKind: "dictionary")
+        let evidence = [first, repeated, another, oldLink, dictionary]
+        let groups = VocabularyContextGroup.displayGroups(evidence)
+        XCTAssertEqual(groups.map(\.title), ["A complete article", "词典释义：need"])
+        XCTAssertEqual(groups.first?.sourceName, "Deutsche Welle")
+        XCTAssertEqual(groups.first?.contexts.map(\.id), ["first", "another"])
+        XCTAssertEqual(groups.last?.contexts.map(\.id), ["dict"])
+        XCTAssertEqual(evidence.first(where: { $0.id == "url" })?.originalURL, url)
     }
 
     func testEnglishTranslationTablesKeepChineseLanguageAndPartBoundaries() throws {

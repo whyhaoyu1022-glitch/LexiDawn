@@ -55,8 +55,10 @@ struct VocabularyRecommendationView: View {
                     } label: {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(item.candidate.lemma).font(.system(.title3, design: .serif).weight(.semibold))
-                            if let ipa = item.result.reliableChinese.compactMap(\.ipa).first { Text(ipa).font(.caption).opacity(0.8) }
-                            if let sense = item.result.reliableChinese.first { Text(sense.zh).font(.subheadline).lineLimit(2) }
+                            if let sense = item.result.quickSenses.first(where: BilingualMeaningPolicy.trusted) {
+                                if let ipa = sense.ipa { Text(ipa).font(.caption).opacity(0.8) }
+                                Text(sense.zh).font(.subheadline).lineLimit(2)
+                            }
                             else { Text("暂无英中释义").font(.caption).opacity(0.8) }
                         }.frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(.white).padding(18)
                             .background(LinearGradient(colors: ReadingPalette.colors(topic: item.candidate.topic), startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 20))

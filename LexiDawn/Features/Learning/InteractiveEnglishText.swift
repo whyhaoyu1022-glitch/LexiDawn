@@ -57,14 +57,16 @@ struct InteractiveEnglishText: UIViewRepresentable {
             let foreground: UIColor = theme == "dark" ? .init(white: 0.9, alpha: 1) : theme == "paper" ? .init(red: 0.19, green: 0.16, blue: 0.12, alpha: 1) : theme == "light" ? .black : .label
             view.backgroundColor = theme == "dark" ? .init(white: 0.08, alpha: 1) : theme == "paper" ? .init(red: 0.97, green: 0.94, blue: 0.87, alpha: 1) : theme == "light" ? .white : .systemBackground
             let attributed = NSMutableAttributedString(string: coordinator.projection.text, attributes: [.font: font, .paragraphStyle: paragraph, .foregroundColor: foreground])
-            if let document, coordinator.projection.text == document.text {
-                let ns = document.text as NSString
+            if let document = coordinator.projection.document {
+                let ns = attributed.string as NSString
                 var cursor = 0
                 for block in document.blocks {
                     let range = ns.range(of: block.text, range: NSRange(location: cursor, length: ns.length - cursor))
                     guard range.location != NSNotFound else { continue }
                     if block.kind == .heading {
                         attributed.addAttribute(.font, value: UIFontMetrics(forTextStyle: .headline).scaledFont(for: .systemFont(ofSize: CGFloat(fontSize + 3), weight: .bold)), range: range)
+                    } else if block.kind == .caption {
+                        attributed.addAttribute(.font, value: UIFontMetrics(forTextStyle: .caption1).scaledFont(for: .systemFont(ofSize: CGFloat(max(12, fontSize - 3)))), range: range)
                     } else if block.kind == .quotation || block.kind == .listItem {
                         let indented = NSMutableParagraphStyle(); indented.setParagraphStyle(paragraph)
                         indented.headIndent = 16; indented.firstLineHeadIndent = 16
@@ -107,7 +109,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
                 accessibilityContainer?.configureHeading(title: parent.title, subtitle: parent.subtitle, theme: parent.theme)
                 view.textContainerInset = UIEdgeInsets(top: accessibilityContainer?.headingHeight ?? 12, left: margin, bottom: 24, right: margin)
             }
-            guard !restored, !restoring, let view, view.bounds.height > 0, view.bounds.width > 0, !parent.text.isEmpty else { return }
+            guard !restored, !restoring, let view, view.bounds.height > 0, view.bounds.width > 0, !projection.text.isEmpty else { return }
             restoring = true
             defer { restoring = false }
             view.layoutManager.ensureLayout(for: view.textContainer)

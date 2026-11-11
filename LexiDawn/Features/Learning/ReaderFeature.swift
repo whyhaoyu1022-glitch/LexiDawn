@@ -72,7 +72,7 @@ struct ReaderView: View {
                         catch { model.error = error.localizedDescription }
                     }, document: article.document, onWordAnchor: { point, size in
                         wordAnchor = UnitPoint(x: min(0.96, max(0.04, point.x / max(1, size.width))), y: min(0.96, max(0.04, point.y / max(1, size.height))))
-                    }, title: ArticleTitlePresentation.display(article.title), subtitle: readerSubtitle(article), sourceID: article.sourceID)
+                    }, title: ArticleTitlePresentation.display(article.title, sourceID: article.sourceID), subtitle: readerSubtitle(article), sourceID: article.sourceID)
                 .frame(maxWidth: .infinity, minHeight: 80, maxHeight: .infinity).layoutPriority(1)
                 .popover(item: $selection, attachmentAnchor: .point(wordAnchor), arrowEdge: .top) { selected in
                     WordLookupSheet(model: selected).presentationCompactAdaptation(.popover)
@@ -261,6 +261,7 @@ struct WordLookupSheet: View {
     @EnvironmentObject private var dependencies: AppDependencies
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showDetails = false
+    @State private var closeLookupAfterDetails = false
     @State private var theme = "system"
     @State private var preferencesError: String?
     init(token: EnglishToken, articleID: String, autoAdd: Bool, learning: LearningServices) {
@@ -271,7 +272,9 @@ struct WordLookupSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
                 Text(model.result?.headword ?? EnglishTokenizer.lemma(model.token.surface)).font(.system(.title3, design: .serif).bold()).accessibilityIdentifier("dictionary-headword")
-                if let ipa = model.result?.senses.compactMap(\.ipa).first { Text(ipa).font(.caption).foregroundStyle(.secondary).lineLimit(2) }
+                if let result = model.result, let ipa = result.quickSenses.first?.ipa ?? DictionaryPresentation.sharedIPA(result.senses) {
+                    Text(ipa).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                }
                 Spacer(minLength: 2)
                 Button { dismiss() } label: { Image(systemName: "xmark").font(.caption).frame(width: 44, height: 44) }.accessibilityLabel("关闭查词").accessibilityIdentifier("close-word")
             }
@@ -281,13 +284,19 @@ struct WordLookupSheet: View {
                 Text(error).font(.caption).foregroundStyle(.red).accessibilityIdentifier("dictionary-resource-error")
                 Button("词典暂不可用，重试") { model.startLookup(force: true) }.font(.caption).accessibilityHint(error)
             }
-            if let error = model.vocabularyError { Text(error).font(.caption).foregroundStyle(.red) }
+            if let error = model.vocabularyError {
+                Text(error).font(.caption).foregroundStyle(.red).accessibilityIdentifier("word-save-error")
+            }
             if let preferencesError { Text(preferencesError).font(.caption).foregroundStyle(.red) }
             HStack {
                 if model.addition?.created == true {
                     Button { model.undo() } label: { Label("撤销", systemImage: "checkmark.circle.fill") }.accessibilityIdentifier("undo-word")
                 } else if model.existing { Label("已加入", systemImage: "checkmark.circle").foregroundStyle(.secondary) }
-                else { Button("加入生词本", systemImage: "plus.circle") { model.add(explicit: true) }.accessibilityIdentifier("add-word") }
+                else {
+                    Button(model.vocabularyError == nil ? "加入生词本" : "重试保存生词", systemImage: model.vocabularyError == nil ? "plus.circle" : "arrow.clockwise") {
+                        model.add(explicit: true)
+                    }.accessibilityIdentifier("add-word")
+                }
                 Spacer()
                 Button { showDetails = true } label: { Image(systemName: "arrow.up.right.circle.fill").font(.title2).frame(width: 44, height: 44) }
                     .accessibilityLabel("查看详细释义").accessibilityIdentifier("dictionary-details").disabled(model.loading || model.error != nil || model.result == nil)
@@ -298,9 +307,15 @@ struct WordLookupSheet: View {
             .onAppear { model.startLookup() }
             .onDisappear { if !showDetails { model.cancelLookup() } }
             .onReceive(model.learning.$revision) { _ in model.refreshMembership() }
-            .fullScreenCover(isPresented: $showDetails) {
+            .fullScreenCover(isPresented: $showDetails, onDismiss: {
+                if closeLookupAfterDetails { closeLookupAfterDetails = false; dismiss() }
+            }) {
                 NavigationStack {
-                    DictionaryDetailView(result: model.result ?? DictionaryResult(headword: EnglishTokenizer.lemma(model.token.surface), senses: [], updatedAt: Date(), sourceURL: "", licenseURL: ""), context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth, theme: theme, automaticAdditionAllowed: model.autoAdd, contextOrigin: model.origin, lookupModel: model)
+                    if let result = model.result {
+                        DictionaryDetailView(result: result, context: model.token.sentence, learning: model.learning, articleID: model.articleID, depth: model.depth,
+                            theme: theme, automaticAdditionAllowed: model.autoAdd, contextOrigin: model.origin, lookupModel: model,
+                            closeStack: { closeLookupAfterDetails = true; showDetails = false })
+                    }
                 }.preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
             }
     }
@@ -511,6 +526,7 @@ struct DictionaryDetailView: View {
     var contextOrigin: VocabularyContextOrigin = .reader
     var lookupModel: WordLookupModel? = nil
     var sourceToken: EnglishToken? = nil
+    var closeStack: (() -> Void)? = nil
     @EnvironmentObject private var dependencies: AppDependencies
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
@@ -521,20 +537,13 @@ struct DictionaryDetailView: View {
     @State private var selection: WordLookupModel?
     @State private var relatedRoute: DictionaryRelatedRoute?
     @State private var relatedTask: Task<Void, Never>?
+    @State private var closeAfterRelated = false
     @State private var error: String?
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                DictionaryEntryHeader(headword: result.headword, ipa: DictionaryPresentation.sharedIPA(result.senses), speech: speech)
+                DictionaryEntryHeader(headword: result.headword, ipa: DictionaryPresentation.sharedIPA(result.senses + result.personalSenses), speech: speech)
                 if speech.state == .unavailable { Text("系统英语语音不可用").font(.caption).foregroundStyle(.secondary) }
-                HStack {
-                    if entry != nil {
-                        Label("已加入生词本", systemImage: "checkmark.circle.fill").foregroundStyle(.secondary)
-                        Spacer()
-                        if addition?.created == true { Button("撤销本次加入", action: undo).accessibilityIdentifier("undo-word") }
-                    } else { Button("加入生词本", systemImage: "plus") { add() }.buttonStyle(.bordered).accessibilityIdentifier("add-word") }
-                }.font(.footnote)
-                if let error { Label(error, systemImage: "exclamationmark.circle").font(.footnote).foregroundStyle(.red) }
                 DictionaryResultContent(result: result, onExampleWord: lookup, onRelatedEntry: depth < 3 ? openRelated : nil)
                 let synonyms = Array(Set(result.usableSenses.flatMap { $0.synonyms ?? [] })).filter { $0.lowercased() != result.headword.lowercased() }.sorted()
                 if !synonyms.isEmpty {
@@ -567,28 +576,64 @@ struct DictionaryDetailView: View {
             }.padding(.horizontal, 22).padding(.top, 16).padding(.bottom, 24)
         }.clipped().background(background.ignoresSafeArea())
             .preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
-            .safeAreaInset(edge: .bottom) {
-                HStack(spacing: 20) {
-                    Button { dismiss() } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }.accessibilityLabel("返回查词")
-                    Spacer()
-                    Label(result.headword, systemImage: "book.closed").font(.headline).lineLimit(1)
-                    Spacer()
-                    Button { dismiss() } label: { Image(systemName: "xmark.circle.fill").frame(width: 44, height: 44) }.accessibilityLabel("关闭详细释义")
-                }.padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(reduceTransparency ? AnyShapeStyle(background) : AnyShapeStyle(.regularMaterial), in: Capsule())
-                    .overlay { Capsule().strokeBorder(.primary.opacity(0.08)) }.padding(.horizontal, 20).padding(.bottom, 8)
-            }
+            .safeAreaInset(edge: .bottom) { detailControls }
             .toolbar(.hidden, for: .navigationBar)
             .task { refresh() }.onReceive(learning.$revision) { _ in refresh() }
             .popover(item: $selection) { WordLookupSheet(model: $0).presentationCompactAdaptation(.popover) }
-            .fullScreenCover(item: $relatedRoute) { route in
+            .fullScreenCover(item: $relatedRoute, onDismiss: {
+                if closeAfterRelated { closeAfterRelated = false; closeDetails() }
+            }) { route in
                 NavigationStack {
                     let sentence = route.result.senses.compactMap(\.examples).flatMap { $0 }.first ?? route.result.headword
                     DictionaryDetailView(result: route.result, context: sentence, learning: learning, articleID: nil, depth: depth + 1, theme: theme, automaticAdditionAllowed: false,
-                        contextOrigin: .dictionary(headword: result.headword, evidence: BundledMDXDictionaryProvider.sourceName, text: sentence))
+                        contextOrigin: .dictionary(headword: result.headword, evidence: BundledMDXDictionaryProvider.sourceName, text: sentence),
+                        closeStack: { closeAfterRelated = true; relatedRoute = nil })
                 }
             }
             .onDisappear { speech.stop(); relatedTask?.cancel() }
+    }
+    private var detailControls: some View {
+        VStack(spacing: 6) {
+            if let error {
+                Label(error, systemImage: "exclamationmark.circle").font(.footnote).foregroundStyle(.red)
+                    .padding(8).background(background, in: RoundedRectangle(cornerRadius: 10))
+            }
+            HStack(spacing: 4) {
+                if closeStack != nil {
+                    Button { dismiss() } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
+                        .accessibilityLabel(lookupModel == nil ? "返回上一个词条" : "返回查词")
+                }
+                Spacer(minLength: 0)
+                if entry == nil {
+                    Button(action: add) {
+                        VStack(spacing: 2) {
+                            footerHeadword(icon: "book.closed")
+                            Text("加入生词本").font(.caption)
+                        }.frame(minHeight: 44)
+                    }.accessibilityLabel("加入生词本").accessibilityIdentifier("add-word")
+                } else {
+                    VStack(spacing: 2) {
+                        footerHeadword(icon: "checkmark.circle.fill")
+                        Text("已加入生词本").font(.caption).foregroundStyle(.secondary)
+                    }
+                    if addition?.created == true {
+                        Button(action: undo) { Image(systemName: "arrow.uturn.backward").frame(width: 44, height: 44) }
+                            .accessibilityLabel("撤销本次加入").accessibilityIdentifier("undo-word")
+                    }
+                }
+                Spacer(minLength: 0)
+                Button(action: closeDetails) { Image(systemName: "xmark.circle.fill").frame(width: 44, height: 44) }
+                    .accessibilityLabel("关闭详细释义")
+            }.padding(.horizontal, 8).padding(.vertical, 4)
+                .background(reduceTransparency ? AnyShapeStyle(background) : AnyShapeStyle(.regularMaterial), in: Capsule())
+                .overlay { Capsule().strokeBorder(.primary.opacity(0.08)) }
+        }.padding(.horizontal, 20).padding(.bottom, 8)
+    }
+    private func footerHeadword(icon: String) -> some View {
+        Label(result.headword, systemImage: icon).font(.headline).lineLimit(1)
+    }
+    private func closeDetails() {
+        if let closeStack { closeStack() } else { dismiss() }
     }
     private var background: Color { theme == "paper" ? LexiDawnColor.paperWarm : theme == "dark" ? Color(red: 0.055, green: 0.065, blue: 0.09) : Color(uiColor: .systemBackground) }
     private func openRelated(_ headword: String) {

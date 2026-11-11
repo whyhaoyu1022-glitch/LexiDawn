@@ -24,7 +24,15 @@
       "implementationReview": "今日来源用注册名与真实可选作者；原元数据保留，日期/时区精简。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A01-02",
@@ -46,7 +54,15 @@
       "implementationReview": "今日来源用注册名与真实可选作者；原元数据保留，日期/时区精简。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A01-03",
@@ -68,7 +84,15 @@
       "implementationReview": "今日来源用注册名与真实可选作者；原元数据保留，日期/时区精简。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A01-04",
@@ -90,7 +114,15 @@
       "implementationReview": "今日来源用注册名与真实可选作者；原元数据保留，日期/时区精简。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A01-05",
@@ -112,7 +144,15 @@
       "implementationReview": "今日来源用注册名与真实可选作者；原元数据保留，日期/时区精简。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A02-01",
@@ -128,7 +168,8 @@
         "LexiDawn/Data/ArticleNetwork.swift"
       ],
       "candidateTestSelectors": [
-        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore",
+        "LexiDawnUITests/Round3UITests/testLiveMultipleSourcesLibraryFiltersAndCompleteLocalReaderEvidence"
       ],
       "implementationReview": "三个入口共用真实发现服务；RFC在次级技术文档中。",
       "status": "open-final-native-and-visual-verification-required",
@@ -650,7 +691,16 @@
       "implementationReview": "DOM来源规则清理新文；旧文可恢复投影不改raw/hash。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testMediaFallbackExcludedWithoutDeletingJavaScriptReporting",
+          "LexiDawnTests/Round4Tests/testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A07-02",
@@ -673,7 +723,16 @@
       "implementationReview": "DOM来源规则清理新文；旧文可恢复投影不改raw/hash。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testMediaFallbackExcludedWithoutDeletingJavaScriptReporting",
+          "LexiDawnTests/Round4Tests/testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A07-03",
@@ -696,7 +755,16 @@
       "implementationReview": "DOM来源规则清理新文；旧文可恢复投影不改raw/hash。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testMediaFallbackExcludedWithoutDeletingJavaScriptReporting",
+          "LexiDawnTests/Round4Tests/testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A07-04",
@@ -719,7 +787,16 @@
       "implementationReview": "DOM来源规则清理新文；旧文可恢复投影不改raw/hash。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testMediaFallbackExcludedWithoutDeletingJavaScriptReporting",
+          "LexiDawnTests/Round4Tests/testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A07-05",
@@ -742,7 +819,16 @@
       "implementationReview": "DOM来源规则清理新文；旧文可恢复投影不改raw/hash。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testMediaFallbackExcludedWithoutDeletingJavaScriptReporting",
+          "LexiDawnTests/Round4Tests/testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A08-01",
@@ -763,7 +849,15 @@
       "implementationReview": "统一预检，词条错误补录资格/选义/延期，存储错误不忽略。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A08-02",
@@ -784,7 +878,15 @@
       "implementationReview": "统一预检，词条错误补录资格/选义/延期，存储错误不忽略。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A08-03",
@@ -805,7 +907,15 @@
       "implementationReview": "统一预检，词条错误补录资格/选义/延期，存储错误不忽略。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A08-04",
@@ -826,7 +936,15 @@
       "implementationReview": "统一预检，词条错误补录资格/选义/延期，存储错误不忽略。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A08-05",
@@ -847,7 +965,15 @@
       "implementationReview": "统一预检，词条错误补录资格/选义/延期，存储错误不忽略。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A09-01",
@@ -870,7 +996,15 @@
       "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A09-02",
@@ -893,7 +1027,15 @@
       "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A09-03",
@@ -916,7 +1058,15 @@
       "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A09-04",
@@ -939,7 +1089,15 @@
       "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A09-05",
@@ -962,7 +1120,15 @@
       "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A09-06",
@@ -985,7 +1151,15 @@
       "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A10-01",
@@ -1007,7 +1181,15 @@
       "implementationReview": "真实曲线/编号/虚线，选中可取消；May和may独立来源身份。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A10-02",
@@ -1029,7 +1211,15 @@
       "implementationReview": "真实曲线/编号/虚线，选中可取消；May和may独立来源身份。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A10-03",
@@ -1051,7 +1241,15 @@
       "implementationReview": "真实曲线/编号/虚线，选中可取消；May和may独立来源身份。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A10-04",
@@ -1073,7 +1271,15 @@
       "implementationReview": "真实曲线/编号/虚线，选中可取消；May和may独立来源身份。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A10-05",
@@ -1095,7 +1301,15 @@
       "implementationReview": "真实曲线/编号/虚线，选中可取消；May和may独立来源身份。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A11-01",
@@ -1117,7 +1331,16 @@
       "implementationReview": "保存seed/mask，分散前中后，保留分隔；原句重复词冻结实际选择位置。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testSeededMaskIsStableDistributedAndRetainsSeparators",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A11-02",
@@ -1139,7 +1362,16 @@
       "implementationReview": "保存seed/mask，分散前中后，保留分隔；原句重复词冻结实际选择位置。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testSeededMaskIsStableDistributedAndRetainsSeparators",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A11-03",
@@ -1161,7 +1393,16 @@
       "implementationReview": "保存seed/mask，分散前中后，保留分隔；原句重复词冻结实际选择位置。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testSeededMaskIsStableDistributedAndRetainsSeparators",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A11-04",
@@ -1183,7 +1424,16 @@
       "implementationReview": "保存seed/mask，分散前中后，保留分隔；原句重复词冻结实际选择位置。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testSeededMaskIsStableDistributedAndRetainsSeparators",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A11-05",
@@ -1205,7 +1455,16 @@
       "implementationReview": "保存seed/mask，分散前中后，保留分隔；原句重复词冻结实际选择位置。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testSeededMaskIsStableDistributedAndRetainsSeparators",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A12-01",
@@ -1225,7 +1484,15 @@
       "implementationReview": "实际完成/延期数量，日志次级折叠、无成功重试墙。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A12-02",
@@ -1245,7 +1512,15 @@
       "implementationReview": "实际完成/延期数量，日志次级折叠、无成功重试墙。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A12-03",
@@ -1265,7 +1540,15 @@
       "implementationReview": "实际完成/延期数量，日志次级折叠、无成功重试墙。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A12-04",
@@ -1285,7 +1568,15 @@
       "implementationReview": "实际完成/延期数量，日志次级折叠、无成功重试墙。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A12-05",
@@ -1305,7 +1596,15 @@
       "implementationReview": "实际完成/延期数量，日志次级折叠、无成功重试墙。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A13-01",
@@ -1440,7 +1739,8 @@
         "LexiDawn/Data/VocabularyRepository.swift"
       ],
       "candidateTestSelectors": [
-        "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary"
+        "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary",
+        "LexiDawnTests/Round4Tests/testVocabularyDisplayGroupsPreserveDistinctSentencesAndSeparateDictionaryEvidence"
       ],
       "implementationReview": "按文章分组真实原句，去重复语境和URL，源记录未删除。",
       "status": "open-final-native-and-visual-verification-required",
@@ -1540,7 +1840,8 @@
         "LexiDawn/Features/Learning/ReaderFeature.swift"
       ],
       "candidateTestSelectors": [
-        "LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock"
+        "LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock",
+        "LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation"
       ],
       "implementationReview": "生词与全屏共用词头和完整内容；无重复详细词典入口。",
       "status": "open-final-native-and-visual-verification-required",
@@ -1623,12 +1924,23 @@
       "candidateTestSelectors": [
         "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
         "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
-        "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+        "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors",
+        "LexiDawnUITests/Round4UITests/testActualOfflineSearchCreatesStructuredPersonalEntryAndRestoresAfterRestart"
       ],
       "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+          "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A16-02",
@@ -1651,7 +1963,17 @@
       "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+          "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A16-03",
@@ -1674,7 +1996,17 @@
       "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+          "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A16-04",
@@ -1697,7 +2029,17 @@
       "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+          "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A16-05",
@@ -1720,7 +2062,17 @@
       "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+          "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A16-06",
@@ -1743,7 +2095,17 @@
       "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+          "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A17-01",
@@ -1969,7 +2331,16 @@
       "implementationReview": "揭示保持题目、不自动填入，亲自纠正、Again、事务幂等和恢复。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A19-02",
@@ -1990,7 +2361,16 @@
       "implementationReview": "揭示保持题目、不自动填入，亲自纠正、Again、事务幂等和恢复。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A19-03",
@@ -2011,7 +2391,16 @@
       "implementationReview": "揭示保持题目、不自动填入，亲自纠正、Again、事务幂等和恢复。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A19-04",
@@ -2032,7 +2421,16 @@
       "implementationReview": "揭示保持题目、不自动填入，亲自纠正、Again、事务幂等和恢复。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A19-05",
@@ -2053,7 +2451,16 @@
       "implementationReview": "揭示保持题目、不自动填入，亲自纠正、Again、事务幂等和恢复。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A20-01",
@@ -2305,7 +2712,15 @@
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A22-02",
@@ -2331,7 +2746,15 @@
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A22-03",
@@ -2357,7 +2780,15 @@
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A22-04",
@@ -2383,7 +2814,15 @@
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A22-05",
@@ -2409,7 +2848,15 @@
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A22-06",
@@ -2435,7 +2882,15 @@
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A22-07",
@@ -2461,7 +2916,15 @@
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A22-08",
@@ -2487,7 +2950,15 @@
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A22-09",
@@ -2513,7 +2984,15 @@
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A22-10",
@@ -2539,7 +3018,15 @@
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A22-11",
@@ -2565,7 +3052,15 @@
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A22-12",
@@ -2591,7 +3086,15 @@
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A23-01",
@@ -2619,7 +3122,16 @@
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+          "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A23-02",
@@ -2647,7 +3159,16 @@
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+          "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A23-03",
@@ -2675,7 +3196,16 @@
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+          "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A23-04",
@@ -2703,7 +3233,16 @@
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+          "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A23-05",
@@ -2731,7 +3270,16 @@
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+          "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A23-06",
@@ -2759,7 +3307,16 @@
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+          "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A23-07",
@@ -2787,7 +3344,16 @@
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+          "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A23-08",
@@ -2815,7 +3381,16 @@
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+          "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A23-09",
@@ -2843,7 +3418,16 @@
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+          "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A23-10",
@@ -2871,7 +3455,16 @@
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+          "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A23-11",
@@ -2899,7 +3492,16 @@
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+          "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A23-12",
@@ -2927,7 +3529,16 @@
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+          "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A24-01",
@@ -2955,7 +3566,17 @@
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A24-02",
@@ -2983,7 +3604,17 @@
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A24-03",
@@ -3011,7 +3642,17 @@
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A24-04",
@@ -3039,7 +3680,17 @@
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A24-05",
@@ -3067,7 +3718,17 @@
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A24-06",
@@ -3095,7 +3756,17 @@
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A24-07",
@@ -3123,7 +3794,17 @@
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A24-08",
@@ -3151,7 +3832,17 @@
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A24-09",
@@ -3179,7 +3870,17 @@
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A24-10",
@@ -3207,7 +3908,17 @@
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A24-11",
@@ -3235,7 +3946,17 @@
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     },
     {
       "acceptanceID": "R4-A24-12",
@@ -3263,7 +3984,17 @@
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "priorNativeUnitEvidence": {
+        "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+        "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+        "executedPassingCandidates": [
+          "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+          "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+          "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        ],
+        "acceptanceStillOpen": true
+      }
     }
   ]
 }

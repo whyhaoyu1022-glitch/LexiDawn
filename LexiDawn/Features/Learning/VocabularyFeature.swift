@@ -188,7 +188,7 @@ private struct VocabularyDraft: Codable {
     private let item: VocabularyItem
     private let learning: LearningServices
     private var base: String
-    private var persistedSenses: [PersonalDictionarySense]
+    @Published private(set) var persistedSenses: [PersonalDictionarySense]
     private var checkpoint: Task<Void, Never>?
     private var ready = false
     private var draftURL: URL {
@@ -291,6 +291,7 @@ struct VocabularyDetailView: View {
     @State private var dictionaryError: String?
     @State private var removeConfirmation = false
     @State private var choosingMeaning = false
+    @State private var showingPersonalEditor: Bool
     @State private var chosenMeaningText: String?
     @State private var selection: WordLookupModel?
     @State private var relatedRoute: DictionaryRelatedRoute?
@@ -301,14 +302,24 @@ struct VocabularyDetailView: View {
     init(item: VocabularyItem, learning: LearningServices) {
         self.item = item; self.learning = learning
         _annotation = StateObject(wrappedValue: VocabularyAnnotationModel(item: item, learning: learning))
+        _showingPersonalEditor = State(initialValue: item.personalSenses?.isEmpty != false)
+    }
+    private var displayedResult: DictionaryResult? {
+        guard var result else { return nil }
+        result.personalSenses = annotation.allowed ? annotation.persistedSenses.map { $0.dictionarySense(entryID: item.id) } : []
+        return result
+    }
+    private var displayedIPA: String? {
+        if let result = displayedResult { return DictionaryPresentation.sharedIPA(result.senses + result.personalSenses) }
+        return DictionaryPresentation.sharedIPA(item.dictionarySenses)
     }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
-                DictionaryEntryHeader(headword: item.lemma, ipa: DictionaryPresentation.sharedIPA(result?.senses ?? item.dictionarySenses), speech: speech)
+                DictionaryEntryHeader(headword: item.lemma, ipa: displayedIPA, speech: speech)
                 if speech.state == .unavailable { Text("系统英语语音不可用").font(.caption).foregroundStyle(.secondary) }
                 if item.surfaces != [item.lemma] { Text(item.surfaces.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
-                if let result, !result.usableSenses.isEmpty { DictionaryResultContent(result: result, onExampleWord: { token, sense, text in lookupWord(token, origin: .dictionary(headword: item.lemma, evidence: sense.line, text: text)) }, onRelatedEntry: openRelated) }
+                if let result = displayedResult, !result.usableSenses.isEmpty { DictionaryResultContent(result: result, onExampleWord: { token, sense, text in lookupWord(token, origin: .dictionary(headword: item.lemma, evidence: sense.line, text: text)) }, onRelatedEntry: openRelated) }
                 else if let result { Label(result.hasMDXEntry ? "词典已收录，暂无中文释义" : "词典未收录，可在下方补充。", systemImage: "text.book.closed").font(.subheadline).foregroundStyle(.secondary) }
                 else if dictionaryError == nil { ProgressView("正在查询英中释义…") }
                 if result == nil, let cacheError = item.dictionaryCacheError { Text(cacheError).font(.caption).foregroundStyle(.secondary) }
@@ -328,7 +339,9 @@ struct VocabularyDetailView: View {
                     }.padding(16).background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 18)).accessibilityIdentifier("annotation-draft-conflict")
                 }
                 if annotation.allowed {
-                    personalEditor.disabled(annotation.hasDraftConflict)
+                    DisclosureGroup("编辑个人义项", isExpanded: $showingPersonalEditor) {
+                        personalEditor.disabled(annotation.hasDraftConflict).padding(.top, 12)
+                    }
                 } else {
                     Label(result?.reliableChinese.isEmpty == false ? "使用 MDX 英中释义，个人释义只读" : "等待 MDX 成功验证后开放个人释义", systemImage: "checkmark.shield").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("personal-meaning-disabled")
                     if !annotation.senses.isEmpty {
@@ -341,17 +354,7 @@ struct VocabularyDetailView: View {
                     if !annotation.state.isEmpty { Text(annotation.state).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("annotation-save-state") }
                     if let error = annotation.error { Text(error).font(.caption).foregroundStyle(.red); Button("重试保存", action: annotation.flush) }
                 }.padding(16).background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 18))
-                if !item.sourceContexts.isEmpty {
-                    DisclosureGroup("遇见这个词的句子") {
-                        VStack(alignment: .leading, spacing: 18) {
-                            ForEach(Array(Set(item.sourceContexts.map(\.articleID))).sorted(), id: \.self) { articleID in
-                                let contexts = item.sourceContexts.filter { $0.articleID == articleID }
-                                if let first = contexts.first { Text(first.title).font(.caption.weight(.semibold)).foregroundStyle(.secondary) }
-                                ForEach(uniqueContexts(contexts)) { context in InlineEnglishText(text: context.sentence, onWord: { lookupWord($0, origin: context.lookupOrigin.withText(context.sentence)) }) }
-                            }
-                        }.padding(.top, 12)
-                    }
-                }
+                sourceContexts
                 if let history = item.legacyAnnotations, !history.isEmpty {
                     DisclosureGroup("词形合并前的记录") {
                         ForEach(history) { record in
@@ -368,11 +371,14 @@ struct VocabularyDetailView: View {
             .onChange(of: annotation.notes) { _, _ in annotation.changed() }
             .onChange(of: focusedField) { _, value in if value == nil { annotation.flush() } }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidHideNotification)) { _ in annotation.flush() }
+            .onReceive(learning.$revision) { _ in annotation.refreshPolicy() }
             .onChange(of: scenePhase) { _, phase in if phase != .active { annotation.flush() } }
             .onDisappear { annotation.flush(); speech.stop(); relatedTask?.cancel() }
             .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { focusedField = nil } } }
             .task {
                 do { theme = try dependencies.preferencesRepository.load().readerTheme } catch { annotation.error = error.localizedDescription }
+                showingPersonalEditor = annotation.state == "已恢复未保存草稿" ||
+                    !annotation.persistedSenses.contains { BilingualMeaningPolicy.hasChinese($0.chinese) }
                 chosenMeaningText = item.reviewMeaningText; annotation.refreshPolicy(); await lookup()
             }
             .popover(item: $selection) { WordLookupSheet(model: $0).presentationCompactAdaptation(.popover) }
@@ -385,9 +391,23 @@ struct VocabularyDetailView: View {
                 Button("确认移除", role: .destructive) { do { annotation.flush(); try learning.vocabulary.remove(entryID: item.id, at: Date()); learning.changed(); dismiss() } catch { annotation.error = error.localizedDescription } }
             } message: { Text("历史学习和复习记录保留。") }
     }
-    private func uniqueContexts(_ contexts: [VocabularyContextItem]) -> [VocabularyContextItem] {
-        var seen = Set<String>()
-        return contexts.filter { seen.insert(($0.originKind ?? "historical") + "|" + $0.sentence).inserted }
+    @ViewBuilder private var sourceContexts: some View {
+        let groups = VocabularyContextGroup.displayGroups(item.sourceContexts)
+        if !groups.isEmpty {
+            DisclosureGroup("遇见这个词的句子") {
+                VStack(alignment: .leading, spacing: 18) {
+                    ForEach(groups) { group in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(group.title).font(.subheadline.weight(.semibold))
+                            if let source = group.sourceName { Text(source).font(.caption).foregroundStyle(.secondary) }
+                            ForEach(group.contexts) { context in
+                                InlineEnglishText(text: context.sentence, onWord: { lookupWord($0, origin: context.lookupOrigin.withText(context.sentence)) })
+                            }
+                        }
+                    }
+                }.padding(.top, 12)
+            }
+        }
     }
     private func openRelated(_ headword: String) {
         guard let result else { return }
@@ -408,7 +428,7 @@ struct VocabularyDetailView: View {
                 Spacer()
                 Button("添加义项", systemImage: "plus") { annotation.senses.append(PersonalDictionarySense()) }.font(.subheadline)
             }
-            Text("MDX 已确认没有中文释义。个人义项需确认词性和中文后才用于新题，已有题目保持原答案。").font(.caption).foregroundStyle(.secondary)
+            Text("确认词性和中文释义后，可用于复习。").font(.caption).foregroundStyle(.secondary)
             if let chosenMeaningText { Text("当前学习义项：" + chosenMeaningText).font(.subheadline).foregroundStyle(.secondary) }
             ForEach($annotation.senses) { $sense in
                 PersonalSenseEditor(sense: $sense, focusedField: $focusedField,

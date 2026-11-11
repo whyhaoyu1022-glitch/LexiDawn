@@ -26,7 +26,7 @@ struct RecommendedVocabulary: Identifiable {
             do {
                 let result = try await dictionary.lookup(candidate.lemma, context: candidate.sentence)
                 try Task.checkCancellation()
-                guard !result.usableSenses.isEmpty else { continue }
+                guard !result.reliableChinese.isEmpty else { continue }
                 // Discovery and detail viewing do not call VocabularyRepository.add.
                 onResult(RecommendedVocabulary(candidate: candidate, result: result)); count += 1
                 if count >= limit { break }

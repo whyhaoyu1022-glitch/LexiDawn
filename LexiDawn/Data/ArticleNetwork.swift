@@ -80,11 +80,35 @@ struct DiscoveryProgress: Equatable {
     var processedSources = 0
     var activeSourceIDs: [String] = []
     var stagesBySource: [String: String] = [:]
+    var sourceResults: [DiscoverySourceResult] = []
     var importedCount = 0
     var duplicateCount = 0
     var failedCount = 0
     var failedArticleCount = 0
     var fraction: Double { totalSources == 0 ? 0 : min(1, max(0, Double(processedSources) / Double(totalSources))) }
+}
+struct DiscoverySourceResult: Equatable, Sendable, Identifiable {
+    enum State: Equatable, Sendable {
+        case imported(Int), noNew, recentlyChecked, waitingToRetry, failed(FullTextImportError, imported: Int)
+    }
+    let id: String
+    let state: State
+    var importedCount: Int {
+        switch state {
+        case .imported(let count), .failed(_, let count): return count
+        default: return 0
+        }
+    }
+    var checked: Bool {
+        switch state {
+        case .imported, .noNew: return true
+        default: return false
+        }
+    }
+    var error: FullTextImportError? {
+        if case let .failed(error, _) = state { return error }
+        return nil
+    }
 }
 @MainActor final class ArticleDiscoveryService: ObservableObject {
     @Published private(set) var progress = DiscoveryProgress()
@@ -99,7 +123,6 @@ struct DiscoveryProgress: Equatable {
         self.content = content; self.fetcher = fetcher
         self.sourceIDs = sourceIDs ?? (["wikipedia", "wikinews"] + ArticleSourceRegistry.personalSources.map(\.id))
     }
-    private struct Outcome: Sendable { let sourceID: String, count: Int, succeeded: Bool, error: FullTextImportError? }
     func refresh(force: Bool = false, at now: Date = Date(), onImport: (@MainActor () -> Void)? = nil) async throws -> Int {
         try Task.checkCancellation()
         // Page lifetime does not own the shared operation. Only cancelRefresh()
@@ -111,62 +134,104 @@ struct DiscoveryProgress: Equatable {
     }
     private func performRefresh(force: Bool, at now: Date, onImport: (@MainActor () -> Void)?) async throws -> Int {
         guard !refreshing else { return 0 }
-        refreshing = true; defer { refreshing = false }
-        let ids = sourceIDs.filter(ArticleSourceRegistry.canAttempt)
+        refreshing = true
+        var scheduled = Set<String>()
+        let ids = sourceIDs.filter { ArticleSourceRegistry.canAttempt($0) && scheduled.insert($0).inserted }
         progress = DiscoveryProgress(phase: .running, totalSources: ids.count)
-        var total = 0, successes = 0, failures: [FullTextImportError] = []
-        // At most three source pipelines run concurrently. One source cannot suppress another.
-        try await withThrowingTaskGroup(of: Outcome.self) { group in
-            var next = 0
-            func enqueue(_ id: String) { group.addTask { @MainActor [self] in
-                self.progress.activeSourceIDs.append(id)
-                self.progress.stagesBySource[id] = "发现候选"
-                do { return try await refreshSource(id, force: force, at: now, onImport: {
-                    self.progress.importedCount += 1; onImport?()
-                }) } catch {
-                    self.progress.phase = error is CancellationError ? .cancelled : .failed
-                    self.progress.activeSourceIDs.removeAll { $0 == id }
-                    self.progress.stagesBySource.removeValue(forKey: id)
-                    throw error
+        defer {
+            refreshing = false
+            progress.activeSourceIDs = []
+            progress.stagesBySource = [:]
+        }
+        var total = 0
+        var checked = 0
+        var failures: [FullTextImportError] = []
+        do {
+            try await withThrowingTaskGroup(of: DiscoverySourceResult.self) { group in
+                var next = 0
+                func enqueue(_ id: String) {
+                    group.addTask { @MainActor [self] in
+                        try Task.checkCancellation()
+                        self.progress.activeSourceIDs.append(id)
+                        self.progress.stagesBySource[id] = "发现候选"
+                        return try await refreshSource(id, force: force, at: now, onImport: {
+                            self.progress.importedCount += 1
+                            onImport?()
+                        })
+                    }
                 }
-            } }
-            while next < min(3, ids.count) { enqueue(ids[next]); next += 1 }
-            while let outcome = try await group.next() {
-                progress.processedSources += 1
-                progress.activeSourceIDs.removeAll { $0 == outcome.sourceID }
-                progress.stagesBySource.removeValue(forKey: outcome.sourceID)
-                if outcome.error != nil { progress.failedCount += 1 }
-                total += outcome.count; if outcome.succeeded { successes += 1 }
-                if let error = outcome.error { failures.append(error) }
-                print("ARTICLE_SOURCE_RESULT sourceID=\(outcome.sourceID) imported=\(outcome.count) status=\(outcome.error?.rawValue ?? (outcome.succeeded ? "success" : "fresh-or-backoff"))")
-                if next < ids.count { enqueue(ids[next]); next += 1 }
+                while next < min(3, ids.count) { enqueue(ids[next]); next += 1 }
+                while let result = try await group.next() {
+                    progress.processedSources += 1
+                    progress.activeSourceIDs.removeAll { $0 == result.id }
+                    progress.stagesBySource.removeValue(forKey: result.id)
+                    progress.sourceResults.append(result)
+                    total += result.importedCount
+                    if result.checked { checked += 1 }
+                    if let error = result.error {
+                        failures.append(error)
+                        progress.failedCount += 1
+                    }
+                    print("ARTICLE_SOURCE_RESULT sourceID=\(result.id) imported=\(result.importedCount) status=\(result.error?.rawValue ?? (result.checked ? "success" : "fresh-or-backoff"))")
+                    try Task.checkCancellation()
+                    if next < ids.count { enqueue(ids[next]); next += 1 }
+                }
+            }
+        } catch is CancellationError {
+            progress.phase = .cancelled
+            throw CancellationError()
+        } catch {
+            progress.phase = .failed
+            throw error
+        }
+        if total == 0 && checked == 0 {
+            if let error = failures.first {
+                progress.phase = .failed
+                throw error
+            }
+            if force && progress.sourceResults.contains(where: { $0.state == .waitingToRetry }) {
+                progress.phase = .failed
+                throw FullTextImportError.rateLimited
             }
         }
-        progress.activeSourceIDs = []
-        progress.stagesBySource = [:]
-        if total == 0 && successes == 0, let error = failures.first { progress.phase = .failed; throw error }
         progress.phase = .completed
         return total
     }
-    private func refreshSource(_ id: String, force: Bool, at now: Date, onImport: (@MainActor () -> Void)?) async throws -> Outcome {
+
+    private func refreshSource(_ id: String, force: Bool, at now: Date, onImport: (@MainActor () -> Void)?) async throws -> DiscoverySourceResult {
+        var imported = 0
+        let didImport: @MainActor () -> Void = {
+            imported += 1
+            onImport?()
+        }
         do {
             let stored = try content.sourceRefreshState(id)
-            if !force, let success = stored.success, now.timeIntervalSince(success) < 3600 { return Outcome(sourceID: id, count: 0, succeeded: false, error: nil) }
-            if let retry = stored.retryAfter, retry > now { return Outcome(sourceID: id, count: 0, succeeded: false, error: force ? .rateLimited : nil) }
+            if !force, let success = stored.success, now.timeIntervalSince(success) < 3600 {
+                return .init(id: id, state: .recentlyChecked)
+            }
+            if let retry = stored.retryAfter, retry > now {
+                return .init(id: id, state: .waitingToRetry)
+            }
             try content.recordSourceRefresh(id, beginning: true, at: now)
             let count: Int
-            if id == "wikipedia" || id == "wikinews" { count = try await importWikimedia(id, at: now, onImport: onImport) }
-            else if let source = ArticleSourceRegistry.personalSource(id) { count = try await importPublisher(source, at: now, onImport: onImport) }
-            else { throw FullTextImportError.rights }
+            if id == "wikipedia" || id == "wikinews" {
+                count = try await importWikimedia(id, at: now, onImport: didImport)
+            } else if let source = ArticleSourceRegistry.personalSource(id) {
+                count = try await importPublisher(source, at: now, onImport: didImport)
+            } else {
+                throw FullTextImportError.rights
+            }
             try content.recordSourceRefresh(id, beginning: false, at: now)
-            return Outcome(sourceID: id, count: count, succeeded: true, error: nil)
-        } catch is CancellationError { throw CancellationError() }
-        catch {
-            let code = (error as? FullTextImportError) ?? .transport
+            return .init(id: id, state: count == 0 ? .noNew : .imported(count))
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            let code = (error as? FullTextImportError) ?? (error is DecodingError ? .parsing : .storage)
             try content.recordSourceRefresh(id, beginning: false, errorCode: code.rawValue, at: now)
-            return Outcome(sourceID: id, count: 0, succeeded: false, error: code)
+            return .init(id: id, state: .failed(code, imported: imported))
         }
     }
+
     private func importWikimedia(_ id: String, at now: Date, onImport: (@MainActor () -> Void)?) async throws -> Int {
         let host = id == "wikinews" ? "en.wikinews.org" : "en.wikipedia.org"
         // Revisions rvlimit/rvdir are single-page parameters; a category generator is multi-page.
@@ -201,7 +266,15 @@ struct DiscoveryProgress: Equatable {
                 progress.stagesBySource[id] = "保存完整原文"
                 if try content.importFullText(item, at: now) { count += 1; onImport?() } else { progress.duplicateCount += 1 }
             } catch is CancellationError { throw CancellationError() }
-            catch { failures += 1; progress.failedArticleCount += 1 }
+            catch let error as FullTextImportError {
+                if error == .storage { throw error }
+                failures += 1; progress.failedArticleCount += 1
+            } catch is DecodingError {
+                failures += 1; progress.failedArticleCount += 1
+            } catch {
+                progress.failedArticleCount += 1
+                throw FullTextImportError.storage
+            }
         }
         if failures > 0 && count == 0 { throw FullTextImportError.incomplete }
         return count
@@ -236,7 +309,15 @@ struct DiscoveryProgress: Equatable {
                 progress.stagesBySource[source.id] = "保存完整原文"
                 if try content.importFullText(item, at: now) { count += 1; onImport?() } else { progress.duplicateCount += 1 }
             } catch is CancellationError { throw CancellationError() }
-            catch { failures += 1; progress.failedArticleCount += 1 }
+            catch let error as FullTextImportError {
+                if error == .storage { throw error }
+                failures += 1; progress.failedArticleCount += 1
+            } catch is DecodingError {
+                failures += 1; progress.failedArticleCount += 1
+            } catch {
+                progress.failedArticleCount += 1
+                throw FullTextImportError.storage
+            }
         }
         if failures > 0 && count == 0 { throw FullTextImportError.incomplete }
         return count

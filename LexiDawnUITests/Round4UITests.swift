@@ -2,6 +2,15 @@ import XCTest
 import UIKit
 import ImageIO
 
+func nativeEvidenceFontSize(_ app: XCUIApplication) -> String {
+    let option = "-UIPreferredContentSizeCategoryName"
+    let arguments = app.launchArguments
+    if let index = arguments.firstIndex(of: option), arguments.indices.contains(index + 1) {
+        return arguments[index + 1]
+    }
+    return UITraitCollection.current.preferredContentSizeCategory.rawValue
+}
+
 final class Round4UITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false; XCUIDevice.shared.orientation = .portrait }
     override func tearDownWithError() throws {
@@ -34,11 +43,15 @@ final class Round4UITests: XCTestCase {
         let open = app.buttons["open-reader"]; XCTAssertTrue(open.waitForExistence(timeout: 15)); open.tap()
         XCTAssertTrue(app.otherElements["reader-body"].firstMatch.waitForExistence(timeout: 10))
     }
-    private func tapWord(_ word: String, app: XCUIApplication) {
+    @discardableResult
+    private func tapWord(_ word: String, app: XCUIApplication) -> String? {
         let button = app.buttons["word-" + word].firstMatch
         for _ in 0..<10 { if button.exists && button.isHittable { break }; app.otherElements["reader-body"].firstMatch.swipeUp() }
-        XCTAssertTrue(button.isHittable); button.tap()
+        XCTAssertTrue(button.isHittable)
+        let offset = button.value as? String
+        button.tap()
         XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10))
+        return offset
     }
     private func replace(_ field: XCUIElement, with value: String) {
         XCTAssertTrue(field.isHittable); field.tap()
@@ -51,8 +64,7 @@ final class Round4UITests: XCTestCase {
         let device = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? UIDevice.current.name
         let safe = device.map { $0.isLetter || $0.isNumber || $0 == "-" ? String($0) : "-" }.joined()
         let orientation = XCUIDevice.shared.orientation.isLandscape ? "landscape" : "portrait"
-        let categoryIndex = app.launchArguments.firstIndex(of: "-UIPreferredContentSizeCategoryName")
-        let category = categoryIndex.flatMap { app.launchArguments.indices.contains($0 + 1) ? app.launchArguments[$0 + 1] : nil } ?? UITraitCollection.current.preferredContentSizeCategory.rawValue
+        let category = nativeEvidenceFontSize(app)
         let identifier = id + "-" + theme + "-" + orientation + "-" + safe
         let image = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); image.name = identifier; image.lifetime = .keepAlways; add(image)
         let row: [String: String] = ["screenshotID": identifier, "featureID": feature, "screenName": feature, "state": state, "device": device,
@@ -81,7 +93,7 @@ final class Round4UITests: XCTestCase {
         capture("R4-F22-reference-middle", app: app, feature: "dictionary-detail", state: "verb-group-forms-and-examples")
         let phrases = app.staticTexts["短语与搭配"]; reach(phrases, app: app)
         capture("R4-F22-reference-end", app: app, feature: "dictionary-detail", state: "phrase-section-and-unobscured-bottom-controls")
-        app.buttons["关闭详细释义"].tap(); XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10)); app.buttons["close-word"].tap()
+        app.buttons["返回查词"].tap(); XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10)); app.buttons["close-word"].tap()
         app.buttons["返回今日"].tap(); app.tabBars.buttons["词汇"].tap()
         let entry = app.buttons["vocabulary-entry-nod"]; reach(entry, app: app); entry.tap()
         let locked = app.descendants(matching: .any)["personal-meaning-disabled"].firstMatch; reach(locked, app: app)
@@ -245,7 +257,8 @@ final class Round4UITests: XCTestCase {
         capture("R4-P05-cancelled", app: app, feature: "article-discovery", state: "cancelled-candidate-not-imported")
     }
     func testActualBundledMDXDetailAndSystemPronunciation() throws {
-        let app = launch("round4-mdx-production"); reader(app); tapWord("nod", app: app)
+        let app = launch("round4-mdx-production"); reader(app)
+        let originalOffset = try XCTUnwrap(tapWord("nod", app: app))
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "点头")).firstMatch.waitForExistence(timeout: 20))
         capture("R4-P21-real-MDX", app: app, feature: "reader-dictionary", state: "actual-bundled-MDX-compact", provenance: "real-bundled-MDX-with-explicit-original-article")
         app.buttons["dictionary-details"].tap()
@@ -262,15 +275,28 @@ final class Round4UITests: XCTestCase {
         let nested = app.buttons["dictionary-related-entry-nod off"].firstMatch; reach(nested, app: app); nested.tap()
         XCTAssertTrue(app.staticTexts["dictionary-full-headword"].waitForExistence(timeout: 10)); XCTAssertEqual(app.staticTexts["dictionary-full-headword"].label, "nod off")
         capture("R4-F22-real-internal-link", app: app, feature: "dictionary-detail", state: "actual-MDX-subentry-native-navigation", provenance: "real-bundled-MDX-internal-record")
-        app.buttons["关闭详细释义"].tap()
+        app.buttons["返回上一个词条"].tap()
         XCTAssertTrue(app.buttons["dictionary-related-entry-nod off"].firstMatch.waitForExistence(timeout: 10))
-        app.buttons["关闭详细释义"].tap(); app.buttons["close-word"].tap()
-        XCTAssertTrue(app.otherElements["reader-body"].firstMatch.exists)
+        app.buttons["关闭详细释义"].tap()
+        XCTAssertTrue(app.otherElements["reader-body"].firstMatch.waitForExistence(timeout: 10))
+        let original = app.buttons.matching(NSPredicate(format: "identifier == %@ AND value == %@", "word-nod", originalOffset)).firstMatch
+        XCTAssertTrue(original.isHittable)
+        XCTAssertFalse(app.buttons["close-word"].exists)
+        capture("R4-P21-restored-article", app: app, feature: "reader-dictionary", state: "closed-detail-original-word-offset-in-article", provenance: "real-bundled-MDX-with-explicit-original-article")
+        app.buttons["返回今日"].tap()
+        app.tabBars.buttons["词汇"].tap()
+        let saved = app.buttons["vocabulary-entry-nod"]
+        XCTAssertTrue(saved.waitForExistence(timeout: 10)); saved.tap()
+        XCTAssertTrue(app.staticTexts["n. 名词"].waitForExistence(timeout: 20))
+        XCTAssertFalse(app.buttons["详细词典"].exists)
+        capture("R4-P15-merged-native-detail", app: app, feature: "vocabulary-dictionary", state: "shared-complete-MDX-vocabulary-detail", provenance: "real-bundled-MDX-and-real-Repository")
     }
     func testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont() throws {
         let app = launch("round4-mdx-production"); reader(app)
         for (theme, label) in [("light", "浅色"), ("dark", "深色"), ("paper", "暖纸色")] {
-            app.buttons["reader-appearance"].tap(); app.buttons[label].tap(); tapWord("nod", app: app)
+            app.buttons["reader-appearance"].tap(); app.buttons[label].tap()
+            expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.buttons["关闭外观设置"]); waitForExpectations(timeout: 10)
+            tapWord("nod", app: app)
             expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: app.buttons["dictionary-details"]); waitForExpectations(timeout: 20)
             app.buttons["dictionary-details"].tap(); XCTAssertTrue(app.staticTexts["dictionary-ipa-summary"].waitForExistence(timeout: 10))
             capture("R4-F22-reference-top-" + theme, app: app, feature: "dictionary-detail", state: "actual-MDX-reference-headword-POS-numbered-senses", theme: theme, provenance: "real-bundled-MDX")
@@ -278,7 +304,8 @@ final class Round4UITests: XCTestCase {
             capture("R4-F22-reference-middle-" + theme, app: app, feature: "dictionary-detail", state: "actual-MDX-reference-verb-forms-paired-examples", theme: theme, provenance: "real-bundled-MDX")
             reach(app.staticTexts["来源：内置 MDX"], app: app, count: 25)
             capture("R4-F22-reference-end-" + theme, app: app, feature: "dictionary-detail", state: "actual-MDX-idioms-final-sense-bottom-controls-unobscured", theme: theme, provenance: "real-bundled-MDX")
-            app.buttons["关闭详细释义"].tap(); app.buttons["close-word"].tap()
+            app.buttons["返回查词"].tap()
+            XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10)); app.buttons["close-word"].tap()
         }
         app.terminate()
         let large = launch("round4-mdx-production", fontSize: "UICTContentSizeCategoryAccessibilityXXXL"); reader(large); tapWord("nod", app: large)
@@ -305,6 +332,16 @@ final class Round4UITests: XCTestCase {
         XCTAssertTrue(app.buttons["dictionary-search-result"].waitForExistence(timeout: 20))
         XCTAssertFalse(app.buttons["dictionary-create-personal"].exists)
         capture("R4-F23-real-search", app: app, feature: "dictionary-search", state: "actual-offline-MDX-Chinese-result-personal-edit-locked", provenance: "real-bundled-MDX-no-dictionary-network")
+        replace(query, with: "need\n")
+        let need = app.buttons.matching(NSPredicate(format: "identifier == %@ AND label BEGINSWITH[c] %@", "dictionary-search-result", "need")).firstMatch
+        XCTAssertTrue(need.waitForExistence(timeout: 20))
+        XCTAssertFalse(app.buttons["dictionary-create-personal"].exists); need.tap()
+        XCTAssertTrue(app.staticTexts["dictionary-full-headword"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.staticTexts["dictionary-full-headword"].label, "need")
+        XCTAssertTrue(app.staticTexts["dictionary-ipa-summary"].exists)
+        capture("R4-P16-need-detail", app: app, feature: "dictionary-detail", state: "actual-MDX-need-with-IPA-and-Chinese", provenance: "real-bundled-MDX-no-dictionary-network")
+        app.buttons["关闭详细释义"].tap()
+        XCTAssertTrue(query.waitForExistence(timeout: 10))
         replace(query, with: "lexidawnuitestpersonal\n")
         let create = app.buttons["dictionary-create-personal"]
         XCTAssertTrue(create.waitForExistence(timeout: 20))
@@ -321,6 +358,9 @@ final class Round4UITests: XCTestCase {
         capture("R4-F23-real-personal-saved", app: app, feature: "personal-dictionary", state: "actual-MDX-notFound-structured-personal-POS-confirmed-notes-persisted", provenance: "real-bundled-MDX-and-user-created-content-real-Repository")
         app.terminate(); app.launch(); app.tabBars.buttons["词汇"].tap()
         let entry = app.buttons["vocabulary-entry-lexidawnuitestpersonal"]; reach(entry, app: app); entry.tap()
+        XCTAssertTrue(app.staticTexts["个人离线测试词义"].waitForExistence(timeout: 15))
+        XCTAssertFalse(app.textFields["personal-meaning"].firstMatch.exists)
+        capture("R4-F23-real-personal-reading", app: app, feature: "personal-dictionary", state: "saved-personal-senses-reading-layout-edit-collapsed", provenance: "real-bundled-MDX-and-user-created-content-real-Repository")
         reach(app.textFields["vocabulary-notes"], app: app)
         XCTAssertEqual(app.textFields["vocabulary-notes"].value as? String, "Actual MDX absence, personal content")
         capture("R4-F23-real-personal-restart", app: app, feature: "personal-dictionary", state: "actual-disk-personal-content-restored-after-process-restart", provenance: "real-bundled-MDX-and-user-created-content-real-Repository")

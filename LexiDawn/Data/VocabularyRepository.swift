@@ -5,10 +5,36 @@ struct VocabularyContextItem: Identifiable, Equatable, Codable {
     let id: String, articleID: String, sentence: String, title: String, attribution: String
     let originalURL: String?
     var originKind: String? = nil
+    var displaySourceName: String? = nil
     var lookupOrigin: VocabularyContextOrigin {
         if originKind == "dictionary" { return .dictionary(headword: title.replacingOccurrences(of: "词典释义：", with: ""), evidence: attribution, text: sentence) }
         if originKind == "reader" { return .reader }
         return .historical(title: title, evidence: attribution, text: sentence)
+    }
+}
+struct VocabularyContextGroup: Identifiable {
+    enum Identity: Hashable { case article(String), dictionary(String, String) }
+    let id: Identity
+    let title: String
+    let sourceName: String?
+    let contexts: [VocabularyContextItem]
+
+    static func displayGroups(_ items: [VocabularyContextItem]) -> [Self] {
+        var order: [Identity] = []
+        var groups: [Identity: [VocabularyContextItem]] = [:]
+        var seen: [Identity: Set<String>] = [:]
+        for item in items {
+            let sentence = item.sentence.trimmingCharacters(in: .whitespacesAndNewlines)
+            let onlyLink = !sentence.contains(where: \.isWhitespace) && ArticleCandidate.isWebURL(sentence)
+            guard !sentence.isBlank, !onlyLink else { continue }
+            let key: Identity = item.originKind == "dictionary" ? .dictionary(item.title, item.attribution) : .article(item.articleID)
+            if groups[key] == nil { order.append(key) }
+            if seen[key, default: []].insert(sentence).inserted { groups[key, default: []].append(item) }
+        }
+        return order.compactMap { key in
+            guard let values = groups[key], let first = values.first else { return nil }
+            return Self(id: key, title: first.title, sourceName: first.displaySourceName, contexts: values)
+        }
     }
 }
 struct VocabularyLegacyAnnotation: Codable, Equatable, Identifiable {
@@ -52,7 +78,7 @@ struct VocabularyItem: Identifiable, Equatable, Codable {
         return values
     }
     var primaryChinese: String? {
-        if let sense = dictionarySenses.first(where: BilingualMeaningPolicy.trusted) { return sense.zh }
+        if let sense = BilingualMeaningPolicy.trustedSenses(dictionarySenses, headword: lemma).first { return sense.zh }
         if reliableChineseKnown == true { return nil }
         return personalSenses?.first(where: \.reviewReady)?.chinese
     }
@@ -143,9 +169,10 @@ struct VocabularyAddition {
                     let article = articles.first { $0.articleID == source.articleID }
                     let dictionaryContext = source.contextKind == "dictionary"
                     return VocabularyContextItem(id: source.contextID, articleID: source.articleID, sentence: source.sentence,
-                        title: dictionaryContext ? source.contextTitle ?? "词典释义" : article?.originalTitle ?? source.articleID,
+                        title: dictionaryContext ? source.contextTitle ?? "词典释义" : article.map { ArticleTitlePresentation.display($0.originalTitle, sourceID: $0.sourceID) } ?? "历史文章",
                         attribution: dictionaryContext ? source.contextAttribution ?? "词典来源证据不可用" : article?.sourceAttribution ?? article?.sourceID ?? "来源元数据不可用",
-                        originalURL: dictionaryContext ? nil : grants.first { $0.articleID == source.articleID }?.originalURL, originKind: source.contextKind)
+                        originalURL: dictionaryContext ? nil : grants.first { $0.articleID == source.articleID }?.originalURL, originKind: source.contextKind,
+                        displaySourceName: dictionaryContext ? nil : article.map { ArticleSourceRegistry.name($0.sourceID) })
                 }
                 var value = VocabularyItem(id: record.entryID, lemma: record.lemma, type: record.entryType, surfaces: Array(Set(record.surfaceForms + aliases.flatMap(\.surfaceForms))).sorted(),
                     addedAt: record.addedAt, meaning: record.userMeaning, notes: record.notes,
@@ -503,12 +530,26 @@ struct DictionaryResult: Equatable {
     var cached: Bool = false
     var versions: [String: String] = [:]
     var personalSenses: [DictionarySense] = []
+    var contextualOrder: [String] = []
     var usableSenses: [DictionarySense] { BilingualMeaningPolicy.displaySenses(senses + personalSenses) }
-    var quickSenses: [DictionarySense] { usableSenses.filter { BilingualMeaningPolicy.belongsToEntry($0, headword: headword) } }
+    var quickSenses: [DictionarySense] {
+        let direct = usableSenses.filter { BilingualMeaningPolicy.belongsToEntry($0, headword: headword) }
+        guard !contextualOrder.isEmpty else { return direct }
+        return contextualOrder.compactMap { id in direct.first { $0.id == id } }
+    }
     var hasMDXEntry: Bool { senses.contains(where: BilingualMeaningPolicy.isCurrentMDX) }
     var reliableChinese: [DictionarySense] { BilingualMeaningPolicy.trustedSenses(senses, headword: headword) }
 }
 protocol DictionaryProvider: Sendable { func lookup(_ headword: String) async throws -> [DictionarySense] }
+
+private actor DictionaryContextOrdering {
+    func senseIDs(_ senses: [DictionarySense], surface: String, context: String) throws -> [String] {
+        try Task.checkCancellation()
+        let ids = DictionaryAggregator.rank(senses, context: context, surface: surface).map(\.id)
+        try Task.checkCancellation()
+        return ids
+    }
+}
 /// Local, source-derived, legally redistributable index. No network or personal reading history upload.
 // Historical parser fixtures only. Never constructed by the application.
 #if DEBUG && targetEnvironment(simulator)
@@ -531,6 +572,7 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
     private var provider: any DictionaryProvider
     private let cache: DictionaryCacheRepository
     private let vocabulary: VocabularyRepository
+    private let ordering = DictionaryContextOrdering()
     init(context: ModelContext, provider: any DictionaryProvider = BundledMDXDictionaryProvider()) {
         writer = RepositoryWriter(context: context); self.provider = provider
         cache = DictionaryCacheRepository(context: context)
@@ -549,7 +591,12 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
         }
     }
     func lookup(_ surface: String, context: String = "", at now: Date = Date()) async throws -> DictionaryResult {
-        try await lookupCanonical(EnglishTokenizer.lemma(surface, context: context), at: now)
+        var result = try await lookupCanonical(EnglishTokenizer.lemma(surface, context: context), at: now)
+        let senses = result.quickSenses
+        if !context.isBlank && senses.count > 1 {
+            result.contextualOrder = try await ordering.senseIDs(senses, surface: surface, context: context)
+        }
+        return result
     }
     /// A persisted vocabulary identity was disambiguated at capture time.
     func lookupCanonical(_ key: String, at now: Date = Date()) async throws -> DictionaryResult {

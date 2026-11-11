@@ -55,7 +55,7 @@ final class AppStartup: ObservableObject {
                 let app = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
                 if try app.articleRepository.allArticleIDs().isEmpty, let learning = app.learning {
                     let paragraphs = (1...8).map { "<p>Original fixture paragraph \($0). Reading complete documents helps people understand complicated ideas. Every original sentence and the final paragraph remain preserved in this structured local article.</p>" }.joined()
-                    let html = "<article><h1>Original structured fixture</h1><h2>Headings and quotation</h2><blockquote><p>This quotation is explicit original fixture writing.</p></blockquote><h2>An ordered list</h2><ol><li>First original list item.</li><li>Second original list item.</li></ol>" + paragraphs + "</article>"
+                    let html = "<article><h1>Original structured fixture</h1><h2>Headings and quotation</h2><blockquote><p>This quotation discusses JavaScript and HTML5 in an original fixture.</p></blockquote><video>To view this video please enable JavaScript.</video><h2>An ordered list</h2><ol><li>First original list item.</li><li>Second original list item.</li></ol>" + paragraphs + "</article>"
                     let document = try ArticleHTMLExtractor.extract(html)
                     _ = try learning.content.importArticle(.init(title: "明确原创夹具：标题、引用与列表", body: document.text, source: "Explicit original UI fixture author", rightsConfirmed: true), document: document, at: Date())
                 }

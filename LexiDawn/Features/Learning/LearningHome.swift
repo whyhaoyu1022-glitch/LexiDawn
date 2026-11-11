@@ -62,7 +62,7 @@ struct LiveTodayView: View {
                             HStack {
                                 Label("文章库", systemImage: "books.vertical").font(.headline)
                                 Spacer()
-                                Text("\(articles.count) 篇").foregroundStyle(.secondary)
+                                Text("\(articles.filter(\.readable).count) 篇").foregroundStyle(.secondary)
                                 Image(systemName: "chevron.right").font(.caption)
                             }
                         }.accessibilityIdentifier("article-library-body")
@@ -99,14 +99,15 @@ struct LiveTodayView: View {
         fetching = true; sourceMessage = nil; defer { fetching = false }
         do { _ = try await learning.discovery.refresh(force: force, onImport: { learning.changed() }); learning.changed() }
         catch is CancellationError { }
-        catch { sourceMessage = FullTextImportError.transport.localizedDescription }
+        catch { sourceMessage = error.localizedDescription }
     }
     private func metric(_ label: String, _ value: Int) -> some View { VStack(alignment: .leading) { Text("\(value)").font(.title2.bold().monospacedDigit()); Text(label).font(.caption).foregroundStyle(.secondary) }.frame(maxWidth: .infinity, alignment: .leading) }
     private func hero(_ snapshot: TodayCycleSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        let article = articles.first { $0.id == snapshot.cycle.articleID }
+        return VStack(alignment: .leading, spacing: 16) {
             Label(snapshot.cycle.isComplete ? "今日必做已完成" : "今天，读一篇真实的英文", systemImage: snapshot.cycle.isComplete ? "checkmark.seal.fill" : "sunrise.fill").font(.subheadline.weight(.semibold))
-            Text(ArticleTitlePresentation.display(snapshot.articleTitle ?? "今日文章")).font(.system(.title, design: .serif).bold()).fixedSize(horizontal: false, vertical: true)
-            if let article = articles.first(where: { $0.id == snapshot.cycle.articleID }) {
+            Text(ArticleTitlePresentation.display(snapshot.articleTitle ?? "今日文章", sourceID: article?.sourceID)).font(.system(.title, design: .serif).bold()).fixedSize(horizontal: false, vertical: true)
+            if let article {
                 Text("\(article.topics.joined(separator: " · ")) · 预计 \(article.minutes) 分钟").font(.subheadline)
                 Text([ArticleSourceRegistry.name(article.sourceID), article.author?.isBlank == false ? article.author : nil].compactMap { $0 }.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 ProgressView(value: article.percent) { Text("阅读进度 \(Int(article.percent * 100))%") }.font(.caption)
@@ -259,7 +260,7 @@ struct LiveExploreView: View {
             loading = true; defer { loading = false }
             do { _ = try await learning.discovery.refresh(force: true, onImport: { learning.changed() }); try Task.checkCancellation(); learning.changed(); load() }
             catch is CancellationError { load() }
-            catch { self.error = FullTextImportError.transport.localizedDescription }
+            catch { self.error = error.localizedDescription }
         }
     }
 }
@@ -274,7 +275,7 @@ struct ExploreArticleCard: View {
                 Spacer()
                 Image(systemName: "arrow.up.right")
             }.opacity(0.85)
-            Text(ArticleTitlePresentation.display(article.title)).font(.system(prominent ? .title2 : .title3, design: .serif).weight(.semibold)).fixedSize(horizontal: false, vertical: true)
+            Text(ArticleTitlePresentation.display(article.title, sourceID: article.sourceID)).font(.system(prominent ? .title2 : .title3, design: .serif).weight(.semibold)).fixedSize(horizontal: false, vertical: true)
             Text([ArticleSourceRegistry.name(article.sourceID), article.author?.isBlank == false ? article.author : nil, article.publishedAt.map { $0.formatted(date: .abbreviated, time: .omitted) }, "\(article.minutes)分钟"].compactMap { $0 }.joined(separator: " · "))
                 .font(.caption).opacity(0.85).fixedSize(horizontal: false, vertical: true)
         }.frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(.white)

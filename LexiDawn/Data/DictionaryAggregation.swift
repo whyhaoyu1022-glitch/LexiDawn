@@ -147,7 +147,8 @@ actor DictionaryAggregator {
     nonisolated static func merge(_ senses: [DictionarySense]) -> [DictionarySense] {
         var merged: [String: DictionarySense] = [:]
         for sense in senses.sorted(by: { $0.id < $1.id }) {
-            let key = sense.originKind == "mdx" ? sense.id : "\(sense.partOfSpeech ?? "unknown")|\(EnglishTokenizer.normalized(sense.en))|\(sense.zh)"
+            let identified = sense.originKind == "mdx" || sense.originKind == "personal"
+            let key = identified ? sense.id : "\(sense.partOfSpeech ?? "unknown")|\(EnglishTokenizer.normalized(sense.en))|\(sense.zh)"
             if var old = merged[key] {
                 old.sources = Array(Set((old.sources ?? []) + (sense.sources ?? []))).sorted()
                 if old.line != sense.line { old.line += "\n" + sense.line }
@@ -185,18 +186,22 @@ actor DictionaryAggregator {
             grammaticalPart = tagger.tag(at: range.lowerBound, unit: .word, scheme: .lexicalClass).0?.rawValue.lowercased()
         }
         let embedding = context.isBlank ? nil : NLEmbedding.sentenceEmbedding(for: .english)
+        func matchesGrammar(_ sense: DictionarySense) -> Bool {
+            guard let grammaticalPart, let part = sense.partOfSpeech?.lowercased() else { return false }
+            return part == grammaticalPart || (grammaticalPart == "verb" && part.hasSuffix(" verb")) || (grammaticalPart == "noun" && part.hasSuffix(" noun"))
+        }
         func score(_ sense: DictionarySense) -> Double {
             let definition = sense.en + " " + (sense.examples ?? []).joined(separator: " ")
-            let lexical = Double(contextWords.intersection(words(definition)).count * 10 +
-                (grammaticalPart != nil && (sense.partOfSpeech == grammaticalPart || grammaticalPart == "verb" && sense.partOfSpeech == "modal verb") ? 20 : 0) + (sense.partOfSpeech != nil ? 2 : 0))
+            let lexical = Double(contextWords.intersection(words(definition)).count * 10 + (sense.partOfSpeech != nil ? 2 : 0))
             guard let embedding else { return lexical }
             let distance = embedding.distance(between: String(context.prefix(1200)), and: String(definition.prefix(1200)))
             return lexical + (distance.isFinite ? max(0, 2 - distance) * 4 : 0)
         }
-        let scored = merge(senses).map { ($0, score($0)) }
+        let scored = merge(senses).map { ($0, score($0), matchesGrammar($0)) }
         return scored.sorted {
             let a = BilingualMeaningPolicy.trusted($0.0), b = BilingualMeaningPolicy.trusted($1.0)
             if a != b { return a }
+            if $0.2 != $1.2 { return $0.2 }
             return $0.1 == $1.1 ? $0.0.id < $1.0.id : $0.1 > $1.1
         }.map(\.0)
     }

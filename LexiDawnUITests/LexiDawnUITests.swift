@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 
 final class LexiDawnUITests: XCTestCase {
     private var evidenceTheme = "system"
@@ -113,7 +114,8 @@ final class LexiDawnUITests: XCTestCase {
 
     /// User-review evidence from the actual running simulator, retained even when assertions pass.
     private func capture(_ name: String, in app: XCUIApplication) {
-        let device = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? "CI-simulator"
+        if app.state == .runningForeground { _ = app.windows.firstMatch.frame; _ = app.descendants(matching: .any).count }
+        let device = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? UIDevice.current.name
         let identifier = "R3-legacy-" + name + "-" + device.replacingOccurrences(of: ",", with: "-")
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = identifier
@@ -122,11 +124,13 @@ final class LexiDawnUITests: XCTestCase {
         let scenario = app.launchEnvironment["LEXIDAWN_UI_SCENARIO"] ?? "production"
         let metadata: [String: String] = ["screenshotID": identifier, "featureID": "retained-regression", "screenName": name,
             "state": name, "device": device, "orientation": XCUIDevice.shared.orientation.isLandscape ? "landscape" : "portrait",
-            "theme": evidenceTheme, "testName": self.name, "fixtureOrProduction": scenario == "production" ? "production-bundled-rfc" : "explicit-test-scenario-" + scenario,
+            "theme": evidenceTheme, "osVersion": UIDevice.current.systemVersion, "fontSize": nativeEvidenceFontSize(app),
+            "testName": self.name, "fixtureOrProduction": scenario == "production" ? "production-bundled-rfc" : "explicit-test-scenario-" + scenario,
             "fileName": identifier + ".png", "notes": "Original retained regression capture; native Simulator pixels. Fixture scenarios are explicitly identified; methods and assertions retained."]
-        if let data = try? JSONSerialization.data(withJSONObject: metadata, options: [.sortedKeys]) {
+        do {
+            let data = try JSONSerialization.data(withJSONObject: metadata, options: [.sortedKeys])
             let json = XCTAttachment(data: data, uniformTypeIdentifier: "public.json"); json.name = identifier + "-metadata"; json.lifetime = .keepAlways; add(json)
-        }
+        } catch { XCTFail("Cannot encode native screenshot metadata: \(error)") }
     }
 
     private func launch(_ scenario: String) -> XCUIApplication {
@@ -368,7 +372,7 @@ extension LexiDawnUITests {
         XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10)); capture("F36-nested-science-lookup", in: app); app.buttons["close-word"].tap()
         XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
         app.buttons["关闭详细释义"].tap()
-        app.buttons["close-word"].tap()
+        XCTAssertTrue(app.otherElements["reader-body"].firstMatch.waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["finish-reading"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["reading-completed"].exists)
         capture("round2-dictionary-navigation-returned", in: app)
@@ -406,7 +410,8 @@ extension LexiDawnUITests {
         capture("P07-production-dictionary-detail", in: app)
         app.swipeUp(); app.swipeUp()
         capture("P08-production-dictionary-context-and-license", in: app)
-        app.buttons["关闭详细释义"].tap(); app.buttons["close-word"].tap()
+        app.buttons["关闭详细释义"].tap()
+        XCTAssertTrue(app.otherElements["reader-body"].firstMatch.waitForExistence(timeout: 10))
         let body = app.descendants(matching: .any)["reader-body"].firstMatch
         for index in 1...3 { body.swipeUp(); capture("P\(String(format: "%02d", index + 8))-production-rfc-scroll-\(index)", in: app) }
         for _ in 0..<8 { body.swipeUp() }

@@ -12,9 +12,10 @@ on:
         options: [full, export]
         default: full
 
-# A newer main commit supersedes stale verification; its complete suite is still required.
+# A new main commit normally supersedes stale verification. Keep a previous native
+# capture running when its evidence is required for a before/after comparison.
 concurrency:
-  group: lexidawn-ios-${{ github.workflow }}-${{ github.ref }}
+  group: lexidawn-ios-${{ github.workflow }}-${{ github.ref }}${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[keep-native-evidence]') && format('-{0}', github.sha) || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -354,6 +355,8 @@ jobs:
         with:
           pattern: LexiDawn-round3-*-${{ github.run_id }}-${{ github.run_attempt }}
           path: native-jobs
+      - name: Validate the original-photo packaging script
+        run: python3 -m py_compile scripts/package-round4-screenshots.py
       - name: Verify hashes and combine untouched native PNGs
         run: python3 scripts/merge-round3-evidence.py native-jobs combined-round3 --commit '${{ github.sha }}' --run-url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
       - name: Index current native evidence against Round 4 without claiming acceptance

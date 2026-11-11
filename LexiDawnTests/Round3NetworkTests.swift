@@ -93,6 +93,14 @@ private final class Round3FaultURLProtocol: URLProtocol, @unchecked Sendable {
         let values = try await (first, second)
         XCTAssertEqual(values.0, 1); XCTAssertEqual(values.1, 1)
         XCTAssertEqual(try content.library().count, 1)
+        XCTAssertEqual(service.progress.sourceResults, [.init(id: "wikipedia", state: .imported(1))])
+        XCTAssertEqual(service.progress.importedCount, 1)
+        let previous = service.progress.runID
+        let noNew = try await service.refresh(force: true)
+        XCTAssertEqual(noNew, 0)
+        XCTAssertNotEqual(service.progress.runID, previous)
+        XCTAssertEqual(service.progress.sourceResults, [.init(id: "wikipedia", state: .noNew)])
+        XCTAssertEqual(service.progress.duplicateCount, 1)
     }
     func testInjected429RetryIsBoundedAndStillFails() async {
         let transport = client(status: 429)
@@ -116,7 +124,13 @@ private final class Round3FaultURLProtocol: URLProtocol, @unchecked Sendable {
                 let app = try AppDependencies.makeLearningInMemory(), content = try XCTUnwrap(app.learning?.content)
                 let service = ArticleDiscoveryService(content: content, fetcher: client(status: status, data: bytes), sourceIDs: [id])
                 do { let count = try await service.refresh(force: true); XCTAssertEqual(count, 0); if status != 200 { XCTFail("Injected transport fault must not claim success: \(id) / \(status)") } }
-                catch { XCTAssertEqual(error.localizedDescription, "无法导入完整文章，未添加到本地文章库。") }
+                catch {
+                    XCTAssertEqual(error.localizedDescription, "无法导入完整文章，未添加到本地文章库。")
+                    let report = try XCTUnwrap(service.progress.sourceResults.first)
+                    XCTAssertEqual(report.id, id)
+                    XCTAssertNotNil(report.error)
+                    XCTAssertEqual(report.importedCount, 0)
+                }
                 XCTAssertTrue(try content.library().isEmpty, "Rejected source must not leave any visible candidate: " + id)
                 XCTAssertTrue(try app.articleRepository.allArticleIDs().isEmpty, "Rejected source must not create ArticleRecord: " + id)
             }
@@ -126,6 +140,7 @@ private final class Round3FaultURLProtocol: URLProtocol, @unchecked Sendable {
             let service = ArticleDiscoveryService(content: content, fetcher: client(data: empty), sourceIDs: [id])
             let count = try await service.refresh(force: true)
             XCTAssertEqual(count, 0); XCTAssertTrue(try app.articleRepository.allArticleIDs().isEmpty)
+            XCTAssertEqual(service.progress.sourceResults, [.init(id: id, state: .noNew)])
         }
     }
     func testInjected503AndTimeoutRemainFailuresAfterBoundedRetry() async {

@@ -1,0 +1,1197 @@
+{
+  "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
+  "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
+  "unitJobID": 130568800082,
+  "buildForTesting": "passed",
+  "releaseSimulator": "passed",
+  "sdk": "iOS Simulator 26.5 compatibility",
+  "iOS27PhysicalDeviceTested": false,
+  "executed": 235,
+  "passed": 235,
+  "failed": 0,
+  "byClass": {
+    "LexiDawnTests": 61,
+    "MDXDictionaryTests": 27,
+    "Round2Tests": 32,
+    "Round3NetworkTests": 15,
+    "Round3Tests": 78,
+    "Round4Tests": 22
+  },
+  "cases": [
+    {
+      "className": "LexiDawnTests",
+      "method": "testArbitraryDeferredReasonsAreRejectedForEveryTaskWithoutMutation",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testArticleAndReviewRemainIndependent",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testArticleCannotBeDeferred",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testArticleRepositoryRejectsIdenticalBodyAcrossDifferentIDsAndURLs",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testArticleRepositoryRejectsNormalizedDuplicateCanonicalURL",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testBlockedAndFailedNeverCountAsCompleted",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testCarryOverCountsSkippedCivilDatesAndNeverRecountsRollback",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testClockRollbackDoesNotPreventSafeInProgressRecoveryOrLoseAssignment",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testCompletedCycleSameDayDoesNotCreateAnotherCycle",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testConstructorRejectsInvalidStatusCompletionTimeDateAndReasonCombinations",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testCrossTimeZoneKeepsAssignedArticleAndDate",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testDeferredReviewCannotCompleteCycleWhenArticleIsIncomplete",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testDelayedEvidenceAfterCarryOverPreservesEventTimeAndUpdateHighWater",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testDesignTokensUseFourPointGrid",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testDirectArticleRepositoryRejectsInvalidLicenseCacheImageAndMissingMetadata",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testDiskContainerReopenRestoresCycleArticleAndPreferences",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testDSTAndTravelUseCivilDateHighWaterWithoutChangingAssignment",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testEmptyQueueProofCannotBeReplayedForAnotherCycle",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testFailedStoreOpenRetainsOriginalBytesAndPreUpgradeBackup",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testFakeStoreDateRollbackDoesNotIncreaseCarryOverCount",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testFakeStoreRetryRepeatsFailedUpdateWithoutDuplicateCycle",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testFakeStoreSameDayProvisioningIsIdempotent",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testFirstCycleUsesCandidateAndStoresArticleAssociation",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testInvalidCandidateCannotCreateSwiftDataCycleOrArticle",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testLegacyRemediatedDiskSchemaRepairsUnprovenCompletionWithAuditArchive",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testLegacyRound1DiskSchemaUpgradesPreservingArticleCycleProgressAndPreferences",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testLegalAndIllegalStateTransitionsAreExplicit",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testNoCandidateDoesNotCreatePlaceholderCycle",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testOldIncompleteCycleWinsAfterDateChanges",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testPartialReadingReviewAndMatchingProgressSurviveMultipleDaysWithoutNewAssignment",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testPersistedInvalidArticleStatusAndFingerprintAreErrorsWithoutDeletingBody",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testPersistedMalformedQueueProofAndCompletionMetadataCannotBypassValidation",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testPreferenceSaveRejectsInvalidValuesAndLoadRejectsUnknownVersionWithoutReset",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testProductionContractsRejectReadingCompletionAndUnknownQueue",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testReadingEvidenceRequiresProgressAndExplicitConfirmationOrManualConfirmation",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testReadOnlyDiskStoreProducesRealSaveErrorAndLeavesOriginalDatabaseReadable",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testReadOnlyExistingCycleUpdateFailureDoesNotLeakAndWritableRetrySucceeds",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testRepeatedRefreshDoesNotIncreaseCarryOverCount",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testRootTabViewCanBeConstructed",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testSameContainerSeparateContextsObserveSequentialProvisioningWithoutDuplicates",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testSavedReviewSessionRepeatedServiceReadPreservesCompletionTimestamp",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testSavedReviewSessionResultRejectsInvalidAnswersAndCannotRegressOrMixEmptyQueue",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testStartupRetryReopensWithoutDeletingStore",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testSwiftDataArticleAndPreferenceFailuresRollBackManagedChanges",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testSwiftDataAtomicCreateInjectedSaveFailureRollsBackAndRetryIsIdempotent",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testSwiftDataCycleAndPreferencesSurviveRepositoryRebuild",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testSwiftDataHistoryMultipleCurrentFlagsResolveToEarliestWithoutDeletingCycles",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testSwiftDataRepositoryRejectsMissingArticleMismatchedIDDuplicateDateAndReassignment",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testSwiftDataRepositoryRejectsNewCycleUntilOldCompletesAndMaintainsCurrent",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testSwiftDataReviewResultsRejectStaleSnapshotsAndTerminalEvidenceReplacement",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testSwiftDataStrictDecodeRejectsLegacyDeferredAndRepairArchivesWithoutLosingAssignment",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testSwiftDataUpdateFailureDoesNotLeakIntoLaterPreferenceSave",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testTodayStartDoesNotPersistUnavailableInProgressState",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testTodayViewModelShowsNoCandidateAndFixtureCycleState",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testUnavailableInProgressRecoveryPreservesCycleArticleAndOtherProgress",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testUnavailableNonemptyAndIncompleteQueuesCannotDeferReview",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testUnknownPersistedStateRecoveryFailsAndRetainsOriginalRecord",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testVerifiedEmptyFixtureQueueSatisfiesReviewOnlyAfterExplicitReading",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testViewModelHonorsFixedStudyTimeZoneAndGregorianDate",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testViewModelReadRetryDoesNotReplayPendingFakeStoreWrite",
+      "result": "passed"
+    },
+    {
+      "className": "LexiDawnTests",
+      "method": "testViewModelWithFakeStoreRetriesOriginalBlockedUpdate",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testActualCompiledAppContainsApprovedMDX",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testCancellationIsNotAnEmptySuccessfulLookup",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testEnglishOnlyDOMFixtureIsFoundButDoesNotLockPersonalChinese",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testExtraPreflightDeferralPersistsWithoutAnswerOrFSRSUpdate",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testFrozenRound3ArchiveMappingPreservesFullHistoricalCandidate",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testMissingAndCorruptMDXHaveDistinctErrors",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testMonthMaySpellingRetainsRequiredCaseWhileModalMayStaysLowercase",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testPersonalHistoryPreservesDeletedSenseAndPairedExampleNotesAcrossContexts",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testPersonalRevisionHistorySurvivesClosingAndReopeningARealDiskStore",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testRealMDXConcurrentRapidQueriesAndCacheKeepStableSenseIDs",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testRealMDXEnglishOnlyContractionAndPersonalCreationEligibility",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testRealMDXHomonymMarkersAreNotPartOfTheLexicalHeadword",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testRealMDXLinkedUsageBoxIsReadFromTheSameDictionaryAndKeepsExamplePairs",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testRealMDXMonthAndModalKeepSeparateIdentities",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testRealMDXPhraseAliasIsScopedToItsOwnSenses",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testRealMDXUsageNotesAndCrossReferencesKeepBilingualPairs",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testRealOfflineServiceNormalizesUsersAndVisitsWithoutNetworkProviders",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testRealResourceFailureRevokesEditingPermissionWithoutLosingPersonalData",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testRetiredProviderCacheCannotBecomeMDXEvidence",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testStandalonePersonalWordUsesItsOwnExampleAndDoesNotCreateAnArticle",
+      "result": "passed"
+    },
+    {
+      "className": "MDXDictionaryTests",
+      "method": "testSystemPronunciationStartsOrReportsUnavailableAndStopsWithoutQueueing",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "test3500WordTokenHitPerformanceAndEveryBoundary",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testActualMatchingSpellingAndLogsCompleteCycleExactlyOnceWithoutDeletingVocabulary",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testBundledLegalRFCAndRealDictionaryDataLoad",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testCachedChineseSearchAndCacheDeletionKeepVocabularyEntity",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testCacheExpiresAtBoundaryAndClockRollbackCannotResurrectBodyOrEraseLearning",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testChangedVersionNeverUsesStaleOffsetAndPreservesUniqueAnchor",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testCompletedRealCycleAllowsNextLocalDateWithoutReassigningUsedArticle",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testCompleteReviewSaveFailureRollsBackAnswerLogScheduleAndCycle",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testDeterministicSchedulerAndSpellingMaskFixedVectors",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testDiskReopenRestoresProgressVocabularySettingsAndFixedReviewExercises",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testEveryVocabularyContextRetainsItsOwnArticleAndAttribution",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testImportOriginalURLDeduplicatesTrackingVariants",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testImportRejectsUnconfirmedInvalidURLControlCharactersAndDuplicateBody",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testLearningDaysUseActualCompletionDateRatherThanAssignmentDate",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testLibraryIncludesOptOutImportAndExploreCannotReuseDailyAssignment",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testNativeTextContainerExposesWordsAndPhysicalGlyphHitRejectsPunctuation",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testNetworkTimeoutPersistsRecoverableErrorAndExistingArticleRemains",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testOfficialRFCNetworkRetrievalMatchesBundledLicensedSnapshot",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testParagraphAnchorsMatchOnlyUniqueExactParagraphAndSentenceContextIsSpecific",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testPinnedOfficialRefetchRestoresOnlySameExpiredBodyAndPreservesAssignment",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testProductionNetworkAdapterHTTP429PersistsBackoffAndDoesNotInstallBody",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testQueueMissingStateBlocksInsteadOfProducingEmptyEvidence",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testReaderFailedTransactionDoesNotLeakProgressOrCycleAndRetrySucceeds",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testReaderProgressAndCompletionUseSavedEvidenceAndRemainIndependentOfReview",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testReaderViewModelRevokesDisplayedBodyWhenSaveFindsExpiredRights",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testRealDueQueueHonorsLimitAndSavedSessionIgnoresLaterLimitChanges",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testRealEmptyQueueEvidenceCompletesOnlyReviewAndNonemptyCannotSkip",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testTokensHandleContractionsPossessivesHyphensAndExcludeURLsEmailCodeNumbers",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testUserImportPersistsRealBodyGrantAndDoesNotReplaceIncompleteCycle",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testVocabularyFailureIsNotClearedBySuccessfulDictionaryLookup",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testVocabularyIdempotenceSafeUndoAndAutoAddDisabled",
+      "result": "passed"
+    },
+    {
+      "className": "Round2Tests",
+      "method": "testVocabularyTransactionFailureLeavesNoEntryContextOrReviewState",
+      "result": "passed"
+    },
+    {
+      "className": "Round3NetworkTests",
+      "method": "testCancelledDictionaryLookupDoesNotStartRequestsOrReturnEmptySuccess",
+      "result": "passed"
+    },
+    {
+      "className": "Round3NetworkTests",
+      "method": "testCancelledRequestNeverBecomesSuccessfulImport",
+      "result": "passed"
+    },
+    {
+      "className": "Round3NetworkTests",
+      "method": "testConcurrentRefreshJoinsOneOperationAndReportsSameCommittedImport",
+      "result": "passed"
+    },
+    {
+      "className": "Round3NetworkTests",
+      "method": "testDisallowedHostDoesNotStartNetwork",
+      "result": "passed"
+    },
+    {
+      "className": "Round3NetworkTests",
+      "method": "testInjected403IsDiscardedWithGenericError",
+      "result": "passed"
+    },
+    {
+      "className": "Round3NetworkTests",
+      "method": "testInjected429RetryIsBoundedAndStillFails",
+      "result": "passed"
+    },
+    {
+      "className": "Round3NetworkTests",
+      "method": "testInjected503AndTimeoutRemainFailuresAfterBoundedRetry",
+      "result": "passed"
+    },
+    {
+      "className": "Round3NetworkTests",
+      "method": "testInjectedDictionary404IsARevalidatedEmptyResultNotFabricatedDefinition",
+      "result": "passed"
+    },
+    {
+      "className": "Round3NetworkTests",
+      "method": "testInjectedDictionaryNegativeCacheRevalidationReturnsOnlyRealResponseDefinitions",
+      "result": "passed"
+    },
+    {
+      "className": "Round3NetworkTests",
+      "method": "testInjectedEveryConfiguredSourceDiscardsTransportAndMalformedDiscoveryWithoutResidue",
+      "result": "passed"
+    },
+    {
+      "className": "Round3NetworkTests",
+      "method": "testInjectedSuccessfulTransportReturnsExactBytesWithoutDiskCache",
+      "result": "passed"
+    },
+    {
+      "className": "Round3NetworkTests",
+      "method": "testLiveFreeDictionaryEnglishDefinition",
+      "result": "passed"
+    },
+    {
+      "className": "Round3NetworkTests",
+      "method": "testLivePublisherAdaptersImportAtLeastFiveCompleteSources",
+      "result": "passed"
+    },
+    {
+      "className": "Round3NetworkTests",
+      "method": "testLiveWikipediaDiscoveryImportsCompleteOriginalIntoEmptyDatabase",
+      "result": "passed"
+    },
+    {
+      "className": "Round3NetworkTests",
+      "method": "testLiveWiktionaryEnglishDefinition",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testAtomAlternateLinkAndCDATA",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testBBCMultipleBodyBlocksKeepEveryParagraphInOrder",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testBrokenProviderPayloadCannotHideVocabularyExportOrBlockPersonalMeaningReview",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testCacheCleanupProtectsFavoritePersonalImportAndVocabularyContext",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testCanonicalURLRetainsSemanticQueryAndRemovesTracking",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testCompletedMeaningCannotBeConsumedByAnotherQuestion",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testCompleteOriginalAndStructuredBodyAreAtomicAndDeduplicate",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testComplexFormsAndPhrasesAreEntities",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testConfirmedDictionaryMeaningIsUsedAndSavedQuestionCannotBeRewritten",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testContextRankingUsesRealExistingDefinitions",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testContextSpellingKeepsIrregularGrammarAndMasksEntirePhrase",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testCorruptDisposableProviderCacheDoesNotHideOtherProviderAndCanBeRepaired",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testDateChangeLocksHistoricalAndExploreRoutesBeforeHomeCreatesNewCycle",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testDictionaryMergeKeepsPartsOfSpeechAndAllSourcesDistinct",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testDictionaryNestedContextKeepsItsRealEvidenceAndCannotMasqueradeAsArticleSentence",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testEnglishProviderJSONRetainsIPAExamplesAndSource",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testExpiredFullTextMovesToHistoryAndNeverLeavesPartialArticleRecord",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testExploreResetArchivesOriginalProgressAndCannotResetDailyTask",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testExtraReviewRestoresFixedSessionSchedulesOnceAndNeverChangesDailyCycle",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testFailedSourceRefreshPersistsBackoffAndKeepsSuccessfulLocalVersion",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testFailedTransactionLeavesNeitherBodyNorGrant",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testFavoriteAndLaterPersistWithoutCreatingStudyCycle",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testFreshCacheAvoidsProviderRequestsAndOfflineFallbackKeepsRealFetchDate",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testFSRSInitialPublishedVectorsAndForgettingCurve",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testFSRSLapseCannotIncreaseStabilityAndInvalidStateIsRejected",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testHistoricalRound2DiskSchemaMigratesLearningRelationsAndFullText",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testHistoryFavoriteAndLaterCannotBypassCurrentCycleAtReaderBoundary",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testHTMLMalformedAndUnclosedScriptFailClosed",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testHTMLStructureEntitiesNavigationAndQuotedAngleBrackets",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testInvalidRefreshDoesNotOverwriteLocalFullVersion",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testJSONLDRequiresRealArticleBody",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testLegacyUnavailableRowIsArchivedWithoutLosingCycleReference",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testLongOriginalHTMLExtractionRetainsEveryParagraphAndRecordsClockAndMemory",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testMalformedFeedFailsAndEmptyFeedHasNoCandidate",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testNestedQuoteAndOrderedListPreserveStructureWithoutChangingText",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testNewReviewStateAndFirstAgainPersistLearningWithoutPretendingPriorMastery",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testNormalizerMergesHardLinesAndRetainsParagraphsAndEveryCharacter",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testOfficialAPIJSONMapsRevisionWithoutPersistingCandidate",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testOriginalSHAIsNotNormalizedOrTruncated",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testOwnedStructuredOriginalAndDocumentAreAtomicAndCannotDiverge",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testPersonalFullTextImportPersistsExplicitBasisAndRejectsForgedEvidence",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testPersonalMeaningReviewNeedsNoEnglishNetworkAndExtraCannotBypassRequiredReview",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testPersonalOriginalUpdateKeepsVersionRestoresAnchorAndRollsBackSaveFailure",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testPersonalSourceInstructionNeverMasqueradesAsPublisherLicense",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testPhraseMembershipAndUndoNeverMistakeExistingPhraseForWord",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testPhraseSourceSpanIncludesFirstWordAcrossHardBreakAndRejectsUnrelatedRepeatedWord",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testPublisherDiscoveryRejectsExternalAndNonArticleLinks",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testPublisherExplicitBodyExcludesPageHeaderWhilePreservingAuthorAndDateMetadata",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testPublisherLoginCaptchaAndPaywallNeverBecomeArticle",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testPublisherMissingClosingBodyAndTruncatedPageAreRejected",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testPublisherSubtreeRetainsFinalParagraphAndRejectsPageNavigation",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testReaderProjectionPreservesSourceOffsetsAcrossHardWraps",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testRecommendationCandidatesKeepOriginalInflectedPhraseAndRealOffset",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testRecommendationUsesPreferencesAndCannotReuseAssignedCandidate",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testReviewContextIsFrozenAndLegacyBackfillKeepsAnswerAttemptsAndHint",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testRightsAuditHasAllNineCandidatesAndPendingIsDisabled",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testRightsEvidenceMustGrantAllFourPermissions",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testRound3BackfillIsIdempotentAndKeepsRawArticleAndStudyData",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testRSSDescriptionRemainsInMemoryAndCannotBecomeBody",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testSchemaArticleBodyHTMLIsCleanedAndPreservesFinalParagraph",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testSingleProviderFailureDoesNotDiscardSuccess",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testSpellingVariantsRequireExplicitSourceRelationAndFreezeIntoQuestion",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testStandardEntitiesDecodeUnicodeAndUnknownReferenceRemainsLiteral",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testTenThousandRSSCandidatesStayCompleteAndRecordParserClockAndMemory",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testTruncationHashAndPaywallFailWithoutFallback",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testUnavailableOrEmptyFreeDictionaryKeepsWiktionaryResultsAndStatus",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testUnreferencedOfficialCacheIsRemovedAtomicallyWithoutCreatingCycle",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testURLOnlyEmptyAndPartialBodyNeverPassAdmission",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testVersionedDictionaryCacheDoesNotEraseVocabulary",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testVocabularyExportCallbackSurvivesPresentationDismissalAndRejectsOldRequest",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testVocabularyExportFilesKeepRepositoryBytesAndIsolateCleanup",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testVocabularyExportStagingFailureDoesNotPresentEmptyFileOrOverwriteData",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testVocabularyQueriesAndExportsKeepChineseNotesSourcesAndSchedule",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testVocabularyRecommendationsRequireUnlockAndDoNotAddUntilExplicitAction",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testWikinewsLegacyDateCannotUseNewLicense",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testWiktionaryJSONDoesNotInventChinese",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testWiktionaryPronunciationAndInflectionsStayWithTheirPartOfSpeech",
+      "result": "passed"
+    },
+    {
+      "className": "Round3Tests",
+      "method": "testWiktionaryRichFieldsStayWithinEnglishAndExamplesAreNotDefinitions",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testBilingualMergeNeverSeparatesExamplesFromTheirTranslations",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testCanonicalAliasMigrationKeepsNotesIDsContextsAndReviewLogs",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testCanonicalFormsKeepMonthModalAndNonPluralS",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testCanonicalMigrationSaveFailureRollsBackEveryAlias",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testChineseParserRejectsOtherLanguageAndEnglishOnly",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testChineseWiktionaryParserScopesEnglishAndPreservesPartOfSpeech",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testEnglishOnlyDoesNotLockPersonalChineseDefinitions",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testEnglishTranslationTablesKeepChineseLanguageAndPartBoundaries",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testLegacyUnconfirmedQuestionSetIsArchivedVerbatimBeforeNewPreflight",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testMediaFallbackExcludedWithoutDeletingJavaScriptReporting",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testPersonalSenseRetainsExamplesAndReadiness",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testPersonalSensesPersistAndNotesRemainIndependent",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testRepositoryRejectsPersonalWriteAfterReliableChineseArrivesAndCacheClear",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testRichBilingualFixtureFlowsThroughLookupModelAndDurableCache",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testSeededMaskIsStableDistributedAndRetainsSeparators",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testStructuredWriteFailureLeavesNoPartialMeaning",
+      "result": "passed"
+    },
+    {
+      "className": "Round4Tests",
+      "method": "testTrustedChineseLocksButReverseIndexDoesNot",
+      "result": "passed"
+    }
+  ]
+}

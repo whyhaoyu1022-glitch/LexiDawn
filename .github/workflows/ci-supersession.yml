@@ -10,6 +10,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   supersede:
+    if: ${{ !contains(github.event.head_commit.message, '[keep-native-evidence]') }}
     name: Release runners held by superseded iOS verification
     runs-on: ubuntu-latest
     timeout-minutes: 3

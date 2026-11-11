@@ -38,6 +38,9 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
         let body = app.otherElements["reader-body"].firstMatch; XCTAssertTrue(body.exists)
         XCTAssertTrue(app.buttons["word-Original"].firstMatch.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["word-JavaScript"].firstMatch.exists)
+        XCTAssertFalse(app.buttons["word-enable"].firstMatch.exists)
+        capture("R4-P07-cleaned-structure", app: app, feature: "reader", state: "structured-quotation-retained-player-controls-discarded", origin: "explicit-original-HTML-through-real-extractor-and-Repository")
         capture("R3-R10", app: app, feature: "reader", state: "structured-original-headings-and-quotation", origin: "explicit-original-HTML-through-real-extractor-and-Repository")
         let listItem = app.buttons["word-First"].firstMatch
         for _ in 0..<6 {
@@ -144,15 +147,18 @@ final class Round3UITests: XCTestCase {
         capture("R3-V13", app: app, feature: "vocabulary", state: "typed-search-no-result", origin: "real-RFC-explicit-personal-vocabulary-fixture")
     }
     private func capture(_ id: String, app: XCUIApplication, feature: String, state: String, theme: String = "system", origin: String = "fixture-real-rfc-isolated-learning-state") {
+        if app.state == .runningForeground { _ = app.windows.firstMatch.frame; _ = app.descendants(matching: .any).count }
         let device = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? UIDevice.current.name
         let identifier = id + "-" + device.map { $0.isLetter || $0.isNumber || $0 == "-" ? String($0) : "-" }.joined()
         let image = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); image.name = identifier; image.lifetime = .keepAlways; add(image)
         let metadata: [String: String] = ["screenshotID": identifier, "featureID": feature, "screenName": feature, "state": state,
             "device": ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? UIDevice.current.name, "orientation": XCUIDevice.shared.orientation.isLandscape ? "landscape" : "portrait", "theme": theme,
+            "osVersion": UIDevice.current.systemVersion, "fontSize": nativeEvidenceFontSize(app),
             "testName": name, "fixtureOrProduction": origin, "fileName": identifier + ".png", "notes": "Native Simulator screenshot; no image generation."]
-        if let data = try? JSONSerialization.data(withJSONObject: metadata, options: [.sortedKeys]) {
+        do {
+            let data = try JSONSerialization.data(withJSONObject: metadata, options: [.sortedKeys])
             let json = XCTAttachment(data: data, uniformTypeIdentifier: "public.json"); json.name = identifier + "-metadata"; json.lifetime = .keepAlways; add(json)
-        }
+        } catch { XCTFail("Cannot encode native screenshot metadata: \(error)") }
     }
     func testHistoricalFavoriteLaterAndHistoryStayLockedUntilCurrentTaskFinishes() throws {
         let app = launch("round3-history-gate"); openLibrary(app)
@@ -180,7 +186,7 @@ final class Round3UITests: XCTestCase {
         for _ in 0..<10 { if last.exists && last.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(last.exists); XCTAssertTrue(last.isHittable)
         capture("R3-D41", app: app, feature: "dictionary", state: "full-screen-all-six-senses-grouped-by-pos", origin: "explicit-original-six-sense-provider-fixture")
-        app.buttons["关闭详细释义"].tap(); XCTAssertTrue(app.buttons["close-word"].exists)
+        app.buttons["返回查词"].tap(); XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10))
         capture("R3-D42", app: app, feature: "dictionary", state: "detail-returns-to-original-quick-meaning", origin: "explicit-original-six-sense-provider-fixture")
     }
     func testExtraReviewRestartsSameQuestionAndDoesNotRelockExplore() throws {
@@ -306,8 +312,12 @@ final class Round3UITests: XCTestCase {
         capture("R3-M08", app: app, feature: "matching", state: "all-three-completed-connections-retained")
         let board = app.otherElements["matching-board"].firstMatch
         let previousY = board.frame.minY
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.7)).press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.6)))
+        let window = app.windows.firstMatch.frame
+        let startY = min(window.maxY - 115, board.frame.maxY + 42)
+        let start = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: window.width * 0.93, dy: startY))
+        start.press(forDuration: 0.08, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -28)), withVelocity: .slow, thenHoldForDuration: 0.25)
         XCTAssertLessThan(board.frame.minY, previousY)
+        XCTAssertGreaterThan(board.frame.maxY, window.minY + 125, "The test must leave the line region on screen")
         XCTAssertGreaterThan(greenLinePixels(app: app), 12)
         capture("R3-M11", app: app, feature: "matching", state: "completed-lines-remain-anchored-after-scroll")
     }
@@ -329,8 +339,32 @@ final class Round3UITests: XCTestCase {
         let entry = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'vocabulary-entry-'")).firstMatch
         XCTAssertTrue(entry.waitForExistence(timeout: 10))
         let lemma = String(entry.identifier.dropFirst("vocabulary-entry-".count)); XCTAssertFalse(lemma.isEmpty); entry.tap()
-        // The new sole-source policy locks personal meanings when MDX has Chinese.
-        // Notes remain editable in either branch and must survive navigation.
+        let addSense = app.buttons["添加义项"]
+        let official = app.buttons["choose-review-meaning"]
+        let meaningReady = NSPredicate { _, _ in addSense.exists || official.exists }
+        expectation(for: meaningReady, evaluatedWith: app); waitForExpectations(timeout: 20)
+        if addSense.exists {
+            for _ in 0..<12 { if addSense.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(addSense.isHittable); addSense.tap()
+            let part = app.buttons["personal-part-of-speech"].firstMatch
+            for _ in 0..<8 { if part.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(part.isHittable); part.tap(); app.buttons["n. 名词"].tap()
+            let meaning = app.textFields["personal-meaning"].firstMatch
+            for _ in 0..<8 { if meaning.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(meaning.isHittable); meaning.tap(); meaning.typeText("我对原文词语的个人理解")
+            if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+            let confirm = app.switches["确认作为学习义项"].firstMatch
+            for _ in 0..<8 { if confirm.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(confirm.isHittable); confirm.tap()
+            capture("R3-C03-personal", app: app, feature: "dictionary", state: "actual-MDX-without-Chinese-explicit-personal-review-sense", origin: origin)
+        } else {
+            for _ in 0..<20 { if official.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(official.isHittable); official.tap()
+            let sense = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'review-meaning-'")).firstMatch
+            for _ in 0..<10 { if sense.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(sense.isHittable); sense.tap()
+            XCTAssertTrue(official.label.contains("学习义项："))
+        }
         let notes = app.textFields["vocabulary-notes"]
         for _ in 0..<20 { if notes.exists && notes.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(notes.isHittable); notes.tap(); notes.typeText("真实文章学习笔记")
@@ -403,7 +437,10 @@ final class Round3UITests: XCTestCase {
         search.tap(); search.typeText("Explicit fixture")
         capture("R3-L02", app: app, feature: "library", state: "title-search-hit", origin: "explicit-original-fixture-URLProtocol")
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "Explicit fixture".count)); search.typeText("zzzzunfindable")
-        XCTAssertTrue(app.staticTexts["没有匹配的完整文章"].waitForExistence(timeout: 10))
+        let noResults = app.descendants(matching: .any)["library-empty"].firstMatch
+        for _ in 0..<5 { if noResults.exists && noResults.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(noResults.waitForExistence(timeout: 10))
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 0)
         capture("R3-L03", app: app, feature: "library", state: "title-search-no-result", origin: "explicit-original-fixture-URLProtocol")
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "zzzzunfindable".count))
         if app.buttons["library-finish-search"].exists { app.buttons["library-finish-search"].tap() }
@@ -486,7 +523,7 @@ final class Round3UITests: XCTestCase {
         capture("R3-D66", app: app, feature: "dictionary-context", state: "nested-word-from-provider-definition", origin: "explicit-original-provider-fixture-not-production-network")
         XCTAssertEqual(app.buttons.matching(identifier: "close-word").count, 1)
         app.buttons["close-word"].tap(); XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
-        app.buttons["关闭详细释义"].tap(); app.buttons["close-word"].tap(); app.buttons["返回今日"].tap()
+        app.buttons["关闭详细释义"].tap(); XCTAssertTrue(app.buttons["返回今日"].waitForExistence(timeout: 10)); app.buttons["返回今日"].tap()
         app.tabBars.buttons["词汇"].tap()
         let entry = app.buttons["vocabulary-entry-network"]
         for _ in 0..<6 { if entry.exists && entry.isHittable { break }; app.swipeUp() }
@@ -553,12 +590,21 @@ final class Round3UITests: XCTestCase {
         app.buttons["发现完整文章"].tap()
         XCTAssertTrue(app.staticTexts["article-notice"].waitForExistence(timeout: 240), "Real publisher discovery must complete; no seeded articles")
         capture("R3-S00", app: app, feature: "article", state: "live-multiple-source-import-library", origin: "production-network-empty-isolated-store")
+        let results = app.buttons["article-discovery-results"].firstMatch
+        for _ in 0..<12 { if results.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(results.isHittable); results.tap()
+        let imported = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "article-discovery-result-", "已导入"))
+        XCTAssertTrue(imported.firstMatch.waitForExistence(timeout: 10))
+        capture("R4-P02-actual-sources", app: app, feature: "article", state: "actual-per-source-complete-import-outcomes", origin: "production-network-empty-isolated-store")
         // Unlock through actual app actions, never by inserting completed cycles or review evidence.
         app.navigationBars.buttons.firstMatch.tap()
-        let sourceCards = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'today-source-'"))
-        for _ in 0..<12 { if sourceCards.firstMatch.exists && sourceCards.firstMatch.isHittable { break }; app.swipeUp() }
-        XCTAssertGreaterThanOrEqual(sourceCards.count, 2); XCTAssertTrue(sourceCards.firstMatch.isHittable)
-        capture("R3-S01", app: app, feature: "today", state: "diverse-source-complete-originals-homepage", origin: "production-network-empty-isolated-store")
+        let summary = app.buttons["article-library-body"]
+        for _ in 0..<12 { if summary.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(summary.isHittable)
+        let count = summary.label.split(whereSeparator: { !$0.isNumber }).compactMap { Int($0) }.first ?? 0
+        XCTAssertGreaterThanOrEqual(count, 2)
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'today-source-'")).count, 0)
+        capture("R3-S01", app: app, feature: "today", state: "live-article-inventory-summary-without-duplicate-list", origin: "production-network-empty-isolated-store")
         let task = app.buttons["open-reader"]
         for _ in 0..<15 { if task.exists && task.isHittable { break }; app.swipeDown() }
         XCTAssertTrue(task.waitForExistence(timeout: 10)); XCTAssertTrue(task.isHittable); task.tap()
@@ -566,7 +612,7 @@ final class Round3UITests: XCTestCase {
         if app.alerts.buttons["确认我已读完"].waitForExistence(timeout: 2) { app.alerts.buttons["确认我已读完"].tap() }
         XCTAssertTrue(app.staticTexts["reading-completed"].waitForExistence(timeout: 10)); app.buttons["返回今日"].tap()
         app.tabBars.buttons["复习"].tap()
-        XCTAssertTrue(app.staticTexts["完整队列中没有应复习词条，已记录合法空队列结果。"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["今天没有到期词汇。"].waitForExistence(timeout: 10))
         app.tabBars.buttons["今日"].tap(); XCTAssertTrue(app.staticTexts["cycle-completed"].waitForExistence(timeout: 10)); openLibrary(app)
         let sources = [("wikipedia", "Wikipedia"), ("wikinews", "Wikinews"), ("bbc", "BBC News"), ("reuters", "Reuters"), ("ap", "AP News"), ("guardian", "The Guardian"), ("npr", "NPR"), ("dw", "Deutsche Welle"), ("voa", "VOA Learning English"), ("nasa", "NASA"), ("sciencedaily", "ScienceDaily"), ("phys", "Phys.org"), ("smithsonian", "Smithsonian Magazine")]
         var inspected = 0
@@ -607,7 +653,7 @@ final class Round3UITests: XCTestCase {
         let error = app.staticTexts["明确故障注入：数据库保存失败，未加入生词本。"]
         XCTAssertTrue(error.waitForExistence(timeout: 10)); XCTAssertFalse(app.buttons["undo-word"].exists)
         capture("R3-V01", app: app, feature: "vocabulary", state: "save-failed-no-success", origin: "explicit-one-shot-Repository-save-fault-bundled-RFC")
-        app.buttons["重试保存生词"].tap()
+        let retry = app.buttons["add-word"]; XCTAssertEqual(retry.label, "重试保存生词"); retry.tap()
         let undo = app.buttons["undo-word"]
         for _ in 0..<5 { if undo.exists && undo.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(undo.waitForExistence(timeout: 10)); XCTAssertTrue(undo.isHittable); XCTAssertFalse(error.exists)
@@ -641,7 +687,7 @@ final class Round3UITests: XCTestCase {
                 XCTAssertTrue(phraseButton.isHittable); phraseButton.tap()
                 XCTAssertTrue(app.staticTexts["dictionary-headword"].waitForExistence(timeout: 10)); XCTAssertEqual(app.staticTexts["dictionary-headword"].label, phrase)
                 capture("R3-D" + String(index + 20), app: app, feature: "dictionary", state: "nested-phrase-" + phrase, origin: "explicit-original-context-fixture-real-bundled-MDX")
-                app.buttons["close-word"].firstMatch.tap(); app.buttons["关闭详细释义"].tap()
+                app.buttons["close-word"].firstMatch.tap(); app.buttons["返回查词"].tap()
                 XCTAssertTrue(app.staticTexts["dictionary-headword"].waitForExistence(timeout: 10)); XCTAssertEqual(app.staticTexts["dictionary-headword"].label, lemma)
                 capture("R3-D" + String(index + 60), app: app, feature: "dictionary", state: "returned-from-nested-phrase-" + phrase, origin: "explicit-original-context-fixture-real-bundled-MDX")
             }
