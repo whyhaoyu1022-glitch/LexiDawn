@@ -17,6 +17,16 @@ enum BilingualMeaningPolicy {
     static func trusted(_ sense: DictionarySense) -> Bool {
         isCurrentMDX(sense) && !sense.zh.isBlank && hasChinese(sense.zh)
     }
+    static func belongsToEntry(_ sense: DictionarySense, headword: String) -> Bool {
+        // A main record can legitimately be an alias of another spelling. A
+        // nested idiom or phrasal verb has its own separate lexical identity.
+        guard sense.sectionKind != nil else { return true }
+        guard let lexical = sense.lexicalHeadword else { return false }
+        return EnglishTokenizer.normalized(lexical) == EnglishTokenizer.normalized(headword)
+    }
+    static func trustedSenses(_ senses: [DictionarySense], headword: String) -> [DictionarySense] {
+        senses.filter { trusted($0) && belongsToEntry($0, headword: headword) }
+    }
     static func displaySenses(_ senses: [DictionarySense]) -> [DictionarySense] {
         let values = senses.filter { !$0.zh.isBlank && hasChinese($0.zh) && (trusted($0) || $0.originKind == "personal") }
         return values.filter(trusted) + values.filter { !trusted($0) }

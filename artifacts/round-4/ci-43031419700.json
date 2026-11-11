@@ -1,0 +1,32 @@
+{
+  "runID": 43031419700,
+  "jobID": 130559143147,
+  "commit": "c1e5220d9446d6a0c1e9465100afaea5a432dd34",
+  "platform": "Xcode 26.6, iOS 26.5 Simulator compatibility",
+  "compileAllTargets": "passed",
+  "releaseSimulator": "passed",
+  "xctest": {
+    "executed": 234,
+    "passed": 232,
+    "failed": 2,
+    "mdxExecuted": 26,
+    "mdxPassed": 24,
+    "networkPassed": 15
+  },
+  "failures": [
+    {
+      "file": "LexiDawnTests/MDXDictionaryTests.swift",
+      "line": 36,
+      "method": "testRealMDXHomonymMarkersAreNotPartOfTheLexicalHeadword",
+      "cause": "Index key do links to true do groups and to do., doh and ditto records. All main senses should be scoped to real do groups when exact lexical groups exist."
+    },
+    {
+      "file": "LexiDawnTests/MDXDictionaryTests.swift",
+      "line": 297,
+      "method": "testRealMDXLinkedUsageBoxIsReadFromTheSameDictionaryAndKeepsExamplePairs",
+      "cause": "Bilingual note and wordfinder parsing succeeded; a separate original reference still pointed to the same hospital entry."
+    }
+  ],
+  "nativeUI": "skipped after XCTest failure in this run",
+  "fixVerification": "pending native rerun"
+}

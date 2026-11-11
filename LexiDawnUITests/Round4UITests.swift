@@ -7,7 +7,9 @@ final class Round4UITests: XCTestCase {
     override func tearDownWithError() throws {
         if (testRun?.failureCount ?? 0) > 0 {
             let hierarchy = XCTAttachment(string: XCUIApplication().debugDescription); hierarchy.name = "Round4-failure-hierarchy"; hierarchy.lifetime = .keepAlways; add(hierarchy)
-            capture("R4-diagnostic-" + name.components(separatedBy: " ").last!.replacingOccurrences(of: "]", with: ""), app: XCUIApplication(), feature: "diagnostic", state: "failed-test-actual-screen-not-feature-acceptance") }
+            let method = name.components(separatedBy: " ").last ?? "unknown-method"
+            capture("R4-diagnostic-" + method.replacingOccurrences(of: "]", with: ""), app: XCUIApplication(), feature: "diagnostic", state: "failed-test-actual-screen-not-feature-acceptance")
+        }
         XCUIDevice.shared.orientation = .portrait
     }
     private func launch(_ scenario: String, fontSize: String? = nil) -> XCUIApplication {
@@ -57,8 +59,10 @@ final class Round4UITests: XCTestCase {
             "orientation": orientation, "theme": theme, "osVersion": UIDevice.current.systemVersion, "testName": name,
             "fontSize": category,
             "fixtureOrProduction": provenance, "fileName": identifier + ".png", "notes": "Actual native Simulator capture. Reference images and generated images are not screenshots."]
-        let data = try! JSONSerialization.data(withJSONObject: row, options: [.sortedKeys])
-        let metadata = XCTAttachment(data: data, uniformTypeIdentifier: "public.json"); metadata.name = identifier + "-metadata"; metadata.lifetime = .keepAlways; add(metadata)
+        do {
+            let data = try JSONSerialization.data(withJSONObject: row, options: [.sortedKeys])
+            let metadata = XCTAttachment(data: data, uniformTypeIdentifier: "public.json"); metadata.name = identifier + "-metadata"; metadata.lifetime = .keepAlways; add(metadata)
+        } catch { XCTFail("Cannot encode native screenshot metadata: \(error)") }
     }
     func testBilingualReferenceHierarchyCompactPopupAndReliableEditLock() throws {
         let app = launch("round4-rich"); reader(app); tapWord("nod", app: app)
@@ -320,6 +324,20 @@ final class Round4UITests: XCTestCase {
         reach(app.textFields["vocabulary-notes"], app: app)
         XCTAssertEqual(app.textFields["vocabulary-notes"].value as? String, "Actual MDX absence, personal content")
         capture("R4-F23-real-personal-restart", app: app, feature: "personal-dictionary", state: "actual-disk-personal-content-restored-after-process-restart", provenance: "real-bundled-MDX-and-user-created-content-real-Repository")
+    }
+    func testActualMDXEnglishOnlyEntryHasDetailAndPersonalAction() throws {
+        let app = launch("round4-mdx-production")
+        app.tabBars.buttons["词汇"].tap(); app.buttons["open-offline-dictionary"].tap()
+        let query = app.textFields["dictionary-search-field"]
+        XCTAssertTrue(query.waitForExistence(timeout: 10)); query.tap(); query.typeText("don't\n")
+        let result = app.buttons["dictionary-search-result"]
+        XCTAssertTrue(result.waitForExistence(timeout: 20)); XCTAssertTrue(result.label.contains("暂无中文释义"))
+        XCTAssertTrue(app.buttons["dictionary-create-personal"].isHittable)
+        capture("R4-F23-real-English-only", app: app, feature: "dictionary-search", state: "actual-English-only-MDX-contraction-with-personal-action", provenance: "real-bundled-MDX")
+        result.tap()
+        XCTAssertTrue(app.staticTexts["词典已收录，暂无中文释义"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "do not")).count, 0)
+        capture("R4-F23-real-English-detail", app: app, feature: "dictionary-detail", state: "actual-English-only-entry-without-bilingual-meaning", provenance: "real-bundled-MDX")
     }
     func testDictionaryPartialEmptyAndFailedStatesRemainCompact() throws {
         for mode in ["partial", "empty", "all-failed", "loading"] {

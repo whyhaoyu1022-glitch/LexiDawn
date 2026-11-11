@@ -8,6 +8,7 @@ import io
 import json
 import re
 import zipfile
+from collections import defaultdict
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
@@ -28,6 +29,15 @@ manifest = json.loads(manifest_path.read_text())
 manifest['status'] = 'captured-pending-visual-review'
 manifest['sourceCommit'] = args.commit
 manifest['workflowRun'] = args.run_url
+repo = Path(__file__).resolve().parents[1]
+specification = json.loads((repo/'docs/reviews/round-4-feedback-manifest.json').read_text())
+review = json.loads((repo/'artifacts/round-4/original-image-recheck.json').read_text())
+if review['archiveSHA256'] != specification['archiveSHA256'] or review['reviewedCount'] != 21:
+    raise SystemExit('Original feedback verification does not match the Round 4 manifest')
+manifest['originalFeedback'] = {
+    'archive': review['archive'], 'sha256': review['archiveSHA256'],
+    'reviewedCount': review['reviewedCount'], 'reviewNotes': review['reviewNotes'],
+}
 test_results = {}
 def normalized_test_name(name):
     return re.sub(r'(?<=\[)(?:\w+\.)+', '', name)
@@ -77,6 +87,7 @@ criterion_support = {
     'R4-F22-all-failed': ['22-12'], 'R4-F22-partial': ['22-04'],
     'R4-F23-reliable-lock': ['23-04'], 'R4-F23-English-only': ['23-11'],
     'R4-F23-round4-mdx-': ['16-02','23-05'], 'R4-F23-real-search': ['16-01','23-02','23-04'],
+    'R4-F23-real-English-': ['16-05','23-11'],
     'R4-F23-real-notFound': ['23-06'], 'R4-F23-real-personal-': ['23-07','23-08','23-11'],
     'R3-S01-': ['01-01','02-01','03-02'], 'R3-L01-': ['04-01','04-02'], 'R3-L04-': ['04-03'],
     'R3-R10-': ['07-02'], 'R3-R11-': ['07-02','07-03'], 'R3-X01-': ['13-01','13-02'], 'R3-X02-': ['13-04'],
@@ -106,8 +117,12 @@ for row in manifest['screenshots']:
     row['actualTestResult'] = test_results.get((normalized_test_name(row['testName']), row['device']), 'not-verified-from-test-log')
     row['referenceImageIDs'] = ['R4-R01','R4-R02','R4-R03'] if match and match[2] in ['22','23','24'] else []
     row['visualReviewStatus'] = 'pending'
+hashes = defaultdict(list)
+for row in manifest['screenshots']:
+    hashes[row['sha256']].append(row['fileName'])
+manifest['identicalPixelFiles'] = [files for files in hashes.values() if len(files) > 1]
 manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2)+'\n')
-fields = list(dict.fromkeys(list(module.FIELDS) + ['osVersion','fontSize','feedbackImageID','requirementIDs','referenceImageIDs','acceptanceIDs','acceptanceAssociationOnly','sourceCommit','workflowRun','sha256','actualTestResult','visualReviewStatus']))
+fields = list(dict.fromkeys(list(module.FIELDS) + ['osVersion','fontSize','feedbackImageID','relatedFeedbackImageIDs','requirementIDs','referenceImageIDs','acceptanceIDs','acceptanceAssociationOnly','sourceCommit','workflowRun','sha256','actualTestResult','visualReviewStatus']))
 with (args.output/'screenshots.csv').open('w', newline='') as stream:
     writer = csv.DictWriter(stream, fieldnames=fields, extrasaction='ignore')
     writer.writeheader()
@@ -117,13 +132,29 @@ lines = ['# Round 4 native screenshot index', '', 'Status: captured; visual revi
 for row in manifest['screenshots']:
     lines.append(f"| {row['screenshotID']} | [{row['fileName']}]({row['fileName']}) | {row['state']} | {row['testName']} |")
 (args.output/'INDEX.md').write_text('\n'.join(lines)+'\n')
-specification = json.loads((Path(__file__).resolve().parents[1]/'docs/reviews/round-4-feedback-manifest.json').read_text())
 requirements = specification['issues'] + specification['supplementalRequirements']
 coverage = ['# Round 4 截图覆盖（不是验收通过）', '', f'代码：`{args.commit}`', '', '只关联本次运行的原始 PNG；Fixture、真实 MDX 和资源故障仍分别标记。每项验收必须另核对测试、源码和视觉结果。', '', '| 功能 / 测试族 | 原始截图 | 状态 |', '|---|---|---|']
 for requirement in requirements:
     support = [row['fileName'] for row in manifest['screenshots'] if requirement['requirementID'] in row['requirementIDs']]
     coverage.append('| '+requirement['requirementID']+' / '+requirement['testSuiteID']+' | '+(', '.join(support) or 'MISSING')+' | '+('captured; review pending' if support else 'missing')+' |')
 (args.output/'COVERAGE.md').write_text('\n'.join(coverage)+'\n')
+originals_by_id = {row['imageID']: row for row in review['images']}
+comparison = ['# 原反馈图与本次运行图', '', f'当前构建 `{args.commit}`。原件校验和逐图观察见 `{review["reviewNotes"]}`。', '',
+              '运行截图来自本次实际执行。列出的图仍需检查其画面内容是否覆盖对应原图的问题。', '',
+              '| 项目 | 原件 | 原件 SHA-256 | 对应运行图（测试结果） |', '|---|---|---|---|']
+for original in specification['images']:
+    key = original['imageID']
+    verified = originals_by_id.get(key)
+    if not verified or verified['sha256'] != original['sha256'] or not verified['reviewedFromUploadedOriginal']:
+        raise SystemExit(f'Original feedback is missing or different: {key}')
+    requirement_id = key.replace('R4-P', 'R4-F')
+    matches = [row for row in manifest['screenshots'] if row['feedbackImageID'] == key or key in row.get('relatedFeedbackImageIDs', []) or requirement_id in row['requirementIDs']]
+    captures = ', '.join(f'[{row["fileName"]}]({row["fileName"]}) ({row["actualTestResult"]})' for row in matches)
+    comparison.append(f'| {key} | {original["originalFile"]} | `{original["sha256"]}` | {captures or "缺少本次运行图"} |')
+if manifest['identicalPixelFiles']:
+    comparison += ['', '以下截图文件字节相同，须在视觉复核时确认是否确实需要多个编号。', '']
+    comparison += ['- '+', '.join(files) for files in manifest['identicalPixelFiles']]
+(args.output/'COMPARISON.md').write_text('\n'.join(comparison)+'\n')
 with zipfile.ZipFile(args.output.parent/'original-pngs.zip', 'w', zipfile.ZIP_DEFLATED) as archive:
     for path in sorted(args.source.rglob('*')):
         if path.is_file() and path.suffix.lower() in ['.png','.json']:

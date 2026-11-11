@@ -1,0 +1,29 @@
+{
+  "sourceCommit": "c1e5220d9446d6a0c1e9465100afaea5a432dd34",
+  "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43031420226",
+  "displayName": "LexiDawn",
+  "bundleIdentifier": "com.lexidawn.app",
+  "version": "0.1.0",
+  "build": "27",
+  "minimumOSVersion": "27.0",
+  "platform": "iPhoneOS",
+  "architecture": "arm64",
+  "signed": false,
+  "installedOnDevice": false,
+  "testsRerun": false,
+  "appIconSHA256": "eec830e70d18ac15be720ff38a5be1a5934e596600779d31d7119db290d05fdb",
+  "retiredDictionaryEndpointsAbsentFromExecutable": true,
+  "xcode": "Xcode 26.6\nBuild version 17F113",
+  "sdk": "26.5",
+  "ipaSHA256": "a49251f8d42e67d4bf0b6d34fac0499549bd316533bf810412c2f443b2f4815b",
+  "ipaSizeBytes": 43810680,
+  "artifactID": 13860649346,
+  "downloadedAndInspected": true,
+  "appMDX": {
+    "bytes": 38774534,
+    "sha256": "095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443",
+    "format": "MDX 2.0",
+    "encoding": "UTF-8",
+    "encrypted": false
+  }
+}

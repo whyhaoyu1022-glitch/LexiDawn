@@ -31,7 +31,7 @@ struct VocabularyListView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(item.lemma).font(.headline)
                             if let ipa = item.ipa { Text(ipa).font(.caption.monospaced()) }
-                            if !item.partsOfSpeech.isEmpty { Text(item.partsOfSpeech.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
+                            if !item.partsOfSpeech.isEmpty { Text(item.partsOfSpeech.map { BilingualMeaningPolicy.partName($0) }.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
                             if let meaning = item.primaryChinese { Text(meaning).font(.subheadline).lineLimit(2) }
                             Text("\(item.type == "word" ? "单词" : "短语") · \(item.addedAt.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.secondary)
                             if let due = item.dueAt { Text("下次复习：" + due.formatted(date: .abbreviated, time: .shortened)).font(.caption) }
@@ -46,7 +46,7 @@ struct VocabularyListView: View {
                     Text(exportNotice).font(.subheadline).frame(maxWidth: .infinity, alignment: .leading).padding()
                         .background(.regularMaterial).accessibilityIdentifier("vocabulary-export-completed")
                 }
-            }.searchable(text: $search, prompt: "搜索词形、lemma 或已缓存中文释义")
+            }.searchable(text: $search, prompt: "搜索单词、短语或中文释义")
                 .navigationTitle("生词本").task { load() }.onReceive(learning.$revision) { _ in load() }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in load() }
                 .toolbar {
@@ -309,13 +309,13 @@ struct VocabularyDetailView: View {
                 if speech.state == .unavailable { Text("系统英语语音不可用").font(.caption).foregroundStyle(.secondary) }
                 if item.surfaces != [item.lemma] { Text(item.surfaces.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
                 if let result, !result.usableSenses.isEmpty { DictionaryResultContent(result: result, onExampleWord: { token, sense, text in lookupWord(token, origin: .dictionary(headword: item.lemma, evidence: sense.line, text: text)) }, onRelatedEntry: openRelated) }
-                else if result != nil { Label("暂无可靠英中释义，可在下方补充。", systemImage: "text.book.closed").font(.subheadline).foregroundStyle(.secondary) }
+                else if let result { Label(result.hasMDXEntry ? "词典已收录，暂无中文释义" : "词典未收录，可在下方补充。", systemImage: "text.book.closed").font(.subheadline).foregroundStyle(.secondary) }
                 else if dictionaryError == nil { ProgressView("正在查询英中释义…") }
                 if result == nil, let cacheError = item.dictionaryCacheError { Text(cacheError).font(.caption).foregroundStyle(.secondary) }
                 if let dictionaryError { Text(dictionaryError).font(.footnote).foregroundStyle(.secondary); Button("重试词典") { Task { await lookup() } } }
-                if let result, !result.usableSenses.isEmpty {
+                if let result, !result.reliableChinese.isEmpty {
                     DisclosureGroup(isExpanded: $choosingMeaning) {
-                        ForEach(result.usableSenses) { sense in
+                        ForEach(result.reliableChinese) { sense in
                             Button { choose(sense) } label: { VStack(alignment: .leading, spacing: 4) { Text(sense.zh); Text(BilingualMeaningPolicy.partName(sense.partOfSpeech)).font(.caption).foregroundStyle(.secondary) } }.accessibilityIdentifier("review-meaning-" + sense.id)
                         }
                     } label: { Text(chosenMeaningText.map { "学习义项：" + $0 } ?? "选择学习义项") }.accessibilityIdentifier("choose-review-meaning")
@@ -423,7 +423,7 @@ struct VocabularyDetailView: View {
         annotation.senses.swapAt(index, index + delta)
     }
     private func lookup() async {
-        do { result = try await learning.dictionary.lookup(item.lemma, context: item.contexts.first ?? ""); dictionaryError = nil; annotation.refreshPolicy() }
+        do { result = try await learning.dictionary.lookupCanonical(item.lemma); dictionaryError = nil; annotation.refreshPolicy() }
         catch { result = nil; dictionaryError = error.localizedDescription; annotation.refreshPolicy() }
     }
     private func choose(_ sense: DictionarySense) {

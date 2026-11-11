@@ -35,7 +35,7 @@ enum MDXEntryIdentity {
 actor BundledMDXDictionaryProvider: DictionaryProvider {
     static let sourceName = "内置 MDX"
     static let sourceSHA = "095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443"
-    static let sourceVersion = sourceSHA + "-html-7"
+    static let sourceVersion = sourceSHA + "-html-8"
     private let resource: URL?
     private var reader: OpaquePointer?
     private var index: [String: [Int]] = [:]
@@ -45,6 +45,10 @@ actor BundledMDXDictionaryProvider: DictionaryProvider {
     private(set) var cacheHits = 0
     init(resource: URL? = Bundle.main.url(forResource: "BundledDictionary", withExtension: "mdx")) { self.resource = resource }
     deinit { if let reader { ld_mdx_close(reader) } }
+
+    private static func foldedKey(_ key: String) -> String {
+        key.lowercased().replacingOccurrences(of: "’", with: "'")
+    }
 
     private func initialize() throws {
         if reader != nil { return }
@@ -69,7 +73,7 @@ actor BundledMDXDictionaryProvider: DictionaryProvider {
             for number in 0..<Int(ld_mdx_count(opened)) {
                 if number % 512 == 0 { try Task.checkCancellation() }
                 guard let pointer = ld_mdx_key(opened, number), let key = String(validatingUTF8: pointer) else { throw MDXDictionaryError.invalidStructure("无效 UTF-8 词头") }
-                if exact[key] == nil { insensitive[key.lowercased(), default: []].append(key) }
+                if exact[key] == nil { insensitive[Self.foldedKey(key), default: []].append(key) }
                 exact[key, default: []].append(number)
             }
             index = exact; folded = insensitive; reader = opened
@@ -79,8 +83,16 @@ actor BundledMDXDictionaryProvider: DictionaryProvider {
         try initialize(); try Task.checkCancellation()
         if let value = cache[headword] { cacheHits += 1; touch(headword); return value }
         // Exact spelling wins: May never merges the modal may or the hawthorn noun.
-        let keys = index[headword] != nil ? [headword] : folded[headword.lowercased()] ?? []
-        let values = try parseRecords(keys.flatMap { index[$0] ?? [] }, headword: headword, subentryOnly: false)
+        let keys = index[headword] != nil ? [headword] : folded[Self.foldedKey(headword)] ?? []
+        let parsed = try parseRecords(keys.flatMap { index[$0] ?? [] }, headword: headword, subentryOnly: false)
+        let direct = parsed.filter { $0.sectionKind == nil && $0.lexicalHeadword == headword }
+        let equivalent = direct.isEmpty ? parsed.filter {
+            $0.sectionKind == nil && $0.lexicalHeadword.map(Self.foldedKey) == Self.foldedKey(headword)
+        } : direct
+        let groups = Set(equivalent.compactMap(\.entryGroupID))
+        // Some index keys include both a true headword and adjacent variants.
+        // Keep the actual headword's groups, including their nested phrases.
+        let values = groups.isEmpty ? parsed : parsed.filter { $0.entryGroupID.map(groups.contains) ?? false }
         remember(values, headword: headword)
         return values
     }
@@ -98,23 +110,25 @@ actor BundledMDXDictionaryProvider: DictionaryProvider {
                 for (target, html) in try records(number, path: []) {
                     try Task.checkCancellation()
                     for var sense in try MDXEntryParser.parse(html, requested: headword, recordID: target, subentryOnly: subentryOnly) where seen.insert(sense.id).inserted {
+                        let selfKeys = Set([Self.foldedKey(headword), Self.foldedKey(sense.lexicalHeadword ?? headword)])
+                        var references = (sense.seeAlso ?? []).filter { !selfKeys.contains(Self.foldedKey($0)) }
+                        var referenceIDs = Set(references.map(Self.foldedKey))
                         if let links = sense.supplementLinks, !links.isEmpty {
                             var notes = sense.usageNotes ?? []
                             var noteIDs = Set(notes.map(\.id))
-                            var references = sense.seeAlso ?? []
-                            var referenceIDs = Set(references)
                             var warnings: [String] = []
                             for link in links {
                                 try Task.checkCancellation()
                                 do {
-                                    let targets = index[link] ?? (folded[link.lowercased()] ?? []).flatMap { index[$0] ?? [] }
+                                    let targets = index[link] ?? (folded[Self.foldedKey(link)] ?? []).flatMap { index[$0] ?? [] }
                                     guard !targets.isEmpty else { throw MDXDictionaryError.invalidEntry("补充用法页未收录") }
                                     for number in targets {
                                         for (noteRecord, noteHTML) in try records(number, path: []) {
                                             let supplement = try MDXEntryParser.supplement(noteHTML, recordID: noteRecord)
                                             notes.append(contentsOf: supplement.notes.filter { noteIDs.insert($0.id).inserted })
                                             references.append(contentsOf: supplement.references.filter {
-                                                $0 != sense.lexicalHeadword && referenceIDs.insert($0).inserted
+                                                let key = Self.foldedKey($0)
+                                                return !selfKeys.contains(key) && referenceIDs.insert(key).inserted
                                             })
                                         }
                                     }
@@ -122,9 +136,9 @@ actor BundledMDXDictionaryProvider: DictionaryProvider {
                                 catch { warnings.append(error.localizedDescription) }
                             }
                             sense.usageNotes = notes.isEmpty ? nil : notes
-                            sense.seeAlso = references.isEmpty ? nil : references
                             sense.sourceWarnings = warnings.isEmpty ? nil : warnings
                         }
+                        sense.seeAlso = references.isEmpty ? nil : references
                         values.append(sense)
                     }
                 }

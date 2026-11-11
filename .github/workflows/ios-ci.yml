@@ -173,6 +173,7 @@ jobs:
     runs-on: macos-latest
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
+      compiled_artifact_id: ${{ steps.compiled-products.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@v4
       - name: Verify approved compatibility toolchain
@@ -183,6 +184,7 @@ jobs:
           python3 scripts/ci-test-plan.py verify
           echo "matrix=$(python3 scripts/ci-test-plan.py matrix)" >> "$GITHUB_OUTPUT"
       - name: Compile app and every test target once
+        id: compile-tests
         run: |
           set -euo pipefail
           xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -derivedDataPath "${RUNNER_TEMP}/LexiDawn-derived" -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -configuration Debug IPHONEOS_DEPLOYMENT_TARGET=26.5 CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES SWIFT_OPTIMIZATION_LEVEL=-Onone -parallel-testing-enabled NO build-for-testing 2>&1 | tee "${RUNNER_TEMP}/LexiDawn-build.log"
@@ -237,12 +239,16 @@ jobs:
             ${{ runner.temp }}/LexiDawn-unit.xcresult
           if-no-files-found: warn
       - name: Archive reusable compiled simulator tests
+        id: archive-tests
+        if: ${{ always() && !cancelled() && steps.compile-tests.outcome == 'success' }}
         run: |
           set -euo pipefail
           xcodebuild -version > "${RUNNER_TEMP}/ci-build-toolchain.txt"
           uname -m >> "${RUNNER_TEMP}/ci-build-toolchain.txt"
           tar -C "${RUNNER_TEMP}/LexiDawn-derived/Build" -czf "${RUNNER_TEMP}/LexiDawn-test-products.tgz" Products
       - uses: actions/upload-artifact@v4
+        id: compiled-products
+        if: ${{ always() && !cancelled() && steps.archive-tests.outcome == 'success' }}
         with:
           name: LexiDawn-compiled-tests-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -254,7 +260,7 @@ jobs:
   ui-tests:
     name: Native UI · ${{ matrix.suite }} · ${{ matrix.device }}
     needs: build-and-test
-    if: ${{ always() && !cancelled() && needs.build-and-test.result == 'success' }}
+    if: ${{ always() && !cancelled() && needs.build-and-test.outputs.compiled_artifact_id != '' }}
     runs-on: macos-latest
     strategy:
       fail-fast: false

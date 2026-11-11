@@ -186,10 +186,9 @@ struct ReviewSessionView: Equatable {
     }
     private func primeMeanings(_ selected: [(String, String)], at now: Date) async throws {
         for (id, lemma) in selected {
-            let sentence = try writer.read { context in try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).first { $0.entryID == id }?.sentence ?? "" }
             // Every new question revalidates the sole source; a valid personal
             // snapshot must not bypass a newly available MDX Chinese definition.
-            _ = try await dictionary.lookup(lemma, context: sentence, at: now)
+            _ = try await dictionary.lookupCanonical(lemma, at: now)
             try Task.checkCancellation()
             try writer.read { context in
                 guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == id && $0.deletedAt == nil }) else { throw LearningError.invalid("词条已移除。") }
@@ -199,15 +198,12 @@ struct ReviewSessionView: Equatable {
     }
     private func resolveMeaning(_ entry: VocabularyEntryRecord, context: ModelContext) throws -> DictionarySense {
         let caches = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
-        let official = try caches.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) }.filter(BilingualMeaningPolicy.trusted)
+        let decoded = try caches.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) }
+        let official = BilingualMeaningPolicy.trustedSenses(decoded, headword: entry.lemma)
         let known = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).contains { $0.lemma == entry.lemma && $0.mdxSHA == BundledMDXDictionaryProvider.sourceSHA && $0.reliableChineseKnown }
         let aliases = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.canonicalEntryID == entry.entryID }.map(\.entryID)
         let identities = Set([entry.entryID] + aliases)
         let source = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).filter { identities.contains($0.entryID) }.sorted { ($0.createdAt, $0.contextID) < ($1.createdAt, $1.contextID) }.first
-        if let data = entry.reviewMeaningSnapshotData {
-            let selected = try JSONDecoder().decode(DictionarySense.self, from: data)
-            if BilingualMeaningPolicy.trusted(selected), selected.partOfSpeech?.isBlank == false { return selected }
-        }
         if let selected = official.first(where: { $0.id == entry.reviewMeaningSenseID }), selected.partOfSpeech?.isBlank == false { return selected }
         if let sense = DictionaryAggregator.rank(official, context: source?.sentence ?? "", surface: entry.lemma).first {
             guard sense.partOfSpeech?.isBlank == false else { throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "的词性尚不完整，请重试词典或本次延期。", canEditPersonal: false) }

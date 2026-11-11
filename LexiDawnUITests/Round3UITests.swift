@@ -19,6 +19,15 @@ final class Round3UITests: XCTestCase {
         app.launchEnvironment["LEXIDAWN_UI_STORE_ID"] = UUID().uuidString; app.launch(); return app
     }
     private func choose(_ identifier: String, option: String, app: XCUIApplication) throws {
+        if identifier == "library-mode-filter" {
+            let scopes = app.segmentedControls[identifier]
+            for _ in 0..<7 { if scopes.isHittable { break }; app.swipeDown() }
+            XCTAssertTrue(scopes.isHittable)
+            let title = option == "稍后阅读" ? "稍后" : option
+            let segment = scopes.buttons.matching(NSPredicate(format: "label == %@ OR label BEGINSWITH %@", title, title + " ")).firstMatch
+            XCTAssertTrue(segment.isHittable); segment.tap()
+            return
+        }
         let picker = app.buttons[identifier]
         for _ in 0..<7 { if picker.exists && picker.isHittable { break }; app.swipeDown() }
         XCTAssertTrue(picker.isHittable); picker.tap()
@@ -152,11 +161,7 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(historical.waitForExistence(timeout: 10)); XCTAssertFalse(historical.isEnabled)
         capture("R3-LOCK01", app: app, feature: "article-gate", state: "historical-daily-article-locked", origin: "explicit-historical-cycle-fixture-real-domain-evidence")
         for (index, filter) in ["收藏", "稍后阅读", "历史"].enumerated() {
-            let picker = app.buttons["library-mode-filter"]
-            for _ in 0..<5 { if picker.exists && picker.isHittable { break }; app.swipeDown() }
-            XCTAssertTrue(picker.isHittable); picker.tap()
-            let option = try XCTUnwrap(app.buttons.matching(NSPredicate(format: "label == %@", filter)).allElementsBoundByIndex.first(where: \.isHittable))
-            option.tap()
+            try choose("library-mode-filter", option: filter, app: app)
             for _ in 0..<5 { if historical.exists && historical.isHittable { break }; app.swipeUp() }
             XCTAssertTrue(historical.exists); XCTAssertFalse(historical.isEnabled)
             capture("R3-LOCK0\(index + 2)", app: app, feature: "article-gate", state: filter + "-cannot-open-old-daily-article", origin: "explicit-historical-cycle-fixture-real-domain-evidence")

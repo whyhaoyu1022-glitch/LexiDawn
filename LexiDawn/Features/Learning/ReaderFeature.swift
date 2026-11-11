@@ -185,6 +185,7 @@ struct ReaderView: View {
     @Published private(set) var phraseError: String?
     private var started = false
     private var lookupGeneration = UUID()
+    private var lookupJob = UUID()
     private var lookupTask: Task<Void, Never>?
     let token: EnglishToken
     let articleID: String?
@@ -194,13 +195,15 @@ struct ReaderView: View {
     init(token: EnglishToken, articleID: String?, autoAdd: Bool, learning: LearningServices, depth: Int = 0, origin: VocabularyContextOrigin = .reader) { self.token = token; self.articleID = articleID; self.autoAdd = autoAdd; self.learning = learning; self.depth = depth; self.origin = origin }
     func startLookup(force: Bool = false) {
         guard force || result == nil, lookupTask == nil else { return }
+        let job = UUID()
+        lookupJob = job
         lookupTask = Task { [weak self] in
             guard let self else { return }
-            defer { self.lookupTask = nil }
+            defer { if self.lookupJob == job { self.lookupTask = nil } }
             await self.begin()
         }
     }
-    func cancelLookup() { lookupTask?.cancel(); lookupTask = nil; lookupGeneration = UUID(); loading = false }
+    func cancelLookup() { lookupTask?.cancel(); lookupTask = nil; lookupJob = UUID(); lookupGeneration = UUID(); loading = false }
     func begin() async {
         startAddition()
         await lookup()
@@ -213,14 +216,14 @@ struct ReaderView: View {
         } catch { vocabularyError = error.localizedDescription }
     }
     func lookup() async {
-        let generation = UUID(); lookupGeneration = generation; loading = true
+        let generation = UUID(); lookupGeneration = generation; loading = true; error = nil
         defer { if lookupGeneration == generation { loading = false } }
         do {
             let value = try await learning.dictionary.lookup(token.surface, context: token.sentence)
             guard generation == lookupGeneration, !Task.isCancelled else { return }
             result = value; error = nil
         } catch is CancellationError { }
-        catch { if generation == lookupGeneration { self.error = error.localizedDescription } }
+        catch { if generation == lookupGeneration { result = nil; self.error = error.localizedDescription } }
     }
     func add(explicit: Bool) {
         do {
@@ -307,8 +310,8 @@ struct DictionaryQuickMeaning: View {
     let result: DictionaryResult
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if result.usableSenses.isEmpty { Text("暂无英中释义").font(.subheadline).foregroundStyle(.secondary) }
-            ForEach(Array(result.usableSenses.prefix(2))) { sense in
+            if result.quickSenses.isEmpty { Text("暂无英中释义").font(.subheadline).foregroundStyle(.secondary) }
+            ForEach(Array(result.quickSenses.prefix(2))) { sense in
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     if let part = sense.partOfSpeech { Text(BilingualMeaningPolicy.partName(part)).font(.caption).foregroundStyle(.secondary) }
                     Text(sense.zh).font(.subheadline).lineLimit(2)
@@ -355,10 +358,7 @@ struct DictionaryResultContent: View {
     let result: DictionaryResult
     var onExampleWord: ((EnglishToken, DictionarySense, String) -> Void)? = nil
     var onRelatedEntry: ((String) -> Void)? = nil
-    private var senses: [DictionarySense] {
-        let usableIDs = Set(result.usableSenses.map(\.id))
-        return result.senses.filter { usableIDs.contains($0.id) || (BilingualMeaningPolicy.isCurrentMDX($0) && !$0.en.isBlank) }
-    }
+    private var senses: [DictionarySense] { result.usableSenses }
     private func group(_ sense: DictionarySense) -> String {
         if let section = sense.sectionKind { return "section|" + section }
         return "part|" + (sense.partOfSpeech ?? "") + "|" + (sense.entryGroupID ?? "")
@@ -380,8 +380,9 @@ struct DictionaryResultContent: View {
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 26) {
-            if senses.isEmpty { ContentUnavailableView("暂无英中释义", systemImage: "text.book.closed", description: Text("可以在生词本补充词性、中文释义和例句。")) }
-            else if result.usableSenses.isEmpty { Text("此词条暂无中文释义，可在生词本补充。").font(.subheadline).foregroundStyle(.secondary) }
+            if senses.isEmpty {
+                ContentUnavailableView(result.hasMDXEntry ? "词典已收录，暂无中文释义" : "暂无英中释义", systemImage: "text.book.closed", description: Text("可在生词本补充中文释义和例句。"))
+            }
             ForEach(Array(parts.enumerated()), id: \.element) { groupIndex, part in
                 VStack(alignment: .leading, spacing: 16) {
                     if part.hasPrefix("section|") {
@@ -428,11 +429,8 @@ private struct DictionarySenseBody: View {
                 } else { Text(related).font(.system(.title3, design: .serif).weight(.semibold)) }
             }
             if let labels = sense.usageLabels, !labels.isEmpty { Text(labels.joined(separator: " · ")).font(.caption).foregroundStyle(.primary.opacity(0.65)) }
-            if !sense.en.isBlank && sense.en != sense.zh {
-                Text(sense.en).font(sense.zh.isBlank ? .body : .subheadline).foregroundStyle(sense.zh.isBlank ? .primary : .secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            if !sense.zh.isBlank { Text(sense.zh).font(.body).fixedSize(horizontal: false, vertical: true) }
+            Text(sense.zh).font(.body).fixedSize(horizontal: false, vertical: true)
+            if sense.originKind == "personal", !sense.en.isBlank { Text(sense.en).font(.subheadline).foregroundStyle(.secondary) }
             if let phrases = sense.relatedPhrases, !phrases.isEmpty {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("短语与搭配").font(.caption.weight(.semibold)).foregroundStyle(.primary.opacity(0.65))

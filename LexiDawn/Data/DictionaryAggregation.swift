@@ -249,9 +249,10 @@ actor DictionaryAggregator {
         }) else { throw LearningError.invalid("只允许保存当前内置 MDX 的派生数据。") }
         try writer.write {
             let context = writer.context
-            let reliable = senses.filter(BilingualMeaningPolicy.trusted)
+            let reliable = BilingualMeaningPolicy.trustedSenses(senses, headword: lemma)
             let rows = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).filter { $0.lemma == lemma }
             guard rows.count <= 1 else { throw PersistenceError.integrity("重复词典资格证据") }
+            if let current = rows.first, current.mdxSHA == BundledMDXDictionaryProvider.sourceSHA, current.checkedAt > now { return }
             let eligibility = rows.first ?? DictionaryEligibilityRecord(lemma: lemma, at: now, evidence: "")
             if eligibility.modelContext == nil { context.insert(eligibility) }
             let previouslyKnown = eligibility.mdxSHA == BundledMDXDictionaryProvider.sourceSHA && eligibility.reliableChineseKnown
@@ -264,12 +265,11 @@ actor DictionaryAggregator {
             eligibility.evidence = "mdx|" + BundledMDXDictionaryProvider.sourceSHA
             for provider in successful {
                 guard let version = DictionaryAggregator.versions[provider] else { continue }
-                let values = senses.filter { ($0.sources ?? []).contains(provider) && (provider != "Free Dictionary API" || URL(string: $0.licenseURL ?? "")?.host == "creativecommons.org") }
                 let requestedKey = "en|\(provider)|\(version)|\(lemma)"
                 let previous = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>(predicate: #Predicate { $0.key == requestedKey }))
                 if previous.contains(where: { $0.fetchedAt > now }) { continue }
                 for old in previous { context.delete(old) }
-                context.insert(DictionaryProviderCacheRecord(lemma: lemma, provider: provider, version: version, data: try JSONEncoder().encode(values), at: now))
+                context.insert(DictionaryProviderCacheRecord(lemma: lemma, provider: provider, version: version, data: try JSONEncoder().encode(senses), at: now))
             }
         }
     }
@@ -278,6 +278,7 @@ actor DictionaryAggregator {
             let context = writer.context
             let rows = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).filter { $0.lemma == lemma }
             guard rows.count <= 1 else { throw PersistenceError.integrity("重复词典资格证据") }
+            if let current = rows.first, current.mdxSHA == BundledMDXDictionaryProvider.sourceSHA, current.checkedAt > now { return }
             let record = rows.first ?? DictionaryEligibilityRecord(lemma: lemma, at: now, evidence: "")
             if record.modelContext == nil { context.insert(record) }
             if record.mdxSHA != BundledMDXDictionaryProvider.sourceSHA { record.reliableChineseKnown = false; record.mdxRecordHints = nil }
