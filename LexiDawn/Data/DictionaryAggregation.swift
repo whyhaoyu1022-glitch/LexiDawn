@@ -226,7 +226,11 @@ actor DictionaryAggregator {
                 $0.sourceVersion.hasPrefix(BundledMDXDictionaryProvider.sourceSHA + "-html-")
             }
             let senses = try records.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) }
-            return Array(Set(senses.compactMap(MDXEntryIdentity.recordNumber))).sorted()
+            let identities = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>(predicate: #Predicate { $0.lemma == requested })).filter { $0.mdxSHA == BundledMDXDictionaryProvider.sourceSHA }
+            guard identities.count <= 1 else { throw PersistenceError.integrity("重复词典索引身份") }
+            let persisted = identities.first?.mdxRecordHints ?? []
+            guard persisted.allSatisfy({ $0 >= 0 }) else { throw PersistenceError.integrity("词典派生索引位置无效") }
+            return Array(Set(senses.compactMap(MDXEntryIdentity.recordNumber) + persisted)).sorted()
         }
     }
     func load(_ lemma: String, at now: Date) throws -> (senses: [DictionarySense], complete: Bool, date: Date) {
@@ -251,7 +255,9 @@ actor DictionaryAggregator {
             let eligibility = rows.first ?? DictionaryEligibilityRecord(lemma: lemma, at: now, evidence: "")
             if eligibility.modelContext == nil { context.insert(eligibility) }
             let previouslyKnown = eligibility.mdxSHA == BundledMDXDictionaryProvider.sourceSHA && eligibility.reliableChineseKnown
+            let oldHints = eligibility.mdxSHA == BundledMDXDictionaryProvider.sourceSHA ? eligibility.mdxRecordHints ?? [] : []
             eligibility.mdxSHA = BundledMDXDictionaryProvider.sourceSHA
+            eligibility.mdxRecordHints = Array(Set(oldHints + senses.compactMap(MDXEntryIdentity.recordNumber))).sorted()
             eligibility.reliableChineseKnown = previouslyKnown || !reliable.isEmpty
             eligibility.lookupStatus = reliable.isEmpty ? (senses.isEmpty ? "notFound" : "noChinese") : "chinese"
             eligibility.lookupError = nil; eligibility.checkedAt = now
@@ -274,7 +280,7 @@ actor DictionaryAggregator {
             guard rows.count <= 1 else { throw PersistenceError.integrity("重复词典资格证据") }
             let record = rows.first ?? DictionaryEligibilityRecord(lemma: lemma, at: now, evidence: "")
             if record.modelContext == nil { context.insert(record) }
-            if record.mdxSHA != BundledMDXDictionaryProvider.sourceSHA { record.reliableChineseKnown = false }
+            if record.mdxSHA != BundledMDXDictionaryProvider.sourceSHA { record.reliableChineseKnown = false; record.mdxRecordHints = nil }
             record.mdxSHA = BundledMDXDictionaryProvider.sourceSHA; record.lookupStatus = "failed"
             record.lookupError = error; record.checkedAt = now
         }

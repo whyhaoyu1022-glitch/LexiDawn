@@ -1,0 +1,22 @@
+{
+  "sourceCommit": "ae4fa5982e54c2424fd27347eb2e56afdf0fb797",
+  "workingTreeModified": true,
+  "scope": "Host-only HTML bridge compile and DOM marker checks; not native iOS acceptance",
+  "compilerFlags": [
+    "-std=gnu11",
+    "-O2",
+    "-Wall",
+    "-Wextra",
+    "-Werror"
+  ],
+  "headers": "Runtime lxml bundled public libxml2 headers (system development headers unavailable)",
+  "linkedLibrary": "system libxml2.so.2",
+  "fixtureCases": 2,
+  "results": [
+    "Homonym t-hm marker omitted from do¹",
+    "Literal styled digit in model2 retained; only DOM homonym markers skipped"
+  ],
+  "sourceSHA256": "f479075b0c483dddbd846d5d5618a273550489bb0484e8e2a5621e55d432c1da",
+  "iOSBuildExecuted": false,
+  "simulatorExecuted": false
+}

@@ -22,6 +22,7 @@ struct LearningSettingsView: View {
     @State private var timezonePolicy = "device"
     @State private var fixedTimezone = "Asia/Shanghai"
     @State private var message: String?
+    @State private var cacheMessage: String?
     @State private var saveFailed = false
     @State private var loaded = false
     @State private var savedSignature = ""
@@ -56,7 +57,7 @@ struct LearningSettingsView: View {
                     Stepper("每日复习上限：\(dailyLimit)", value: $dailyLimit, in: 1...100)
                     Picker("学习时区", selection: $timezonePolicy) { Text("跟随设备").tag("device"); Text("固定时区").tag("fixed") }
                     if timezonePolicy == "fixed" { TextField("IANA 时区，例如 Asia/Shanghai", text: $fixedTimezone).textInputAutocapitalization(.never) }
-                    Text("原周期分配日期与时区保持不变；新设置只影响以后判断本地学习日期。题组创建后保留原题量。").font(.caption).foregroundStyle(.secondary)
+                    if timezonePolicy == "fixed" { Text("新时区用于今后的学习日期。").font(.caption).foregroundStyle(.secondary) }
                 }
                 Section {
                     if let message { Text(message).font(.footnote).accessibilityIdentifier("settings-message") }
@@ -66,7 +67,7 @@ struct LearningSettingsView: View {
                     Button("清理未使用的文章缓存") { cacheKind = "article" }
                     Button("清理词典缓存") { cacheKind = "dictionary" }
                     Text("阅读历史、未完成周期、生词、笔记、收藏、稍后阅读和个人导入都保留。词典缓存可从内置 MDX 重建。").font(.footnote)
-                    if let message { Text(message).font(.footnote) }
+                    if let cacheMessage { Text(cacheMessage).font(.footnote) }
                 }
                 Section("关于与许可") {
                     NavigationLink("关于词光") { AboutLexiDawnView(licenseText: licenseText) }.accessibilityIdentifier("about-lexidawn")
@@ -89,8 +90,8 @@ struct LearningSettingsView: View {
     private func clearCache(kind: String) {
         do {
             let count = try kind == "article" ? learning.content.clearUnusedArticleCache() : learning.dictionary.clearCaches()
-            message = "已清理 \(count) 项可重新取得的缓存；学习记录保留。"; learning.changed()
-        } catch { message = error.localizedDescription }
+            cacheMessage = "已清理 \(count) 项缓存。"; learning.changed()
+        } catch { cacheMessage = error.localizedDescription }
         cacheKind = nil
     }
     private func load() {

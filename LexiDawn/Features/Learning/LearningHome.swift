@@ -28,6 +28,7 @@ struct LiveTodayView: View {
     @StateObject private var reviewGate = ReviewEntryCoordinator()
     @State private var statistics: LearningStatistics?
     @State private var sourceMessage: String?
+    @State private var inventoryError: String?
     @State private var fetching = false
     @State private var articles: [ArticleLibraryItem] = []
     init(dependencies: AppDependencies, learning: LearningServices) {
@@ -41,7 +42,6 @@ struct LiveTodayView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(greeting).font(.largeTitle.bold())
                         Text(Date().formatted(date: .complete, time: .omitted)).foregroundStyle(.secondary)
-                        Text("让每一次阅读，成为自己的积累。").font(.subheadline)
                     }
                     switch model.state {
                     case let .loaded(snapshot): hero(snapshot)
@@ -69,6 +69,7 @@ struct LiveTodayView: View {
                         Button("发现新文章", systemImage: "arrow.clockwise") { Task { await refreshDiscovered(force: true) } }.disabled(fetching).accessibilityIdentifier("today-discover")
                         DiscoveryProgressCard(service: learning.discovery)
                         if let sourceMessage { Text(sourceMessage).font(.caption).foregroundStyle(.secondary) }
+                        if let inventoryError { Label(inventoryError, systemImage: "exclamationmark.circle").font(.caption).foregroundStyle(.red) }
                     }.padding(20).background(.thinMaterial, in: RoundedRectangle(cornerRadius: 22))
                 }.padding(20)
             }.accessibilityIdentifier("learning-today-scroll")
@@ -95,7 +96,7 @@ struct LiveTodayView: View {
     }
     private func refreshDiscovered(force: Bool = false) async {
         guard learning.productionNetworking || force else { return }
-        fetching = true; defer { fetching = false }
+        fetching = true; sourceMessage = nil; defer { fetching = false }
         do { _ = try await learning.discovery.refresh(force: force, onImport: { learning.changed() }); learning.changed() }
         catch is CancellationError { }
         catch { sourceMessage = FullTextImportError.transport.localizedDescription }
@@ -104,7 +105,7 @@ struct LiveTodayView: View {
     private func hero(_ snapshot: TodayCycleSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Label(snapshot.cycle.isComplete ? "今日必做已完成" : "今天，读一篇真实的英文", systemImage: snapshot.cycle.isComplete ? "checkmark.seal.fill" : "sunrise.fill").font(.subheadline.weight(.semibold))
-            Text(ArticleTitlePresentation.display(snapshot.articleTitle ?? snapshot.cycle.articleID)).font(.system(.title, design: .serif).bold()).fixedSize(horizontal: false, vertical: true)
+            Text(ArticleTitlePresentation.display(snapshot.articleTitle ?? "今日文章")).font(.system(.title, design: .serif).bold()).fixedSize(horizontal: false, vertical: true)
             if let article = articles.first(where: { $0.id == snapshot.cycle.articleID }) {
                 Text("\(article.topics.joined(separator: " · ")) · 预计 \(article.minutes) 分钟").font(.subheadline)
                 Text([ArticleSourceRegistry.name(article.sourceID), article.author?.isBlank == false ? article.author : nil].compactMap { $0 }.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -126,14 +127,18 @@ struct LiveTodayView: View {
     private func taskRow(_ title: String, _ status: TaskStatus, reason: String?) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack { Label(title, systemImage: status == .completed || status == .deferred ? "checkmark.circle.fill" : "circle"); Spacer(); Text(status.displayName).foregroundStyle(.secondary) }
-            if let reason, status == .failed || status == .blocked { Text(reason).font(.caption).foregroundStyle(.secondary); Text("可重新打开对应学习页面；读取或保存失败会显示具体错误与重试操作。").font(.caption) }
+            if let reason, status == .failed || status == .blocked { Text(reason).font(.caption).foregroundStyle(.secondary) }
         }
     }
-    private func perform(_ operation: () throws -> Void) { do { try operation(); reload() } catch { sourceMessage = error.localizedDescription } }
     private func reload() {
         model.load()
-        do { articles = try learning.content.library(); let prefs = try dependencies.preferencesRepository.load(); let zone = prefs.timeZonePolicy == "fixed" ? TimeZone(identifier: prefs.fixedTimeZoneID ?? "") ?? .current : .current; statistics = try learning.statistics(timeZone: zone, at: Date()) }
-        catch { sourceMessage = error.localizedDescription }
+        do {
+            articles = try learning.content.library()
+            let prefs = try dependencies.preferencesRepository.load()
+            let zone = prefs.timeZonePolicy == "fixed" ? TimeZone(identifier: prefs.fixedTimeZoneID ?? "") ?? .current : .current
+            statistics = try learning.statistics(timeZone: zone, at: Date())
+            inventoryError = nil
+        } catch { inventoryError = error.localizedDescription }
     }
 }
 
@@ -201,6 +206,8 @@ struct LiveExploreView: View {
     var body: some View {
         NavigationStack {
             List {
+                DiscoveryProgressCard(service: learning.discovery)
+                if let error { Text(error).foregroundStyle(.red); Button("重新读取", action: load) }
                 if !allowed {
                     Section {
                         Label("先完成必做，再自由探索", systemImage: "lock.fill").font(.title3.bold())
@@ -213,12 +220,10 @@ struct LiveExploreView: View {
                         Button("继续今日任务", action: continueToday)
                     }
                 } else {
-                    Section("已解锁 · 本地合法文章") {
-                        Text("按兴趣、内容完整性、长文价值与新鲜度推荐。已开始的文章在阅读历史继续。").font(.caption).foregroundStyle(.secondary)
+                    Section {
                         Picker("主题", selection: $topic) { Text("所有主题").tag("all"); ForEach(Array(Set(articles.flatMap(\.topics))).sorted(), id: \.self) { Text($0).tag($0) } }.accessibilityIdentifier("explore-topic-filter")
                         if visible.isEmpty {
-                            ContentUnavailableView("正在寻找新文章", systemImage: "sparkle.magnifyingglass", description: Text(articles.isEmpty ? "暂无合法探索内容，可先导入文章。" : "没有符合当前筛选的未学习全文。可以调整主题或发现新文章。"))
-                            Button("发现新完整文章", action: discover).disabled(loading)
+                            ContentUnavailableView("暂无可读推荐", systemImage: "sparkle.magnifyingglass", description: Text(articles.isEmpty ? "暂无合法探索内容，可先导入文章。" : "当前主题暂无未读文章，可以调整主题。"))
                         }
                         ForEach(Array(visible.enumerated()), id: \.element.id) { index, article in
                             VStack(alignment: .leading, spacing: 10) {
@@ -234,8 +239,6 @@ struct LiveExploreView: View {
                         }
                     }
                 }
-                DiscoveryProgressCard(service: learning.discovery)
-                if let error { Text(error).foregroundStyle(.red); Button("重新读取", action: load) }
             }.navigationTitle("探索").task { load() }.onReceive(learning.$revision) { _ in load() }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in load() }
                 .toolbar {

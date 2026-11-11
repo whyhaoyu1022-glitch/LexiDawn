@@ -616,7 +616,7 @@ AI 辅助。对一个词可能匹配很多短语的情况，浮窗最多优先�
 
 1.  **词条头部**：词形、lemma、音标、词性概览、发音、收藏/生词本状态。
 2.  **语境解释**：当前文章中的句子、上下文、最可能的义项及为什么这样理解。
-3.  **全部常见词义**：按词性分组；每个词性下列出不同义项、中文释义、英文释义和使用标签。
+3.  **全部实际词义**：按MDX词性与原始义项分组，展示中文、使用标签及对应搭配/例句；英英解释不冒充英中释义。
 4.  **语法与用法**：及物/不及物、可数/不可数、常见句型、介词搭配、动词变化、名词复数等。
 5.  **固定搭配与短语**：含短语释义、使用语境、常见变体和例句。
 6.  **例句**：至少给出有代表性的例句；每句附中文翻译。例句应标明来源或"AI
@@ -640,11 +640,9 @@ AI 辅助。对一个词可能匹配很多短语的情况，浮窗最多优先�
     `senseID`、`partOfSpeech`、`definitionEN`、`definitionZH`、`usageLabel`、`frequencyRank`、`contextRelevance`、`sourceID`
     和 `confidence`。
 -   语境义可以高亮，但不得删除其他常见义项。
--   词典原文有版权限制时，不能复制大段受保护释义。应优先使用有许可的数据、开放词典或自行撰写的简明解释；用户明确要求"参考牛津"等词典时，应理解为参考可靠词典的编纂质量和信息结构，而不是无授权复制其全部内容。
--   对牛津、剑桥、韦氏等商业词典的 API
-    或内容使用，必须在接入前核实授权范围、费用、缓存限制和展示要求。
--   AI 生成的词义要与可靠数据源区分展示；AI
-    不应声称自己引用了某本词典，除非该来源确实被读取且允许引用。
+-   唯一词典来源为App内置的批准MDX文件，其他在线或离线词典Provider均不参与展示、新题或回退；不提供用户词典导入。
+-   释义、词性、IPA和例句均保持MDX原记录身份。系统发音使用AVSpeechSynthesizer，无MDD和词典媒体依赖。
+-   只有MDX成功确认没有中文释义或没有词条时，才允许创建结构化个人英中词；资源故障不得获得个人写资格。MDX已有中文时个人义只读，独立笔记仍可修改。
 -   对有争议的词义、语域或同义词差异，可以展示"通常""在此语境中""可能"等限定语。
 
 ## 8.4 近义词辨析
@@ -1288,7 +1286,7 @@ iOS 的后台刷新由系统调度，应用不能承诺每天 06:20
 
   GET                     `/v1/explore`                获取探索文章分页列表
 
-  POST                    `/v1/dictionary/lookup`      查询词条、语境义和短语
+  本地调用                `DictionaryLookupService`    内置MDX离线查询；无词典HTTP端点
 
   POST                    `/v1/ai/chat`                发送词典/文章上下文问答
 
@@ -1303,61 +1301,15 @@ iOS 的后台刷新由系统调度，应用不能承诺每天 06:20
 接口。每日周期的真实状态应以本地数据库为准，后端提供候选内容与 AI
 服务，不应在每次网络请求时擅自重建客户端当前必做任务。
 
-## 13.5 示例：词典请求
+## 13.5 本地词典合同（不发送词典网络请求）
 
-``` json
-{
-  "surfaceForm": "carried out",
-  "language": "en",
-  "context": {
-    "sentence": "The team carried out a series of experiments.",
-    "articleTitle": "How researchers test new materials",
-    "paragraph": "The team carried out a series of experiments before publishing the results."
-  },
-  "lookupOptions": {
-    "includePhrases": true,
-    "includeExamples": true,
-    "includeSynonyms": true,
-    "preferredChinese": "zh-CN"
-  }
-}
-```
+`DictionaryLookupService.lookup(surface, context, at)` 只调用 `BundledMDXDictionaryProvider` Actor，读取构建时恢复并验证的MDX。C引擎处理索引/压缩块和内部跳转，系统libxml2提取结构；返回DictionaryResult及独立DictionarySense数组。
 
-建议响应结构：
+身份包括MDX SHA、原始record/entry/义项位置、lexicalHeadword、sourceRevision；子词条与父页同一义项共用ID。派生记录号索引保留SHA，不保存另一来源定义；清理释义缓存后从MDX重读。旧外部缓存仅保留历史，不得参与当前数据。
 
-``` json
-{
-  "entry": {
-    "entryID": "stable-entry-id",
-    "surfaceForm": "carried out",
-    "lemma": "carry out",
-    "entryType": "phrase",
-    "phonetics": [],
-    "senses": [
-      {
-        "senseID": "carry-out-sense-1",
-        "partOfSpeech": "phrasal verb",
-        "definitionEN": "to perform or complete a task, activity, or process",
-        "definitionZH": "执行；开展；完成",
-        "usageLabel": ["general", "formal"],
-        "contextRelevance": 0.97,
-        "sourceType": "licensed_dictionary_plus_context_analysis",
-        "confidence": 0.92
-      }
-    ],
-    "examples": [],
-    "synonyms": [],
-    "relatedPhrases": [],
-    "sourceAttributions": [],
-    "generatedAt": "2026-10-24T00:00:00Z",
-    "cachePolicy": "client-cache-allowed"
-  },
-  "requestID": "request-id"
-}
-```
+加载、找到中文、找到但无中文、无词、缺失、SHA失败、结构解析失败分别处理。个人词典资格在Domain/Service/Repository/UI共同执行，资源失败不当无词；既有中文锁不因清缓存或一次空结果解除。
 
-上例中的 ID
-与分数仅用于说明数据结构，不代表真实词典查询结果。生产代码不得将样例结果当成真实数据。
+新题冻结词条/义项/修订/来源、原文或个人例句、实际目标范围、答案、seed/mask及评分证据。词典刷新和个人编辑不暗改进行中题，显示答案后仍须亲自纠正并计Again。
 
 ## 13.6 错误处理
 
@@ -1394,6 +1346,8 @@ ID。模型名称、接口能力、价格和服务条款可能变化，正式接
 API 测试。
 
 ## 14.2 AI 负责什么、不负责什么
+
+以下为历史AI能力规划，本轮不接入AI词义来源。AI不得作为MDX之外的词典Provider、中文释义回退或新复习题标准答案；任何后续AI能力都不能改变唯一MDX及个人义资格规则。
 
 AI 可以负责：
 

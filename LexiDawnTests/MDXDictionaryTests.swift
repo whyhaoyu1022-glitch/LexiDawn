@@ -29,6 +29,13 @@ import AVFoundation
         XCTAssertTrue(modal.contains { $0.partOfSpeech == "modal verb" && BilingualMeaningPolicy.trusted($0) })
         XCTAssertTrue(Set(month.map(\.id)).isDisjoint(with: modal.map(\.id)))
     }
+    func testRealMDXHomonymMarkersAreNotPartOfTheLexicalHeadword() async throws {
+        let values = try await BundledMDXDictionaryProvider().lookup("do")
+        let main = values.filter { $0.sectionKind == nil }
+        XCTAssertFalse(main.isEmpty)
+        XCTAssertTrue(main.allSatisfy { $0.lexicalHeadword == "do" })
+        XCTAssertTrue(main.contains { $0.partOfSpeech == "verb" })
+    }
     func testRealOfflineServiceNormalizesUsersAndVisitsWithoutNetworkProviders() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
         XCTAssertFalse(learning.dictionary.onlineEnabled)
@@ -228,6 +235,9 @@ import AVFoundation
         let fresh = DictionaryLookupService(context: ModelContext(app.modelContainer))
         let reopened = try await fresh.lookup("get the nod")
         XCTAssertEqual(reopened.senses.map(\.id), child.senses.map(\.id))
+        _ = try learning.dictionary.clearCaches()
+        let afterClear = try await DictionaryLookupService(context: ModelContext(app.modelContainer)).lookup("get the nod")
+        XCTAssertEqual(afterClear.senses.map(\.id), child.senses.map(\.id), "Clearing definition caches must preserve the SHA-bound subentry index; content is read from MDX again")
         XCTAssertTrue(parent.senses.allSatisfy { ($0.examples ?? []).count == ($0.exampleCollocations ?? []).count })
     }
     func testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples() {
@@ -276,11 +286,15 @@ import AVFoundation
     }
     func testRealMDXLinkedUsageBoxIsReadFromTheSameDictionaryAndKeepsExamplePairs() async throws {
         let values = try await BundledMDXDictionaryProvider().lookup("hospital")
-        XCTAssertTrue(values.allSatisfy { ($0.sourceWarnings ?? []).isEmpty })
+        XCTAssertEqual(values.flatMap { $0.sourceWarnings ?? [] }, [])
         let notes = values.flatMap { $0.usageNotes ?? [] }
         XCTAssertTrue(notes.contains { $0.english.contains("to hospital") && $0.chinese.contains("英式英语") })
         XCTAssertTrue(notes.contains { $0.label == "例句" && $0.english.contains("two weeks") && $0.chinese.contains("两周") })
         XCTAssertEqual(Set(notes.map(\.id)).count, notes.count)
+        let references = values.flatMap { $0.seeAlso ?? [] }
+        XCTAssertTrue(references.contains("ambulance"))
+        XCTAssertTrue(references.contains("inpatient"))
+        XCTAssertFalse(references.contains("hospital"))
     }
     func testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)

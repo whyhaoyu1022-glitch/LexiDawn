@@ -1,0 +1,25 @@
+{
+  "runID": 42923122043,
+  "commit": "ae4fa5982e54c2424fd27347eb2e56afdf0fb797",
+  "jobID": 130202679412,
+  "platform": "Xcode 26.6, iOS 26.5 Simulator compatibility",
+  "compileAllTargets": "passed",
+  "releaseSimulator": "passed",
+  "xctest": {
+    "executed": 233,
+    "passed": 232,
+    "failed": 1,
+    "mdxExecuted": 25,
+    "mdxPassed": 24,
+    "networkPassed": 15
+  },
+  "failure": {
+    "file": "LexiDawnTests/MDXDictionaryTests.swift",
+    "line": 279,
+    "method": "testRealMDXLinkedUsageBoxIsReadFromTheSameDictionaryAndKeepsExamplePairs",
+    "assertion": "sourceWarnings should be empty",
+    "cause": "The actual hospital entry links to a bilingual usage record and wordfinder records consisting of entry links. The parser required paired text in every supplement."
+  },
+  "nativeUI": "skipped after unit failure",
+  "fixVerification": "pending native rerun"
+}

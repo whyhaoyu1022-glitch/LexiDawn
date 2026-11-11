@@ -35,7 +35,7 @@ enum MDXEntryIdentity {
 actor BundledMDXDictionaryProvider: DictionaryProvider {
     static let sourceName = "内置 MDX"
     static let sourceSHA = "095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443"
-    static let sourceVersion = sourceSHA + "-html-6"
+    static let sourceVersion = sourceSHA + "-html-7"
     private let resource: URL?
     private var reader: OpaquePointer?
     private var index: [String: [Int]] = [:]
@@ -99,7 +99,11 @@ actor BundledMDXDictionaryProvider: DictionaryProvider {
                     try Task.checkCancellation()
                     for var sense in try MDXEntryParser.parse(html, requested: headword, recordID: target, subentryOnly: subentryOnly) where seen.insert(sense.id).inserted {
                         if let links = sense.supplementLinks, !links.isEmpty {
-                            var notes = sense.usageNotes ?? [], noteIDs = Set(notes.map(\.id)), warnings: [String] = []
+                            var notes = sense.usageNotes ?? []
+                            var noteIDs = Set(notes.map(\.id))
+                            var references = sense.seeAlso ?? []
+                            var referenceIDs = Set(references)
+                            var warnings: [String] = []
                             for link in links {
                                 try Task.checkCancellation()
                                 do {
@@ -107,13 +111,18 @@ actor BundledMDXDictionaryProvider: DictionaryProvider {
                                     guard !targets.isEmpty else { throw MDXDictionaryError.invalidEntry("补充用法页未收录") }
                                     for number in targets {
                                         for (noteRecord, noteHTML) in try records(number, path: []) {
-                                            for note in try MDXEntryParser.supplementalNotes(noteHTML, recordID: noteRecord) where noteIDs.insert(note.id).inserted { notes.append(note) }
+                                            let supplement = try MDXEntryParser.supplement(noteHTML, recordID: noteRecord)
+                                            notes.append(contentsOf: supplement.notes.filter { noteIDs.insert($0.id).inserted })
+                                            references.append(contentsOf: supplement.references.filter {
+                                                $0 != sense.lexicalHeadword && referenceIDs.insert($0).inserted
+                                            })
                                         }
                                     }
                                 } catch is CancellationError { throw CancellationError() }
                                 catch { warnings.append(error.localizedDescription) }
                             }
                             sense.usageNotes = notes.isEmpty ? nil : notes
+                            sense.seeAlso = references.isEmpty ? nil : references
                             sense.sourceWarnings = warnings.isEmpty ? nil : warnings
                         }
                         values.append(sense)
@@ -153,6 +162,11 @@ enum MDXEntryParser {
         let pointer: UnsafeMutableRawPointer
         var text: String {
             guard let value = ld_html_text(pointer) else { return "" }
+            defer { ld_html_free(value) }
+            return String(cString: value).split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        }
+        var headword: String? {
+            guard let value = ld_html_headword(pointer) else { return nil }
             defer { ld_html_free(value) }
             return String(cString: value).split(whereSeparator: \.isWhitespace).joined(separator: " ")
         }
@@ -222,16 +236,19 @@ enum MDXEntryParser {
         value.replacingOccurrences(of: "ˌ", with: "").replacingOccurrences(of: "ˈ", with: "").replacingOccurrences(of: "↔", with: " ")
             .split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
-    static func supplementalNotes(_ html: String, recordID: String) throws -> [DictionaryTextNote] {
+    static func supplement(_ html: String, recordID: String) throws -> (notes: [DictionaryTextNote], references: [String]) {
         let data = Array(html.utf8)
         guard let document = data.withUnsafeBytes({ ld_html_parse($0.baseAddress?.assumingMemoryBound(to: CChar.self), $0.count) }) else { throw MDXDictionaryError.invalidEntry("补充用法页无法解析") }
         defer { ld_html_close(document) }
         guard let root = ld_html_root(document) else { throw MDXDictionaryError.invalidEntry("补充用法页结构缺失") }
         let node = Node(pointer: root), groups = node.descendants("t-unbox")
         guard !groups.isEmpty else { throw MDXDictionaryError.invalidEntry("补充用法页缺少原始内容结构") }
-        let notes = groups.flatMap { $0.notePairs(prefix: "mdx-note|" + BundledMDXDictionaryProvider.sourceSHA + "|" + recordID, label: "用法补充") }
-        guard !notes.isEmpty else { throw MDXDictionaryError.invalidEntry("补充用法页没有可展示的文本") }
-        return notes
+        let prefix = "mdx-note|" + BundledMDXDictionaryProvider.sourceSHA + "|" + recordID
+        let notes = groups.flatMap { $0.notePairs(prefix: prefix, label: "用法补充") }
+        let references = groups.filter { $0.attribute("type") == "wordfinder" }
+            .flatMap { $0.descendants("t-ndv").flatMap(\.entryTargets) }
+        guard !notes.isEmpty || !references.isEmpty else { throw MDXDictionaryError.invalidEntry("补充用法页没有可展示的内容") }
+        return (notes, references)
     }
     static func parse(_ html: String, requested: String, recordID: String, subentryOnly: Bool = false) throws -> [DictionarySense] {
         let data = Array(html.utf8)
@@ -243,7 +260,11 @@ enum MDXEntryParser {
         guard !entries.isEmpty else { throw MDXDictionaryError.invalidEntry("词条结构缺失") }
         var senses: [DictionarySense] = [], requiresSubentry = false, matchedEntry = false
         for entry in entries {
-            let head = entry.descendants("t-h").first?.text ?? requested
+            let head: String
+            if let node = entry.descendants("t-h").first {
+                guard let value = node.headword, !value.isEmpty else { throw MDXDictionaryError.invalidEntry("词头内容无法读取") }
+                head = value
+            } else { head = requested }
             let part = entry.descendants("t-pos").first?.text
             let phonetics = entry.descendants("t-pron-gs").first?.descendants("t-pron-g-blk").compactMap { block -> String? in
                 guard let ipa = block.descendants("t-phon").first?.text, !ipa.isEmpty else { return nil }

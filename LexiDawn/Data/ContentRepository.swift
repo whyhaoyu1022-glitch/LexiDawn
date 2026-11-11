@@ -273,5 +273,12 @@ struct URLSessionArticleClient: ArticleHTTPClient {
 
 /// Display-only normalization preserves stored provenance and article identity.
 enum ArticleTitlePresentation {
-    static func display(_ title: String) -> String { (try? ArticleHTMLExtractor.decodeEntities(title)) ?? title }
+    static func display(_ title: String) -> String {
+        let decoded: String
+        do { decoded = title.contains("&") ? try ArticleHTMLExtractor.decodeEntities(title) : title }
+        catch { decoded = title } // Preserve the publisher's visible text if an entity is malformed.
+        // Repair a feed line break inside an English contraction before collapsing whitespace.
+        let joined = decoded.replacingOccurrences(of: #"(?<=\p{L}['’])\h*\R\h*(?=(?:s|t|re|ve|ll|d|m)\b)"#, with: "", options: [.regularExpression, .caseInsensitive])
+        return joined.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
 }

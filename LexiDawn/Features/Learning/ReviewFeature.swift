@@ -45,13 +45,9 @@ struct ReviewPracticeContent: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 if let message { Label(message, systemImage: "exclamationmark.triangle").foregroundStyle(.red).accessibilityIdentifier("review-storage-error") }
-                if verticalSizeClass != .compact {
-                    Text("把刚认识的词，变成自己的词").font(.title2.bold())
-                    Text("先连线，再拼写。让每个词在熟悉的句子里留下来。").font(.caption).foregroundStyle(.secondary)
-                }
                 if loading { ProgressView("正在查询完整复习队列…") }
                 else if let session {
-                    if extraMode { Label("额外复习 · 不创建每日任务", systemImage: "plus.circle").font(.headline).accessibilityIdentifier("extra-review-label") }
+                    if extraMode && session.completedAt == nil { Label("额外复习", systemImage: "plus.circle").font(.headline).accessibilityIdentifier("extra-review-label") }
                     if session.completedAt != nil {
                         ContentUnavailableView("本次复习已保存", systemImage: "checkmark.seal.fill", description: Text("完成 \(session.matching.filter(\.completed).count) 个词 · 延期 \(session.deferredCount) 个词")).accessibilityIdentifier("review-completed")
                         HStack {
@@ -124,11 +120,17 @@ struct ReviewPracticeContent: View {
                 if question.acceptedAnswers.count > 1 { Text("本题接受词典明确标注的英美拼写变体。").font(.caption).foregroundStyle(.secondary) }
                 TextField("完整拼写", text: $spelling).focused($spellingFocused).textInputAutocapitalization(.never).autocorrectionDisabled().textFieldStyle(.roundedBorder).accessibilityIdentifier("cloze-answer").submitLabel(.done).onSubmit { if submit(questionID: question.id, answer: spelling) { spelling = "" } }
                 Button { if submit(questionID: question.id, answer: spelling) { spelling = "" } } label: { Text("提交答案").frame(minHeight: 32) }.buttonStyle(.borderedProminent).accessibilityIdentifier("submit-spelling")
-                HStack {
-                    Button("首字母提示") { _ = submit(questionID: question.id, answer: "", hint: true) }
-                    Button("显示答案") { _ = submit(questionID: question.id, answer: "", reveal: true) }.disabled(question.revealed)
+                ViewThatFits(in: .horizontal) {
+                    HStack { spellingAssistance(questionID: question.id, revealed: question.revealed) }
+                    VStack(alignment: .leading) { spellingAssistance(questionID: question.id, revealed: question.revealed) }
                 }.font(.footnote).buttonStyle(.bordered)
             }.fixedSize(horizontal: false, vertical: true)
+        }
+    }
+    @ViewBuilder private func spellingAssistance(questionID: String, revealed: Bool) -> some View {
+        if !revealed {
+            Button("首字母提示") { _ = submit(questionID: questionID, answer: "", hint: true) }
+            Button("显示答案") { _ = submit(questionID: questionID, answer: "", reveal: true) }
         }
     }
     private func load() async {

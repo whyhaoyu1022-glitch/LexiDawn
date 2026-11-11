@@ -231,7 +231,10 @@ private struct VocabularyDraft: Codable {
         catch { allowed = false; self.error = error.localizedDescription }
     }
     func changed() {
-        guard ready else { return }; state = "尚未保存"
+        guard ready else { return }
+        do { guard try Self.signature(notes, senses) != base else { return } }
+        catch { state = "未保存"; self.error = error.localizedDescription; return }
+        state = "尚未保存"
         checkpoint?.cancel()
         checkpoint = Task { [weak self] in
             do { try await Task.sleep(for: .milliseconds(250)); try Task.checkCancellation(); self?.persistDraft() }

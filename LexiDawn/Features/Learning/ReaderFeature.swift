@@ -72,7 +72,7 @@ struct ReaderView: View {
                         catch { model.error = error.localizedDescription }
                     }, document: article.document, onWordAnchor: { point, size in
                         wordAnchor = UnitPoint(x: min(0.96, max(0.04, point.x / max(1, size.width))), y: min(0.96, max(0.04, point.y / max(1, size.height))))
-                    }, title: ArticleTitlePresentation.display(article.title), subtitle: compactSource(article) + " · " + (article.publishedAt.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "") + " · \(article.minutes)分钟", sourceID: article.sourceID)
+                    }, title: ArticleTitlePresentation.display(article.title), subtitle: readerSubtitle(article), sourceID: article.sourceID)
                 .frame(maxWidth: .infinity, minHeight: 80, maxHeight: .infinity).layoutPriority(1)
                 .popover(item: $selection, attachmentAnchor: .point(wordAnchor), arrowEdge: .top) { selected in
                     WordLookupSheet(model: selected).presentationCompactAdaptation(.popover)
@@ -145,10 +145,14 @@ struct ReaderView: View {
                     .toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { sourceDetails = false }.accessibilityIdentifier("close-source-details") } }
             }.presentationBackground(readerBackground)
         }
-        .alert("明确确认已读完", isPresented: $manualConfirmation) {
+        .alert("确认已读完？", isPresented: $manualConfirmation) {
             Button("取消", role: .cancel) { }
             Button("确认我已读完") { model.complete(manual: true) }
-        } message: { Text("适用于短文章、恢复位置不准确或已认真读完的情况。记录实际进度与本次手动确认，不会伪造 90% 进度。") }
+        } message: { Text("当前阅读进度为 \(Int(model.position.percent * 100))%。确认后会记录为手动完成。") }
+    }
+    private func readerSubtitle(_ article: ReadableArticle) -> String {
+        [compactSource(article), article.publishedAt?.formatted(date: .abbreviated, time: .omitted), "\(article.minutes) 分钟"]
+            .compactMap { $0 }.filter { !$0.isBlank }.joined(separator: " · ")
     }
     private func compactSource(_ article: ReadableArticle) -> String {
         if article.sourceID == SourceRegistry.rfc.id { return "RFC Editor · M. Nottingham" }
@@ -351,7 +355,10 @@ struct DictionaryResultContent: View {
     let result: DictionaryResult
     var onExampleWord: ((EnglishToken, DictionarySense, String) -> Void)? = nil
     var onRelatedEntry: ((String) -> Void)? = nil
-    private var senses: [DictionarySense] { result.usableSenses }
+    private var senses: [DictionarySense] {
+        let usableIDs = Set(result.usableSenses.map(\.id))
+        return result.senses.filter { usableIDs.contains($0.id) || (BilingualMeaningPolicy.isCurrentMDX($0) && !$0.en.isBlank) }
+    }
     private func group(_ sense: DictionarySense) -> String {
         if let section = sense.sectionKind { return "section|" + section }
         return "part|" + (sense.partOfSpeech ?? "") + "|" + (sense.entryGroupID ?? "")
@@ -374,12 +381,15 @@ struct DictionaryResultContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 26) {
             if senses.isEmpty { ContentUnavailableView("暂无英中释义", systemImage: "text.book.closed", description: Text("可以在生词本补充词性、中文释义和例句。")) }
+            else if result.usableSenses.isEmpty { Text("此词条暂无中文释义，可在生词本补充。").font(.subheadline).foregroundStyle(.secondary) }
             ForEach(Array(parts.enumerated()), id: \.element) { groupIndex, part in
                 VStack(alignment: .leading, spacing: 16) {
                     if part.hasPrefix("section|") {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(part == "section|phrasalVerb" ? "PHRASAL VERBS" : "IDIOMS").font(.system(.caption, design: .serif).weight(.semibold)).tracking(1.2).foregroundStyle(.primary.opacity(0.65))
-                            Text(title(part)).font(.title3.weight(.medium))
+                            HStack(alignment: .firstTextBaseline) {
+                                Text(part == "section|phrasalVerb" ? "PHRASAL VERBS" : "IDIOMS").font(.system(.subheadline, design: .serif).weight(.semibold)).tracking(0.8)
+                                Text(title(part)).font(.caption).foregroundStyle(.secondary)
+                            }
                             Divider()
                         }.accessibilityAddTraits(.isHeader)
                     } else {
@@ -418,7 +428,11 @@ private struct DictionarySenseBody: View {
                 } else { Text(related).font(.system(.title3, design: .serif).weight(.semibold)) }
             }
             if let labels = sense.usageLabels, !labels.isEmpty { Text(labels.joined(separator: " · ")).font(.caption).foregroundStyle(.primary.opacity(0.65)) }
-            Text(sense.zh).font(.body).fixedSize(horizontal: false, vertical: true)
+            if !sense.en.isBlank && sense.en != sense.zh {
+                Text(sense.en).font(sense.zh.isBlank ? .body : .subheadline).foregroundStyle(sense.zh.isBlank ? .primary : .secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if !sense.zh.isBlank { Text(sense.zh).font(.body).fixedSize(horizontal: false, vertical: true) }
             if let phrases = sense.relatedPhrases, !phrases.isEmpty {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("短语与搭配").font(.caption.weight(.semibold)).foregroundStyle(.primary.opacity(0.65))
@@ -549,9 +563,7 @@ struct DictionaryDetailView: View {
                 }
                 DisclosureGroup("来源详情") {
                     VStack(alignment: .leading, spacing: 10) {
-                        ForEach(result.usableSenses) { Text($0.line).font(.caption).textSelection(.enabled) }
-                        Text("更新于 " + result.updatedAt.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
-                        Text("App 内置 MDX · 离线查询 · 系统发音").font(.caption).foregroundStyle(.secondary)
+                        Text("词典随 App 安装，可离线查询。发音由 iOS 提供。").font(.caption).foregroundStyle(.secondary)
                     }.padding(.top, 8)
                 }.font(.subheadline)
             }.padding(.horizontal, 22).padding(.top, 16).padding(.bottom, 24)

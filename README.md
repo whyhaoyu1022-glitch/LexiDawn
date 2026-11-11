@@ -2,7 +2,7 @@
 
 原生 iOS 英文全文阅读、离线查词、生词管理和间隔复习应用。SwiftUI、SwiftData，保持 Domain / Service / Repository 分层。
 
-Round 4 正在开发，尚未完成144项最终验收。直接在原 main 开发，无新分支或PR。[当前状态](STATUS.md) · [持续交付记录](docs/reviews/round-4-final-delivery.md) · [原21图问题](docs/reviews/round-4-first-device-21-image-audit-2026-11-06.md) · [42张实际运行截图逐张复核](artifacts/round-4/screenshots/VISUAL-REVIEW.md)。原HEIC包当前不在仓库，依据既有逐图报告和清单；三张词典JPEG参考可实际查看。
+Round 4 正在开发，尚未完成144项最终验收。直接在原 main 开发，无新分支或PR。[当前状态](STATUS.md) · [持续交付记录](docs/reviews/round-4-final-delivery.md) · [原21图问题](docs/reviews/round-4-first-device-21-image-audit-2026-11-06.md) · [42张实际运行截图逐张复核](artifacts/round-4/screenshots/VISUAL-REVIEW.md)。已实际逐张核对上传原包的21张HEIC和三张词典JPEG，详见[原图复核](docs/reviews/round-4-original-image-recheck-2026-11-11.md)。
 
 ## 当前词典规则
 
@@ -37,7 +37,7 @@ Round 4 正在开发，尚未完成144项最终验收。直接在原 main 开发
 
 `4739708` 的 [42657203329](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42657203329) 完成全目标编译、Release Simulator、227 XCTest/0失败；该轮UI被跳过，不能称完整通过。相同提交的[未签名IPA](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42659832536/artifacts/13692674476) 已下载检查，实际Bundle包含批准MDX，版本0.1.0(20)、最低iOS27.0，未真机安装。
 
-最新已提交布局/上下文批次 `567840f` 的[完整验证](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42918659786)编译成功，230单元229通过/1历史夹具失败，UI未运行。该夹具及逐图发现的问题已继续修改，待新提交验证。当前源码233单元/62UI方法，数量不是执行结果。
+最新原生运行 [42923122043](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42923122043) 已编译 Debug 全目标和 Release，233 XCTest 中232通过、1项真实 MDX 联想词补充失败，UI 未执行。联想词解析已修正，当前源代码234 XCTest、62 XCUITest 待新版验证。
 
 产品最低iOS27.0。当前CI Xcode26.6/SDK26.5及临时iOS26.5 Simulator仅为兼容验证，不能冒充iOS27真机验收。Linux开发容器无Xcode/Simulator，真实原生运行由macOS Actions完成。所有旧测试保留；4主UI分组和SE/大屏专项穷尽分配，fail-fast关闭，逐方法核对实际执行，失败也导出原始PNG/xcresult。
 

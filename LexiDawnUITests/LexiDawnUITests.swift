@@ -413,7 +413,7 @@ extension LexiDawnUITests {
         capture("P17-production-real-rfc-main-discussion", in: app)
         XCTAssertGreaterThan(Int(app.staticTexts["reader-progress"].label.replacingOccurrences(of: "%", with: "")) ?? 0, 0)
         app.buttons["finish-reading"].tap()
-        XCTAssertTrue(app.alerts["明确确认已读完"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.alerts["确认已读完？"].waitForExistence(timeout: 5))
         capture("P12-production-manual-completion-confirmation", in: app)
         app.alerts.buttons["取消"].tap()
         capture("P13-production-reading-still-in-progress", in: app)

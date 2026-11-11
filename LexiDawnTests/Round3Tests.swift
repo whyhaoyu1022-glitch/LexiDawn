@@ -520,6 +520,9 @@ private actor CacheRequestProbe: DictionaryProvider {
     }
     func testStandardEntitiesDecodeUnicodeAndUnknownReferenceRemainsLiteral() throws {
         XCTAssertEqual(try ArticleHTMLExtractor.decodeEntities("caf&eacute; &rarr; &NotEqualTilde; &unknownReference;"), "café → ≂̸ &unknownReference;")
+        XCTAssertEqual(ArticleTitlePresentation.display("  Don&apos;\nt miss:  November&apos;s\r\nnight sky "), "Don't miss: November's night sky")
+        XCTAssertEqual(ArticleTitlePresentation.display("What does Trump’\ns election loss mean?"), "What does Trump’s election loss mean?")
+        XCTAssertEqual(ArticleTitlePresentation.display("'News'\nreturns on Friday"), "'News' returns on Friday")
     }
     func testSchemaArticleBodyHTMLIsCleanedAndPreservesFinalParagraph() throws {
         let source = try XCTUnwrap(ArticleSourceRegistry.personalSource("bbc"))

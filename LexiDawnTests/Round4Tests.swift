@@ -80,11 +80,22 @@ import SwiftData
     func testPersonalSensesPersistAndNotesRemainIndependent() throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
         let added = try entry(learning)
-        let sense = PersonalDictionarySense(partOfSpeech: "noun", chinese: "明确原创的个人词义", confirmed: true)
-        try learning.vocabulary.savePersonalSenses(entryID: added.entryID, senses: [sense], at: now)
+        let sense = PersonalDictionarySense(partOfSpeech: "noun", chinese: "明确原创的个人词义", examples: [.init(english: "A first lexidawnfixtureword appears.", chinese: "第一条例句译文"), .init(english: "A second lexidawnfixtureword appears.", chinese: "第二条例句译文")], confirmed: true)
+        let verb = PersonalDictionarySense(partOfSpeech: "verb", chinese: "明确原创的动词义", examples: [.init(english: "We lexidawnfixtureword the first idea.", chinese: "动词义例句译文")], confirmed: true)
+        try learning.vocabulary.savePersonalSenses(entryID: added.entryID, senses: [sense, verb], at: now)
         try learning.vocabulary.saveNotes(entryID: added.entryID, notes: "独立笔记", at: now)
         let restored = try XCTUnwrap(learning.vocabulary.entries().first)
-        XCTAssertEqual(restored.personalSenses, [sense]); XCTAssertEqual(restored.notes, "独立笔记")
+        XCTAssertEqual(restored.personalSenses, [sense, verb]); XCTAssertEqual(restored.notes, "独立笔记")
+        XCTAssertEqual(restored.personalSenses?.first?.dictionarySense(entryID: added.entryID).exampleTranslations, ["第一条例句译文", "第二条例句译文"])
+        var duplicate = sense; duplicate.examples[1].id = duplicate.examples[0].id
+        XCTAssertThrowsError(try learning.vocabulary.savePersonalSenses(entryID: added.entryID, senses: [duplicate, verb], at: now))
+        XCTAssertEqual(try learning.vocabulary.entries().first?.personalSenses, [sense, verb])
+        let annotation = VocabularyAnnotationModel(item: restored, learning: learning)
+        annotation.notes = "新的独立笔记"; annotation.senses[0].chinese += "（新修订）"; annotation.changed(); annotation.flush()
+        XCTAssertEqual(annotation.state, "已自动保存")
+        annotation.changed() // SwiftUI may observe the read-back revision after a successful flush.
+        XCTAssertEqual(annotation.state, "已自动保存")
+        XCTAssertEqual(try learning.vocabulary.entries().first?.notes, "新的独立笔记")
     }
     func testRepositoryRejectsPersonalWriteAfterReliableChineseArrivesAndCacheClear() throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)

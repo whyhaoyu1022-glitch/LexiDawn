@@ -20,7 +20,8 @@ struct ArticleLibraryView: View {
     @State private var resetting: ArticleLibraryItem?
     @State private var editing: ReaderRoute?
     private var visible: [ArticleLibraryItem] {
-        items.filter { $0.readable && (query.isEmpty || $0.title.localizedCaseInsensitiveContains(query)) &&
+        let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        return items.filter { $0.readable && (term.isEmpty || ArticleTitlePresentation.display($0.title).localizedStandardContains(term)) &&
             (source == "all" || $0.sourceID == source) && (topic == "all" || $0.topics.contains(topic)) &&
             (mode == "all" || mode == "favorite" && $0.favorite || mode == "later" && $0.readLater || mode == "history" && $0.started) }
             .sorted { newestFirst ? $0.fetchedAt > $1.fetchedAt : $0.fetchedAt < $1.fetchedAt }
@@ -47,9 +48,8 @@ struct ArticleLibraryView: View {
             ForEach(visible) { item in
                 VStack(alignment: .leading, spacing: 10) {
                     Text(ArticleTitlePresentation.display(item.title)).font(.system(.headline, design: .serif))
-                    Text(ArticleSourceRegistry.name(item.sourceID)).font(.caption).lineLimit(2)
-                    Text("\(item.topics.joined(separator: " · ")) · \(item.minutes) 分钟").font(.caption)
-                    Label("完整原文 · 本地离线可读", systemImage: "checkmark.icloud").font(.caption).foregroundStyle(.secondary)
+                    Text(([ArticleSourceRegistry.name(item.sourceID)] + item.topics + ["\(item.minutes) 分钟"]).joined(separator: " · "))
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     Text(item.completed ? "已完成 · 可重读" : item.started ? "进行中 \(Int(item.percent * 100))%" : item.cycleID != nil ? "每日必做" : "未读").font(.subheadline)
                     Button(!access.permits(articleID: item.id, cycleID: item.cycleID) ? "完成必做后解锁" : item.started ? "继续阅读" : "打开文章") {
                         do {
@@ -81,6 +81,7 @@ struct ArticleLibraryView: View {
         .scrollDismissesKeyboard(.interactively)
         .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成搜索") { searchFocused = false } } }
         .navigationTitle("文章库与历史")
+        .toolbarBackground(.visible, for: .navigationBar)
         .toolbar { Button("发现完整文章", systemImage: "arrow.clockwise") { beginRefresh() }.disabled(loading) }
         .refreshable { await beginRefresh().value }
         .task { load() }.onReceive(learning.$revision) { _ in load() }
@@ -139,14 +140,16 @@ struct DiscoveryProgressCard: View {
                 ProgressView(value: service.progress.fraction).accessibilityIdentifier("article-discovery-progress")
                     .accessibilityValue("已处理\(service.progress.processedSources)个来源，共\(service.progress.totalSources)个")
                 if !service.progress.activeSourceIDs.isEmpty {
-                    Text(service.progress.activeSourceIDs.map(ArticleSourceRegistry.name).joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("article-discovery-active-sources")
-                }
-                ForEach(service.progress.activeSourceIDs, id: \.self) { id in
-                    if let stage = service.progress.stagesBySource[id] { Text(ArticleSourceRegistry.name(id) + " · " + stage).font(.caption).foregroundStyle(.secondary) }
+                    Text(activeSources).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("article-discovery-active-sources")
                 }
                 Text("新增\(service.progress.importedCount)篇 · 重复\(service.progress.duplicateCount)篇 · 未导入\(service.progress.failedArticleCount)篇" + (service.progress.failedCount > 0 ? " · \(service.progress.failedCount)个来源未完成" : "")).font(.caption).foregroundStyle(.secondary)
                 if service.progress.phase == .running { Button("停止本次发现") { service.cancelRefresh() }.accessibilityIdentifier("cancel-article-discovery") }
             }.padding(.vertical, 8)
         }
+    }
+    private var activeSources: String {
+        service.progress.activeSourceIDs.map { id in
+            [ArticleSourceRegistry.name(id), service.progress.stagesBySource[id]].compactMap { $0 }.joined(separator: " · ")
+        }.joined(separator: "\n")
     }
 }

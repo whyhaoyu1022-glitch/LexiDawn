@@ -241,6 +241,7 @@ import SwiftData
     var checkedAt: Date
     var evidence: String
     var mdxSHA: String?
+    var mdxRecordHints: [Int]?
     var lookupStatus: String?
     var lookupError: String?
     init(lemma: String, at: Date, evidence: String) {

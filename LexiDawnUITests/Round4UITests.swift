@@ -43,6 +43,9 @@ final class Round4UITests: XCTestCase {
         field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: min(200, (field.value as? String)?.count ?? 0))); field.typeText(value)
     }
     private func capture(_ id: String, app: XCUIApplication, feature: String, state: String, theme: String = "system", provenance: String = "explicit-original-Round4-UI-fixture-real-Repository-not-live-provider") {
+        // Request a fresh native accessibility/layout snapshot before the screen
+        // attachment. Pixels still come directly from XCUIScreen, untouched.
+        if app.state == .runningForeground { _ = app.windows.firstMatch.frame; _ = app.descendants(matching: .any).count }
         let device = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? UIDevice.current.name
         let safe = device.map { $0.isLetter || $0.isNumber || $0 == "-" ? String($0) : "-" }.joined()
         let orientation = XCUIDevice.shared.orientation.isLandscape ? "landscape" : "portrait"
@@ -96,7 +99,7 @@ final class Round4UITests: XCTestCase {
         summary.tap()
         XCTAssertTrue(app.staticTexts["共 1 篇"].waitForExistence(timeout: 10))
         let scopes = app.segmentedControls["library-mode-filter"]
-        XCTAssertTrue(scopes.exists); XCTAssertEqual(scopes.buttons.count, 4)
+        XCTAssertTrue(scopes.isHittable); XCTAssertEqual(scopes.buttons.count, 4)
         XCTAssertTrue(scopes.buttons["全部"].exists); XCTAssertTrue(scopes.buttons["历史"].exists)
         capture("R4-P04-library-scopes", app: app, feature: "library", state: "full-inventory-and-four-visible-scopes")
     }

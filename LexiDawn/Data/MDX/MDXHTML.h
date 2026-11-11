@@ -9,6 +9,7 @@ void *ld_html_child(void *node);
 void *ld_html_next(void *node);
 void *ld_html_parent(void *node);
 char *ld_html_text(void *node);
+char *ld_html_headword(void *node);
 char *ld_html_attribute(void *node, const char *name);
 void ld_html_free(char *text);
 #endif

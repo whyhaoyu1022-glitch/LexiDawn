@@ -3,17 +3,19 @@ import Foundation
 enum MDXDefinitionAvailability: String, Codable, Sendable {
     case chinese, noChinese, notFound, checking, failed
 }
-/// Owner 2026-11-07: English-to-Chinese only. English glosses are parser metadata,
-/// not a usable definition and never a reason to disable personal Chinese senses.
+/// Only a current MDX Chinese definition can lock personal Chinese senses.
 enum BilingualMeaningPolicy {
     static let version = "bundled-mdx-personal-1"
     static func hasChinese(_ text: String) -> Bool {
         text.unicodeScalars.contains { (0x3400...0x9FFF).contains($0.value) || (0x20000...0x3134F).contains($0.value) }
     }
-    static func trusted(_ sense: DictionarySense) -> Bool {
-        !sense.zh.isBlank && hasChinese(sense.zh) && sense.originKind == "mdx" &&
+    static func isCurrentMDX(_ sense: DictionarySense) -> Bool {
+        sense.originKind == "mdx" &&
             sense.sourceRevision == BundledMDXDictionaryProvider.sourceVersion &&
             sense.sources == [BundledMDXDictionaryProvider.sourceName]
+    }
+    static func trusted(_ sense: DictionarySense) -> Bool {
+        isCurrentMDX(sense) && !sense.zh.isBlank && hasChinese(sense.zh)
     }
     static func displaySenses(_ senses: [DictionarySense]) -> [DictionarySense] {
         let values = senses.filter { !$0.zh.isBlank && hasChinese($0.zh) && (trusted($0) || $0.originKind == "personal") }
@@ -37,6 +39,7 @@ enum BilingualMeaningPolicy {
         case "interjection": return "interj. 感叹词"
         case "determiner": return "限定词"
         case "phrase": return "短语"
+        case "other": return "其他词性"
         default: return value.flatMap { $0.isBlank ? nil : $0 } ?? "词性待补充"
         }
     }
@@ -74,6 +77,8 @@ struct PersonalDictionarySense: Codable, Equatable, Identifiable, Sendable {
                         exampleTranslations: examples.map(\.chinese), usageLabels: [usage, grammar ?? "", scenarios ?? ""].filter { !$0.isBlank }, relatedPhrases: (phrases.isBlank ? [] : [phrases]) + (collocations ?? []) + (idioms ?? []), sourceRevision: String(revision), originKind: "personal", policyVersion: BilingualMeaningPolicy.version)
     }
     func validate() throws {
+        guard !id.isBlank, revision >= 1, Set(examples.map(\.id)).count == examples.count,
+              examples.allSatisfy({ !$0.id.isBlank }) else { throw LearningError.invalid("义项或例句身份无效、重复，原记录保留。") }
         guard chinese.count <= 500, ipa.count <= 120, usage.count <= 200, forms.count <= 500, phrases.count <= 1000, examples.count <= 20,
               examples.allSatisfy({ $0.english.count <= 1500 && $0.chinese.count <= 1500 && ($0.notes?.count ?? 0) <= 1000 }),
               [englishDefinition, grammar, scenarios, notes].allSatisfy({ ($0?.count ?? 0) <= 2000 }),

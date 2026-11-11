@@ -1,0 +1,222 @@
+{
+  "archive": "修改意见.zip",
+  "archiveSHA256": "e754df2436b246c4798a95775a5f10e7776bd56c85fb7045ff5351b2ff302528",
+  "manifestMatches": true,
+  "reviewedOn": "2026-11-11",
+  "reviewedCount": 21,
+  "method": "Each full original HEIC frame decoded, oriented and individually displayed. Original bytes were hashed without modification.",
+  "reviewNotes": "docs/reviews/round-4-original-image-recheck-2026-11-11.md",
+  "finalNativeScreenshotSignoff": false,
+  "images": [
+    {
+      "imageID": "R4-P01",
+      "originalFile": "IMG_8854.heic",
+      "sha256": "f1b57d1c74afa1c30c916b107abf3b29b2a7db942593f41ce6680145e21dc25b",
+      "sizeBytes": 1453704,
+      "previewFile": "IMG_8854.png",
+      "width": 1206,
+      "height": 2565,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P02",
+      "originalFile": "IMG_8857.heic",
+      "sha256": "6627297897b05ae88cb51bdc175579d8bb1fa73888e634e0c06afb354834d6eb",
+      "sizeBytes": 1389860,
+      "previewFile": "IMG_8857.png",
+      "width": 1206,
+      "height": 2620,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P03",
+      "originalFile": "IMG_8858.heic",
+      "sha256": "29c00e705e502cd00c11ff6dbc9684213fd3ee67f5700a380cc83478a6cac1fc",
+      "sizeBytes": 988146,
+      "previewFile": "IMG_8858.png",
+      "width": 1205,
+      "height": 2622,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P04",
+      "originalFile": "IMG_8859.heic",
+      "sha256": "9db1ab75fa60d2dc2344345dd4f1413e03b2fdf69c9d8d2fb3fb6910bc545c9a",
+      "sizeBytes": 926090,
+      "previewFile": "IMG_8859.png",
+      "width": 1206,
+      "height": 2620,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P05",
+      "originalFile": "IMG_8860.heic",
+      "sha256": "c9a54257151a02989e9e36faa4a4ef617bc3c8c462460b5e97c9261a026cb8a4",
+      "sizeBytes": 1049142,
+      "previewFile": "IMG_8860.png",
+      "width": 1206,
+      "height": 2622,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P06",
+      "originalFile": "IMG_8862.heic",
+      "sha256": "3ff72be8cc02c6c1f9f461986767d58bcc799447610376b4792bbdc5cd5f7b2b",
+      "sizeBytes": 800005,
+      "previewFile": "IMG_8862.png",
+      "width": 1171,
+      "height": 2622,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P07",
+      "originalFile": "IMG_8863.heic",
+      "sha256": "a382ae8d1aa72653a8bb9cfb64527ca8290d890507975392036c4fb44050820b",
+      "sizeBytes": 677961,
+      "previewFile": "IMG_8863.png",
+      "width": 1206,
+      "height": 2622,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P08",
+      "originalFile": "IMG_8864.heic",
+      "sha256": "9c76007bbf3f7530e4c7d0013997d011be05a098aadce26e0adbe20fa902d71d",
+      "sizeBytes": 1029371,
+      "previewFile": "IMG_8864.png",
+      "width": 1206,
+      "height": 2622,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P09",
+      "originalFile": "IMG_8866.heic",
+      "sha256": "c79dbe8603818b296aad1636518737628e08c6311a3e50b6109a07a2409fe5c1",
+      "sizeBytes": 1811506,
+      "previewFile": "IMG_8866.png",
+      "width": 1206,
+      "height": 2622,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P10",
+      "originalFile": "IMG_8867.heic",
+      "sha256": "68220b5528e10f1fb81011b93701a42bf90eb59dd56d5a6afd82c1bd2942daef",
+      "sizeBytes": 1057714,
+      "previewFile": "IMG_8867.png",
+      "width": 1205,
+      "height": 2622,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P11",
+      "originalFile": "IMG_8869.heic",
+      "sha256": "cc18c3762dfcadd0209e7695d8751e766e791ad07db1f0a2085ccb793f3e2a49",
+      "sizeBytes": 1243068,
+      "previewFile": "IMG_8869.png",
+      "width": 1206,
+      "height": 2622,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P12",
+      "originalFile": "IMG_8870.heic",
+      "sha256": "c97902f9413febabed28a24194921e3d84b838e64152000401a72e18e27314d6",
+      "sizeBytes": 1242588,
+      "previewFile": "IMG_8870.png",
+      "width": 1206,
+      "height": 2622,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P13",
+      "originalFile": "IMG_8872.heic",
+      "sha256": "0f3a649f8a55a02fd2c8a68ccd30583db6e49d98362b3e6b95cb0de594118199",
+      "sizeBytes": 1981195,
+      "previewFile": "IMG_8872.png",
+      "width": 1206,
+      "height": 2622,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P14",
+      "originalFile": "IMG_8873.heic",
+      "sha256": "10ebb6633300217b97faad0d3528971379b3837f539827dba131a4fadc0471af",
+      "sizeBytes": 1477758,
+      "previewFile": "IMG_8873.png",
+      "width": 1205,
+      "height": 2622,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P15",
+      "originalFile": "IMG_8875.heic",
+      "sha256": "4ed7adc0721a4d494a90c430e21674d670c05b2b350703f79dd511c38a12e9f8",
+      "sizeBytes": 1279485,
+      "previewFile": "IMG_8875.png",
+      "width": 1206,
+      "height": 2621,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P16",
+      "originalFile": "IMG_8876.heic",
+      "sha256": "197522dae6ae40057892b3ec49e7efa1ed3162a22f29540c4e6499d444035ed9",
+      "sizeBytes": 1018644,
+      "previewFile": "IMG_8876.png",
+      "width": 1206,
+      "height": 2622,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P17",
+      "originalFile": "IMG_8878.heic",
+      "sha256": "8dedb9d37fe854225c6d7561cc19de5eed65a84c611475f832e860215a2a81fd",
+      "sizeBytes": 939696,
+      "previewFile": "IMG_8878.png",
+      "width": 1206,
+      "height": 2622,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P18",
+      "originalFile": "IMG_8879.heic",
+      "sha256": "69467b3d60a6d13a705faa50c675668a4a48ca80be9b19877bf5083e9866e777",
+      "sizeBytes": 1083997,
+      "previewFile": "IMG_8879.png",
+      "width": 1206,
+      "height": 2621,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P19",
+      "originalFile": "IMG_8880.heic",
+      "sha256": "e9e2b81ea27bc3c4489c489cca3e3b04c1678884e1958ae5482f8788fa1e2e33",
+      "sizeBytes": 951191,
+      "previewFile": "IMG_8880.png",
+      "width": 1206,
+      "height": 2622,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P20",
+      "originalFile": "IMG_8881.heic",
+      "sha256": "5e256a4df4f6432574b194b56dbebf89eab733877c9014e2f3ff45480105e3dd",
+      "sizeBytes": 1135991,
+      "previewFile": "IMG_8881.png",
+      "width": 1206,
+      "height": 2622,
+      "reviewedFromUploadedOriginal": true
+    },
+    {
+      "imageID": "R4-P21",
+      "originalFile": "IMG_8883.heic",
+      "sha256": "ade6a1dd41c0fd7d934b410d9d3249eb92a9112e0ed497baf38f5447f5d9fe1f",
+      "sizeBytes": 1394702,
+      "previewFile": "IMG_8883.png",
+      "width": 1205,
+      "height": 2618,
+      "reviewedFromUploadedOriginal": true
+    }
+  ]
+}
