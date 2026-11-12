@@ -41,6 +41,7 @@ struct ReviewPracticeContent: View {
     @State private var loadGeneration = UUID()
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.dynamicTypeSize) private var typeSize
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -71,6 +72,17 @@ struct ReviewPracticeContent: View {
                 if message != nil { Button("重试", action: { Task { await load() } }).buttonStyle(.bordered).disabled(loading) }
             }.padding(20)
         }.safeAreaPadding(.bottom, 16).scrollDismissesKeyboard(.interactively).navigationTitle("复习").navigationBarTitleDisplayMode(.inline).task { await load() }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if !loading, let session, session.matchingComplete, session.completedAt == nil,
+                   let question = session.cloze.first(where: { !$0.completed }) {
+                    Button { submitSpelling(question.id) } label: {
+                        Text("提交答案").frame(maxWidth: .infinity, minHeight: 36)
+                    }.buttonStyle(.borderedProminent).accessibilityIdentifier("submit-spelling")
+                        .disabled(spelling.isBlank || answerPhase == .submitting)
+                        .padding(.horizontal, 20).padding(.vertical, 8)
+                        .background(.regularMaterial)
+                }
+            }
             .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { spellingFocused = false } } }
             .reviewEntryGate(entryGate, learning: learning)
             .onChange(of: selected) { _, _ in feedback = nil; feedbackFor = nil; matchingNeedsSelection = false }
@@ -118,14 +130,18 @@ struct ReviewPracticeContent: View {
                 } else { Text("输入原句中的完整词形").font(.subheadline).foregroundStyle(.secondary) }
                 if let feedback, feedbackFor == question.id, feedbackBelongs(to: question.id, in: session) { Label(feedback, systemImage: "exclamationmark.circle").font(.subheadline).foregroundStyle(.orange).accessibilityIdentifier("review-feedback") }
                 if question.acceptedAnswers.count > 1 { Text("本题接受词典明确标注的英美拼写变体。").font(.caption).foregroundStyle(.secondary) }
-                TextField("完整拼写", text: $spelling).focused($spellingFocused).textInputAutocapitalization(.never).autocorrectionDisabled().textFieldStyle(.roundedBorder).accessibilityIdentifier("cloze-answer").submitLabel(.done).onSubmit { if submit(questionID: question.id, answer: spelling) { spelling = "" } }
-                Button { if submit(questionID: question.id, answer: spelling) { spelling = "" } } label: { Text("提交答案").frame(minHeight: 32) }.buttonStyle(.borderedProminent).accessibilityIdentifier("submit-spelling")
-                ViewThatFits(in: .horizontal) {
-                    HStack { spellingAssistance(questionID: question.id, revealed: question.revealed) }
-                    VStack(alignment: .leading) { spellingAssistance(questionID: question.id, revealed: question.revealed) }
+                TextField("完整拼写", text: $spelling).focused($spellingFocused).textInputAutocapitalization(.never).autocorrectionDisabled().textFieldStyle(.roundedBorder).accessibilityIdentifier("cloze-answer").submitLabel(.done).onSubmit { submitSpelling(question.id) }
+                let actions = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading)) : AnyLayout(HStackLayout())
+                actions {
+                    spellingAssistance(questionID: question.id, revealed: question.revealed)
                 }.font(.footnote).buttonStyle(.bordered)
             }.fixedSize(horizontal: false, vertical: true)
         }
+    }
+    private func submitSpelling(_ id: String) {
+        guard !spelling.isBlank, !InputComposition.hasMarkedText else { return }
+        spellingFocused = false
+        if submit(questionID: id, answer: spelling) { spelling = "" }
     }
     @ViewBuilder private func spellingAssistance(questionID: String, revealed: Bool) -> some View {
         if !revealed {

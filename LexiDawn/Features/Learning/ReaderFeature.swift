@@ -302,6 +302,7 @@ struct WordLookupSheet: View {
                     .accessibilityLabel("查看详细释义").accessibilityIdentifier("dictionary-details").disabled(model.loading || model.error != nil || model.result == nil)
             }.font(.subheadline)
         }.padding(16).frame(width: dynamicTypeSize.isAccessibilitySize ? 310 : 285).accessibilityElement(children: .contain).accessibilityIdentifier("compact-word-card")
+            .accessibilityHidden(showDetails)
             .fixedSize(horizontal: false, vertical: true)
             .task { do { theme = try dependencies.preferencesRepository.load().readerTheme } catch { preferencesError = "阅读设置读取失败：" + error.localizedDescription } }
             .onAppear { model.startLookup() }
@@ -330,7 +331,7 @@ struct DictionaryQuickMeaning: View {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     if let part = sense.partOfSpeech { Text(BilingualMeaningPolicy.partName(part)).font(.caption).foregroundStyle(.secondary) }
                     Text(sense.zh).font(.subheadline).lineLimit(2)
-                }.accessibilityIdentifier("dictionary-quick-sense-" + sense.id)
+                }.accessibilityElement(children: .combine).accessibilityIdentifier("dictionary-quick-sense-" + sense.id)
             }
         }
     }
@@ -394,12 +395,12 @@ struct DictionaryResultContent: View {
         return BilingualMeaningPolicy.partName(key.components(separatedBy: "|")[1])
     }
     var body: some View {
-        VStack(alignment: .leading, spacing: 26) {
+        LazyVStack(alignment: .leading, spacing: 26) {
             if senses.isEmpty {
                 ContentUnavailableView(result.hasMDXEntry ? "词典已收录，暂无中文释义" : "暂无英中释义", systemImage: "text.book.closed", description: Text("可在生词本补充中文释义和例句。"))
             }
             ForEach(Array(parts.enumerated()), id: \.element) { groupIndex, part in
-                VStack(alignment: .leading, spacing: 16) {
+                LazyVStack(alignment: .leading, spacing: 16) {
                     if part.hasPrefix("section|") {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(alignment: .firstTextBaseline) {
@@ -412,6 +413,7 @@ struct DictionaryResultContent: View {
                         HStack(alignment: .firstTextBaseline, spacing: 10) {
                             Text(DictionaryPresentation.letter(groupIndex) + ".").foregroundStyle(.primary.opacity(0.65))
                             Text(title(part)).fontWeight(.medium)
+                                .accessibilityIdentifier("dictionary-part-" + part.components(separatedBy: "|")[1])
                         }.font(.title3).accessibilityAddTraits(.isHeader)
                     }
                     let grouped = senses.filter { group($0) == part }
@@ -421,7 +423,7 @@ struct DictionaryResultContent: View {
                         HStack(alignment: .top, spacing: 10) {
                             Text("\(index + 1)").font(.caption.weight(.medium)).frame(minWidth: 23, minHeight: 23).overlay { Circle().strokeBorder(.primary.opacity(0.3)) }.accessibilityLabel("义项\(index + 1)")
                             DictionarySenseBody(sense: sense, headword: result.headword, onExampleWord: onExampleWord, onRelatedEntry: onRelatedEntry)
-                        }.accessibilityIdentifier("dictionary-full-sense-" + sense.id)
+                        }.accessibilityElement(children: .contain).accessibilityIdentifier("dictionary-full-sense-" + sense.id)
                     }
                 }
             }
@@ -534,6 +536,7 @@ struct DictionaryDetailView: View {
     @State private var entry: VocabularyItem?
     @State private var addition: VocabularyAddition?
     @State private var showingSynonyms = false
+    @State private var comparison: String?
     @State private var selection: WordLookupModel?
     @State private var relatedRoute: DictionaryRelatedRoute?
     @State private var relatedTask: Task<Void, Never>?
@@ -541,32 +544,22 @@ struct DictionaryDetailView: View {
     @State private var error: String?
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            LazyVStack(alignment: .leading, spacing: 24) {
                 DictionaryEntryHeader(headword: result.headword, ipa: DictionaryPresentation.sharedIPA(result.senses + result.personalSenses), speech: speech)
                 if speech.state == .unavailable { Text("系统英语语音不可用").font(.caption).foregroundStyle(.secondary) }
                 DictionaryResultContent(result: result, onExampleWord: lookup, onRelatedEntry: depth < 3 ? openRelated : nil)
+                contextSections
                 let synonyms = Array(Set(result.usableSenses.flatMap { $0.synonyms ?? [] })).filter { $0.lowercased() != result.headword.lowercased() }.sorted()
                 if !synonyms.isEmpty {
-                    DisclosureGroup(isExpanded: $showingSynonyms) {
+                    Button { showingSynonyms.toggle() } label: {
+                        Label("对照同义词", systemImage: showingSynonyms ? "chevron.up" : "chevron.down")
+                    }.accessibilityIdentifier("dictionary-synonym-comparison")
+                    if showingSynonyms {
                         ForEach(synonyms, id: \.self) { synonym in
-                            NavigationLink { DictionaryComparisonView(original: result, synonym: synonym, context: context, learning: learning, theme: theme) } label: { Text(result.headword + " / " + synonym) }.accessibilityIdentifier("dictionary-compare-" + synonym)
-                        }
-                    } label: { Text("对照同义词") }.accessibilityIdentifier("dictionary-synonym-comparison")
-                }
-                if let lookupModel, depth < 3 {
-                    let phrases = EnglishPhraseRecognizer.phrases(around: lookupModel.token.surface, sentence: context)
-                    if !phrases.isEmpty {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("语境短语").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                            ForEach(phrases, id: \.self) { phrase in Button(phrase) { selection = lookupModel.phraseLookup(phrase) } }
-                            if let error = lookupModel.phraseError { Text(error).font(.caption).foregroundStyle(.secondary) }
+                            Button(result.headword + " / " + synonym) { comparison = synonym }
+                                .accessibilityIdentifier("dictionary-compare-" + synonym)
                         }
                     }
-                }
-                if !context.isBlank {
-                    DisclosureGroup(contextOrigin.kind == "reader" ? "遇见这个词的句子" : "查词语境") {
-                        InlineEnglishText(text: context, onWord: { lookupContext($0) }).padding(.top, 8)
-                    }.font(.subheadline)
                 }
                 DisclosureGroup("来源详情") {
                     VStack(alignment: .leading, spacing: 10) {
@@ -574,10 +567,14 @@ struct DictionaryDetailView: View {
                     }.padding(.top, 8)
                 }.font(.subheadline)
             }.padding(.horizontal, 22).padding(.top, 16).padding(.bottom, 24)
-        }.clipped().background(background.ignoresSafeArea())
+        }.accessibilityIdentifier("dictionary-detail-scroll").clipped().background(background.ignoresSafeArea())
             .preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
             .safeAreaInset(edge: .bottom) { detailControls }
             .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(item: $comparison) { synonym in
+                DictionaryComparisonView(original: result, synonym: synonym, context: context, learning: learning, theme: theme)
+                    .toolbar(.visible, for: .navigationBar)
+            }
             .task { refresh() }.onReceive(learning.$revision) { _ in refresh() }
             .popover(item: $selection) { WordLookupSheet(model: $0).presentationCompactAdaptation(.popover) }
             .fullScreenCover(item: $relatedRoute, onDismiss: {
@@ -591,6 +588,26 @@ struct DictionaryDetailView: View {
                 }
             }
             .onDisappear { speech.stop(); relatedTask?.cancel() }
+    }
+    @ViewBuilder private var contextSections: some View {
+        if let lookupModel, depth < 3 {
+            let phrases = EnglishPhraseRecognizer.phrases(around: lookupModel.token.surface, sentence: context)
+            if !phrases.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("语境短语").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    ForEach(phrases, id: \.self) { phrase in
+                        Button(phrase) { selection = lookupModel.phraseLookup(phrase) }
+                            .accessibilityIdentifier("dictionary-context-phrase-" + phrase)
+                    }
+                    if let error = lookupModel.phraseError { Text(error).font(.caption).foregroundStyle(.secondary) }
+                }
+            }
+        }
+        if !context.isBlank {
+            DisclosureGroup(contextOrigin.kind == "reader" ? "遇见这个词的句子" : "查词语境") {
+                InlineEnglishText(text: context, onWord: { lookupContext($0) }).padding(.top, 8)
+            }.font(.subheadline)
+        }
     }
     private var detailControls: some View {
         VStack(spacing: 6) {

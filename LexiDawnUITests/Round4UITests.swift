@@ -34,8 +34,10 @@ final class Round4UITests: XCTestCase {
             let above = element.exists && !element.frame.isEmpty && element.frame.maxY < bounds.minY + 100
             let below = element.exists && !element.frame.isEmpty && element.frame.minY > bounds.maxY - 120
             let scrollUp = above ? false : below ? true : upward
-            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: scrollUp ? 0.6 : 0.35))
-            start.press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: scrollUp ? 0.35 : 0.6)))
+            let detail = app.scrollViews["dictionary-detail-scroll"].firstMatch
+            let area = detail.exists ? detail : app
+            let start = area.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: scrollUp ? 0.72 : 0.29))
+            start.press(forDuration: 0.05, thenDragTo: area.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: scrollUp ? 0.28 : 0.71)))
         }
         XCTAssertTrue(element.exists); XCTAssertTrue(element.isHittable)
     }
@@ -89,7 +91,7 @@ final class Round4UITests: XCTestCase {
         XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["n. 名词"].exists)
         capture("R4-F22-reference-top", app: app, feature: "dictionary-detail", state: "headword-IPA-noun-senses-bilingual-examples")
-        let verb = app.staticTexts["v. 动词"]; reach(verb, app: app)
+        let verb = app.staticTexts["dictionary-part-verb"].firstMatch; reach(verb, app: app)
         capture("R4-F22-reference-middle", app: app, feature: "dictionary-detail", state: "verb-group-forms-and-examples")
         let phrases = app.staticTexts["短语与搭配"]; reach(phrases, app: app)
         capture("R4-F22-reference-end", app: app, feature: "dictionary-detail", state: "phrase-section-and-unobscured-bottom-controls")
@@ -191,12 +193,25 @@ final class Round4UITests: XCTestCase {
         app.buttons["submit-spelling"].tap()
         capture("R4-P18-incorrect", app: app, feature: "spelling", state: "current-question-error-only")
         for index in 0..<3 {
+            let prompt = app.staticTexts["cloze-prompt"]
+            reach(prompt, app: app, upward: false)
+            XCTAssertTrue(prompt.label.contains("_"))
+            capture("R4-P11-mask-\(index)", app: app, feature: "spelling", state: "persisted-letter-mask")
             let reveal = app.buttons["显示答案"]; reach(reveal, app: app); reveal.tap()
             let answer = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH '答案：'")).firstMatch
             XCTAssertTrue(answer.waitForExistence(timeout: 5)); let value = answer.label.replacingOccurrences(of: "答案：", with: "")
             XCTAssertTrue(app.textFields["cloze-answer"].exists)
             capture("R4-P19-revealed-\(index)", app: app, feature: "spelling", state: "answer-visible-awaiting-user-correction-Again")
-            let current = app.textFields["cloze-answer"]; reach(current, app: app, upward: false); replace(current, with: value)
+            let current = app.textFields["cloze-answer"]; reach(current, app: app, upward: false)
+            if index == 0 {
+                replace(current, with: "wrong-correction")
+                app.buttons["submit-spelling"].tap()
+                XCTAssertTrue(app.staticTexts["review-feedback"].waitForExistence(timeout: 10))
+                XCTAssertTrue(answer.exists)
+                capture("R4-P19-wrong-correction", app: app, feature: "spelling", state: "wrong-correction-keeps-the-same-question")
+                reach(current, app: app, upward: false)
+            }
+            replace(current, with: value)
             app.buttons["submit-spelling"].tap()
         }
         XCTAssertTrue(app.descendants(matching: .any)["review-completed"].firstMatch.waitForExistence(timeout: 10))
@@ -268,7 +283,7 @@ final class Round4UITests: XCTestCase {
         let speak = app.buttons["dictionary-system-pronunciation"]; XCTAssertTrue(speak.exists); speak.tap()
         capture("R4-F22-system-pronunciation", app: app, feature: "dictionary-detail", state: "actual-system-pronunciation-start-or-unavailable", provenance: "real-bundled-MDX-and-iOS-system-TTS")
         if speak.label == "停止系统朗读" { speak.tap() }
-        let verb = app.staticTexts["v. 动词"]; reach(verb, app: app)
+        let verb = app.staticTexts["dictionary-part-verb"].firstMatch; reach(verb, app: app)
         capture("R4-F22-real-middle", app: app, feature: "dictionary-detail", state: "actual-MDX-verb-section-reference-hierarchy", provenance: "real-bundled-MDX-with-explicit-original-article")
         let phrases = app.staticTexts["短语动词"]; reach(phrases, app: app)
         capture("R4-F22-real-phrases", app: app, feature: "dictionary-detail", state: "actual-MDX-phrasal-verbs", provenance: "real-bundled-MDX-with-explicit-original-article")
@@ -300,7 +315,7 @@ final class Round4UITests: XCTestCase {
             expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: app.buttons["dictionary-details"]); waitForExpectations(timeout: 20)
             app.buttons["dictionary-details"].tap(); XCTAssertTrue(app.staticTexts["dictionary-ipa-summary"].waitForExistence(timeout: 10))
             capture("R4-F22-reference-top-" + theme, app: app, feature: "dictionary-detail", state: "actual-MDX-reference-headword-POS-numbered-senses", theme: theme, provenance: "real-bundled-MDX")
-            reach(app.staticTexts["v. 动词"], app: app, count: 20)
+            reach(app.staticTexts["dictionary-part-verb"].firstMatch, app: app, count: 20)
             capture("R4-F22-reference-middle-" + theme, app: app, feature: "dictionary-detail", state: "actual-MDX-reference-verb-forms-paired-examples", theme: theme, provenance: "real-bundled-MDX")
             reach(app.staticTexts["来源：内置 MDX"], app: app, count: 25)
             capture("R4-F22-reference-end-" + theme, app: app, feature: "dictionary-detail", state: "actual-MDX-idioms-final-sense-bottom-controls-unobscured", theme: theme, provenance: "real-bundled-MDX")

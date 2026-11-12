@@ -8,6 +8,7 @@ private struct SettingsDraft: Codable {
     let theme: String, autoAdd: Bool, dailyLimit: Int, timezonePolicy: String, fixedTimezone: String
 }
 struct LearningSettingsView: View {
+    private enum Field: Hashable { case name, goal, topics, timezone }
     @EnvironmentObject private var dependencies: AppDependencies
     @ObservedObject var learning: LearningServices
     @State private var name = ""
@@ -28,6 +29,7 @@ struct LearningSettingsView: View {
     @State private var savedSignature = ""
     @State private var draftConflict: SettingsDraft?
     @State private var saveTask: Task<Void, Never>?
+    @FocusState private var editingText: Field?
     @Environment(\.scenePhase) private var scenePhase
     @State private var cacheKind: String?
     var body: some View {
@@ -41,10 +43,10 @@ struct LearningSettingsView: View {
                     }
                 }
                 Section("个人资料") {
-                    TextField("昵称", text: $name).accessibilityIdentifier("settings-name")
+                    TextField("昵称", text: $name).focused($editingText, equals: .name).accessibilityIdentifier("settings-name")
                     Picker("年龄段（可选）", selection: $age) { Text("不填写").tag(""); Text("未满 18 岁").tag("under18"); Text("18–24 岁").tag("18-24"); Text("25–44 岁").tag("25-44"); Text("45 岁及以上").tag("45+") }
-                    TextField("学习目标", text: $goal)
-                    TextField("兴趣主题（逗号分隔）", text: $topics)
+                    TextField("学习目标", text: $goal).focused($editingText, equals: .goal)
+                    TextField("兴趣主题（逗号分隔）", text: $topics).focused($editingText, equals: .topics)
                 }
                 Section("阅读与查词") {
                     Stepper("字号：\(Int(fontSize)) pt", value: $fontSize, in: 14...32)
@@ -56,12 +58,8 @@ struct LearningSettingsView: View {
                 Section("复习与学习日期") {
                     Stepper("每日复习上限：\(dailyLimit)", value: $dailyLimit, in: 1...100)
                     Picker("学习时区", selection: $timezonePolicy) { Text("跟随设备").tag("device"); Text("固定时区").tag("fixed") }
-                    if timezonePolicy == "fixed" { TextField("IANA 时区，例如 Asia/Shanghai", text: $fixedTimezone).textInputAutocapitalization(.never) }
+                    if timezonePolicy == "fixed" { TextField("IANA 时区，例如 Asia/Shanghai", text: $fixedTimezone).focused($editingText, equals: .timezone).textInputAutocapitalization(.never) }
                     if timezonePolicy == "fixed" { Text("新时区用于今后的学习日期。").font(.caption).foregroundStyle(.secondary) }
-                }
-                Section {
-                    if let message { Text(message).font(.footnote).accessibilityIdentifier("settings-message") }
-                    if saveFailed { Button("重试保存设置", action: save) }
                 }
                 Section("本地缓存") {
                     Button("清理未使用的文章缓存") { cacheKind = "article" }
@@ -74,7 +72,17 @@ struct LearningSettingsView: View {
                     NavigationLink("内容与词典许可") { SourceLicensesView(bundledNotices: licenseText) }
                 }
             }.scrollDismissesKeyboard(.interactively).navigationTitle("我的").task { load() }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    if let message {
+                        HStack {
+                            Text(message).font(.footnote).accessibilityIdentifier("settings-message")
+                            if saveFailed { Button("重试保存设置", action: save).font(.footnote) }
+                        }.frame(maxWidth: .infinity).padding(.vertical, 8).padding(.horizontal, 16).background(.regularMaterial)
+                    }
+                }
                 .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { InputComposition.dismissKeyboard(); save() } } }
+                .onSubmit { editingText = nil; save() }
+                .onChange(of: editingText) { previous, current in if previous != nil, previous != current { save() } }
                 .onChange(of: signature) { _, _ in scheduleSave() }
                 .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidHideNotification)) { _ in save() }
                 .onChange(of: scenePhase) { _, phase in if phase != .active { saveTask?.cancel(); save() } }
@@ -137,6 +145,7 @@ struct LearningSettingsView: View {
     }
     private func scheduleSave() {
         guard loaded, draftConflict == nil, signature != savedSignature else { return }
+        message = nil
         checkpoint()
         saveFailed = false
         saveTask?.cancel()

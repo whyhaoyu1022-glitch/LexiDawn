@@ -177,7 +177,8 @@ final class Round3UITests: XCTestCase {
         let app = launch("round3-dictionary-many")
         XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
         XCTAssertTrue(app.buttons["word-Internet"].firstMatch.waitForExistence(timeout: 10)); app.buttons["word-Internet"].firstMatch.tap()
-        let quick = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'dictionary-quick-sense-'"))
+        let quick = app.descendants(matching: .any)["compact-word-card"].firstMatch
+            .descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'dictionary-quick-sense-'"))
         XCTAssertTrue(quick.firstMatch.waitForExistence(timeout: 15)); XCTAssertEqual(quick.count, 2)
         XCTAssertFalse(app.staticTexts["原创测试义项 6"].exists)
         capture("R3-D40", app: app, feature: "dictionary", state: "bounded-two-sense-quick-meaning", origin: "explicit-original-six-sense-provider-fixture")
@@ -391,7 +392,8 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["本次复习已保存"].waitForExistence(timeout: 10))
         capture("R3-C06", app: app, feature: "review", state: "review-and-fsrs-saved", origin: origin)
         app.tabBars.buttons["今日"].tap(); XCTAssertTrue(app.staticTexts["cycle-completed"].waitForExistence(timeout: 10))
-        app.tabBars.buttons["探索"].tap(); XCTAssertTrue(app.staticTexts["已解锁 · 本地合法文章"].waitForExistence(timeout: 10))
+        app.tabBars.buttons["探索"].tap(); XCTAssertTrue(app.buttons["explore-topic-filter"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["先完成必做，再自由探索"].exists)
         capture("R3-C07", app: app, feature: "explore", state: "cold-live-cycle-unlocks-explore", origin: origin)
         app.terminate(); app.launch()
         XCTAssertTrue(app.staticTexts["cycle-completed"].waitForExistence(timeout: 20))
@@ -519,7 +521,8 @@ final class Round3UITests: XCTestCase {
         let nested = app.links["networks"].firstMatch
         for _ in 0..<12 { if nested.exists && nested.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(nested.isHittable); nested.tap()
-        XCTAssertTrue(app.staticTexts["dictionary-headword"].waitForExistence(timeout: 10)); XCTAssertEqual(app.staticTexts["dictionary-headword"].label, "network")
+        let nestedHeadword = app.staticTexts.matching(NSPredicate(format: "identifier == %@ AND label == %@", "dictionary-headword", "network")).firstMatch
+        XCTAssertTrue(nestedHeadword.waitForExistence(timeout: 10))
         capture("R3-D66", app: app, feature: "dictionary-context", state: "nested-word-from-provider-definition", origin: "explicit-original-provider-fixture-not-production-network")
         XCTAssertEqual(app.buttons.matching(identifier: "close-word").count, 1)
         app.buttons["close-word"].tap(); XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
@@ -543,7 +546,7 @@ final class Round3UITests: XCTestCase {
             for _ in 0..<15 { if detail.isEnabled { break }; _ = app.staticTexts["dictionary-providers"].waitForExistence(timeout: 1) }
             XCTAssertTrue(detail.isEnabled); detail.tap()
             let synonyms = app.buttons["dictionary-synonym-comparison"]
-            for _ in 0..<5 { if synonyms.exists && synonyms.isHittable { break }; app.swipeUp() }
+            for _ in 0..<20 { if synonyms.exists && synonyms.isHittable { break }; swipeDictionary(app) }
             XCTAssertTrue(synonyms.isHittable); synonyms.tap()
             let link = app.buttons["dictionary-compare-network"]; XCTAssertTrue(link.waitForExistence(timeout: 10)); link.tap()
             XCTAssertTrue(app.navigationBars["同义词对照"].waitForExistence(timeout: 10))
@@ -682,10 +685,11 @@ final class Round3UITests: XCTestCase {
             capture("R3-D" + String(index + 10), app: app, feature: "dictionary", state: "surface-" + surface, origin: "explicit-original-context-fixture-real-bundled-MDX")
             if !phrase.isEmpty {
                 app.buttons["dictionary-details"].tap(); XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
-                let phraseButton = app.buttons[phrase]
-                for _ in 0..<15 { if phraseButton.exists && phraseButton.isHittable { break }; app.swipeUp() }
+                let phraseButton = app.buttons["dictionary-context-phrase-" + phrase]
+                for _ in 0..<30 { if phraseButton.exists && phraseButton.isHittable { break }; swipeDictionary(app) }
                 XCTAssertTrue(phraseButton.isHittable); phraseButton.tap()
-                XCTAssertTrue(app.staticTexts["dictionary-headword"].waitForExistence(timeout: 10)); XCTAssertEqual(app.staticTexts["dictionary-headword"].label, phrase)
+                let phraseHeadword = app.staticTexts.matching(NSPredicate(format: "identifier == %@ AND label == %@", "dictionary-headword", phrase)).firstMatch
+                XCTAssertTrue(phraseHeadword.waitForExistence(timeout: 10))
                 capture("R3-D" + String(index + 20), app: app, feature: "dictionary", state: "nested-phrase-" + phrase, origin: "explicit-original-context-fixture-real-bundled-MDX")
                 app.buttons["close-word"].firstMatch.tap(); app.buttons["返回查词"].tap()
                 XCTAssertTrue(app.staticTexts["dictionary-headword"].waitForExistence(timeout: 10)); XCTAssertEqual(app.staticTexts["dictionary-headword"].label, lemma)
@@ -716,7 +720,8 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(error.waitForExistence(timeout: 10)); XCTAssertTrue(word.isEnabled); XCTAssertTrue(meaning.isEnabled)
         XCTAssertNotEqual(word.value as? String, "已配对"); XCTAssertFalse(app.staticTexts["正确，已保存"].exists)
         capture("R3-G10", app: app, feature: "review-storage", state: "actual-answer-transaction-failed-without-completed-options", origin: "explicit-save-fault-real-Repository-question-and-cycle")
-        word.tap(); meaning.tap()
+        if word.value as? String != "已选择" { word.tap() }
+        meaning.tap()
         XCTAssertEqual(word.value as? String, "已配对"); XCTAssertFalse(word.isEnabled); XCTAssertFalse(meaning.isEnabled)
         XCTAssertFalse(error.exists)
         capture("R3-G11", app: app, feature: "review-storage", state: "retry-saved-correct-pair-once", origin: "explicit-save-fault-real-Repository-question-and-cycle")
@@ -730,7 +735,9 @@ final class Round3UITests: XCTestCase {
         app.buttons["match-word-internet"].tap(); app.buttons["match-meaning-文档（个人释义）"].tap()
         XCTAssertTrue(app.staticTexts["review-feedback"].label.contains("还不正确"))
         for (word, meaning) in [("internet","互联网（个人释义）"),("document","文档（个人释义）"),("book","书（个人释义）")] {
-            app.buttons["match-word-" + word].tap(); app.buttons["match-meaning-" + meaning].tap()
+            let option = app.buttons["match-word-" + word]
+            if option.value as? String != "已选择" { option.tap() }
+            app.buttons["match-meaning-" + meaning].tap()
         }
         for word in ["internet", "document", "book"] {
             let field = app.textFields["cloze-answer"]; XCTAssertTrue(field.waitForExistence(timeout: 10)); field.tap(); field.typeText(word)
@@ -770,6 +777,12 @@ final class Round3UITests: XCTestCase {
         for _ in 0..<20 { if notes.exists && notes.isHittable { break }; app.swipeUp() }
         XCTAssertTrue((notes.value as? String)?.contains("Second note draft") == true)
         capture("R3-V07", app: app, feature: "vocabulary", state: "note-retry-result-after-process-restart", origin: "explicit-Repository-note-save-fault-real-MDX")
+    }
+    private func swipeDictionary(_ app: XCUIApplication) {
+        let scroll = app.scrollViews["dictionary-detail-scroll"].firstMatch
+        let area = scroll.exists ? scroll : app
+        let start = area.coordinate(withNormalizedOffset: CGVector(dx: 0.66, dy: 0.76))
+        start.press(forDuration: 0.05, thenDragTo: area.coordinate(withNormalizedOffset: CGVector(dx: 0.66, dy: 0.19)))
     }
     /// Scrolling can retain offscreen accessibility elements. Exercise a word in the visible viewport.
     private func visibleWord(in app: XCUIApplication) -> XCUIElement {

@@ -11,6 +11,8 @@ struct ArticleLibraryView: View {
     @State private var reader: ReaderRoute?
     @State private var error: String?
     @State private var notice: String?
+    @State private var rfcMessage: String?
+    @State private var refreshingRFC = false
     @State private var loading = false
     @State private var refreshTask: Task<Void, Never>?
     @FocusState private var searchFocused: Bool
@@ -29,6 +31,7 @@ struct ArticleLibraryView: View {
     var body: some View {
         List {
             LibrarySearchCompletion { searchFocused = false }
+            if !query.isBlank, visible.isEmpty, !loading { emptyLibrary }
             Section {
                 HStack { Text("共 \(items.filter(\.readable).count) 篇").font(.headline); Spacer(); Text("当前 \(visible.count) 篇").font(.caption).foregroundStyle(.secondary) }.accessibilityIdentifier("library-count")
                 Picker("阅读内容", selection: $mode) {
@@ -44,13 +47,7 @@ struct ArticleLibraryView: View {
             DiscoveryProgressCard(service: learning.discovery)
             if let notice { Text(notice).font(.footnote).accessibilityIdentifier("article-notice") }
             if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red); Button(importFailed ? "重试导入" : "重新读取本地数据") { if importFailed { beginRefresh() } else { load() } } }.accessibilityIdentifier("article-import-error") }
-            if visible.isEmpty, !loading {
-                ContentUnavailableView {
-                    Label("没有匹配的完整文章", systemImage: "books.vertical")
-                } description: {
-                    Text("调整筛选，或导入完整英文原文。")
-                }.accessibilityIdentifier("library-empty")
-            }
+            if query.isBlank, visible.isEmpty, !loading { emptyLibrary }
             ForEach(visible) { item in
                 VStack(alignment: .leading, spacing: 10) {
                     Text(ArticleTitlePresentation.display(item.title, sourceID: item.sourceID)).font(.system(.headline, design: .serif))
@@ -75,16 +72,18 @@ struct ArticleLibraryView: View {
             }
             Section {
                 DisclosureGroup("备用技术文档") {
-                    Text("RFC是互联网技术标准文档，适合技术英语阅读。").font(.caption).foregroundStyle(.secondary)
-                    Button("导入 RFC 8890 完整原文") { do { try learning.content.installBundledRFC(at: Date()); learning.changed(); load() } catch { self.error = error.localizedDescription } }
-                }
+                    Button("导入随附 RFC 8890") { do { try learning.content.installBundledRFC(at: Date()); learning.changed(); load() } catch { rfcMessage = error.localizedDescription } }
+                    Button("从官方来源刷新 RFC") { Task { await refreshRFC() } }.disabled(refreshingRFC).accessibilityIdentifier("refresh-rfc")
+                    if refreshingRFC { ProgressView("正在刷新 RFC") }
+                    if let rfcMessage { Text(rfcMessage).font(.caption).accessibilityIdentifier("rfc-refresh-result") }
+                }.accessibilityIdentifier("rfc-example-options")
             }
         }
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索完整文章标题")
         .searchFocused($searchFocused)
-        .onSubmit(of: .search) { searchFocused = false }
+        .onSubmit(of: .search) { finishSearchInput() }
         .scrollDismissesKeyboard(.interactively)
-        .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成搜索") { searchFocused = false } } }
+        .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成搜索", action: finishSearchInput) } }
         .navigationTitle("文章库与历史")
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbar { Button("发现完整文章", systemImage: "arrow.clockwise") { beginRefresh() }.disabled(loading) }
@@ -100,6 +99,21 @@ struct ArticleLibraryView: View {
             Button("取消", role: .cancel) { resetting = nil }
         } message: { _ in Text("保留原阅读与完成历史，仅为本篇探索文章建立新的阅读进度。每日任务文章不能这样重置。") }
         .fullScreenCover(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭文章") { reader = nil } } } } }
+    }
+    private var emptyLibrary: some View {
+        ContentUnavailableView {
+            Label("没有匹配的完整文章", systemImage: "books.vertical")
+        } description: {
+            Text("调整筛选，或导入完整英文原文。")
+        }.accessibilityIdentifier("library-empty")
+    }
+    private func finishSearchInput() { searchFocused = false; InputComposition.dismissKeyboard() }
+    private func refreshRFC() async {
+        guard !refreshingRFC else { return }
+        refreshingRFC = true; rfcMessage = nil
+        defer { refreshingRFC = false }
+        do { try await learning.acquisition.refresh(); learning.changed(); load(); rfcMessage = "RFC 8890 已更新。" }
+        catch { rfcMessage = error.localizedDescription }
     }
     private func load() { do { items = try learning.content.library(); access = try learning.articleAccess(); explorationAllowed = access.mayExplore; error = nil } catch { access = ArticleLearningAccess(cycles: [], localDate: ""); importFailed = false; self.error = error.localizedDescription } }
     @discardableResult private func beginRefresh() -> Task<Void, Never> {
@@ -134,6 +148,7 @@ private struct LibrarySearchCompletion: View {
 
 struct DiscoveryProgressCard: View {
     @ObservedObject var service: ArticleDiscoveryService
+    @State private var showingResults = false
     var body: some View {
         if service.progress.phase != .idle {
             VStack(alignment: .leading, spacing: 10) {
@@ -150,16 +165,21 @@ struct DiscoveryProgressCard: View {
                 Text("新增\(service.progress.importedCount)篇 · 重复\(service.progress.duplicateCount)篇 · 未导入\(service.progress.failedArticleCount)篇" + (service.progress.failedCount > 0 ? " · \(service.progress.failedCount)个来源未完成" : "")).font(.caption).foregroundStyle(.secondary)
                 if service.progress.phase == .running { Button("停止本次发现") { service.cancelRefresh() }.accessibilityIdentifier("cancel-article-discovery") }
                 if !service.progress.sourceResults.isEmpty {
-                    DisclosureGroup("本次来源结果") {
+                    Button { showingResults.toggle() } label: {
+                        Label("本次来源结果", systemImage: showingResults ? "chevron.up" : "chevron.down")
+                    }.font(.subheadline).accessibilityIdentifier("article-discovery-results")
+                    if showingResults {
                         ForEach(service.progress.sourceResults) { source in
-                            Label(ArticleSourceRegistry.name(source.id) + " · " + sourceStatus(source.state),
-                                  systemImage: source.checked ? "checkmark.circle" : source.error != nil ? "exclamationmark.circle" : "clock")
+                            let description = ArticleSourceRegistry.name(source.id) + " · " + sourceStatus(source.state)
+                            Label(description, systemImage: source.checked ? "checkmark.circle" : source.error != nil ? "exclamationmark.circle" : "clock")
                                 .font(.caption).foregroundStyle(.secondary).padding(.vertical, 4)
+                                .accessibilityElement(children: .ignore).accessibilityLabel(description)
                                 .accessibilityIdentifier("article-discovery-result-" + source.id)
                         }
-                    }.font(.subheadline).accessibilityIdentifier("article-discovery-results")
+                    }
                 }
-            }.padding(.vertical, 8)
+            }.padding(.vertical, 8).buttonStyle(.borderless)
+                .onChange(of: service.progress.runID) { _, _ in showingResults = false }
         }
     }
     private var activeSources: String {

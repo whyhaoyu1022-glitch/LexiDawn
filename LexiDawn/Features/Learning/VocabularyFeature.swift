@@ -188,6 +188,7 @@ private struct VocabularyDraft: Codable {
     private let item: VocabularyItem
     private let learning: LearningServices
     private var base: String
+    private var failedSave: String?
     @Published private(set) var persistedSenses: [PersonalDictionarySense]
     private var checkpoint: Task<Void, Never>?
     private var ready = false
@@ -249,12 +250,17 @@ private struct VocabularyDraft: Codable {
             try JSONEncoder().encode(VocabularyDraft(entryID: item.id, base: base, notes: notes, senses: senses)).write(to: draftURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
         } catch { self.error = "草稿尚未保存：" + error.localizedDescription }
     }
-    func flush() {
+    func flush() { flush(retry: false) }
+    func retrySave() { flush(retry: true) }
+    private func flush(retry: Bool) {
         guard !hasDraftConflict else { return }
         guard ready, !InputComposition.hasMarkedText else { persistDraft(); return }
         checkpoint?.cancel()
+        var attempted: String?
         do {
-            guard try Self.signature(notes, senses) != base else { return }
+            let current = try Self.signature(notes, senses)
+            guard current != base, retry || current != failedSave else { return }
+            attempted = current
             persistDraft()
             refreshPolicy()
             // Separate transactions: a source-policy change must not prevent saving ordinary notes.
@@ -264,10 +270,10 @@ private struct VocabularyDraft: Codable {
                 state = "笔记已保存；个人释义草稿只读保留"; return
             }
             if allowed, let updated = try learning.vocabulary.entries().first(where: { $0.id == item.id }) { senses = updated.personalSenses ?? [] }
-            persistedSenses = senses; base = try Self.signature(notes, senses); state = "已自动保存"; error = nil
+            persistedSenses = senses; base = try Self.signature(notes, senses); state = "已自动保存"; error = nil; failedSave = nil
             if FileManager.default.fileExists(atPath: draftURL.path) { try FileManager.default.removeItem(at: draftURL) }
             learning.changed()
-        } catch { state = "未保存"; self.error = error.localizedDescription }
+        } catch { failedSave = attempted; state = "未保存"; self.error = error.localizedDescription }
     }
 }
 @MainActor enum InputComposition {
@@ -324,12 +330,24 @@ struct VocabularyDetailView: View {
                 else if dictionaryError == nil { ProgressView("正在查询英中释义…") }
                 if result == nil, let cacheError = item.dictionaryCacheError { Text(cacheError).font(.caption).foregroundStyle(.secondary) }
                 if let dictionaryError { Text(dictionaryError).font(.footnote).foregroundStyle(.secondary); Button("重试词典") { Task { await lookup() } } }
-                if let result, !result.reliableChinese.isEmpty {
-                    DisclosureGroup(isExpanded: $choosingMeaning) {
-                        ForEach(result.reliableChinese) { sense in
-                            Button { choose(sense) } label: { VStack(alignment: .leading, spacing: 4) { Text(sense.zh); Text(BilingualMeaningPolicy.partName(sense.partOfSpeech)).font(.caption).foregroundStyle(.secondary) } }.accessibilityIdentifier("review-meaning-" + sense.id)
+                if let result {
+                    let available = result.reliableChinese.filter { $0.partOfSpeech?.isBlank == false }
+                    if !available.isEmpty {
+                        Button { choosingMeaning.toggle() } label: {
+                            Label(chosenMeaningText.map { "学习义项：" + $0 } ?? "选择学习义项",
+                                  systemImage: choosingMeaning ? "chevron.up" : "chevron.down")
+                        }.accessibilityIdentifier("choose-review-meaning")
+                        if choosingMeaning {
+                            ForEach(available) { sense in
+                                Button { choose(sense) } label: {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(sense.zh)
+                                        Text(BilingualMeaningPolicy.partName(sense.partOfSpeech)).font(.caption).foregroundStyle(.secondary)
+                                    }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 5)
+                                }.accessibilityIdentifier("review-meaning-" + sense.id)
+                            }
                         }
-                    } label: { Text(chosenMeaningText.map { "学习义项：" + $0 } ?? "选择学习义项") }.accessibilityIdentifier("choose-review-meaning")
+                    }
                 }
                 if annotation.hasDraftConflict {
                     VStack(alignment: .leading, spacing: 12) {
@@ -352,7 +370,7 @@ struct VocabularyDetailView: View {
                     Text("我的笔记").font(.headline)
                     TextField("记录自己的理解", text: $annotation.notes, axis: .vertical).lineLimit(3...8).focused($focusedField, equals: "notes").accessibilityIdentifier("vocabulary-notes").disabled(annotation.hasDraftConflict)
                     if !annotation.state.isEmpty { Text(annotation.state).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("annotation-save-state") }
-                    if let error = annotation.error { Text(error).font(.caption).foregroundStyle(.red); Button("重试保存", action: annotation.flush) }
+                    if let error = annotation.error { Text(error).font(.caption).foregroundStyle(.red); Button("重试保存", action: annotation.retrySave) }
                 }.padding(16).background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 18))
                 sourceContexts
                 if let history = item.legacyAnnotations, !history.isEmpty {

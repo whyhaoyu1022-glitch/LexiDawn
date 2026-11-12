@@ -176,14 +176,30 @@ actor DictionaryAggregator {
         return merged.values.sorted { $0.id < $1.id }
     }
     nonisolated static func rank(_ senses: [DictionarySense], context: String, surface: String? = nil) -> [DictionarySense] {
-        let stop: Set<String> = ["the", "and", "with", "this", "that", "from", "into", "have", "been"]
+        let stop: Set<String> = ["the", "and", "with", "this", "that", "from", "into", "have", "been", "when", "while", "your", "their", "them", "then", "they", "what", "where"]
         func words(_ string: String) -> Set<String> { Set(string.lowercased().split { !$0.isLetter }.map(String.init).filter { $0.count > 3 && !stop.contains($0) }) }
-        let contextWords = words(context)
+        let queryWords = words(surface ?? "")
+        let contextWords = words(context).subtracting(queryWords)
         var grammaticalPart: String?
-        if let surface, let token = EnglishTokenizer.tokens(in: context).first(where: { EnglishTokenizer.lemma($0.surface) == EnglishTokenizer.lemma(surface) }), let range = Range(token.range, in: context) {
-            let tagger = NLTagger(tagSchemes: [.lexicalClass]); tagger.string = context
-            tagger.setLanguage(.english, range: context.startIndex..<context.endIndex)
-            grammaticalPart = tagger.tag(at: range.lowerBound, unit: .word, scheme: .lexicalClass).0?.rawValue.lowercased()
+        if let surface, !context.isBlank {
+            let tokens = EnglishTokenizer.tokens(in: context)
+            if let index = tokens.firstIndex(where: { EnglishTokenizer.normalized($0.surface) == EnglishTokenizer.normalized(surface) }),
+               let range = Range(tokens[index].range, in: context) {
+                let tagger = NLTagger(tagSchemes: [.lexicalClass]); tagger.string = context
+                tagger.setLanguage(.english, range: context.startIndex..<context.endIndex)
+                grammaticalPart = tagger.tag(at: range.lowerBound, unit: .word, scheme: .lexicalClass).0?.rawValue.lowercased()
+                if index > 0, senses.contains(where: { $0.partOfSpeech == "verb" }),
+                   let subject = Range(tokens[index - 1].range, in: context),
+                   context[subject.upperBound..<range.lowerBound].allSatisfy(\.isWhitespace) {
+                    let pronoun = EnglishTokenizer.normalized(tokens[index - 1].surface)
+                    let form = EnglishTokenizer.normalized(surface)
+                    let baseForm = EnglishTokenizer.lemma(surface) == form
+                    if (["he", "she", "it"].contains(pronoun) && form.hasSuffix("s") && !baseForm) ||
+                        (["i", "we", "you", "they"].contains(pronoun) && baseForm) {
+                        grammaticalPart = "verb"
+                    }
+                }
+            }
         }
         let embedding = context.isBlank ? nil : NLEmbedding.sentenceEmbedding(for: .english)
         func matchesGrammar(_ sense: DictionarySense) -> Bool {
@@ -192,7 +208,12 @@ actor DictionaryAggregator {
         }
         func score(_ sense: DictionarySense) -> Double {
             let definition = sense.en + " " + (sense.examples ?? []).joined(separator: " ")
-            let lexical = Double(contextWords.intersection(words(definition)).count * 10 + (sense.partOfSpeech != nil ? 2 : 0))
+            let definitionWords = words(definition).subtracting(queryWords)
+            let exact = contextWords.intersection(definitionWords)
+            let derived = contextWords.subtracting(exact).filter { word in
+                word.count >= 5 && ["ment", "ing", "ed"].contains { definitionWords.contains(word + $0) }
+            }
+            let lexical = Double(exact.count * 10 + derived.count * 7 + (sense.partOfSpeech != nil ? 2 : 0))
             guard let embedding else { return lexical }
             let distance = embedding.distance(between: String(context.prefix(1200)), and: String(definition.prefix(1200)))
             return lexical + (distance.isFinite ? max(0, 2 - distance) * 4 : 0)

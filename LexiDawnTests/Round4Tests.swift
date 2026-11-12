@@ -308,6 +308,7 @@ import SwiftData
         let raw = "An original paragraph.\n\nTo view this video please enable JavaScript, and consider upgrading to a web browser that supports HTML5 video.\n\nThe final original paragraph."
         let projection = ReaderTextProjection(raw: raw, sourceID: "dw")
         XCTAssertFalse(projection.text.contains("To view this video")); XCTAssertTrue(projection.text.contains("The final original paragraph."))
+        XCTAssertEqual(projection.text, "An original paragraph.\nThe final original paragraph.")
         let displayRange = (projection.text as NSString).range(of: "final")
         XCTAssertEqual((raw as NSString).substring(with: projection.rawRange(displayRange)), "final")
         XCTAssertEqual(projection.displayOffset(projection.rawOffset(displayRange.location)), displayRange.location)

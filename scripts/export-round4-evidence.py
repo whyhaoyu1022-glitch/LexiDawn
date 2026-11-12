@@ -104,6 +104,7 @@ for row in manifest['screenshots']:
     match = re.match(r'R4-([PF])(\d\d)', row['screenshotID'])
     row['feedbackImageID'] = 'R4-P'+match[2] if match and match[1]=='P' else ''
     row['requirementIDs'] = ['R4-F'+match[2]] if match else []
+    row['relatedFeedbackImageIDs'] = []
     if not match:
         for prefix, numbers in legacy_support.items():
             if row['screenshotID'].startswith(prefix+'-'):

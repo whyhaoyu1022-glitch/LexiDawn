@@ -72,7 +72,7 @@ def package(original_zip, screenshots, output):
         for issue, path in rows:
             matches = []
             for filename, row in indexed.items():
-                if (row["feedbackImageID"] == issue or issue in row["relatedFeedbackImageIDs"]
+                if (row["feedbackImageID"] == issue or issue in row.get("relatedFeedbackImageIDs", [])
                         or issue.replace("R4-P", "R4-F") in row["requirementIDs"]):
                     matches.append(f"[{filename}](native/{filename}) ({row['actualTestResult']})")
             table.append(f"| {issue} | [{Path(path).name}]({path}) | {', '.join(matches) or '缺少本次运行图'} |")

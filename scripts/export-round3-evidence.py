@@ -4,6 +4,7 @@ import argparse
 import csv
 import hashlib
 import json
+import re
 import shutil
 import zipfile
 from pathlib import Path
@@ -25,21 +26,47 @@ def index(source, output):
     output.mkdir(parents=True, exist_ok=True)
     documents = []
     metadata = []
-    for path in source.rglob("*.json"):
+    attachment_manifests = {}
+    for path in sorted(source.rglob("*.json")):
         try:
             value = json.loads(path.read_text())
         except (ValueError, UnicodeError):
             continue
         documents.append(value)
+        if path.name == "manifest.json" and isinstance(value, list):
+            attachment_manifests[path.parent] = value
         if isinstance(value, dict) and all(key in value for key in FIELDS):
-            metadata.append(value)
+            metadata.append((path, value))
     pngs = list(source.rglob("*.png"))
     if not pngs:
         raise SystemExit("No native Simulator PNG attachments were exported")
     rows = []
-    for entry in sorted(metadata, key=lambda entry: entry["screenshotID"]):
+    identifiers = {entry["screenshotID"] for _, entry in metadata}
+    counts = {}
+    for _, entry in metadata:
         identifier = entry["screenshotID"]
-        matches = [path for path in pngs if identifier in path.name]
+        counts[identifier] = counts.get(identifier, 0) + 1
+    for metadata_path, entry in sorted(metadata, key=lambda item: (item[1]["screenshotID"], item[1]["testName"], item[0])):
+        identifier = entry["screenshotID"]
+        matches = []
+        native_manifest = attachment_manifests.get(metadata_path.parent, [])
+        for test in native_manifest:
+            attachments = test.get("attachments", [])
+            sidecar = next((item for item in attachments if item.get("exportedFileName") == metadata_path.name), None)
+            if sidecar is None:
+                continue
+            name = sidecar.get("suggestedHumanReadableName", "")
+            sequence = re.match(re.escape(identifier) + r"-metadata_(\d+)_", name)
+            if sequence:
+                prefix = identifier + "_" + sequence[1] + "_"
+                matches = [
+                    metadata_path.parent / item["exportedFileName"] for item in attachments
+                    if item.get("suggestedHumanReadableName", "").startswith(prefix)
+                    and Path(item.get("exportedFileName", "")).suffix.lower() == ".png"
+                ]
+            break
+        if not matches:
+            matches = [path for path in pngs if path.parent == metadata_path.parent and identifier in path.name]
         if not matches:
             candidates = []
             for document in documents:
@@ -49,7 +76,7 @@ def index(source, output):
                         continue
                     names = [value for value in node.values() if isinstance(value, str) and value.lower().endswith(".png")]
                     for name in names:
-                        paths = [path for path in pngs if path.name == Path(name).name]
+                        paths = [path for path in pngs if path.parent == metadata_path.parent and path.name == Path(name).name]
                         candidates.extend((len(text), path) for path in paths)
             if candidates:
                 minimum = min(length for length, _ in candidates)
@@ -59,7 +86,16 @@ def index(source, output):
         data = matches[0].read_bytes()
         if not data.startswith(b"\x89PNG\r\n\x1a\n"):
             raise SystemExit(f"Invalid PNG attachment: {identifier}")
-        destination = output / (identifier + ".png")
+        if counts[identifier] > 1:
+            suffix = re.sub(r"[^A-Za-z0-9-]+", "-", entry["testName"]).strip("-")
+            candidate = identifier + "-" + suffix
+            occurrence = 2
+            while candidate in identifiers:
+                candidate = identifier + "-" + suffix + "-" + str(occurrence)
+                occurrence += 1
+            identifiers.add(candidate)
+            entry["screenshotID"] = candidate
+        destination = output / (entry["screenshotID"] + ".png")
         shutil.copyfile(matches[0], destination)
         entry["fileName"] = destination.name
         entry["sha256"] = hashlib.sha256(data).hexdigest()

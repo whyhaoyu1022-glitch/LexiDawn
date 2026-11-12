@@ -45,6 +45,12 @@ import AVFoundation
         XCTAssertFalse(users.reliableChinese.isEmpty); XCTAssertFalse(visits.reliableChinese.isEmpty)
         XCTAssertEqual(visits.quickSenses.first?.partOfSpeech, "verb")
         XCTAssertTrue(visits.senses.contains { $0.partOfSpeech == "noun" })
+        let nounVisits = try await learning.dictionary.lookup("visits", context: "Her visits are usually short.")
+        XCTAssertEqual(nounVisits.headword, "visit")
+        XCTAssertEqual(nounVisits.quickSenses.first?.partOfSpeech, "noun")
+        let agreement = try await learning.dictionary.lookup("nod", context: "We nod when we agree.")
+        XCTAssertEqual(agreement.quickSenses.first?.partOfSpeech, "verb")
+        XCTAssertTrue(agreement.quickSenses.first?.zh.contains("点头") == true)
         XCTAssertEqual(Set(users.versions.keys), [BundledMDXDictionaryProvider.sourceName])
     }
     func testRealMDXConcurrentRapidQueriesAndCacheKeepStableSenseIDs() async throws {

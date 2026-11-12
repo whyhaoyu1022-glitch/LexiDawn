@@ -2,7 +2,7 @@ import Foundation
 
 /// Versioned display document with monotone UTF-16 mapping to unchanged stored text.
 struct ReaderTextProjection {
-    static let version = "reader-blocks-2"
+    static let version = "reader-blocks-3"
     let text: String
     let document: ArticleDocument?
     private let displayToRaw: [Int]
@@ -21,7 +21,7 @@ struct ReaderTextProjection {
         }
         for block in document.blocks {
             let visible = !Self.isLegacyPlayerBlock(block, sourceID: sourceID)
-            if visible && !blocks.isEmpty { offsets.append(cursor); offsets.append(cursor) }
+            if visible && !blocks.isEmpty { offsets.append(cursor) }
             for unit in block.text.utf16 {
                 if whitespace(unit) {
                     if visible { offsets.append(cursor) }
@@ -39,7 +39,7 @@ struct ReaderTextProjection {
         }
         let displayed = ArticleDocument(blocks: blocks)
         self.document = displayed
-        text = displayed.text
+        text = blocks.map(\.text).joined(separator: "\n")
         offsets.append(original.count)
         displayToRaw = offsets
     }

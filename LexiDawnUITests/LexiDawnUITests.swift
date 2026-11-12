@@ -346,11 +346,16 @@ extension LexiDawnUITests {
         if control.exists { control.tap() } else { row.tap() }
     }
     private func revealLearning(_ element: XCUIElement, in app: XCUIApplication) throws {
-        for _ in 0..<6 {
+        let detail = app.scrollViews["dictionary-detail-scroll"].firstMatch
+        for _ in 0..<(detail.exists ? 28 : 8) {
             if element.exists && element.isHittable { return }
-            app.swipeUp()
+            let area = detail.exists ? detail : app
+            let above = element.exists && element.frame.maxY < app.windows.firstMatch.frame.minY + 100
+            let start = area.coordinate(withNormalizedOffset: CGVector(dx: 0.68, dy: above ? 0.27 : 0.73))
+            start.press(forDuration: 0.05, thenDragTo: area.coordinate(withNormalizedOffset: CGVector(dx: 0.68, dy: above ? 0.72 : 0.25)))
         }
-        capture("round2-unreachable-control", in: app)
+        let method = name.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).last.map(String.init) ?? "unknown"
+        capture("round2-unreachable-" + method, in: app)
         let hierarchy = XCTAttachment(string: app.debugDescription); hierarchy.name = "round2-unreachable-hierarchy"; hierarchy.lifetime = .keepAlways; add(hierarchy)
         XCTFail("Control not reachable: \(element)")
         throw NSError(domain: "Round2UI", code: 1)
@@ -402,10 +407,10 @@ extension LexiDawnUITests {
         XCTAssertTrue(internet.waitForExistence(timeout: 10)); internet.tap()
         XCTAssertTrue(app.buttons["undo-word"].waitForExistence(timeout: 10))
         capture("P05-production-rfc-internet-lookup-added", in: app)
-        app.swipeUp()
-        capture("P06-production-dictionary-possible-meanings", in: app)
         let details = app.buttons["dictionary-details"]
-        try revealLearning(details, in: app); details.tap()
+        expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: details); waitForExpectations(timeout: 20)
+        capture("P06-production-dictionary-possible-meanings", in: app)
+        XCTAssertTrue(details.isHittable); details.tap()
         XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
         capture("P07-production-dictionary-detail", in: app)
         app.swipeUp(); app.swipeUp()
@@ -519,7 +524,9 @@ extension LexiDawnUITests {
         capture("S03-vocabulary-search-hit", in: app)
         closeGallerySearch(app)
         app.staticTexts["internet"].tap()
-        XCTAssertTrue(app.textFields["personal-meaning"].waitForExistence(timeout: 5))
+        let historical = app.buttons["以前的个人释义（只读）"]
+        try revealLearning(historical, in: app); historical.tap()
+        XCTAssertFalse(app.textFields["personal-meaning"].exists)
         capture("S04-vocabulary-detail-personal-meaning", in: app)
         let notes = app.textFields["vocabulary-notes"].firstMatch; try revealLearning(notes, in: app)
         notes.tap(); notes.typeText(" - Reviewed in the real RFC")
@@ -565,7 +572,9 @@ extension LexiDawnUITests {
         answer.tap(); answer.typeText("wrong")
         capture("S16-review-spelling-keyboard-input", in: app)
         app.buttons["submit-spelling"].tap()
-        XCTAssertTrue(app.staticTexts["review-feedback"].label.contains("还不正确"))
+        let spellingFeedback = app.staticTexts["review-feedback"]
+        XCTAssertTrue(spellingFeedback.waitForExistence(timeout: 10))
+        XCTAssertTrue(spellingFeedback.label.contains("还不正确"))
         try revealLearning(app.staticTexts["review-feedback"], in: app)
         capture("S17-review-spelling-wrong-answer", in: app)
         app.buttons["首字母提示"].tap()
@@ -609,7 +618,9 @@ extension LexiDawnUITests {
         capture("X12-expired-license-retry-preserves-denial", in: expired)
         expired.terminate()
         let backoff = launchGallery("gallery-backoff")
-        let refresh = backoff.buttons["从官方来源刷新"]; try revealLearning(refresh, in: backoff); refresh.tap()
+        backoff.buttons["article-library"].tap()
+        let examples = backoff.buttons["rfc-example-options"]; try revealLearning(examples, in: backoff); examples.tap()
+        let refresh = backoff.buttons["refresh-rfc"]; try revealLearning(refresh, in: backoff); refresh.tap()
         XCTAssertTrue(backoff.staticTexts["来源仍在退避期，请稍后重试。"].waitForExistence(timeout: 5))
         try revealLearning(backoff.staticTexts["来源仍在退避期，请稍后重试。"], in: backoff)
         capture("X13-official-source-backoff-real-error-view", in: backoff)
