@@ -1,3 +1,7 @@
+## 2026-11-12 · 新增原图复验
+
+P14 检查同一文章中两次真实点词，折叠区只显示一个来源并保留两条不同原句。P17 用真实内置 MDX 生成推荐，检查浏览不新增生词。P19 保留用户原输入，错误纠正后停留本题，正确后检查新题反馈为空。P10/F24 验证 visits 在动词、所有格和数量语境的排序，核对复习记录冻结实际词形和义项。[逐图对照](reviews/round-4-simulator-visual-review-8538fdf.md)。
+
 ## 2026-11-11 · 原图逐项对应
 
 [原图复核](reviews/round-4-original-image-recheck-2026-11-11.md)与[整改矩阵](reviews/round-4-image-remediation-matrix.md)覆盖 P01–P21 的真实照片。F22 的首屏、中段、末尾分别对应三张真实参考图。每条要求的代码、候选测试和已执行的候选证据见[144 条矩阵](reviews/round-4-acceptance-status.json)。

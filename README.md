@@ -2,7 +2,7 @@
 
 原生 iOS 英文全文阅读、离线查词、生词管理和间隔复习应用。SwiftUI、SwiftData，保持 Domain / Service / Repository 分层。
 
-Round 4 正在开发，尚未完成144项最终验收。直接在原 main 开发，无新分支或PR。[当前状态](STATUS.md) · [持续交付记录](docs/reviews/round-4-final-delivery.md) · [原21图问题](docs/reviews/round-4-first-device-21-image-audit-2026-11-06.md) · [42张实际运行截图逐张复核](artifacts/round-4/screenshots/VISUAL-REVIEW.md)。已实际逐张核对上传原包的21张HEIC和三张词典JPEG，详见[原图复核](docs/reviews/round-4-original-image-recheck-2026-11-11.md)。
+Round 4 在原 main 开发，144 项最终验收仍在进行。已逐张核对上传包的 21 张 HEIC 与三张词典参考 JPEG。从六个模拟器测试分组恢复的 262 张实拍保留了实际测试结果。[当前状态](STATUS.md) · [持续交付记录](docs/reviews/round-4-final-delivery.md) · [原图复核](docs/reviews/round-4-original-image-recheck-2026-11-11.md) · [逐图对照](docs/reviews/round-4-simulator-visual-review-8538fdf.md)。
 
 ## 当前词典规则
 
@@ -35,9 +35,11 @@ Round 4 正在开发，尚未完成144项最终验收。直接在原 main 开发
 
 ## 实际验证与构建
 
-`4739708` 的 [42657203329](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42657203329) 完成全目标编译、Release Simulator、227 XCTest/0失败；该轮UI被跳过，不能称完整通过。相同提交的[未签名IPA](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/42659832536/artifacts/13692674476) 已下载检查，实际Bundle包含批准MDX，版本0.1.0(20)、最低iOS27.0，未真机安装。
+提交 fe2cde3 通过 Debug 全目标和 Release Simulator 编译，236 项 XCTest 中 235 项通过。其未签名 IPA 为 0.1.0(34)，实际 App 包内的 MDX 大小与 SHA 均已下载验证。前后提交的结果按各自 SHA 记录。[原生运行](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43230590847) · [IPA 核验](artifacts/round-4/ipa-fe2cde3-verification.json)。
 
-原图审查批次 [43031419700](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43031419700) 已编译全部目标和 Release，234 XCTest 中232通过、2项真实 MDX 词头分组/自身参见断言失败，UI 当轮未执行。两处问题已针对实际词典结构修改。当前235 XCTest、63 XCUITest为源码数量，待新版验证。
+当前代码保留 236 项 XCTest 和 64 项 XCUITest。实现提交 54cd607 的完整原生回归及未签名包单独记录。[原生回归](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43233166087) · [IPA 构建](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43233165869)。
+
+新增了词形与词性结合的真实 MDX 查词、冻结复习义项、来源上下文去重及手动纠正后换题的检查。
 
 产品最低iOS27.0。当前CI Xcode26.6/SDK26.5及临时iOS26.5 Simulator仅为兼容验证，不能冒充iOS27真机验收。Linux开发容器无Xcode/Simulator，真实原生运行由macOS Actions完成。所有旧测试保留；4主UI分组和SE/大屏专项穷尽分配，fail-fast关闭，逐方法核对实际执行，失败也导出原始PNG/xcresult。
 
