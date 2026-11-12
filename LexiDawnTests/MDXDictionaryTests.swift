@@ -63,7 +63,8 @@ import AVFoundation
         let token = try XCTUnwrap(EnglishTokenizer.tokens(in: sentence).first { $0.surface == "visits" })
         let added = try XCTUnwrap(learning.vocabulary.add(token: token, articleID: article, autoAdd: false, explicit: true, at: now))
         let actual = try XCTUnwrap(visits.quickSenses.first)
-        var stale = actual; stale.zh = "缓存中的错误中文释义"
+        let stale = DictionarySense(id: actual.id, en: actual.en, zh: "缓存中的错误中文释义", line: "Explicit stale cache fixture",
+            partOfSpeech: actual.partOfSpeech, sources: actual.sources, sourceRevision: actual.sourceRevision, originKind: actual.originKind)
         let cache = DictionaryCacheRepository(context: ModelContext(app.modelContainer))
         try cache.save("visit", senses: [stale], successful: [BundledMDXDictionaryProvider.sourceName], at: now.addingTimeInterval(60))
         XCTAssertEqual(try cache.load("visit", at: now).senses.first?.zh, stale.zh)
