@@ -365,13 +365,13 @@ struct ReviewSessionView: Equatable {
             }
         }
     }
-    @discardableResult func submit(cycleID: UUID, questionID: String, answer: String, reveal: Bool = false, hint: Bool = false, at now: Date) throws -> Bool {
-        try submitSaved(cycleID: cycleID, extraSessionID: nil, questionID: questionID, answer: answer, reveal: reveal, hint: hint, at: now)
+    @discardableResult func submit(cycleID: UUID, questionID: String, answer: String, matchingOptionID: String? = nil, reveal: Bool = false, hint: Bool = false, at now: Date) throws -> Bool {
+        try submitSaved(cycleID: cycleID, extraSessionID: nil, questionID: questionID, answer: answer, matchingOptionID: matchingOptionID, reveal: reveal, hint: hint, at: now)
     }
-    @discardableResult func submitExtra(sessionID: String, questionID: String, answer: String, reveal: Bool = false, hint: Bool = false, at now: Date) throws -> Bool {
-        try submitSaved(cycleID: nil, extraSessionID: sessionID, questionID: questionID, answer: answer, reveal: reveal, hint: hint, at: now)
+    @discardableResult func submitExtra(sessionID: String, questionID: String, answer: String, matchingOptionID: String? = nil, reveal: Bool = false, hint: Bool = false, at now: Date) throws -> Bool {
+        try submitSaved(cycleID: nil, extraSessionID: sessionID, questionID: questionID, answer: answer, matchingOptionID: matchingOptionID, reveal: reveal, hint: hint, at: now)
     }
-    private func submitSaved(cycleID: UUID?, extraSessionID: String?, questionID: String, answer: String, reveal: Bool, hint: Bool, at now: Date) throws -> Bool {
+    private func submitSaved(cycleID: UUID?, extraSessionID: String?, questionID: String, answer: String, matchingOptionID: String?, reveal: Bool, hint: Bool, at now: Date) throws -> Bool {
         try writer.write {
             let context = writer.context
             if extraSessionID != nil { try requireExtraAllowed(context: context, at: now) }
@@ -385,15 +385,22 @@ struct ReviewSessionView: Equatable {
             guard session.completedAt == nil, question.stage == "matching" || exercises.filter({ $0.stage == "matching" }).allSatisfy({ $0.completedAt != nil }) else { throw LearningError.invalid("请先完成连线阶段。") }
             let timestamp = max(now, session.updatedAt)
             if hint { question.usedHint = true; session.revision += 1; session.updatedAt = timestamp; return false }
-            if question.stage == "matching", exercises.contains(where: { $0.stage == "matching" && $0.senseID == answer && $0.completedAt != nil }) {
-                throw LearningError.invalid("此释义已完成配对，请选择未完成的释义。")
+            if question.stage == "matching" {
+                if let matchingOptionID {
+                    guard let option = exercises.first(where: { $0.stage == "matching" && $0.exerciseID == matchingOptionID && $0.senseID == answer }) else {
+                        throw LearningError.invalid("此释义不属于当前题组，请重新选择。")
+                    }
+                    guard option.completedAt == nil else { throw LearningError.invalid("此释义已完成配对，请选择未完成的释义。") }
+                } else if exercises.contains(where: { $0.stage == "matching" && $0.senseID == answer && $0.completedAt != nil }) {
+                    throw LearningError.invalid("此释义已完成配对，请选择未完成的释义。")
+                }
             }
             if reveal {
                 question.revealed = true; session.revision += 1; session.updatedAt = timestamp
                 return false
             }
             question.attempts += 1
-            let correct = question.stage == "matching" ? answer == question.senseID : SpellingAnswerPolicy.accepts(answer, expected: question.answer, alternatives: question.acceptedAnswers ?? [])
+            let correct = question.stage == "matching" ? answer == question.senseID && (matchingOptionID ?? questionID) == questionID : SpellingAnswerPolicy.accepts(answer, expected: question.answer, alternatives: question.acceptedAnswers ?? [])
             question.firstTryCorrect = question.attempts == 1 && correct && !question.usedHint && !question.revealed
             if correct { question.completedAt = timestamp; if question.revealed { question.correctionCompletedAt = timestamp } }
             session.revision += 1; session.updatedAt = timestamp

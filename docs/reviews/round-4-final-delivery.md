@@ -6,6 +6,10 @@
 
 上一代码提交 54cd607 的 [原生 CI](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43233166087) 为 236/236 XCTest，主设备 UI 41 通过、7 失败、16 取消，小屏分片取消，大屏 2/3。CI 导出 [255 张实际 Simulator PNG](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43233166087/artifacts/13961012885)。P14 新增原生通过与截图；详情三主题和系统发音有部分截图，仍有嵌套页面及大字号回归失败。[0.1.0(36) 未签名 IPA](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43233165869/artifacts/13951969362) 的打包任务校验了完整 MDX。以上结果均属于上一代码提交。
 
+进一步复核了上一版 255 张原始 PNG 的 SHA，并查看了大字号浮窗、嵌套详情、连线、来源检查、RFC 与 P14 证据画面。文章库备用 RFC 展开后使用独立按钮，空状态成为单个辅助功能元素，原文短语入口不再藏在长义项之后。连线提交核验实际选项身份并显示个人来源。新版原生结果待 CI。
+
+[54cd607 截图复核记录](round-4-simulator-visual-review-54cd607.md)。
+
 ## 2026-11-12 · 六组截图恢复与追加复验
 
 已恢复 8538fdf 的全部六组原生附件并实际按原图核对画面。共 262 张 PNG，183 张来自通过的方法，79 张来自失败的方法。原件、参考和运行图均核验 SHA，已生成带逐图索引的 ZIP。对照结果保留测试失败、局部画面及缺图状态。

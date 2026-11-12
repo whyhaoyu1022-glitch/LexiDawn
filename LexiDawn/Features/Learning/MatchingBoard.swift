@@ -8,7 +8,7 @@ private struct MatchAnchors: PreferenceKey {
 struct MatchingBoard: View {
     let session: ReviewSessionView
     @Binding var selected: String?
-    let submit: (String, String) -> Void
+    let submit: (String, ReviewQuestion) -> Void
     let noSelection: () -> Void
     private var left: [ReviewQuestion] { session.matching.sorted { fingerprint(session.id + "left" + $0.id) < fingerprint(session.id + "left" + $1.id) } }
     private var right: [ReviewQuestion] { session.matching.sorted { fingerprint(session.id + "right" + $0.id) < fingerprint(session.id + "right" + $1.id) } }
@@ -34,8 +34,12 @@ struct MatchingBoard: View {
             }.frame(maxWidth: .infinity)
             VStack(spacing: 16) {
                 ForEach(right) { option in
-                    Button { if let selected { submit(selected, option.senseID) } else { noSelection() } } label: {
-                        VStack { Text(option.answer); if option.completed { Label("连接 \(number(option))", systemImage: "checkmark.circle.fill").font(.caption) } }.frame(maxWidth: .infinity, minHeight: 48)
+                    Button { if let selected { submit(selected, option) } else { noSelection() } } label: {
+                        VStack(spacing: 4) {
+                            Text(option.answer)
+                            if option.meaning?.originKind == "personal" { Text("个人释义").font(.caption2).foregroundStyle(.secondary) }
+                            if option.completed { Label("连接 \(number(option))", systemImage: "checkmark.circle.fill").font(.caption) }
+                        }.frame(maxWidth: .infinity, minHeight: 48)
                     }.buttonStyle(MatchingOptionStyle(completed: option.completed, selected: false)).disabled(option.completed).accessibilityIdentifier("match-meaning-\(option.answer)")
                         .accessibilityValue(option.completed ? "已配对" : "选择此释义进行配对")
                         .anchorPreference(key: MatchAnchors.self, value: .bounds) { ["right|" + option.id: $0] }

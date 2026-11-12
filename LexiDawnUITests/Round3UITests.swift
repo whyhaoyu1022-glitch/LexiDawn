@@ -307,15 +307,15 @@ final class Round3UITests: XCTestCase {
         capture("R3-M03", app: app, feature: "matching", state: "wrong-pair-feedback")
         if internet.value as? String != "已选择" { internet.tap() }; app.buttons["match-meaning-互联网（个人释义）"].tap()
         XCTAssertFalse(internet.isEnabled); XCTAssertFalse(app.buttons["match-meaning-互联网（个人释义）"].isEnabled)
-        XCTAssertGreaterThan(greenLinePixels(app: app), 12, "A real rendered line must cross the column gap")
+        XCTAssertGreaterThan(connectionPixels(app: app), 12, "A real rendered line must cross the column gap")
         capture("R3-M04", app: app, feature: "matching", state: "one-visible-line-both-ends-disabled")
         app.buttons["match-word-document"].tap(); app.buttons["match-meaning-文档（个人释义）"].tap()
-        XCTAssertGreaterThan(greenLinePixels(app: app), 24)
+        XCTAssertGreaterThan(connectionPixels(app: app), 24)
         capture("R3-M05", app: app, feature: "matching", state: "two-visible-lines")
         XCUIDevice.shared.orientation = .landscapeLeft
         let settled = NSPredicate { _, _ in app.windows.firstMatch.frame.width > app.windows.firstMatch.frame.height }
         expectation(for: settled, evaluatedWith: app); waitForExpectations(timeout: 10)
-        XCTAssertGreaterThan(greenLinePixels(app: app), 12)
+        XCTAssertGreaterThan(connectionPixels(app: app), 12)
         capture("R3-M06", app: app, feature: "matching", state: "landscape-lines")
         XCUIDevice.shared.orientation = .portrait
         app.buttons["match-word-book"].tap(); app.buttons["match-meaning-书（个人释义）"].tap()
@@ -323,7 +323,8 @@ final class Round3UITests: XCTestCase {
         capture("R3-M07", app: app, feature: "review", state: "matching-complete-spelling-context")
         app.buttons["show-completed-matches"].tap()
         for text in ["internet", "document", "book"] { let word = app.buttons["match-word-" + text]; XCTAssertTrue(word.exists); XCTAssertFalse(word.isEnabled) }
-        XCTAssertGreaterThan(greenLinePixels(app: app), 24)
+        let rendered = NSPredicate { _, _ in self.connectionPixels(app: app) > 24 }
+        expectation(for: rendered, evaluatedWith: app); waitForExpectations(timeout: 8)
         capture("R3-M08", app: app, feature: "matching", state: "all-three-completed-connections-retained")
         let board = app.otherElements["matching-board"].firstMatch
         let previousY = board.frame.minY
@@ -333,7 +334,7 @@ final class Round3UITests: XCTestCase {
         start.press(forDuration: 0.08, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -28)), withVelocity: .slow, thenHoldForDuration: 0.25)
         XCTAssertLessThan(board.frame.minY, previousY)
         XCTAssertGreaterThan(board.frame.maxY, window.minY + 125, "The test must leave the line region on screen")
-        XCTAssertGreaterThan(greenLinePixels(app: app), 12)
+        XCTAssertGreaterThan(connectionPixels(app: app), 12)
         capture("R3-M11", app: app, feature: "matching", state: "completed-lines-remain-anchored-after-scroll")
     }
     func testLiveColdStartImportReadingLookupPersonalMeaningReviewAndRestart() throws {
@@ -453,6 +454,7 @@ final class Round3UITests: XCTestCase {
         search.tap(); search.typeText("Explicit fixture")
         capture("R3-L02", app: app, feature: "library", state: "title-search-hit", origin: "explicit-original-fixture-URLProtocol")
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "Explicit fixture".count)); search.typeText("zzzzunfindable")
+        XCTAssertEqual(search.value as? String, "zzzzunfindable")
         let noResults = app.descendants(matching: .any)["library-empty"].firstMatch
         for _ in 0..<5 { if noResults.exists && noResults.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(noResults.waitForExistence(timeout: 10))
@@ -642,9 +644,14 @@ final class Round3UITests: XCTestCase {
                 let all = app.buttons["全部来源"]; XCTAssertTrue(all.exists); XCTAssertTrue(all.isHittable); all.tap(); continue
             }
             choice.tap()
-            let open = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).firstMatch
-            for _ in 0..<10 { if open.exists && open.isHittable { break }; app.swipeUp() }
-            XCTAssertTrue(open.isHittable)
+            let openButtons = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'"))
+            var visibleArticle = openButtons.allElementsBoundByIndex.first { $0.isEnabled && $0.isHittable }
+            for _ in 0..<10 {
+                if visibleArticle != nil { break }
+                app.swipeUp()
+                visibleArticle = openButtons.allElementsBoundByIndex.first { $0.isEnabled && $0.isHittable }
+            }
+            let open = try XCTUnwrap(visibleArticle, "No visible readable article for imported source \(id)")
             capture("R3-S-" + id + "-library", app: app, feature: "article", state: "source-filter-" + id, origin: "production-network-empty-isolated-store")
             open.tap()
             XCTAssertTrue(app.navigationBars["英文阅读"].waitForExistence(timeout: 10)); XCTAssertTrue(visibleWord(in: app).isHittable)
@@ -806,7 +813,7 @@ final class Round3UITests: XCTestCase {
         return token ?? words.firstMatch
     }
     /// Sample only the middle of the board's gap. Button text/icons cannot satisfy this assertion.
-    private func greenLinePixels(app: XCUIApplication) -> Int {
+    private func connectionPixels(app: XCUIApplication) -> Int {
         let board = app.otherElements["matching-board"].firstMatch
         guard board.waitForExistence(timeout: 5) else { return 0 }
         let screenshot = XCUIScreen.main.screenshot()
@@ -820,12 +827,18 @@ final class Round3UITests: XCTestCase {
         let screen = app.windows.firstMatch.frame
         print("Native screenshot geometry: window=\(screen), board=\(board.frame), pixels=\(width)x\(height), deviceOrientation=\(XCUIDevice.shared.orientation.rawValue)")
         let sx = Double(width) / Double(screen.width), sy = Double(height) / Double(screen.height)
-        let middle = Int(Double(board.frame.midX) * sx), top = max(0, Int(Double(board.frame.minY) * sy)), bottom = min(height, Int(Double(board.frame.maxY) * sy))
+        let left = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'match-word-'")).allElementsBoundByIndex.map(\.frame)
+        let right = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'match-meaning-'")).allElementsBoundByIndex.map(\.frame)
+        guard let gapStart = left.filter({ !$0.isEmpty }).map(\.maxX).max(),
+              let gapEnd = right.filter({ !$0.isEmpty }).map(\.minX).min(), gapEnd - gapStart > 12 else { return 0 }
+        let middle = Int(Double((gapStart + gapEnd) / 2) * sx)
+        let top = max(0, Int(Double(board.frame.minY) * sy)), bottom = min(height, Int(Double(board.frame.maxY) * sy))
         guard top < bottom, middle > 4, middle < width - 4 else { return 0 }
         var count = 0
         for y in top..<bottom { for x in (middle - 3)...(middle + 3) {
             let i = (y * width + x) * 4
-            if Int(bytes[i + 1]) > Int(bytes[i]) + 25 && Int(bytes[i + 1]) > Int(bytes[i + 2]) + 15 { count += 1 }
+            let red = Int(bytes[i]), green = Int(bytes[i + 1]), blue = Int(bytes[i + 2])
+            if max(red, green, blue) - min(red, green, blue) > 55 { count += 1 }
         } }
         return count
     }

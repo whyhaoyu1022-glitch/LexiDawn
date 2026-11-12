@@ -12,6 +12,7 @@ struct ArticleLibraryView: View {
     @State private var error: String?
     @State private var notice: String?
     @State private var rfcMessage: String?
+    @State private var showingRFCOptions = false
     @State private var refreshingRFC = false
     @State private var loading = false
     @State private var refreshTask: Task<Void, Never>?
@@ -49,6 +50,7 @@ struct ArticleLibraryView: View {
             if let notice { Text(notice).font(.footnote).accessibilityIdentifier("article-notice") }
             if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red); Button(importFailed ? "重试导入" : "重新读取本地数据") { if importFailed { beginRefresh() } else { load() } } }.accessibilityIdentifier("article-import-error") }
             if query.isBlank, visible.isEmpty, !loading { emptyLibrary }
+            if query.isBlank { rfcOptions }
             ForEach(visible) { item in
                 VStack(alignment: .leading, spacing: 10) {
                     Text(ArticleTitlePresentation.display(item.title, sourceID: item.sourceID)).font(.system(.headline, design: .serif))
@@ -72,14 +74,6 @@ struct ArticleLibraryView: View {
                 // A List row's automatic button style can dispatch the whole row's
                 // actions. Opening, resetting and editing must remain independent.
                 }.buttonStyle(.borderless).padding(.vertical, 8)
-            }
-            Section {
-                DisclosureGroup("备用技术文档") {
-                    Button("导入随附 RFC 8890") { do { try learning.content.installBundledRFC(at: Date()); learning.changed(); load() } catch { rfcMessage = error.localizedDescription } }
-                    Button("从官方来源刷新 RFC") { Task { await refreshRFC() } }.disabled(refreshingRFC).accessibilityIdentifier("refresh-rfc")
-                    if refreshingRFC { ProgressView("正在刷新 RFC") }
-                    if let rfcMessage { Text(rfcMessage).font(.caption).accessibilityIdentifier("rfc-refresh-result") }
-                }.accessibilityIdentifier("rfc-example-options")
             }
         }
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索完整文章标题")
@@ -107,12 +101,28 @@ struct ArticleLibraryView: View {
         } message: { _ in Text("保留原阅读与完成历史，仅为本篇探索文章建立新的阅读进度。每日任务文章不能这样重置。") }
         .fullScreenCover(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭文章") { reader = nil } } } } }
     }
+    private var rfcOptions: some View {
+        Section {
+            Button { showingRFCOptions.toggle() } label: {
+                HStack {
+                    Label("备用技术文档", systemImage: "doc.text").font(.subheadline)
+                    Spacer()
+                    Image(systemName: showingRFCOptions ? "chevron.up" : "chevron.down").font(.caption)
+                }.foregroundStyle(.secondary)
+            }.accessibilityIdentifier("rfc-example-options").accessibilityValue(showingRFCOptions ? "已展开" : "已收起")
+            if showingRFCOptions {
+                Button("导入随附 RFC 8890") { do { try learning.content.installBundledRFC(at: Date()); learning.changed(); load() } catch { rfcMessage = error.localizedDescription } }
+                Button("从官方来源刷新 RFC") { Task { await refreshRFC() } }.disabled(refreshingRFC).accessibilityIdentifier("refresh-rfc")
+                if refreshingRFC { ProgressView("正在刷新 RFC") }
+                if let rfcMessage { Text(rfcMessage).font(.caption).accessibilityIdentifier("rfc-refresh-result") }
+            }
+        }
+    }
     private var emptyLibrary: some View {
-        ContentUnavailableView {
-            Label("没有匹配的完整文章", systemImage: "books.vertical")
-        } description: {
-            Text("调整筛选，或导入完整英文原文。")
-        }.accessibilityIdentifier("library-empty")
+        VStack(alignment: .leading, spacing: 6) {
+            Label("没有匹配的完整文章", systemImage: "books.vertical").font(.headline)
+            Text("调整筛选，或导入完整英文原文。").font(.subheadline).foregroundStyle(.secondary)
+        }.padding(.vertical, 6).accessibilityElement(children: .combine).accessibilityIdentifier("library-empty")
     }
     private func finishSearchInput() { searchFocused = false; InputComposition.dismissKeyboard() }
     private func refreshRFC() async {

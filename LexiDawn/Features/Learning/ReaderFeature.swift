@@ -556,6 +556,7 @@ struct DictionaryDetailView: View {
             LazyVStack(alignment: .leading, spacing: 24) {
                 DictionaryEntryHeader(headword: result.headword, ipa: DictionaryPresentation.sharedIPA(result.senses + result.personalSenses), speech: speech)
                 if speech.state == .unavailable { Text("系统英语语音不可用").font(.caption).foregroundStyle(.secondary) }
+                contextPhrases
                 DictionaryResultContent(result: result, onExampleWord: lookup, onRelatedEntry: depth < 3 ? openRelated : nil)
                 contextSections
                 let synonyms = Array(Set(result.usableSenses.flatMap { $0.synonyms ?? [] })).filter { $0.lowercased() != result.headword.lowercased() }.sorted()
@@ -599,20 +600,23 @@ struct DictionaryDetailView: View {
             }
             .onDisappear { speech.stop(); relatedTask?.cancel() }
     }
-    @ViewBuilder private var contextSections: some View {
+    @ViewBuilder private var contextPhrases: some View {
         if let lookupModel, depth < 3 {
             let phrases = EnglishPhraseRecognizer.phrases(around: lookupModel.token.surface, sentence: context)
             if !phrases.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("语境短语").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                     ForEach(phrases, id: \.self) { phrase in
-                        Button(phrase) { selection = lookupModel.phraseLookup(phrase) }
-                            .accessibilityIdentifier("dictionary-context-phrase-" + phrase)
+                        Button(phrase) {
+                            selection = lookupModel.phraseLookup(phrase)
+                            error = lookupModel.phraseError
+                        }.accessibilityIdentifier("dictionary-context-phrase-" + phrase)
                     }
-                    if let error = lookupModel.phraseError { Text(error).font(.caption).foregroundStyle(.secondary) }
                 }
             }
         }
+    }
+    @ViewBuilder private var contextSections: some View {
         if !context.isBlank {
             DisclosureGroup(contextOrigin.kind == "reader" ? "遇见这个词的句子" : "查词语境") {
                 InlineEnglishText(text: context, onWord: { lookupContext($0) }).padding(.top, 8)

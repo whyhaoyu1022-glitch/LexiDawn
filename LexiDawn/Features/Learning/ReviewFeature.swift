@@ -105,8 +105,8 @@ struct ReviewPracticeContent: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("1 · 连线 \(session.matching.filter(\.completed).count)/\(session.matching.count)").font(.headline)
             Text(verticalSizeClass == .compact ? "先点英文，再点中文；完成的两端均不可再选。" : "先点英文，再点对应中文。已完成的连接会保留。")
-            MatchingBoard(session: session, selected: $selected, submit: { questionID, senseID in
-                if submit(questionID: questionID, answer: senseID) { selected = nil }
+            MatchingBoard(session: session, selected: $selected, submit: { questionID, option in
+                if submit(questionID: questionID, answer: option.senseID, matchingOptionID: option.id) { selected = nil }
             }, noSelection: { matchingNeedsSelection = true })
             if matchingNeedsSelection { Label("请先选择英文词条", systemImage: "hand.tap").font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("review-feedback") }
             if let feedback, let selected, feedbackFor == selected, feedbackBelongs(to: selected, in: session) { Label(feedback, systemImage: "exclamationmark.circle").font(.subheadline).foregroundStyle(.orange).accessibilityIdentifier("review-feedback") }
@@ -121,7 +121,10 @@ struct ReviewPracticeContent: View {
                     Text(ClozeContext.mask(sentence, answer: question.answer, targetRange: question.sourceRange)).font(.body).accessibilityIdentifier("cloze-context")
                 }
                 Text(question.prompt).font(.largeTitle.monospaced()).accessibilityIdentifier("cloze-prompt")
-                if let meaning = session.matching.first(where: { $0.entryID == question.entryID })?.answer { Text(meaning).font(.headline) }
+                if let meaning = session.matching.first(where: { $0.entryID == question.entryID }) {
+                    Text(meaning.answer).font(.headline)
+                    if meaning.meaning?.originKind == "personal" { Text("个人释义").font(.caption).foregroundStyle(.secondary) }
+                }
                 if question.revealed {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("答案：" + question.answer).font(.title3.weight(.medium))
@@ -181,7 +184,7 @@ struct ReviewPracticeContent: View {
         } catch { self.message = error.localizedDescription; entryGate.adopt(error, cycleID: cycleID, extra: preparingExtra, completion: { Task { await load() } }) }
         loading = false
     }
-    @discardableResult private func submit(questionID: String, answer: String, reveal: Bool = false, hint: Bool = false) -> Bool {
+    @discardableResult private func submit(questionID: String, answer: String, matchingOptionID: String? = nil, reveal: Bool = false, hint: Bool = false) -> Bool {
         guard let cycleID else { return false }
         guard answerPhase != .submitting, let currentSession = session else { return false }
         let attempt = UUID(); answerPhase = .submitting
@@ -190,11 +193,11 @@ struct ReviewPracticeContent: View {
         do {
             let correct: Bool
             if extraMode, let saved = session {
-                correct = try learning.review.submitExtra(sessionID: saved.id, questionID: questionID, answer: answer, reveal: reveal, hint: hint, at: Date())
+                correct = try learning.review.submitExtra(sessionID: saved.id, questionID: questionID, answer: answer, matchingOptionID: matchingOptionID, reveal: reveal, hint: hint, at: Date())
                 session = try learning.review.extraSession(sessionID: saved.id)
                 schedules = try learning.review.extraScheduleFeedback(sessionID: saved.id)
             } else {
-                correct = try learning.review.submit(cycleID: cycleID, questionID: questionID, answer: answer, reveal: reveal, hint: hint, at: Date())
+                correct = try learning.review.submit(cycleID: cycleID, questionID: questionID, answer: answer, matchingOptionID: matchingOptionID, reveal: reveal, hint: hint, at: Date())
                 session = try learning.review.session(cycleID: cycleID)
                 schedules = try learning.review.scheduleFeedback(cycleID: cycleID)
             }

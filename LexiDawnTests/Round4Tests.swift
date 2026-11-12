@@ -128,7 +128,10 @@ import SwiftData
         guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
         let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
         let session = try XCTUnwrap(prepared)
-        try learning.review.submit(cycleID: cycle.cycleID, questionID: session.matching[0].id, answer: session.matching[0].senseID, at: now)
+        let pair = try XCTUnwrap(session.matching.first)
+        XCTAssertThrowsError(try learning.review.submit(cycleID: cycle.cycleID, questionID: pair.id, answer: pair.senseID, matchingOptionID: "different-session-option", at: now))
+        XCTAssertEqual(try learning.review.session(cycleID: cycle.cycleID)?.matching.first?.attempts, 0)
+        XCTAssertTrue(try learning.review.submit(cycleID: cycle.cycleID, questionID: pair.id, answer: pair.senseID, matchingOptionID: pair.id, at: now))
         let question = session.cloze[0]
         XCTAssertFalse(try learning.review.submit(cycleID: cycle.cycleID, questionID: question.id, answer: "", reveal: true, at: now))
         let restored = try XCTUnwrap(learning.review.session(cycleID: cycle.cycleID))
