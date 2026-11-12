@@ -258,9 +258,11 @@ extension AppStartup {
         guard let learning = app.learning else { return app }
         if try app.articleRepository.allArticleIDs().isEmpty {
             let first = "We nod when we agree. A book helps us learn. Clear examples provide useful context. A luminora appears in this original fixture sentence."
+            let firstParagraph = scenario == "round4-mdx-contexts" ? "We nod when we agree. They nod to say hello." : first
             let paragraphs = (1...12).map { "Original fixture paragraph \($0). A complete reading experience should keep every sentence available. Careful practice turns unfamiliar words into lasting knowledge." }.joined(separator: "\n\n")
             let title = scenario == "round4-reader" ? "A complete original English title that must wrap naturally on a small phone and remain readable after every rotation without hiding the article below it" : "Explicit Round 4 original UI fixture"
-            let id = try learning.content.importArticle(.init(title: title, body: first + "\n\n" + paragraphs, source: "Original UI test author · fixture", topic: "Science", rightsConfirmed: true), at: Date())
+            let sourceURL = scenario == "round4-mdx-contexts" ? "https://example.com/owned-round4-contexts" : ""
+            let id = try learning.content.importArticle(.init(title: title, body: firstParagraph + "\n\n" + paragraphs, source: "Original UI test author · fixture", originalURL: sourceURL, topic: "Science", rightsConfirmed: true), at: Date())
             if ["round4-review", "round4-missing", "round4-note-failed"].contains(scenario) {
                 let body = try learning.content.read(articleID: id, at: Date()).body
                 let words = scenario == "round4-review" ? [("nod", "点头", "verb"), ("book", "书", "noun"), ("provide", "提供", "verb")] : [("luminora", "个人测试词", "noun")]

@@ -198,7 +198,7 @@ struct ReviewPracticeContent: View {
                 session = try learning.review.session(cycleID: cycleID)
                 schedules = try learning.review.scheduleFeedback(cycleID: cycleID)
             }
-            feedback = correct ? nil : reveal ? "请按显示答案亲自输入一次" : hint ? "首字母：" + (session?.cloze.first { $0.id == questionID }?.answer.first.map(String.init) ?? "") : "还不正确，请再试一次"
+            feedback = correct || reveal ? nil : hint ? "首字母：" + (session?.cloze.first { $0.id == questionID }?.answer.first.map(String.init) ?? "") : "还不正确，请再试一次"
             if let saved = session {
                 feedbackIdentity = ReviewFeedbackIdentity(sessionID: saved.id, questionID: questionID, attemptID: attempt, revision: saved.revision)
                 let correctionRequired = saved.cloze.first { $0.id == questionID }?.revealed == true

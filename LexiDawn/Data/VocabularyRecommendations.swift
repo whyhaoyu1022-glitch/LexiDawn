@@ -24,7 +24,7 @@ struct RecommendedVocabulary: Identifiable {
             try Task.checkCancellation()
             guard try allowed() else { throw LearningError.invalid("任务状态已变化，请先继续当前学习。") }
             do {
-                let result = try await dictionary.lookup(candidate.lemma, context: candidate.sentence)
+                let result = try await dictionary.lookup(candidate.surface, context: candidate.sentence)
                 try Task.checkCancellation()
                 guard !result.reliableChinese.isEmpty else { continue }
                 // Discovery and detail viewing do not call VocabularyRepository.add.

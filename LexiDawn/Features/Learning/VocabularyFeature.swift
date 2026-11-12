@@ -421,7 +421,7 @@ struct VocabularyDetailView: View {
                             ForEach(group.contexts) { context in
                                 InlineEnglishText(text: context.sentence, onWord: { lookupWord($0, origin: context.lookupOrigin.withText(context.sentence)) })
                             }
-                        }
+                        }.accessibilityElement(children: .contain).accessibilityIdentifier("vocabulary-context-group")
                     }
                 }.padding(.top, 12)
             }

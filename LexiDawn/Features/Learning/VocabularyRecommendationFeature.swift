@@ -36,6 +36,7 @@ struct VocabularyRecommendationView: View {
     let continueToday: () -> Void
     @StateObject private var model = VocabularyRecommendationModel()
     @State private var retry = 0
+    @State private var selection: RecommendedVocabulary?
     var body: some View {
         List {
             #if DEBUG && targetEnvironment(simulator)
@@ -48,11 +49,9 @@ struct VocabularyRecommendationView: View {
                 }
             } else {
                 if model.loading { ProgressView("正在寻找新的词汇…").accessibilityIdentifier("recommendation-loading") }
-                ForEach(model.items) { item in
-                    NavigationLink {
-                        DictionaryDetailView(result: item.result, context: item.candidate.sentence, learning: learning, articleID: item.candidate.articleID, automaticAdditionAllowed: false,
-                            sourceToken: .init(surface: item.candidate.surface, range: item.candidate.range, sentence: item.candidate.sentence))
-                    } label: {
+                let visible = model.items.filter { !model.saved.contains($0.candidate.lemma) }
+                ForEach(visible) { item in
+                    Button { selection = item } label: {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(item.candidate.lemma).font(.system(.title3, design: .serif).weight(.semibold))
                             if let sense = item.result.quickSenses.first(where: BilingualMeaningPolicy.trusted) {
@@ -64,11 +63,17 @@ struct VocabularyRecommendationView: View {
                             .background(LinearGradient(colors: ReadingPalette.colors(topic: item.candidate.topic), startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 20))
                     }.buttonStyle(.plain).accessibilityIdentifier("recommendation-detail-" + item.candidate.lemma).listRowBackground(Color.clear).listRowSeparator(.hidden)
                 }
-                if model.items.isEmpty && !model.loading && model.error == nil { ContentUnavailableView("暂无新的推荐词条", systemImage: "text.magnifyingglass", description: Text("导入更多完整文章后重试；不会重复推荐已在生词本中的词。")) }
+                if visible.isEmpty && !model.loading && model.error == nil { ContentUnavailableView("暂无新的推荐词条", systemImage: "text.magnifyingglass", description: Text("导入更多完整文章后重试；不会重复推荐已在生词本中的词。")) }
                 if model.error == nil && !model.loading { Button("重新寻找推荐") { retry += 1 } }
             }
             if let error = model.error { Text(error).foregroundStyle(.red); Button("重试推荐") { retry += 1 } }
         }.navigationTitle("词汇推荐").task(id: retry) { await model.load(learning) }
             .onReceive(learning.$revision) { _ in model.refreshMembership(learning) }
+            .navigationDestination(isPresented: Binding(get: { selection != nil }, set: { if !$0 { selection = nil } })) {
+                if let item = selection {
+                    DictionaryDetailView(result: item.result, context: item.candidate.sentence, learning: learning, articleID: item.candidate.articleID, automaticAdditionAllowed: false,
+                        sourceToken: .init(surface: item.candidate.surface, range: item.candidate.range, sentence: item.candidate.sentence))
+                }
+            }
     }
 }

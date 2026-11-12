@@ -196,6 +196,7 @@ final class Round4UITests: XCTestCase {
             let prompt = app.staticTexts["cloze-prompt"]
             reach(prompt, app: app, upward: false)
             XCTAssertTrue(prompt.label.contains("_"))
+            let previousPrompt = prompt.label
             capture("R4-P11-mask-\(index)", app: app, feature: "spelling", state: "persisted-letter-mask")
             let reveal = app.buttons["显示答案"]; reach(reveal, app: app); reveal.tap()
             let answer = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH '答案：'")).firstMatch
@@ -204,6 +205,7 @@ final class Round4UITests: XCTestCase {
             capture("R4-P19-revealed-\(index)", app: app, feature: "spelling", state: "answer-visible-awaiting-user-correction-Again")
             let current = app.textFields["cloze-answer"]; reach(current, app: app, upward: false)
             if index == 0 {
+                XCTAssertEqual(current.value as? String, "wrong")
                 replace(current, with: "wrong-correction")
                 app.buttons["submit-spelling"].tap()
                 XCTAssertTrue(app.staticTexts["review-feedback"].waitForExistence(timeout: 10))
@@ -213,6 +215,12 @@ final class Round4UITests: XCTestCase {
             }
             replace(current, with: value)
             app.buttons["submit-spelling"].tap()
+            if index < 2 {
+                expectation(for: NSPredicate(format: "label != %@", previousPrompt), evaluatedWith: prompt)
+                waitForExpectations(timeout: 10)
+                XCTAssertFalse(app.staticTexts["review-feedback"].exists)
+                capture("R4-P19-corrected-\(index)", app: app, feature: "spelling", state: "manual-correction-advanced-to-a-fresh-question")
+            }
         }
         XCTAssertTrue(app.descendants(matching: .any)["review-completed"].firstMatch.waitForExistence(timeout: 10))
         XCTAssertFalse(app.staticTexts["review-next-due"].exists)
@@ -270,6 +278,35 @@ final class Round4UITests: XCTestCase {
         app.buttons["cancel-article-discovery"].tap()
         XCTAssertTrue(app.staticTexts["已停止发现；已完整入库的文章保留。"].waitForExistence(timeout: 10))
         capture("R4-P05-cancelled", app: app, feature: "article-discovery", state: "cancelled-candidate-not-imported")
+    }
+    func testTwoLookupsFromOneArticleRetainBothSentencesAndOneSource() throws {
+        let app = launch("round4-mdx-contexts")
+        reader(app)
+        let words = app.buttons.matching(identifier: "word-nod")
+        let first = words.element(boundBy: 0)
+        XCTAssertTrue(first.waitForExistence(timeout: 10)); first.tap()
+        let close = app.buttons["close-word"]
+        XCTAssertTrue(close.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["undo-word"].waitForExistence(timeout: 10))
+        close.tap()
+        let second = words.element(boundBy: 1)
+        reach(second, app: app); second.tap()
+        XCTAssertTrue(close.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["已加入"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["undo-word"].exists)
+        close.tap(); app.buttons["返回今日"].tap(); app.tabBars.buttons["词汇"].tap()
+        let entry = app.buttons["vocabulary-entry-nod"]; reach(entry, app: app); entry.tap()
+        let contexts = app.buttons["遇见这个词的句子"]; reach(contexts, app: app, count: 30); contexts.tap()
+        let groups = app.descendants(matching: .any).matching(identifier: "vocabulary-context-group")
+        let group = groups.firstMatch
+        XCTAssertTrue(group.waitForExistence(timeout: 10))
+        XCTAssertEqual(groups.count, 1)
+        XCTAssertEqual(group.staticTexts.matching(NSPredicate(format: "label == %@", "Explicit Round 4 original UI fixture")).count, 1)
+        XCTAssertTrue(group.links["agree"].exists)
+        XCTAssertTrue(group.links["hello"].exists)
+        XCTAssertFalse(group.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "example.com")).firstMatch.exists)
+        reach(group.links["hello"], app: app)
+        capture("R4-P14-contexts", app: app, feature: "vocabulary-context", state: "two-reader-sentences-one-local-source", provenance: "real-bundled-MDX-and-original-article-real-Repository")
     }
     func testActualBundledMDXDetailAndSystemPronunciation() throws {
         let app = launch("round4-mdx-production"); reader(app)

@@ -524,9 +524,9 @@ extension LexiDawnUITests {
         capture("S03-vocabulary-search-hit", in: app)
         closeGallerySearch(app)
         app.staticTexts["internet"].tap()
-        let historical = app.buttons["以前的个人释义（只读）"]
-        try revealLearning(historical, in: app); historical.tap()
-        XCTAssertFalse(app.textFields["personal-meaning"].exists)
+        let personal = app.buttons["编辑个人义项"]
+        try revealLearning(personal, in: app); personal.tap()
+        XCTAssertTrue(app.textFields["personal-meaning"].firstMatch.waitForExistence(timeout: 10))
         capture("S04-vocabulary-detail-personal-meaning", in: app)
         let notes = app.textFields["vocabulary-notes"].firstMatch; try revealLearning(notes, in: app)
         notes.tap(); notes.typeText(" - Reviewed in the real RFC")
@@ -582,7 +582,7 @@ extension LexiDawnUITests {
         try revealLearning(app.staticTexts["review-feedback"], in: app)
         capture("S18-review-hint-saved", in: app)
         app.buttons["显示答案"].tap()
-        try revealLearning(app.staticTexts["review-feedback"], in: app)
+        try revealLearning(app.descendants(matching: .any)["cloze-correction-required"].firstMatch, in: app)
         capture("S19-review-reveal-again-grade", in: app)
         // Revealing must retain the question and require a user's correction.
         XCTAssertTrue(app.descendants(matching: .any)["cloze-correction-required"].exists)

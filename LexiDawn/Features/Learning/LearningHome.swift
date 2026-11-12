@@ -72,8 +72,9 @@ struct LiveTodayView: View {
                         if let inventoryError { Label(inventoryError, systemImage: "exclamationmark.circle").font(.caption).foregroundStyle(.red) }
                     }.padding(20).background(.thinMaterial, in: RoundedRectangle(cornerRadius: 22))
                 }.padding(20)
-            }.accessibilityIdentifier("learning-today-scroll")
+            }.safeAreaPadding(.bottom, 16).accessibilityIdentifier("learning-today-scroll")
             .navigationTitle("词光").navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { NavigationLink { ArticleLibraryView(learning: learning) } label: { Label("文章库与历史", systemImage: "books.vertical") }.accessibilityIdentifier("article-library") }
                 ToolbarItem(placement: .primaryAction) { Button("导入") { importSheet = true }.accessibilityIdentifier("import-article-toolbar") }

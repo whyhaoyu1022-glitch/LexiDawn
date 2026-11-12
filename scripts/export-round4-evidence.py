@@ -61,6 +61,7 @@ for log in args.test_log:
 # Existing test names are retained as regression contracts. These current-run
 # screenshots can support Round 4, but this association is not acceptance success.
 legacy_support = {
+    'R3-S00': ['02','05'], 'R3-legacy-round2-two-stage-review-saved': ['12'],
     'R3-S01': ['01','02','03'], 'R3-L01': ['04'], 'R3-L04': ['04'],
     'R3-R10': ['07'], 'R3-R11': ['07'], 'R3-X01': ['13'], 'R3-X02': ['13'],
     'R3-D67': ['14'], 'R3-D41': ['15','22'], 'R3-D01': ['16'],
@@ -79,7 +80,9 @@ criterion_support = {
     'R4-P18-keyboard': ['18-01','18-04'], 'R4-P18-incorrect': ['18-02','18-03'],
     'R4-P19-revealed-': ['19-01','19-02','19-03'], 'R4-P20-autosave': ['20-01'], 'R4-P20-about': ['20-05'],
     'R4-P02-actual-sources': ['02-01','05-02'], 'R4-P07-cleaned-structure': ['07-02'],
+    'R4-P14-contexts': ['14-01','14-02'],
     'R4-P15-merged-native-detail': ['15-01','15-02'], 'R4-P16-need-detail': ['16-01','16-04'],
+    'R4-P17-actual-recommendations': ['17-01','17-04'],
     'R4-P21-restored-article': ['21-04'],
     'R4-P21-': ['21-01','21-02'],
     'R4-F22-reference-top': ['22-02','22-03','22-04'], 'R4-F22-real-top': ['22-02','22-03','22-04'],
@@ -93,6 +96,7 @@ criterion_support = {
     'R4-F23-real-English-': ['16-05','23-11'],
     'R4-F23-real-notFound': ['23-06'], 'R4-F23-real-personal-': ['23-07','23-08','23-11'],
     'R3-S01-': ['01-01','02-01','03-02'], 'R3-L01-': ['04-01','04-02'], 'R3-L04-': ['04-03'],
+    'R3-S00-': ['05-03'], 'R3-legacy-round2-two-stage-review-saved-': ['12-01','12-05'],
     'R3-R10-': ['07-02'], 'R3-R11-': ['07-02','07-03'], 'R3-X01-': ['13-01','13-02'], 'R3-X02-': ['13-04'],
     'R3-D67-': ['14-01','14-02','14-04'], 'R3-D41-': ['15-01','15-02','22-01'], 'R3-D01-': ['16-01'],
     'R3-N02-': ['17-01','17-04'], 'R3-N03-': ['17-02','17-03'], 'R3-M07-': ['11-02','11-04'],

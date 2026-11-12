@@ -249,6 +249,20 @@ final class Round3UITests: XCTestCase {
         capture("R3-N04", app: app, feature: "word-recommendation", state: "explicit-add-persisted", origin: "explicit-original-article-and-provider-fixture")
         app.buttons["关闭详细释义"].tap(); app.navigationBars.buttons["生词本"].tap()
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'vocabulary-entry-'")).count, 1)
+        app.terminate()
+        app = launch("round3-explore-catalog")
+        app.tabBars.buttons["词汇"].tap(); app.buttons["vocabulary-recommendations"].tap()
+        let recommendation = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'recommendation-detail-'")).firstMatch
+        XCTAssertTrue(recommendation.waitForExistence(timeout: 30))
+        let chinese = try NSRegularExpression(pattern: #"\p{Han}"#)
+        let label = recommendation.label
+        XCTAssertNotNil(chinese.firstMatch(in: label, range: NSRange(label.startIndex..., in: label)))
+        capture("R4-P17-actual-recommendations", app: app, feature: "word-recommendation", state: "local-article-candidates-with-real-MDX-meanings", origin: "real-bundled-MDX-with-explicit-original-articles")
+        recommendation.tap()
+        XCTAssertTrue(app.buttons["add-word"].waitForExistence(timeout: 10))
+        capture("R4-P15-recommendation-detail", app: app, feature: "dictionary-detail", state: "shared-native-detail-from-real-MDX-recommendation", origin: "real-bundled-MDX-with-explicit-original-articles")
+        app.buttons["关闭详细释义"].tap(); app.navigationBars.buttons["生词本"].tap()
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'vocabulary-entry-'")).count, 0)
     }
     func testVocabularyRecommendationLoadingEmptyAndFailureStates() throws {
         for (index, mode) in ["loading", "empty", "all-failed"].enumerated() {

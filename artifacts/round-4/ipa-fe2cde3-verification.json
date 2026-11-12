@@ -1,0 +1,27 @@
+{
+  "sourceCommit": "fe2cde3ee79fb3bf03beda5ad8bf04fbfa700e5a",
+  "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43230590749",
+  "displayName": "LexiDawn",
+  "bundleIdentifier": "com.lexidawn.app",
+  "version": "0.1.0",
+  "build": "34",
+  "minimumOSVersion": "27.0",
+  "platform": "iPhoneOS",
+  "architecture": "arm64",
+  "signed": false,
+  "installedOnDevice": false,
+  "testsRerun": false,
+  "appIconSHA256": "eec830e70d18ac15be720ff38a5be1a5934e596600779d31d7119db290d05fdb",
+  "retiredDictionaryEndpointsAbsentFromExecutable": true,
+  "xcode": "Xcode 26.6\nBuild version 17F113",
+  "sdk": "26.5",
+  "ipaSHA256": "15dc4db579f9ccf15d0838cb0b94037f7d5f8f66eb41b46328d06651b6d053bf",
+  "ipaSizeBytes": 43876623,
+  "dictionary": {
+    "path": "Payload/LexiDawn.app/BundledDictionary.mdx",
+    "bytes": 38774534,
+    "sha256": "095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443"
+  },
+  "artifact": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43230590749/artifacts/13950786810",
+  "independentArchiveVerification": true
+}
