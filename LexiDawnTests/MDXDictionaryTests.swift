@@ -20,6 +20,9 @@ import AVFoundation
         XCTAssertTrue(chinese.allSatisfy { ($0.examples ?? []).count == ($0.exampleTranslations ?? []).count })
         XCTAssertTrue(chinese.contains { $0.ipa?.contains("nɒd") == true })
         XCTAssertTrue(chinese.contains { $0.sectionKind == "phrasalVerb" })
+        XCTAssertTrue(chinese.contains { $0.seeAlso?.contains("admit") == true })
+        XCTAssertFalse(chinese.contains { $0.seeAlso?.contains("nod") == true })
+        XCTAssertTrue(chinese.allSatisfy { ($0.sourceWarnings ?? []).isEmpty })
     }
     func testRealMDXMonthAndModalKeepSeparateIdentities() async throws {
         let provider = BundledMDXDictionaryProvider()

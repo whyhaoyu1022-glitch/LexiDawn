@@ -15,26 +15,24 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
         run: |
+          curl --fail --silent --show-error --location --retry 2 \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header "Accept: application/vnd.github+json" \
+            --output "${RUNNER_TEMP}/round4-8538-full-3.zip" \
+            "https://api.github.com/repos/${REPOSITORY}/actions/artifacts/13868376425/zip"
           python3 - <<'PY'
-          import os, pathlib, shutil, tempfile, urllib.request, zipfile
-          artifact_id = 13868376425
-          url = f"https://api.github.com/repos/{os.environ['REPOSITORY']}/actions/artifacts/{artifact_id}/zip"
-          request = urllib.request.Request(url, headers={"Authorization": "Bearer " + os.environ["GH_TOKEN"], "Accept": "application/vnd.github+json"})
+          import os, pathlib, zipfile
           output = pathlib.Path("recovered-full-3")
-          with tempfile.TemporaryFile() as archive_file:
-              with urllib.request.urlopen(request, timeout=300) as response:
-                  shutil.copyfileobj(response, archive_file)
-              archive_file.seek(0)
-              with zipfile.ZipFile(archive_file) as archive:
-                  for item in archive.infolist():
-                      path = pathlib.PurePosixPath(item.filename)
-                      if path.is_absolute() or ".." in path.parts:
-                          raise ValueError("Invalid artifact path")
-                      selected = path.name == "ui.log" or (path.parts[0] == "native-attachments" and path.suffix.lower() in {".png", ".json"})
-                      if selected and not item.is_dir():
-                          target = output / path
-                          target.parent.mkdir(parents=True, exist_ok=True)
-                          target.write_bytes(archive.read(item))
+          with zipfile.ZipFile(pathlib.Path(os.environ["RUNNER_TEMP"]) / "round4-8538-full-3.zip") as archive:
+              for item in archive.infolist():
+                  path = pathlib.PurePosixPath(item.filename)
+                  if path.is_absolute() or ".." in path.parts:
+                      raise ValueError("Invalid artifact path")
+                  selected = path.name == "ui.log" or (path.parts[0] == "native-attachments" and path.suffix.lower() in {".png", ".json"})
+                  if selected and not item.is_dir():
+                      target = output / path
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      target.write_bytes(archive.read(item))
           assert (output / "ui.log").is_file()
           assert (output / "native-attachments" / "manifest.json").is_file()
           PY

@@ -326,6 +326,8 @@ import SwiftData
         let projected = ReaderTextProjection(raw: wrapped, document: document, sourceID: "dw")
         XCTAssertEqual(projected.document?.blocks.map(\.kind), [.heading, .quotation, .caption, .listItem])
         XCTAssertEqual(projected.document?.blocks.last?.listOrdinal, 3)
+        XCTAssertTrue(projected.text.contains("\n3. Final item"))
+        XCTAssertTrue(projected.tokenizationText.contains("\n   Final item"))
         XCTAssertTrue(projected.text.contains("A real explanation of JavaScript and HTML5."))
         let final = (projected.text as NSString).range(of: "item")
         XCTAssertEqual((wrapped as NSString).substring(with: projected.rawRange(final)), "item")

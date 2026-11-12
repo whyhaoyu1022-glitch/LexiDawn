@@ -4,6 +4,7 @@ import Foundation
 struct ReaderTextProjection {
     static let version = "reader-blocks-3"
     let text: String
+    let tokenizationText: String
     let document: ArticleDocument?
     private let displayToRaw: [Int]
 
@@ -11,9 +12,10 @@ struct ReaderTextProjection {
         let document = document ?? ArticleDocumentNormalizer.plainText(raw)
         let original = Array(raw.utf16)
         guard ArticleDocumentNormalizer.preservesOriginal(raw, document: document) else {
-            text = raw; self.document = nil; displayToRaw = Array(0...original.count); return
+            text = raw; tokenizationText = raw; self.document = nil; displayToRaw = Array(0...original.count); return
         }
         var blocks: [ArticleDocument.Block] = []
+        var rendered: [String] = [], tokenized: [String] = []
         var cursor = 0
         var offsets: [Int] = []
         func whitespace(_ unit: UInt16) -> Bool {
@@ -22,6 +24,8 @@ struct ReaderTextProjection {
         for block in document.blocks {
             let visible = !Self.isLegacyPlayerBlock(block, sourceID: sourceID)
             if visible && !blocks.isEmpty { offsets.append(cursor) }
+            let marker = visible ? Self.listMarker(block) : ""
+            offsets += Array(repeating: cursor, count: marker.utf16.count)
             for unit in block.text.utf16 {
                 if whitespace(unit) {
                     if visible { offsets.append(cursor) }
@@ -30,18 +34,28 @@ struct ReaderTextProjection {
                 while cursor < original.count && whitespace(original[cursor]) { cursor += 1 }
                 guard cursor < original.count, original[cursor] == unit else {
                     // An offset projection must preserve the original code units.
-                    text = raw; self.document = nil; displayToRaw = Array(0...original.count); return
+                    text = raw; tokenizationText = raw; self.document = nil; displayToRaw = Array(0...original.count); return
                 }
                 if visible { offsets.append(cursor) }
                 cursor += 1
             }
-            if visible { blocks.append(block) }
+            if visible {
+                blocks.append(block)
+                rendered.append(marker + block.text)
+                tokenized.append(String(repeating: " ", count: marker.utf16.count) + block.text)
+            }
         }
         let displayed = ArticleDocument(blocks: blocks)
         self.document = displayed
-        text = blocks.map(\.text).joined(separator: "\n")
+        text = rendered.joined(separator: "\n")
+        tokenizationText = tokenized.joined(separator: "\n")
         offsets.append(original.count)
         displayToRaw = offsets
+    }
+    private static func listMarker(_ block: ArticleDocument.Block) -> String {
+        guard block.kind == .listItem, !block.text.hasPrefix("• "), !block.text.hasPrefix("- ") else { return "" }
+        if let ordinal = block.listOrdinal { return "\(ordinal). " }
+        return "• "
     }
 
     private static func isLegacyPlayerBlock(_ block: ArticleDocument.Block, sourceID: String?) -> Bool {

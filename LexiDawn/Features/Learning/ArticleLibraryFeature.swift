@@ -30,8 +30,10 @@ struct ArticleLibraryView: View {
     }
     var body: some View {
         List {
-            LibrarySearchCompletion { searchFocused = false }
             if !query.isBlank, visible.isEmpty, !loading { emptyLibrary }
+            Button("发现新文章", systemImage: "arrow.clockwise") { beginRefresh() }
+                .disabled(loading).accessibilityIdentifier("library-discover")
+            DiscoveryProgressCard(service: learning.discovery)
             Section {
                 HStack { Text("共 \(items.filter(\.readable).count) 篇").font(.headline); Spacer(); Text("当前 \(visible.count) 篇").font(.caption).foregroundStyle(.secondary) }.accessibilityIdentifier("library-count")
                 Picker("阅读内容", selection: $mode) {
@@ -44,7 +46,6 @@ struct ArticleLibraryView: View {
                 Picker("分类", selection: $topic) { Text("全部分类").tag("all"); ForEach(Array(Set(items.flatMap(\.topics))).sorted(), id: \.self) { Text($0).tag($0) } }.accessibilityIdentifier("library-topic-filter")
                 Toggle("最新导入优先", isOn: $newestFirst)
             }
-            DiscoveryProgressCard(service: learning.discovery)
             if let notice { Text(notice).font(.footnote).accessibilityIdentifier("article-notice") }
             if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red); Button(importFailed ? "重试导入" : "重新读取本地数据") { if importFailed { beginRefresh() } else { load() } } }.accessibilityIdentifier("article-import-error") }
             if query.isBlank, visible.isEmpty, !loading { emptyLibrary }
@@ -65,7 +66,9 @@ struct ArticleLibraryView: View {
                         Button(item.readLater ? "移出稍后阅读" : "稍后阅读", systemImage: item.readLater ? "bookmark.fill" : "bookmark") { flags(item, later: !item.readLater) }
                     }.buttonStyle(.bordered).font(.caption)
                     if item.cycleID == nil && item.started { Button("重新标记为未开始") { resetting = item }.font(.caption).disabled(!explorationAllowed) }
-                    if item.sourceID == "user-import" && item.cycleID == nil { Button("更新个人原文") { editing = ReaderRoute(articleID: item.id, cycleID: nil) }.font(.caption).disabled(!explorationAllowed) }
+                    if explorationAllowed && item.sourceID == "user-import" && item.cycleID == nil {
+                        Button("更新个人原文") { editing = ReaderRoute(articleID: item.id, cycleID: nil) }.font(.caption)
+                    }
                 // A List row's automatic button style can dispatch the whole row's
                 // actions. Opening, resetting and editing must remain independent.
                 }.buttonStyle(.borderless).padding(.vertical, 8)
@@ -83,10 +86,14 @@ struct ArticleLibraryView: View {
         .searchFocused($searchFocused)
         .onSubmit(of: .search) { finishSearchInput() }
         .scrollDismissesKeyboard(.interactively)
-        .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成搜索", action: finishSearchInput) } }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("完成搜索", action: finishSearchInput).accessibilityIdentifier("library-finish-search")
+            }
+        }
         .navigationTitle("文章库与历史")
         .toolbarBackground(.visible, for: .navigationBar)
-        .toolbar { Button("发现完整文章", systemImage: "arrow.clockwise") { beginRefresh() }.disabled(loading) }
         .refreshable { await beginRefresh().value }
         .task { load() }.onReceive(learning.$revision) { _ in load() }
         .sheet(item: $editing) { route in ArticleImportView(learning: learning, editingArticleID: route.articleID) }
@@ -128,21 +135,6 @@ struct ArticleLibraryView: View {
         do { let count = try await learning.discovery.refresh(force: true); try Task.checkCancellation(); learning.changed(); notice = count == 0 ? "没有新文章；本地完整版本保持可读。" : "已导入 \(count) 篇完整原文。"; error = nil }
         catch is CancellationError { load(); learning.changed(); notice = "已停止发现；已完整入库的文章保留。" }
         catch { importFailed = true; self.error = error.localizedDescription }
-    }
-}
-
-/// Read the search environment from inside the searchable content. On small devices an
-/// empty native search submission can retain its focus; this explicit action also ends
-/// the search presentation, without changing the user's query or list filters.
-private struct LibrarySearchCompletion: View {
-    @Environment(\.dismissSearch) private var dismissSearch
-    @Environment(\.isSearching) private var isSearching
-    let finished: () -> Void
-    var body: some View {
-        if isSearching {
-            Button("完成搜索") { dismissSearch(); finished() }
-                .accessibilityIdentifier("library-finish-search")
-        }
     }
 }
 

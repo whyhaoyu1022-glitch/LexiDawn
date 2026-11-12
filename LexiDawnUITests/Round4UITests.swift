@@ -263,7 +263,7 @@ final class Round4UITests: XCTestCase {
         capture("R4-P04-later-empty", app: app, feature: "library", state: "empty-read-later-scope")
     }
     func testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore() throws {
-        let app = launch("round3-import-loading"); app.buttons["article-library"].tap(); app.buttons["发现完整文章"].tap()
+        let app = launch("round3-import-loading"); app.buttons["article-library"].tap(); app.buttons["library-discover"].tap()
         let source = app.staticTexts["article-discovery-active-sources"]
         XCTAssertTrue(source.waitForExistence(timeout: 10)); XCTAssertTrue(source.label.contains("Wikipedia"))
         capture("R4-P05-progress", app: app, feature: "article-discovery", state: "real-service-source-count-and-active-host-fixture-transport")

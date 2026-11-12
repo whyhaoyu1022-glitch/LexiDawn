@@ -410,7 +410,7 @@ final class Round3UITests: XCTestCase {
         let cases = [("offline", "R3-A10"), ("403", "R3-A11"), ("429", "R3-A12"), ("503", "R3-A13"), ("rights", "R3-A14"), ("parse", "R3-A15"), ("truncated", "R3-A16"), ("summary", "R3-A17"), ("404", "R3-A22"), ("save-failed", "R3-A23")]
         for (mode, id) in cases {
             let app = launch("round3-import-" + mode); openLibrary(app)
-            app.buttons["发现完整文章"].tap()
+            app.buttons["library-discover"].tap()
             let error = app.staticTexts["无法导入完整文章，未添加到本地文章库。"]
             XCTAssertTrue(error.waitForExistence(timeout: 25))
             XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 0)
@@ -422,11 +422,11 @@ final class Round3UITests: XCTestCase {
     func testImportRetryDedupSearchFavoritesAndLocalRestart() throws {
         let app = launch("round3-import-retry"); openLibrary(app)
         capture("R3-L01", app: app, feature: "library", state: "empty-before-import", origin: "explicit-original-fixture-URLProtocol")
-        app.buttons["发现完整文章"].tap()
+        app.buttons["library-discover"].tap()
         XCTAssertTrue(app.staticTexts["article-notice"].waitForExistence(timeout: 20))
         XCTAssertTrue(app.staticTexts["article-notice"].label.contains("已导入 1"))
         capture("R3-A18", app: app, feature: "article", state: "503-retry-success-full-import", origin: "URLProtocol-retry-with-original-test-text")
-        app.buttons["发现完整文章"].tap()
+        app.buttons["library-discover"].tap()
         XCTAssertTrue(app.staticTexts["article-notice"].waitForExistence(timeout: 10))
         let notice = app.staticTexts["article-notice"]
         let noNew = NSPredicate(format: "label CONTAINS '没有新文章'")
@@ -462,7 +462,7 @@ final class Round3UITests: XCTestCase {
         openLibrary(app)
         XCTAssertTrue(app.buttons["取消收藏"].waitForExistence(timeout: 10)); XCTAssertTrue(app.buttons["移出稍后阅读"].exists)
         capture("R3-L05", app: app, feature: "library", state: "restart-retains-flags-network-unavailable", origin: "URLProtocol-offline-original-fixture")
-        app.buttons["发现完整文章"].tap()
+        app.buttons["library-discover"].tap()
         XCTAssertTrue(app.staticTexts["无法导入完整文章，未添加到本地文章库。"].waitForExistence(timeout: 15))
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 1)
         capture("R3-L06", app: app, feature: "library", state: "refresh-failed-existing-complete-local-version-preserved", origin: "URLProtocol-offline-original-fixture")
@@ -590,7 +590,7 @@ final class Round3UITests: XCTestCase {
     }
     func testLiveMultipleSourcesLibraryFiltersAndCompleteLocalReaderEvidence() throws {
         let app = launch("round3-network-all"); openLibrary(app)
-        app.buttons["发现完整文章"].tap()
+        app.buttons["library-discover"].tap()
         XCTAssertTrue(app.staticTexts["article-notice"].waitForExistence(timeout: 240), "Real publisher discovery must complete; no seeded articles")
         capture("R3-S00", app: app, feature: "article", state: "live-multiple-source-import-library", origin: "production-network-empty-isolated-store")
         let results = app.buttons["article-discovery-results"].firstMatch
@@ -666,7 +666,7 @@ final class Round3UITests: XCTestCase {
         capture("R3-V03", app: app, feature: "vocabulary", state: "retry-result-in-persistent-notebook", origin: "explicit-one-shot-Repository-save-fault-bundled-RFC")
     }
     func testArticleLoadingCanCancelWithoutLeavingCandidateRecords() throws {
-        let app = launch("round3-import-loading"); openLibrary(app); app.buttons["发现完整文章"].tap()
+        let app = launch("round3-import-loading"); openLibrary(app); app.buttons["library-discover"].tap()
         let stop = app.buttons["cancel-article-discovery"]; XCTAssertTrue(stop.waitForExistence(timeout: 5))
         capture("R3-A20", app: app, feature: "article", state: "fulltext-discovery-loading", origin: "explicit-delayed-URLProtocol-fixture")
         stop.tap()

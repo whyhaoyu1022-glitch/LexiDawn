@@ -35,7 +35,7 @@ enum MDXEntryIdentity {
 actor BundledMDXDictionaryProvider: DictionaryProvider {
     static let sourceName = "内置 MDX"
     static let sourceSHA = "095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443"
-    static let sourceVersion = sourceSHA + "-html-8"
+    static let sourceVersion = sourceSHA + "-html-9"
     private let resource: URL?
     private var reader: OpaquePointer?
     private var index: [String: [Int]] = [:]
@@ -256,11 +256,13 @@ enum MDXEntryParser {
         defer { ld_html_close(document) }
         guard let root = ld_html_root(document) else { throw MDXDictionaryError.invalidEntry("补充用法页结构缺失") }
         let node = Node(pointer: root), groups = node.descendants("t-unbox")
-        guard !groups.isEmpty else { throw MDXDictionaryError.invalidEntry("补充用法页缺少原始内容结构") }
+        let topics = node.descendants("t-topic-page")
+        guard !groups.isEmpty || !topics.isEmpty else { throw MDXDictionaryError.invalidEntry("补充用法页缺少原始内容结构") }
         let prefix = "mdx-note|" + BundledMDXDictionaryProvider.sourceSHA + "|" + recordID
         let notes = groups.flatMap { $0.notePairs(prefix: prefix, label: "用法补充") }
         let references = groups.filter { $0.attribute("type") == "wordfinder" }
             .flatMap { $0.descendants("t-ndv").flatMap(\.entryTargets) }
+            + topics.flatMap { $0.descendants("t-topic-item").flatMap(\.entryTargets) }
         guard !notes.isEmpty || !references.isEmpty else { throw MDXDictionaryError.invalidEntry("补充用法页没有可展示的内容") }
         return (notes, references)
     }

@@ -207,6 +207,10 @@ struct LiveExploreView: View {
     var body: some View {
         NavigationStack {
             List {
+                if allowed {
+                    Button("发现新文章", systemImage: "arrow.clockwise", action: discover)
+                        .disabled(loading).accessibilityIdentifier("explore-discover")
+                }
                 DiscoveryProgressCard(service: learning.discovery)
                 if let error { Text(error).foregroundStyle(.red); Button("重新读取", action: load) }
                 if !allowed {
@@ -244,7 +248,6 @@ struct LiveExploreView: View {
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in load() }
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) { NavigationLink { ArticleLibraryView(learning: learning) } label: { Label("文章库与历史", systemImage: "books.vertical") }.accessibilityIdentifier("explore-library") }
-                    ToolbarItem(placement: .primaryAction) { Button("发现完整文章", systemImage: "arrow.clockwise", action: discover).disabled(!allowed || loading) }
                 }
 
                 .fullScreenCover(item: $reader, onDismiss: load) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭") { reader = nil } } } } }
