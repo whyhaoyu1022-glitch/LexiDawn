@@ -6,6 +6,8 @@
 
 提交 fe2cde3 的独立校验 IPA 为 0.1.0(34)。App 内含 38,774,534 字节完整 MDX，SHA 一致。IPA 未签名，最低 iOS 27.0，原生兼容回归使用 iOS 26.5 Simulator。
 
+fe2cde3 的 Debug 全测试目标与 Release Simulator 编译均通过。236 项 XCTest 中 235 项通过。真实词典补充页、visits 动词语境、nod 点头语境均执行了断言。唯一失败为所有格后的 visits 名词排序。本批增加所有格与数量词条件，并把复习选义输入改为已保存的真实词形。专项同时检查冻结义项及拼写答案，结果待复跑。
+
 补了 P14 同一来源的两处真实点词，P17 真实 MDX 推荐及浏览不写入，P19 错误纠正、亲自重输和换题截图。发现页维持显式加入入口，加入后从推荐中移除，当前词典详情保持打开。当前源码保留 236 XCTest 和 64 XCUITest。
 
 [21 图对照记录](round-4-simulator-visual-review-8538fdf.md) · [独立校验 IPA](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43230590749/artifacts/13950786810)。

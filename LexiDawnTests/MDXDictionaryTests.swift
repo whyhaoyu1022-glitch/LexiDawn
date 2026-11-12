@@ -51,10 +51,26 @@ import AVFoundation
         let nounVisits = try await learning.dictionary.lookup("visits", context: "Her visits are usually short.")
         XCTAssertEqual(nounVisits.headword, "visit")
         XCTAssertEqual(nounVisits.quickSenses.first?.partOfSpeech, "noun")
+        let countedVisits = try await learning.dictionary.lookup("visits", context: "The clinic recorded 36 visits last week.")
+        XCTAssertEqual(countedVisits.quickSenses.first?.partOfSpeech, "noun")
         let agreement = try await learning.dictionary.lookup("nod", context: "We nod when we agree.")
         XCTAssertEqual(agreement.quickSenses.first?.partOfSpeech, "verb")
         XCTAssertTrue(agreement.quickSenses.first?.zh.contains("点头") == true)
         XCTAssertEqual(Set(users.versions.keys), [BundledMDXDictionaryProvider.sourceName])
+        let now = Date()
+        let sentence = "She visits us every week."
+        let article = try learning.content.importArticle(.init(title: "Original review context", body: sentence, source: "Original XCTest article", rightsConfirmed: true), at: now)
+        let token = try XCTUnwrap(EnglishTokenizer.tokens(in: sentence).first { $0.surface == "visits" })
+        _ = try learning.vocabulary.add(token: token, articleID: article, autoAdd: false, explicit: true, at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else {
+            return XCTFail("Missing article cycle")
+        }
+        let session = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        let pair = try XCTUnwrap(session?.matching.first)
+        XCTAssertEqual(pair.prompt, "visit")
+        XCTAssertEqual(pair.meaning?.partOfSpeech, "verb")
+        XCTAssertEqual(pair.senseID, visits.quickSenses.first?.id)
+        XCTAssertEqual(session?.cloze.first?.answer, "visits")
     }
     func testRealMDXConcurrentRapidQueriesAndCacheKeepStableSenseIDs() async throws {
         let provider = BundledMDXDictionaryProvider()

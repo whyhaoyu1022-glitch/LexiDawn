@@ -188,14 +188,17 @@ actor DictionaryAggregator {
                 let tagger = NLTagger(tagSchemes: [.lexicalClass]); tagger.string = context
                 tagger.setLanguage(.english, range: context.startIndex..<context.endIndex)
                 grammaticalPart = tagger.tag(at: range.lowerBound, unit: .word, scheme: .lexicalClass).0?.rawValue.lowercased()
-                if index > 0, senses.contains(where: { $0.partOfSpeech == "verb" }),
-                   let subject = Range(tokens[index - 1].range, in: context),
-                   context[subject.upperBound..<range.lowerBound].allSatisfy(\.isWhitespace) {
-                    let pronoun = EnglishTokenizer.normalized(tokens[index - 1].surface)
-                    let form = EnglishTokenizer.normalized(surface)
-                    let baseForm = EnglishTokenizer.lemma(surface) == form
-                    if (["he", "she", "it"].contains(pronoun) && form.hasSuffix("s") && !baseForm) ||
-                        (["i", "we", "you", "they"].contains(pronoun) && baseForm) {
+                let form = EnglishTokenizer.normalized(surface)
+                let baseForm = EnglishTokenizer.lemma(surface) == form
+                let inflectedS = !baseForm && form.hasSuffix("s")
+                // Numerals are intentionally excluded from tappable English tokens.
+                let previous = context[..<range.lowerBound].split(whereSeparator: \.isWhitespace).last?.lowercased()
+                if let previous, inflectedS, senses.contains(where: { $0.partOfSpeech == "noun" }),
+                   Int(previous) != nil || ["my", "your", "his", "her", "its", "our", "their", "whose"].contains(previous) {
+                    grammaticalPart = "noun"
+                } else if let previous, senses.contains(where: { $0.partOfSpeech == "verb" }) {
+                    if (["he", "she", "it"].contains(previous) && inflectedS) ||
+                        (["i", "we", "you", "they"].contains(previous) && baseForm) {
                         grammaticalPart = "verb"
                     }
                 }

@@ -205,7 +205,7 @@ struct ReviewSessionView: Equatable {
         let identities = Set([entry.entryID] + aliases)
         let source = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).filter { identities.contains($0.entryID) }.sorted { ($0.createdAt, $0.contextID) < ($1.createdAt, $1.contextID) }.first
         if let selected = official.first(where: { $0.id == entry.reviewMeaningSenseID }), selected.partOfSpeech?.isBlank == false { return selected }
-        if let sense = DictionaryAggregator.rank(official, context: source?.sentence ?? "", surface: entry.lemma).first {
+        if let sense = DictionaryAggregator.rank(official, context: source?.sentence ?? "", surface: source?.surface ?? entry.lemma).first {
             guard sense.partOfSpeech?.isBlank == false else { throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "的词性尚不完整，请重试词典或本次延期。", canEditPersonal: false) }
             return sense
         }
