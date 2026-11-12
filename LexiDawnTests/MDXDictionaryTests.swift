@@ -74,6 +74,14 @@ import AVFoundation
         guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else {
             return XCTFail("Missing article cycle")
         }
+        let historical = ModelContext(app.modelContainer)
+        let oldSession = ReviewSessionRecord(cycleID: cycle.cycleID, entries: [added.entryID], at: now, limit: 1)
+        let retired = DictionarySense(id: "wiktionary|historical-visit", en: "Historical test definition", zh: "旧外部词义", line: "Retired test source", partOfSpeech: "noun", sources: ["Wiktionary"])
+        let oldMatching = ReviewExerciseRecord(sessionID: oldSession.sessionID, entryID: added.entryID, stage: "matching", position: 0, prompt: "visit", answer: retired.zh, senseID: retired.id)
+        oldMatching.meaningSnapshot = try JSONEncoder().encode(retired); oldMatching.attempts = 1
+        historical.insert(oldSession); historical.insert(oldMatching)
+        historical.insert(ReviewExerciseRecord(sessionID: oldSession.sessionID, entryID: added.entryID, stage: "cloze", position: 0, prompt: "vi____", answer: "visits", senseID: retired.id))
+        try historical.save()
         let session = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
         let pair = try XCTUnwrap(session?.matching.first)
         XCTAssertEqual(pair.prompt, "visit")
@@ -83,6 +91,12 @@ import AVFoundation
         XCTAssertEqual(pair.meaning?.originKind, "mdx")
         XCTAssertEqual(session?.cloze.first?.meaning?.zh, actual.zh)
         XCTAssertEqual(session?.cloze.first?.answer, "visits")
+        let persisted = ModelContext(app.modelContainer)
+        let archived = try XCTUnwrap(persisted.fetch(FetchDescriptor<ReviewSessionRecord>()).first { $0.sessionID == oldSession.sessionID })
+        let archivedMatch = try XCTUnwrap(persisted.fetch(FetchDescriptor<ReviewExerciseRecord>()).first { $0.exerciseID == oldMatching.exerciseID })
+        XCTAssertEqual(archived.purpose, "archived")
+        XCTAssertEqual(archivedMatch.attempts, 1); XCTAssertEqual(archivedMatch.answer, retired.zh)
+        XCTAssertEqual(try persisted.fetchCount(FetchDescriptor<ReviewLogRecord>()), 0)
         try learning.vocabulary.confirmReviewMeaning(entryID: added.entryID, sourceSenseID: actual.id, lookup: visits)
         XCTAssertEqual(try learning.vocabulary.find(surface: "visit")?.reviewMeaningText, actual.zh)
     }

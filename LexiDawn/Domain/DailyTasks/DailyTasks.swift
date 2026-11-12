@@ -392,9 +392,9 @@ struct DailyStudyCycle: Equatable, Sendable {
 
     private var expectedCompletionReason: String { reviewEvidence?.isUserDeferral == true ? "completed-with-explicit-review-deferral" : reviewEvidence != nil ? "completed-with-no-review-items" : "all-required-tasks-completed" }
 
-    /// Only the repository calls this after atomically archiving an unconfirmed legacy answer set.
+    /// Only the repository calls this after atomically archiving a retired dictionary answer set.
     /// Completed review evidence and all reading evidence are immutable.
-    mutating func reprepareUnconfirmedLegacyReview(archivedSessionID: UUID, at timestamp: Date) throws {
+    mutating func reprepareArchivedReview(archivedSessionID: UUID, at timestamp: Date) throws {
         guard reviewEvidence == nil, reviewTaskStatus != .completed, !isComplete,
               reviewProgress == nil || reviewProgress?.sessionID == archivedSessionID else { throw TaskStatusError.verifiedEvidenceRequired }
         var next = self

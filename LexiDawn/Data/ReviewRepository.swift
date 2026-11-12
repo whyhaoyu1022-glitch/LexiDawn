@@ -62,7 +62,7 @@ struct ReviewSessionView: Equatable {
     func pendingCount(at now: Date) throws -> Int { try writer.read { try eligible(in: $0, at: now).count } }
     func prepare(cycleID: UUID, dailyLimit: Int, pairCount: Int, clozeCount: Int, at now: Date) async throws -> ReviewSessionView? {
         try VocabularyRepository(context: writer.context).normalizeIdentities()
-        try archiveUnconfirmedLegacySession(cycleID: cycleID, at: now)
+        try archiveRetiredDictionarySession(cycleID: cycleID, at: now)
         try snapshotLegacyContexts(cycleID: cycleID)
         if let saved = try session(cycleID: cycleID) { return saved }
         let cycle = try writer.read { try cycleInContext(cycleID, context: $0) }
@@ -115,29 +115,43 @@ struct ReviewSessionView: Equatable {
         }
         return try session(cycleID: cycleID)
     }
-    /// Preserve already-attempted questions verbatim, but never continue unconfirmed reverse-index answers.
-    private func archiveUnconfirmedLegacySession(cycleID: UUID, at now: Date) throws {
-        let needsArchive = try writer.read { context in
-            guard let saved = try context.fetch(FetchDescriptor<ReviewSessionRecord>()).first(where: { $0.cycleID == cycleID.uuidString }), saved.completedAt == nil else { return false }
-            let entries = try context.fetch(FetchDescriptor<VocabularyEntryRecord>())
-            return try context.fetch(FetchDescriptor<ReviewExerciseRecord>()).contains { question in
-                guard question.sessionID == saved.sessionID, question.meaningSnapshot == nil, question.senseID.hasPrefix("cedict-reverse-v1|") else { return false }
-                let entry = entries.first { $0.entryID == question.entryID }
-                return entry?.reviewMeaningSenseID != question.senseID && entry?.userMeaning?.isBlank != false
+    /// Retain retired-source sessions verbatim as history before offering a new MDX review.
+    private func archiveRetiredDictionarySession(cycleID: UUID?, at now: Date) throws {
+        let pendingID = try writer.read { context -> String? in
+            let sessions = try context.fetch(FetchDescriptor<ReviewSessionRecord>()).filter { record in
+                guard record.completedAt == nil else { return false }
+                if let cycleID { return record.cycleID == cycleID.uuidString }
+                return record.purpose == "extra"
             }
+            guard sessions.count <= 1 else { throw PersistenceError.integrity("存在多个未完成复习会话") }
+            guard let saved = sessions.first else { return nil }
+            let exercises = try context.fetch(FetchDescriptor<ReviewExerciseRecord>()).filter { $0.sessionID == saved.sessionID && $0.stage == "matching" }
+            return try exercises.contains(where: Self.usesRetiredDictionary) ? saved.sessionID : nil
         }
-        guard needsArchive else { return }
+        guard let pendingID else { return }
         try writer.write {
             let context = writer.context
-            guard let saved = try context.fetch(FetchDescriptor<ReviewSessionRecord>()).first(where: { $0.cycleID == cycleID.uuidString }), saved.completedAt == nil,
-                  let sessionID = UUID(uuidString: saved.sessionID),
+            guard let saved = try context.fetch(FetchDescriptor<ReviewSessionRecord>()).first(where: { $0.sessionID == pendingID }), saved.completedAt == nil,
                   !(try context.fetch(FetchDescriptor<ReviewLogRecord>())).contains(where: { $0.sessionID == saved.sessionID }) else { throw PersistenceError.integrity("历史题组已有排程，保持原始数据并停止重建") }
-            var cycle = try cycleInContext(cycleID, context: context)
-            saved.archivedCycleID = saved.cycleID; saved.archivedReviewProgress = try cycle.reviewProgress.map { try JSONEncoder().encode($0) }
-            saved.archiveReason = "unconfirmed-reverse-index-answer"; saved.purpose = "archived"; saved.cycleID = "archived|" + saved.sessionID
-            try cycle.reprepareUnconfirmedLegacyReview(archivedSessionID: sessionID, at: now)
-            try cycles.applyInTransaction(cycle, context: context)
+            saved.archivedCycleID = saved.cycleID
+            saved.archiveReason = "retired-dictionary-answer"; saved.purpose = "archived"; saved.cycleID = "archived|" + saved.sessionID
+            if let cycleID {
+                guard let sessionID = UUID(uuidString: saved.sessionID) else { throw PersistenceError.integrity("历史题组身份无效") }
+                var cycle = try cycleInContext(cycleID, context: context)
+                saved.archivedReviewProgress = try cycle.reviewProgress.map { try JSONEncoder().encode($0) }
+                try cycle.reprepareArchivedReview(archivedSessionID: sessionID, at: now)
+                try cycles.applyInTransaction(cycle, context: context)
+            }
         }
+    }
+    private static func usesRetiredDictionary(_ question: ReviewExerciseRecord) throws -> Bool {
+        if let data = question.meaningSnapshot {
+            let sense = try JSONDecoder().decode(DictionarySense.self, from: data)
+            if sense.originKind == "personal" || (sense.id == "user" && sense.sources?.isEmpty != false) { return false }
+            return sense.originKind != "mdx" || sense.sources != [BundledMDXDictionaryProvider.sourceName]
+        }
+        let retiredPrefixes = ["cedict-", "wiktionary", "free|", "oxford|"]
+        return retiredPrefixes.contains { question.senseID.lowercased().hasPrefix($0) }
     }
     func session(cycleID: UUID) throws -> ReviewSessionView? {
         try writer.read { context in
@@ -327,6 +341,7 @@ struct ReviewSessionView: Equatable {
     }
     func prepareExtra(dailyLimit: Int, pairCount: Int, clozeCount: Int, at now: Date) async throws -> ReviewSessionView? {
         try writer.read { try requireExtraAllowed(context: $0, at: now) }
+        try archiveRetiredDictionarySession(cycleID: nil, at: now)
         if let saved = try extraSession() { return saved }
         guard dailyLimit > 0, pairCount > 0, clozeCount > 0 else { throw LearningError.invalid("额外复习题量无效。") }
         let selected = try writer.read { context in Array(try extraEligible(in: context, at: now).prefix(min(dailyLimit, pairCount))).map { ($0.entryID, $0.lemma) } }

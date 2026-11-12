@@ -1266,7 +1266,8 @@
       ],
       "candidateTestSelectors": [
         "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities",
-        "LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates"
+        "LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates",
+        "LexiDawnUITests/Round4UITests/testActualMDXCompactGlossIsTheMatchingAnswerForTheSameContext"
       ],
       "implementationReview": "真实曲线/编号/虚线，选中可取消；May和may独立来源身份。",
       "status": "open-final-native-and-visual-verification-required",
@@ -1740,12 +1741,20 @@
       ],
       "candidateTestSelectors": [
         "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary",
-        "LexiDawnTests/Round4Tests/testVocabularyDisplayGroupsPreserveDistinctSentencesAndSeparateDictionaryEvidence"
+        "LexiDawnTests/Round4Tests/testVocabularyDisplayGroupsPreserveDistinctSentencesAndSeparateDictionaryEvidence",
+        "LexiDawnUITests/Round4UITests/testTwoLookupsFromOneArticleRetainBothSentencesAndOneSource"
       ],
       "implementationReview": "按文章分组真实原句，去重复语境和URL，源记录未删除。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "latestRelatedVisualEvidence": {
+        "codeCommit": "54cd60766b6bd3b60ca12f099a7244bcf0f58ac2",
+        "workflowRun": 43233166087,
+        "screenshot": "R4-P14-contexts-system-portrait-iPhone18-1.png",
+        "testOutcome": "passed",
+        "scope": "Two real lookups with one source. Per-criterion acceptance remains open."
+      }
     },
     {
       "acceptanceID": "R4-A14-03",
@@ -2597,7 +2606,8 @@
       ],
       "candidateTestSelectors": [
         "LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation",
-        "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
+        "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists",
+        "LexiDawnUITests/Round4UITests/testActualMDXCompactGlossIsTheMatchingAnswerForTheSameContext"
       ],
       "implementationReview": "锚定小popover，全屏详情，44pt控件，真实保存勾号和限定撤销。",
       "status": "open-final-native-and-visual-verification-required",
@@ -3561,7 +3571,8 @@
       "candidateTestSelectors": [
         "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
         "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
-        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask",
+        "LexiDawnUITests/Round4UITests/testActualMDXCompactGlossIsTheMatchingAnswerForTheSameContext"
       ],
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
       "status": "open-final-native-and-visual-verification-required",
@@ -3789,7 +3800,8 @@
       "candidateTestSelectors": [
         "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
         "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
-        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask",
+        "LexiDawnTests/MDXDictionaryTests/testRealOfflineServiceNormalizesUsersAndVisitsWithoutNetworkProviders"
       ],
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
       "status": "open-final-native-and-visual-verification-required",
@@ -3979,7 +3991,8 @@
       "candidateTestSelectors": [
         "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
         "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
-        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask",
+        "LexiDawnUITests/Round4UITests/testActualMDXCompactGlossIsTheMatchingAnswerForTheSameContext"
       ],
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
       "status": "open-final-native-and-visual-verification-required",
