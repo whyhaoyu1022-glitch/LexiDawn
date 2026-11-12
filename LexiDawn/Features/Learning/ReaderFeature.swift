@@ -74,7 +74,7 @@ struct ReaderView: View {
                         wordAnchor = UnitPoint(x: min(0.96, max(0.04, point.x / max(1, size.width))), y: min(0.96, max(0.04, point.y / max(1, size.height))))
                     }, title: ArticleTitlePresentation.display(article.title, sourceID: article.sourceID), subtitle: readerSubtitle(article), sourceID: article.sourceID)
                 .frame(maxWidth: .infinity, minHeight: 80, maxHeight: .infinity).layoutPriority(1)
-                .popover(item: $selection, attachmentAnchor: .point(wordAnchor), arrowEdge: .top) { selected in
+                .popover(item: $selection, attachmentAnchor: .point(wordAnchor), arrowEdge: wordAnchor.y > 0.5 ? .bottom : .top) { selected in
                     WordLookupSheet(model: selected).presentationCompactAdaptation(.popover)
                 }
                 if model.position.completedAt != nil { Label("阅读已完成", systemImage: "checkmark.circle.fill").foregroundStyle(.green).padding(.horizontal).accessibilityIdentifier("reading-completed") }
@@ -260,6 +260,7 @@ struct WordLookupSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var dependencies: AppDependencies
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var showDetails = false
     @State private var closeLookupAfterDetails = false
     @State private var theme = "system"
@@ -271,23 +272,18 @@ struct WordLookupSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text(model.result?.headword ?? EnglishTokenizer.lemma(model.token.surface)).font(.system(.title3, design: .serif).bold()).accessibilityIdentifier("dictionary-headword")
+                Text(model.result?.headword ?? EnglishTokenizer.lemma(model.token.surface)).font(.system(.title3, design: .serif).bold())
+                    .lineLimit(1).minimumScaleFactor(0.7).accessibilityIdentifier("dictionary-headword")
                 if let result = model.result, let ipa = result.quickSenses.first?.ipa ?? DictionaryPresentation.sharedIPA(result.senses) {
-                    Text(ipa).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                    Text(ipa).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer(minLength: 2)
                 Button { dismiss() } label: { Image(systemName: "xmark").font(.caption).frame(width: 44, height: 44) }.accessibilityLabel("关闭查词").accessibilityIdentifier("close-word")
             }
-            if model.loading && model.result?.usableSenses.isEmpty != false { ProgressView("查词中").accessibilityIdentifier("dictionary-loading") }
-            if let result = model.result, !result.usableSenses.isEmpty || !model.loading { DictionaryQuickMeaning(result: result) }
-            if let error = model.error {
-                Text(error).font(.caption).foregroundStyle(.red).accessibilityIdentifier("dictionary-resource-error")
-                Button("词典暂不可用，重试") { model.startLookup(force: true) }.font(.caption).accessibilityHint(error)
-            }
-            if let error = model.vocabularyError {
-                Text(error).font(.caption).foregroundStyle(.red).accessibilityIdentifier("word-save-error")
-            }
-            if let preferencesError { Text(preferencesError).font(.caption).foregroundStyle(.red) }
+            ViewThatFits(in: .vertical) {
+                lookupContent.fixedSize(horizontal: false, vertical: true)
+                ScrollView { lookupContent }
+            }.frame(maxHeight: verticalSizeClass == .compact ? 88 : dynamicTypeSize.isAccessibilitySize ? 148 : 116)
             HStack {
                 if model.addition?.created == true {
                     Button { model.undo() } label: { Label("撤销", systemImage: "checkmark.circle.fill") }.accessibilityIdentifier("undo-word")
@@ -301,7 +297,7 @@ struct WordLookupSheet: View {
                 Button { showDetails = true } label: { Image(systemName: "arrow.up.right.circle.fill").font(.title2).frame(width: 44, height: 44) }
                     .accessibilityLabel("查看详细释义").accessibilityIdentifier("dictionary-details").disabled(model.loading || model.error != nil || model.result == nil)
             }.font(.subheadline)
-        }.padding(16).frame(width: dynamicTypeSize.isAccessibilitySize ? 310 : 285).accessibilityElement(children: .contain).accessibilityIdentifier("compact-word-card")
+        }.padding(verticalSizeClass == .compact ? 10 : 16).frame(width: dynamicTypeSize.isAccessibilitySize ? 310 : 285).accessibilityElement(children: .contain).accessibilityIdentifier("compact-word-card")
             .accessibilityHidden(showDetails)
             .fixedSize(horizontal: false, vertical: true)
             .task { do { theme = try dependencies.preferencesRepository.load().readerTheme } catch { preferencesError = "阅读设置读取失败：" + error.localizedDescription } }
@@ -320,6 +316,18 @@ struct WordLookupSheet: View {
                 }.preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
             }
     }
+    private var lookupContent: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if model.loading && model.result?.usableSenses.isEmpty != false { ProgressView("查词中").accessibilityIdentifier("dictionary-loading") }
+            if let result = model.result, !result.usableSenses.isEmpty || !model.loading { DictionaryQuickMeaning(result: result) }
+            if let error = model.error {
+                Text(error).font(.caption).foregroundStyle(.red).accessibilityIdentifier("dictionary-resource-error")
+                Button("词典暂不可用，重试") { model.startLookup(force: true) }.font(.caption).accessibilityHint(error)
+            }
+            if let error = model.vocabularyError { Text(error).font(.caption).foregroundStyle(.red).accessibilityIdentifier("word-save-error") }
+            if let preferencesError { Text(preferencesError).font(.caption).foregroundStyle(.red) }
+        }.frame(maxWidth: .infinity, alignment: .leading)
+    }
 }
 /// A bounded reading aid. All original provider senses remain in the separate detail page.
 struct DictionaryQuickMeaning: View {
@@ -327,6 +335,7 @@ struct DictionaryQuickMeaning: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if result.quickSenses.isEmpty { Text("暂无英中释义").font(.subheadline).foregroundStyle(.secondary) }
+            if result.quickSenses.first?.originKind == "personal" { Text("个人释义").font(.caption).foregroundStyle(.secondary) }
             ForEach(Array(result.quickSenses.prefix(2))) { sense in
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     if let part = sense.partOfSpeech { Text(BilingualMeaningPolicy.partName(part)).font(.caption).foregroundStyle(.secondary) }
@@ -570,6 +579,7 @@ struct DictionaryDetailView: View {
         }.accessibilityIdentifier("dictionary-detail-scroll").clipped().background(background.ignoresSafeArea())
             .preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
             .safeAreaInset(edge: .bottom) { detailControls }
+            .accessibilityHidden(relatedRoute != nil || selection != nil)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(item: $comparison) { synonym in
                 DictionaryComparisonView(original: result, synonym: synonym, context: context, learning: learning, theme: theme)

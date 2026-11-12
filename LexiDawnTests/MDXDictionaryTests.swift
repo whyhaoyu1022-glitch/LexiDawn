@@ -61,7 +61,15 @@ import AVFoundation
         let sentence = "She visits us every week."
         let article = try learning.content.importArticle(.init(title: "Original review context", body: sentence, source: "Original XCTest article", rightsConfirmed: true), at: now)
         let token = try XCTUnwrap(EnglishTokenizer.tokens(in: sentence).first { $0.surface == "visits" })
-        _ = try learning.vocabulary.add(token: token, articleID: article, autoAdd: false, explicit: true, at: now)
+        let added = try XCTUnwrap(learning.vocabulary.add(token: token, articleID: article, autoAdd: false, explicit: true, at: now))
+        let actual = try XCTUnwrap(visits.quickSenses.first)
+        var stale = actual; stale.zh = "缓存中的错误中文释义"
+        let cache = DictionaryCacheRepository(context: ModelContext(app.modelContainer))
+        try cache.save("visit", senses: [stale], successful: [BundledMDXDictionaryProvider.sourceName], at: now.addingTimeInterval(60))
+        XCTAssertEqual(try cache.load("visit", at: now).senses.first?.zh, stale.zh)
+        let preview = try await learning.dictionary.previewCanonical("visit")
+        XCTAssertFalse(preview.quickSenses.contains { $0.zh == stale.zh })
+        XCTAssertThrowsError(try learning.vocabulary.confirmReviewMeaning(entryID: added.entryID, sourceSenseID: actual.id))
         guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else {
             return XCTFail("Missing article cycle")
         }
@@ -69,8 +77,13 @@ import AVFoundation
         let pair = try XCTUnwrap(session?.matching.first)
         XCTAssertEqual(pair.prompt, "visit")
         XCTAssertEqual(pair.meaning?.partOfSpeech, "verb")
-        XCTAssertEqual(pair.senseID, visits.quickSenses.first?.id)
+        XCTAssertEqual(pair.senseID, actual.id)
+        XCTAssertEqual(pair.answer, actual.zh)
+        XCTAssertEqual(pair.meaning?.originKind, "mdx")
+        XCTAssertEqual(session?.cloze.first?.meaning?.zh, actual.zh)
         XCTAssertEqual(session?.cloze.first?.answer, "visits")
+        try learning.vocabulary.confirmReviewMeaning(entryID: added.entryID, sourceSenseID: actual.id, lookup: visits)
+        XCTAssertEqual(try learning.vocabulary.find(surface: "visit")?.reviewMeaningText, actual.zh)
     }
     func testRealMDXConcurrentRapidQueriesAndCacheKeepStableSenseIDs() async throws {
         let provider = BundledMDXDictionaryProvider()
@@ -126,7 +139,10 @@ import AVFoundation
         XCTAssertTrue(afterSave.reliableChinese.isEmpty)
         XCTAssertEqual(afterSave.quickSenses.map(\.zh), ["不要"])
         XCTAssertEqual(afterSave.quickSenses.map(\.originKind), ["personal"])
-        _ = try await learning.dictionary.lookup("user")
+        var locked = try await learning.dictionary.lookup("user")
+        locked.personalSenses = [.init(id: "personal|history|1", en: "", zh: "历史个人义项", line: "个人释义", originKind: "personal")]
+        XCTAssertFalse(locked.usableSenses.contains { $0.originKind == "personal" })
+        XCTAssertTrue(locked.quickSenses.allSatisfy(BilingualMeaningPolicy.trusted))
         XCTAssertFalse(try learning.vocabulary.personalEditingAllowed(headword: "user"))
         XCTAssertThrowsError(try learning.vocabulary.addDictionaryEntry(headword: "user", requiresPersonalEligibility: true, at: Date()))
         XCTAssertNil(try learning.vocabulary.find(surface: "user"), "A locked creation must not insert a vocabulary entry")
@@ -176,6 +192,10 @@ import AVFoundation
         try learning.vocabulary.savePersonalSenses(entryID: entry.entryID, senses: senses, at: Date())
         let missing = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let failed = DictionaryLookupService(context: ModelContext(app.modelContainer), provider: BundledMDXDictionaryProvider(resource: missing))
+        let preview = try await learning.dictionary.previewCanonical("lexidawnfaultword")
+        XCTAssertEqual(preview.quickSenses.map(\.zh), ["资源恢复测试词"])
+        do { _ = try await failed.previewCanonical("lexidawnfaultword"); XCTFail("A saved personal meaning cannot replace a resource error") }
+        catch { XCTAssertEqual(error as? MDXDictionaryError, .missingResource) }
         do { _ = try await failed.lookup("lexidawnfaultword"); XCTFail("Missing resource must remain a resource error") }
         catch { XCTAssertEqual(error as? MDXDictionaryError, .missingResource) }
         XCTAssertFalse(try learning.vocabulary.personalEditingAllowed(entryID: entry.entryID))

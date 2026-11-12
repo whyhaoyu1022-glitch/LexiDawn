@@ -325,7 +325,9 @@ final class Round4UITests: XCTestCase {
         let phrases = app.staticTexts["短语动词"]; reach(phrases, app: app)
         capture("R4-F22-real-phrases", app: app, feature: "dictionary-detail", state: "actual-MDX-phrasal-verbs", provenance: "real-bundled-MDX-with-explicit-original-article")
         let nested = app.buttons["dictionary-related-entry-nod off"].firstMatch; reach(nested, app: app); nested.tap()
-        XCTAssertTrue(app.staticTexts["dictionary-full-headword"].waitForExistence(timeout: 10)); XCTAssertEqual(app.staticTexts["dictionary-full-headword"].label, "nod off")
+        let child = app.staticTexts.matching(NSPredicate(format: "identifier == %@ AND label == %@", "dictionary-full-headword", "nod off")).firstMatch
+        XCTAssertTrue(child.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "identifier == %@ AND label == %@", "dictionary-full-headword", "nod")).firstMatch.exists)
         capture("R4-F22-real-internal-link", app: app, feature: "dictionary-detail", state: "actual-MDX-subentry-native-navigation", provenance: "real-bundled-MDX-internal-record")
         app.buttons["返回上一个词条"].tap()
         XCTAssertTrue(app.buttons["dictionary-related-entry-nod off"].firstMatch.waitForExistence(timeout: 10))
@@ -362,9 +364,29 @@ final class Round4UITests: XCTestCase {
         app.terminate()
         let large = launch("round4-mdx-production", fontSize: "UICTContentSizeCategoryAccessibilityXXXL"); reader(large); tapWord("nod", app: large)
         expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: large.buttons["dictionary-details"]); waitForExpectations(timeout: 20)
-        large.buttons["dictionary-details"].tap(); XCUIDevice.shared.orientation = .landscapeLeft
+        let details = large.buttons["dictionary-details"]
+        XCTAssertTrue(details.isHittable)
+        capture("R4-P21-accessibility-compact", app: large, feature: "reader-dictionary", state: "actual-MDX-AXXXL-compact-detail-action-visible", provenance: "real-bundled-MDX-explicit-Dynamic-Type-setting")
+        details.tap(); XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(large.buttons["关闭详细释义"].waitForExistence(timeout: 10)); reach(large.staticTexts["n. 名词"], app: large, count: 20)
         capture("R4-F22-accessibility-landscape", app: large, feature: "dictionary-detail", state: "actual-MDX-AXXXL-landscape-readable-content-and-close-control", provenance: "real-bundled-MDX-explicit-Dynamic-Type-setting")
+    }
+    func testActualMDXCompactGlossIsTheMatchingAnswerForTheSameContext() {
+        let app = launch("round4-mdx-review"); reader(app); tapWord("nod", app: app)
+        let glosses = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "dictionary-quick-sense-", "点头"))
+        XCTAssertTrue(glosses.firstMatch.waitForExistence(timeout: 20))
+        let compactLabels = glosses.allElementsBoundByIndex.map(\.label)
+        capture("R4-P21-mdx-review-gloss", app: app, feature: "reader-dictionary", state: "MDX-gloss-in-the-original-review-context", provenance: "real-bundled-MDX-and-native-review-repository")
+        app.buttons["close-word"].tap(); app.buttons["返回今日"].tap()
+        app.buttons["open-review"].tap()
+        let word = app.buttons["match-word-nod"]
+        XCTAssertTrue(word.waitForExistence(timeout: 20))
+        let translation = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "match-meaning-", "点头")).firstMatch
+        XCTAssertTrue(translation.exists)
+        XCTAssertTrue(compactLabels.contains { $0.contains(translation.label) }, "The review answer should be an actual contextual gloss shown in the reader")
+        word.tap(); translation.tap()
+        XCTAssertFalse(word.isEnabled); XCTAssertFalse(translation.isEnabled)
+        capture("R4-P10-real-MDX-connection", app: app, feature: "matching", state: "same-MDX-gloss-with-persisted-correct-match", provenance: "real-bundled-MDX-and-native-review-repository")
     }
     func testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails() throws {
         for scenario in ["round4-mdx-missing", "round4-mdx-corrupt"] {

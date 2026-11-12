@@ -77,11 +77,6 @@ struct VocabularyItem: Identifiable, Equatable, Codable {
         values.append(contentsOf: dictionarySenses.map(\.zh))
         return values
     }
-    var primaryChinese: String? {
-        if let sense = BilingualMeaningPolicy.trustedSenses(dictionarySenses, headword: lemma).first { return sense.zh }
-        if reliableChineseKnown == true { return nil }
-        return personalSenses?.first(where: \.reviewReady)?.chinese
-    }
 }
 enum VocabularyStatusFilter: String, CaseIterable { case all = "全部状态", due = "待复习", overdue = "逾期", recent = "近7日添加", familiar = "较熟悉" }
 enum VocabularySort: String, CaseIterable { case added = "最近添加", due = "到期时间", alphabet = "字母顺序", priority = "复习优先级" }
@@ -153,7 +148,6 @@ struct VocabularyAddition {
             let all = try context.fetch(FetchDescriptor<VocabularyEntryRecord>())
             guard Set(all.map(\.normalizedKey)).count == all.count else { throw PersistenceError.integrity("重复生词身份") }
             let contexts = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>())
-            let senses = try context.fetch(FetchDescriptor<DictionarySenseRecord>())
             let articles = try historicalArticleMetadata(in: context)
             let grants = try context.fetch(FetchDescriptor<ContentGrantRecord>())
             let states = try context.fetch(FetchDescriptor<ReviewStateRecord>())
@@ -463,18 +457,16 @@ struct VocabularyAddition {
             if entry.notes != value { entry.notes = value; entry.revision += 1; entry.lastOpenedAt = max(now, entry.lastOpenedAt) }
         }
     }
-    func confirmReviewMeaning(entryID: String, sourceSenseID: String) throws {
+    func confirmReviewMeaning(entryID: String, sourceSenseID: String, lookup: DictionaryResult? = nil) throws {
         try writer.write {
             let context = writer.context
             guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID && $0.deletedAt == nil }) else { throw LearningError.invalid("词条不存在或已移除。") }
-            let caches = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
-            let decoded = try caches.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) }
-            let official = BilingualMeaningPolicy.trustedSenses(decoded, headword: entry.lemma)
-            if let sense = official.first(where: { $0.id == sourceSenseID }) {
+            if let lookup, lookup.headword != entry.lemma { throw LearningError.invalid("词条已经变化，请重新查词。") }
+            if let sense = lookup?.reliableChinese.first(where: { $0.id == sourceSenseID }) {
                 guard sense.partOfSpeech?.isBlank == false else { throw LearningError.invalid("该 MDX 义项未提供词性，暂不能用作复习标准答案。") }
                 entry.reviewMeaningSenseID = sense.id; entry.reviewMeaningText = sense.zh; entry.reviewMeaningEvidence = sense.line; entry.reviewMeaningSnapshotData = try JSONEncoder().encode(sense); entry.revision += 1; return
             }
-            guard try personalAllowed(lemma: entry.lemma, context: context) else { throw LearningError.invalid("请选择内置 MDX 中的中文义项。") }
+            guard lookup?.reliableChinese.isEmpty != false, try personalAllowed(lemma: entry.lemma, context: context) else { throw LearningError.invalid("请选择内置 MDX 中的中文义项。") }
             let personal = try entry.personalSensesData.map { try JSONDecoder().decode([PersonalDictionarySense].self, from: $0) } ?? []
             guard let sense = personal.filter(\.reviewReady).map({ $0.dictionarySense(entryID: entryID) }).first(where: { $0.id == sourceSenseID }) else { throw LearningError.invalid("请选择已确认、具有词性与中文的个人义项。") }
             entry.reviewMeaningSenseID = sense.id; entry.reviewMeaningText = sense.zh; entry.reviewMeaningEvidence = sense.line
@@ -531,7 +523,12 @@ struct DictionaryResult: Equatable {
     var versions: [String: String] = [:]
     var personalSenses: [DictionarySense] = []
     var contextualOrder: [String] = []
-    var usableSenses: [DictionarySense] { BilingualMeaningPolicy.displaySenses(senses + personalSenses) }
+    var usableSenses: [DictionarySense] {
+        let official = senses.filter(BilingualMeaningPolicy.trusted)
+        guard reliableChinese.isEmpty else { return official }
+        let eligiblePersonal = personalSenses.filter { $0.originKind == "personal" && BilingualMeaningPolicy.hasChinese($0.zh) }
+        return official + eligiblePersonal
+    }
     var quickSenses: [DictionarySense] {
         let direct = usableSenses.filter { BilingualMeaningPolicy.belongsToEntry($0, headword: headword) }
         guard !contextualOrder.isEmpty else { return direct }
@@ -600,22 +597,32 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
     }
     /// A persisted vocabulary identity was disambiguated at capture time.
     func lookupCanonical(_ key: String, at now: Date = Date()) async throws -> DictionaryResult {
-        var senses: [DictionarySense]
+        let senses: [DictionarySense]
         do {
-            senses = try await provider.lookup(key)
-            if senses.isEmpty, let native = provider as? BundledMDXDictionaryProvider {
-                let hints = try cache.mdxRecordHints(key)
-                if !hints.isEmpty { senses = try await native.lookupSubentry(key, recordHints: hints) }
-            }
-            try Task.checkCancellation()
+            senses = try await readMDX(key)
         } catch is CancellationError { throw CancellationError() }
         catch {
             try cache.recordFailure(key, error: error.localizedDescription, at: now)
             throw error
         }
-        guard Set(senses.map(\.id)).count == senses.count else { throw MDXDictionaryError.invalidEntry("重复义项身份") }
         try cache.save(key, senses: senses, successful: [BundledMDXDictionaryProvider.sourceName], at: now)
         return try presentation(key, senses: senses, at: now)
+    }
+    /// List rows read the same MDX without granting edit permission or writing a cache for each visible row.
+    func previewCanonical(_ key: String) async throws -> DictionaryResult {
+        let senses = try await readMDX(key)
+        return try presentation(key, senses: senses, at: Date())
+    }
+    private func readMDX(_ key: String) async throws -> [DictionarySense] {
+        var senses = try await provider.lookup(key)
+        if senses.isEmpty, let native = provider as? BundledMDXDictionaryProvider {
+            let hints = try cache.mdxRecordHints(key)
+            if !hints.isEmpty { senses = try await native.lookupSubentry(key, recordHints: hints) }
+        }
+        try Task.checkCancellation()
+        guard senses.allSatisfy(BilingualMeaningPolicy.isCurrentMDX) else { throw MDXDictionaryError.invalidEntry("义项来源与内置 MDX 不一致") }
+        guard Set(senses.map(\.id)).count == senses.count else { throw MDXDictionaryError.invalidEntry("重复义项身份") }
+        return senses
     }
     func subentry(_ headword: String, from parent: DictionaryResult, at now: Date = Date()) async throws -> DictionaryResult {
         let candidates = parent.senses.filter { $0.lexicalHeadword?.caseInsensitiveCompare(headword) == .orderedSame }
@@ -639,11 +646,6 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
     }
     func localResult(_ surface: String, at now: Date = Date()) async throws -> DictionaryResult {
         try await lookup(surface, at: now)
-    }
-    func cached(_ key: String) throws -> DictionaryResult? {
-        let result = try cache.load(key, at: Date())
-        guard result.complete else { return nil }
-        return try presentation(key, senses: result.senses, at: result.date)
     }
     #if DEBUG && targetEnvironment(simulator)
     func configureMDXResourceForEvidence(_ url: URL) { provider = BundledMDXDictionaryProvider(resource: url) }

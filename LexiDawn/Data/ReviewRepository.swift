@@ -82,7 +82,8 @@ struct ReviewSessionView: Equatable {
                 return (id, entry.lemma)
             }
         }
-        try await primeMeanings(selected, at: now)
+        let lookups = try await primeMeanings(selected, at: now)
+        try Task.checkCancellation()
         try writer.write {
             let context = writer.context
             var cycle = try cycleInContext(cycleID, context: context)
@@ -110,7 +111,7 @@ struct ReviewSessionView: Equatable {
             let session = ReviewSessionRecord(cycleID: cycleID, entries: chosen.map(\.entryID), at: max(now, cycle.createdAtUTC), limit: dailyLimit)
             session.deferredEntryIDs = skipped.sorted()
             context.insert(session)
-            try insertExercises(session: session, chosen: chosen, clozeCount: clozeCount, context: context)
+            try insertExercises(session: session, chosen: chosen, lookups: lookups, clozeCount: clozeCount, context: context)
         }
         return try session(cycleID: cycleID)
     }
@@ -184,22 +185,22 @@ struct ReviewSessionView: Equatable {
             return prepared.selectedEntryIDs.filter { !skipped.contains($0) }.count
         }
     }
-    private func primeMeanings(_ selected: [(String, String)], at now: Date) async throws {
+    private func primeMeanings(_ selected: [(String, String)], at now: Date) async throws -> [String: DictionaryResult] {
+        var lookups: [String: DictionaryResult] = [:]
         for (id, lemma) in selected {
-            // Every new question revalidates the sole source; a valid personal
-            // snapshot must not bypass a newly available MDX Chinese definition.
-            _ = try await dictionary.lookupCanonical(lemma, at: now)
+            let result = try await dictionary.lookupCanonical(lemma, at: now)
             try Task.checkCancellation()
             try writer.read { context in
                 guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == id && $0.deletedAt == nil }) else { throw LearningError.invalid("词条已移除。") }
-                _ = try resolveMeaning(entry, context: context)
+                _ = try resolveMeaning(entry, lookup: result, context: context)
             }
+            lookups[id] = result
         }
+        return lookups
     }
-    private func resolveMeaning(_ entry: VocabularyEntryRecord, context: ModelContext) throws -> DictionarySense {
-        let caches = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>()).filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
-        let decoded = try caches.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) }
-        let official = BilingualMeaningPolicy.trustedSenses(decoded, headword: entry.lemma)
+    private func resolveMeaning(_ entry: VocabularyEntryRecord, lookup: DictionaryResult, context: ModelContext) throws -> DictionarySense {
+        guard entry.lemma == lookup.headword else { throw LearningError.invalid("复习词条发生变化，请重新查词。") }
+        let official = lookup.reliableChinese
         let known = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).contains { $0.lemma == entry.lemma && $0.mdxSHA == BundledMDXDictionaryProvider.sourceSHA && $0.reliableChineseKnown }
         let aliases = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.canonicalEntryID == entry.entryID }.map(\.entryID)
         let identities = Set([entry.entryID] + aliases)
@@ -221,10 +222,9 @@ struct ReviewSessionView: Equatable {
         }
         throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "还没有可复习的英中义项。请补充词性、中文并确认学习义项，或本次延期。", canEditPersonal: true)
     }
-    private func insertExercises(session: ReviewSessionRecord, chosen: [VocabularyEntryRecord], clozeCount: Int, context: ModelContext) throws {
+    private func insertExercises(session: ReviewSessionRecord, chosen: [VocabularyEntryRecord], lookups: [String: DictionaryResult], clozeCount: Int, context: ModelContext) throws {
         let sources = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).sorted { ($0.createdAt, $0.contextID) < ($1.createdAt, $1.contextID) }
         let states = try context.fetch(FetchDescriptor<ReviewStateRecord>())
-        let providerCaches = try context.fetch(FetchDescriptor<DictionaryProviderCacheRecord>())
         let articles = try context.fetch(FetchDescriptor<ArticleRecord>())
         let ranked = chosen.filter { $0.lemma.filter(\.isLetter).count >= 3 }.sorted { a, b in
             let aLapses = states.first { $0.entryID == a.entryID }?.lapses ?? 0
@@ -235,7 +235,8 @@ struct ReviewSessionView: Equatable {
         if spellingIDs.isEmpty { session.clozeExclusionReason = "targets-under-three-letters" }
         var meanings = Set<String>()
         for (position, entry) in chosen.enumerated() {
-            let sense = try resolveMeaning(entry, context: context)
+            guard let lookup = lookups[entry.entryID] else { throw PersistenceError.integrity("缺少本次 MDX 复习查询结果") }
+            let sense = try resolveMeaning(entry, lookup: lookup, context: context)
             let aliases = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.canonicalEntryID == entry.entryID }.map(\.entryID)
             let identities = Set([entry.entryID] + aliases)
             let source = sources.first { identities.contains($0.entryID) }
@@ -276,8 +277,7 @@ struct ReviewSessionView: Equatable {
                 question.maskSeed = seed; question.sourceArticleID = source?.articleID; question.sourceContextID = source?.contextID; question.sourceSurface = projection.answer
                 question.sourceRangeLocation = projection.targetRange?.location; question.sourceRangeLength = projection.targetRange?.length
                 question.sourceExampleID = exampleID
-                let originalSenses = try providerCaches.filter { $0.lemma == entry.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }.flatMap { try JSONDecoder().decode([DictionarySense].self, from: $0.payload) }
-                question.acceptedAnswers = SpellingAnswerPolicy.variants(answer: projection.answer, lemma: entry.lemma, senses: originalSenses)
+                question.acceptedAnswers = SpellingAnswerPolicy.variants(answer: projection.answer, lemma: entry.lemma, senses: lookup.senses)
                 context.insert(question)
             }
         }
@@ -331,7 +331,8 @@ struct ReviewSessionView: Equatable {
         guard dailyLimit > 0, pairCount > 0, clozeCount > 0 else { throw LearningError.invalid("额外复习题量无效。") }
         let selected = try writer.read { context in Array(try extraEligible(in: context, at: now).prefix(min(dailyLimit, pairCount))).map { ($0.entryID, $0.lemma) } }
         guard !selected.isEmpty else { return nil }
-        try await primeMeanings(selected, at: now)
+        let lookups = try await primeMeanings(selected, at: now)
+        try Task.checkCancellation()
         let id: String = try writer.write {
             let context = writer.context
             try requireExtraAllowed(context: context, at: now)
@@ -340,7 +341,7 @@ struct ReviewSessionView: Equatable {
             guard chosen.map(\.entryID) == selected.map(\.0) else { throw LearningError.invalid("词汇队列已变化，请重试额外复习。") }
             let session = ReviewSessionRecord(cycleID: UUID(), entries: chosen.map(\.entryID), at: now, limit: dailyLimit)
             session.purpose = "extra"; session.cycleID = "extra|" + session.sessionID
-            context.insert(session); try insertExercises(session: session, chosen: chosen, clozeCount: clozeCount, context: context)
+            context.insert(session); try insertExercises(session: session, chosen: chosen, lookups: lookups, clozeCount: clozeCount, context: context)
             return session.sessionID
         }
         return try extraSession(sessionID: id)

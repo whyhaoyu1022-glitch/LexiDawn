@@ -28,15 +28,7 @@ struct VocabularyListView: View {
                 if items.isEmpty { ContentUnavailableView("还没有匹配的生词", systemImage: "text.book.closed", description: Text("在正文点击英文单词，或在查词浮窗手动加入。")) }
                 ForEach(items) { item in
                     NavigationLink { VocabularyDetailView(item: item, learning: learning) } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(item.lemma).font(.headline)
-                            if let ipa = item.ipa { Text(ipa).font(.caption.monospaced()) }
-                            if !item.partsOfSpeech.isEmpty { Text(item.partsOfSpeech.map { BilingualMeaningPolicy.partName($0) }.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
-                            if let meaning = item.primaryChinese { Text(meaning).font(.subheadline).lineLimit(2) }
-                            Text("\(item.type == "word" ? "单词" : "短语") · \(item.addedAt.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.secondary)
-                            if let due = item.dueAt { Text("下次复习：" + due.formatted(date: .abbreviated, time: .shortened)).font(.caption) }
-                            if let last = item.lastReviewedAt { Text("最近复习：" + last.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary) }
-                        }
+                        VocabularyListRow(item: item, dictionary: learning.dictionary)
                     }.accessibilityIdentifier("vocabulary-entry-\(item.lemma)").swipeActions { Button("移除", role: .destructive) { removing = item } }
                 }
                 if let error { Text(error).foregroundStyle(.red); Button("重新读取", action: load) }
@@ -69,6 +61,33 @@ struct VocabularyListView: View {
         guard !exports.isBusy else { return }
         do { try exports.prepare(learning.vocabulary.export(format, at: Date()), format: format); error = nil }
         catch { self.error = error.localizedDescription }
+    }
+}
+
+private struct VocabularyListRow: View {
+    let item: VocabularyItem
+    let dictionary: DictionaryLookupService
+    @State private var meaning: DictionarySense?
+    @State private var lookupError: String?
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(item.lemma).font(.headline)
+            if let ipa = meaning?.ipa { Text(ipa).font(.caption.monospaced()) }
+            if let part = meaning?.partOfSpeech { Text(BilingualMeaningPolicy.partName(part)).font(.caption).foregroundStyle(.secondary) }
+            if let meaning { Text(meaning.zh).font(.subheadline).lineLimit(2) }
+            if let lookupError { Text(lookupError).font(.caption).foregroundStyle(.secondary).lineLimit(2) }
+            Text("\(item.type == "word" ? "单词" : "短语") · \(item.addedAt.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.secondary)
+            if let due = item.dueAt { Text("下次复习：" + due.formatted(date: .abbreviated, time: .shortened)).font(.caption) }
+            if let last = item.lastReviewedAt { Text("最近复习：" + last.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary) }
+        }.task(id: item) {
+            meaning = nil; lookupError = nil
+            do {
+                let result = try await dictionary.previewCanonical(item.lemma)
+                try Task.checkCancellation()
+                meaning = result.quickSenses.first
+            } catch is CancellationError { }
+            catch { if !Task.isCancelled { lookupError = "释义暂不可用，打开词条可重试" } }
+        }
     }
 }
 
@@ -317,7 +336,7 @@ struct VocabularyDetailView: View {
     }
     private var displayedIPA: String? {
         if let result = displayedResult { return DictionaryPresentation.sharedIPA(result.senses + result.personalSenses) }
-        return DictionaryPresentation.sharedIPA(item.dictionarySenses)
+        return nil
     }
     var body: some View {
         ScrollView {
@@ -465,7 +484,7 @@ struct VocabularyDetailView: View {
         catch { result = nil; dictionaryError = error.localizedDescription; annotation.refreshPolicy() }
     }
     private func choose(_ sense: DictionarySense) {
-        do { try learning.vocabulary.confirmReviewMeaning(entryID: item.id, sourceSenseID: sense.id); chosenMeaningText = sense.zh; choosingMeaning = false; learning.changed() }
+        do { try learning.vocabulary.confirmReviewMeaning(entryID: item.id, sourceSenseID: sense.id, lookup: result); chosenMeaningText = sense.zh; choosingMeaning = false; learning.changed() }
         catch { annotation.error = error.localizedDescription }
     }
     private func choosePersonal(_ senseID: String) {

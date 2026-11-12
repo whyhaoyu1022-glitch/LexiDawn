@@ -263,6 +263,12 @@ extension AppStartup {
             let title = scenario == "round4-reader" ? "A complete original English title that must wrap naturally on a small phone and remain readable after every rotation without hiding the article below it" : "Explicit Round 4 original UI fixture"
             let sourceURL = scenario == "round4-mdx-contexts" ? "https://example.com/owned-round4-contexts" : ""
             let id = try learning.content.importArticle(.init(title: title, body: firstParagraph + "\n\n" + paragraphs, source: "Original UI test author · fixture", originalURL: sourceURL, topic: "Science", rightsConfirmed: true), at: Date())
+            if scenario == "round4-mdx-review" {
+                let body = try learning.content.read(articleID: id, at: Date()).body
+                for token in EnglishTokenizer.tokens(in: body) where ["nod", "book"].contains(token.surface) {
+                    _ = try learning.vocabulary.add(token: token, articleID: id, autoAdd: false, explicit: true, at: Date())
+                }
+            }
             if ["round4-review", "round4-missing", "round4-note-failed"].contains(scenario) {
                 let body = try learning.content.read(articleID: id, at: Date()).body
                 let words = scenario == "round4-review" ? [("nod", "点头", "verb"), ("book", "书", "noun"), ("provide", "提供", "verb")] : [("luminora", "个人测试词", "noun")]
