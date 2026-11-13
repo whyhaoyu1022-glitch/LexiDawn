@@ -1,3 +1,15 @@
+## 2026-11-13 · 全量原生回归通过
+
+代码 `4be478e2e778bea4da2095e65a637e5df117f7be` 的 [全量 CI](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43420154858) 已成功完成。iOS 26.5 Simulator 使用 Xcode 26.6，Debug 全部目标和 Release 均通过。236/236 XCTest 通过，包含 27 项 MDX 与 15 项文章网络测试。iPhone 17 Pro 65/65、iPhone SE 第三代 7/7、iPhone 17 Pro Max 3/3 XCUITest 通过。
+
+CI 核验并发布同提交的 413 张原生 PNG，21 个反馈项和 24 个功能均有截图关联。138 项历史要求、设备专项和 10 家真实来源的首段、滚动、末段证据门禁通过。真实 MDX 首屏、动词中段和短语屏有不同 SHA-256。浅色、深色和暖纸色的首中末也分别生成了三张不同的原生截图。[下载原生截图 ZIP 与索引](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43420154858/artifacts/14037751591) · [原始附件 ZIP](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43420154858/artifacts/14037456653)。
+
+144 条验收项均有已执行通过的候选测试，79 条在本次原生截图清单中有直接编号关联。详细记录包括全部 24 个测试族。逐条独立验收及 iOS 27 真机仍开放。上传的 21 张原图和三张参考图已在 `1859403` 的逐图记录中复核；当前 CI 的下载包包含本次 Simulator 原图及索引，单独的原反馈合并包未能在本次构建完成。
+
+[未签名 IPA 0.1.0（180）](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43420154858/artifacts/14032474473) 为 arm64、最低 iOS 27.0，43,935,410 字节，IPA SHA-256 为 `5611df617771100804133aa1333936873c014e4d93f5b26abb023cdf19bc7b5d`。CI 校验 App 与 IPA 中的 MDX 均为 38,774,534 字节，SHA-256 为 `095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443`。
+
+[交付报告](docs/reviews/round-4-final-delivery.md) · [144 条逐项证据](docs/reviews/round-4-native-evidence-4be478e.json)。
+
 ## 2026-11-13 · 发现来源结果按钮
 
 [专项 43415739044](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43415739044) 的原生失败图显示真实入库 29 篇、检查 13/13 个来源，结果按钮点击后仍收起，随后找不到来源行。现在按钮具备整行 44 pt 点击区与明确展开状态，专项验证实际展开和真实结果行可见，再继续五家来源的筛选和完整阅读。只复跑失败的真实来源路径。

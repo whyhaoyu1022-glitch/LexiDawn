@@ -1,0 +1,1878 @@
+{
+  "sourceCommit": "4be478e2e778bea4da2095e65a637e5df117f7be",
+  "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43420154858",
+  "runtime": "iOS 26.5 Simulator, Xcode 26.6",
+  "summary": {
+    "criteria": 144,
+    "candidateTestCovered": 144,
+    "screenshotCovered": 79,
+    "testFamilies": 24,
+    "uniqueNativeTests": 301
+  },
+  "interpretation": "Recorded methods passed and screenshot files exist for this commit. Associations are not criterion-by-criterion acceptance or iOS 27 device verification.",
+  "rows": [
+    {
+      "acceptanceID": "R4-A01-01",
+      "requirementID": "R4-F01",
+      "testSuiteID": "R4-T01",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes",
+        "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-S01-iPhone18-1.png",
+        "R4-P01-today-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A01-02",
+      "requirementID": "R4-F01",
+      "testSuiteID": "R4-T01",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes",
+        "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P01-today-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A01-03",
+      "requirementID": "R4-F01",
+      "testSuiteID": "R4-T01",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes",
+        "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A01-04",
+      "requirementID": "R4-F01",
+      "testSuiteID": "R4-T01",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes",
+        "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A01-05",
+      "requirementID": "R4-F01",
+      "testSuiteID": "R4-T01",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes",
+        "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A02-01",
+      "requirementID": "R4-F02",
+      "testSuiteID": "R4-T02",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore",
+        "LexiDawnUITests/Round3UITests/testLiveMultipleSourcesLibraryFiltersAndCompleteLocalReaderEvidence"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-S01-iPhone18-1.png",
+        "R4-P02-actual-sources-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A02-02",
+      "requirementID": "R4-F02",
+      "testSuiteID": "R4-T02",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A02-03",
+      "requirementID": "R4-F02",
+      "testSuiteID": "R4-T02",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A02-04",
+      "requirementID": "R4-F02",
+      "testSuiteID": "R4-T02",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A02-05",
+      "requirementID": "R4-F02",
+      "testSuiteID": "R4-T02",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A03-01",
+      "requirementID": "R4-F03",
+      "testSuiteID": "R4-T03",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P03-inventory-summary-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A03-02",
+      "requirementID": "R4-F03",
+      "testSuiteID": "R4-T03",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-S01-iPhone18-1.png",
+        "R4-P03-inventory-summary-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A03-03",
+      "requirementID": "R4-F03",
+      "testSuiteID": "R4-T03",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A03-04",
+      "requirementID": "R4-F03",
+      "testSuiteID": "R4-T03",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A03-05",
+      "requirementID": "R4-F03",
+      "testSuiteID": "R4-T03",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A04-01",
+      "requirementID": "R4-F04",
+      "testSuiteID": "R4-T04",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated",
+        "LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-L01-iPhone14-6.png",
+        "R3-L01-iPhone18-1.png",
+        "R4-P04-counts-system-portrait-iPhone18-1.png",
+        "R4-P04-favorites-system-portrait-iPhone18-1.png",
+        "R4-P04-later-empty-system-portrait-iPhone18-1.png",
+        "R4-P04-library-scopes-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A04-02",
+      "requirementID": "R4-F04",
+      "testSuiteID": "R4-T04",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated",
+        "LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-L01-iPhone14-6.png",
+        "R3-L01-iPhone18-1.png",
+        "R4-P04-counts-system-portrait-iPhone18-1.png",
+        "R4-P04-library-scopes-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A04-03",
+      "requirementID": "R4-F04",
+      "testSuiteID": "R4-T04",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated",
+        "LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-L04-iPhone14-6.png",
+        "R3-L04-iPhone18-1.png",
+        "R4-P04-favorites-system-portrait-iPhone18-1.png",
+        "R4-P04-later-empty-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A04-04",
+      "requirementID": "R4-F04",
+      "testSuiteID": "R4-T04",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated",
+        "LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A04-05",
+      "requirementID": "R4-F04",
+      "testSuiteID": "R4-T04",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated",
+        "LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A05-01",
+      "requirementID": "R4-F05",
+      "testSuiteID": "R4-T05",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P05-progress-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A05-02",
+      "requirementID": "R4-F05",
+      "testSuiteID": "R4-T05",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P02-actual-sources-iPhone18-1.png",
+        "R4-P05-progress-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A05-03",
+      "requirementID": "R4-F05",
+      "testSuiteID": "R4-T05",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-S00-iPhone18-1.png",
+        "R4-P05-progress-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A05-04",
+      "requirementID": "R4-F05",
+      "testSuiteID": "R4-T05",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P05-cancelled-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A05-05",
+      "requirementID": "R4-F05",
+      "testSuiteID": "R4-T05",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A06-01",
+      "requirementID": "R4-F06",
+      "testSuiteID": "R4-T06",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testReaderCompleteTitleTenRotationsAndThreeCompactThemes"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P06-title-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A06-02",
+      "requirementID": "R4-F06",
+      "testSuiteID": "R4-T06",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testReaderCompleteTitleTenRotationsAndThreeCompactThemes"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P06-title-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A06-03",
+      "requirementID": "R4-F06",
+      "testSuiteID": "R4-T06",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testReaderCompleteTitleTenRotationsAndThreeCompactThemes"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A06-04",
+      "requirementID": "R4-F06",
+      "testSuiteID": "R4-T06",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testReaderCompleteTitleTenRotationsAndThreeCompactThemes"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A06-05",
+      "requirementID": "R4-F06",
+      "testSuiteID": "R4-T06",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testReaderCompleteTitleTenRotationsAndThreeCompactThemes"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P06-landscape-system-landscape-iPhone18-1.png",
+        "R4-P06-theme-dark-dark-portrait-iPhone18-1.png",
+        "R4-P06-theme-light-light-portrait-iPhone18-1.png",
+        "R4-P06-theme-paper-paper-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A07-01",
+      "requirementID": "R4-F07",
+      "testSuiteID": "R4-T07",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testMediaFallbackExcludedWithoutDeletingJavaScriptReporting",
+        "LexiDawnTests/Round4Tests/testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets",
+        "LexiDawnUITests/Round3UITests/testStructuredOriginalReaderShowsHeadingsQuoteAndList"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P07-legacy-dw-projection-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A07-02",
+      "requirementID": "R4-F07",
+      "testSuiteID": "R4-T07",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testMediaFallbackExcludedWithoutDeletingJavaScriptReporting",
+        "LexiDawnTests/Round4Tests/testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets",
+        "LexiDawnUITests/Round3UITests/testStructuredOriginalReaderShowsHeadingsQuoteAndList"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-R10-iPhone18-1.png",
+        "R3-R11-iPhone18-1.png",
+        "R4-P07-cleaned-structure-iPhone18-1.png",
+        "R4-P07-legacy-dw-projection-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A07-03",
+      "requirementID": "R4-F07",
+      "testSuiteID": "R4-T07",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testMediaFallbackExcludedWithoutDeletingJavaScriptReporting",
+        "LexiDawnTests/Round4Tests/testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets",
+        "LexiDawnUITests/Round3UITests/testStructuredOriginalReaderShowsHeadingsQuoteAndList"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-R11-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A07-04",
+      "requirementID": "R4-F07",
+      "testSuiteID": "R4-T07",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testMediaFallbackExcludedWithoutDeletingJavaScriptReporting",
+        "LexiDawnTests/Round4Tests/testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets",
+        "LexiDawnUITests/Round3UITests/testStructuredOriginalReaderShowsHeadingsQuoteAndList"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A07-05",
+      "requirementID": "R4-F07",
+      "testSuiteID": "R4-T07",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testMediaFallbackExcludedWithoutDeletingJavaScriptReporting",
+        "LexiDawnTests/Round4Tests/testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets",
+        "LexiDawnUITests/Round3UITests/testStructuredOriginalReaderShowsHeadingsQuoteAndList"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A08-01",
+      "requirementID": "R4-F08",
+      "testSuiteID": "R4-T08",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer",
+        "LexiDawnUITests/Round4UITests/testPreflightCancelAndExplicitAllDeferralDoNotPretendAnswers"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P08-preflight-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A08-02",
+      "requirementID": "R4-F08",
+      "testSuiteID": "R4-T08",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer",
+        "LexiDawnUITests/Round4UITests/testPreflightCancelAndExplicitAllDeferralDoNotPretendAnswers"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P08-preflight-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A08-03",
+      "requirementID": "R4-F08",
+      "testSuiteID": "R4-T08",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer",
+        "LexiDawnUITests/Round4UITests/testPreflightCancelAndExplicitAllDeferralDoNotPretendAnswers"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P08-confirm-deferral-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A08-04",
+      "requirementID": "R4-F08",
+      "testSuiteID": "R4-T08",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer",
+        "LexiDawnUITests/Round4UITests/testPreflightCancelAndExplicitAllDeferralDoNotPretendAnswers"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P08-confirm-deferral-system-portrait-iPhone18-1.png",
+        "R4-P08-deferred-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A08-05",
+      "requirementID": "R4-F08",
+      "testSuiteID": "R4-T08",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testMissingMeaningPreflightAndExplicitDeferralAreNotEmptyQueueOrAnswer",
+        "LexiDawnUITests/Round4UITests/testPreflightCancelAndExplicitAllDeferralDoNotPretendAnswers"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A09-01",
+      "requirementID": "R4-F09",
+      "testSuiteID": "R4-T09",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS",
+        "LexiDawnUITests/Round4UITests/testEnglishOnlyAllowsStructuredPersonalAutosaveAndNotesRestore",
+        "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-V06-iPhone18-1.png",
+        "R4-P09-keyboard-system-portrait-iPhone18-1.png",
+        "R4-P09-restored-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A09-02",
+      "requirementID": "R4-F09",
+      "testSuiteID": "R4-T09",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS",
+        "LexiDawnUITests/Round4UITests/testEnglishOnlyAllowsStructuredPersonalAutosaveAndNotesRestore",
+        "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A09-03",
+      "requirementID": "R4-F09",
+      "testSuiteID": "R4-T09",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS",
+        "LexiDawnUITests/Round4UITests/testEnglishOnlyAllowsStructuredPersonalAutosaveAndNotesRestore",
+        "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P09-keyboard-system-portrait-iPhone18-1.png",
+        "R4-P09-restored-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A09-04",
+      "requirementID": "R4-F09",
+      "testSuiteID": "R4-T09",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS",
+        "LexiDawnUITests/Round4UITests/testEnglishOnlyAllowsStructuredPersonalAutosaveAndNotesRestore",
+        "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-V05-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A09-05",
+      "requirementID": "R4-F09",
+      "testSuiteID": "R4-T09",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS",
+        "LexiDawnUITests/Round4UITests/testEnglishOnlyAllowsStructuredPersonalAutosaveAndNotesRestore",
+        "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A09-06",
+      "requirementID": "R4-F09",
+      "testSuiteID": "R4-T09",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testCanonicalFormsKeepMonthModalAndNonPluralS",
+        "LexiDawnUITests/Round4UITests/testEnglishOnlyAllowsStructuredPersonalAutosaveAndNotesRestore",
+        "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A10-01",
+      "requirementID": "R4-F10",
+      "testSuiteID": "R4-T10",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities",
+        "LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A10-02",
+      "requirementID": "R4-F10",
+      "testSuiteID": "R4-T10",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities",
+        "LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A10-03",
+      "requirementID": "R4-F10",
+      "testSuiteID": "R4-T10",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities",
+        "LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A10-04",
+      "requirementID": "R4-F10",
+      "testSuiteID": "R4-T10",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities",
+        "LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates",
+        "LexiDawnUITests/Round4UITests/testActualMDXCompactGlossIsTheMatchingAnswerForTheSameContext"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A10-05",
+      "requirementID": "R4-F10",
+      "testSuiteID": "R4-T10",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities",
+        "LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P10-initial-system-portrait-iPhone18-1.png",
+        "R4-P10-multiple-lines-system-portrait-iPhone18-1.png",
+        "R4-P10-one-line-system-portrait-iPhone18-1.png",
+        "R4-P10-real-MDX-connection-system-portrait-iPhone18-1.png",
+        "R4-P10-restored-system-portrait-iPhone18-1.png",
+        "R4-P10-selected-system-portrait-iPhone18-1.png",
+        "R4-P10-wrong-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A11-01",
+      "requirementID": "R4-F11",
+      "testSuiteID": "R4-T11",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testSeededMaskIsStableDistributedAndRetainsSeparators",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A11-02",
+      "requirementID": "R4-F11",
+      "testSuiteID": "R4-T11",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testSeededMaskIsStableDistributedAndRetainsSeparators",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-M07-iPhone14-6.png",
+        "R3-M07-iPhone18-1.png",
+        "R3-M07-iPhone18-2.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A11-03",
+      "requirementID": "R4-F11",
+      "testSuiteID": "R4-T11",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testSeededMaskIsStableDistributedAndRetainsSeparators",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A11-04",
+      "requirementID": "R4-F11",
+      "testSuiteID": "R4-T11",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testSeededMaskIsStableDistributedAndRetainsSeparators",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-M07-iPhone14-6.png",
+        "R3-M07-iPhone18-1.png",
+        "R3-M07-iPhone18-2.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A11-05",
+      "requirementID": "R4-F11",
+      "testSuiteID": "R4-T11",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testSeededMaskIsStableDistributedAndRetainsSeparators",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A12-01",
+      "requirementID": "R4-F12",
+      "testSuiteID": "R4-T12",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-legacy-round2-two-stage-review-saved-iPhone18-1.png",
+        "R4-P12-complete-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A12-02",
+      "requirementID": "R4-F12",
+      "testSuiteID": "R4-T12",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P12-records-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A12-03",
+      "requirementID": "R4-F12",
+      "testSuiteID": "R4-T12",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P12-complete-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A12-04",
+      "requirementID": "R4-F12",
+      "testSuiteID": "R4-T12",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A12-05",
+      "requirementID": "R4-F12",
+      "testSuiteID": "R4-T12",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-legacy-round2-two-stage-review-saved-iPhone18-1.png",
+        "R4-P12-complete-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A13-01",
+      "requirementID": "R4-F13",
+      "testSuiteID": "R4-T13",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testExploreCardsFavoritesAndConfirmedResetPreserveNativeReadingFlow"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-X01-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A13-02",
+      "requirementID": "R4-F13",
+      "testSuiteID": "R4-T13",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testExploreCardsFavoritesAndConfirmedResetPreserveNativeReadingFlow"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-X01-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A13-03",
+      "requirementID": "R4-F13",
+      "testSuiteID": "R4-T13",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testExploreCardsFavoritesAndConfirmedResetPreserveNativeReadingFlow"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A13-04",
+      "requirementID": "R4-F13",
+      "testSuiteID": "R4-T13",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testExploreCardsFavoritesAndConfirmedResetPreserveNativeReadingFlow"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-X02-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A13-05",
+      "requirementID": "R4-F13",
+      "testSuiteID": "R4-T13",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testExploreCardsFavoritesAndConfirmedResetPreserveNativeReadingFlow"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A14-01",
+      "requirementID": "R4-F14",
+      "testSuiteID": "R4-T14",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-D67-iPhone18-1.png",
+        "R4-P14-contexts-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A14-02",
+      "requirementID": "R4-F14",
+      "testSuiteID": "R4-T14",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary",
+        "LexiDawnTests/Round4Tests/testVocabularyDisplayGroupsPreserveDistinctSentencesAndSeparateDictionaryEvidence",
+        "LexiDawnUITests/Round4UITests/testTwoLookupsFromOneArticleRetainBothSentencesAndOneSource"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-D67-iPhone18-1.png",
+        "R4-P14-contexts-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A14-03",
+      "requirementID": "R4-F14",
+      "testSuiteID": "R4-T14",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A14-04",
+      "requirementID": "R4-F14",
+      "testSuiteID": "R4-T14",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-D67-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A14-05",
+      "requirementID": "R4-F14",
+      "testSuiteID": "R4-T14",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A15-01",
+      "requirementID": "R4-F15",
+      "testSuiteID": "R4-T15",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-D41-iPhone18-1.png",
+        "R4-P15-merged-native-detail-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A15-02",
+      "requirementID": "R4-F15",
+      "testSuiteID": "R4-T15",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock",
+        "LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-D41-iPhone18-1.png",
+        "R4-P15-merged-native-detail-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A15-03",
+      "requirementID": "R4-F15",
+      "testSuiteID": "R4-T15",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A15-04",
+      "requirementID": "R4-F15",
+      "testSuiteID": "R4-T15",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A15-05",
+      "requirementID": "R4-F15",
+      "testSuiteID": "R4-T15",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A16-01",
+      "requirementID": "R4-F16",
+      "testSuiteID": "R4-T16",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+        "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors",
+        "LexiDawnUITests/Round4UITests/testActualOfflineSearchCreatesStructuredPersonalEntryAndRestoresAfterRestart"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-D01-iPhone14-6.png",
+        "R3-D01-iPhone18-1.png",
+        "R4-F23-real-search-system-portrait-iPhone18-1.png",
+        "R4-P16-need-detail-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A16-02",
+      "requirementID": "R4-F16",
+      "testSuiteID": "R4-T16",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+        "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F23-round4-mdx-corrupt-system-portrait-iPhone18-1.png",
+        "R4-F23-round4-mdx-missing-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A16-03",
+      "requirementID": "R4-F16",
+      "testSuiteID": "R4-T16",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+        "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A16-04",
+      "requirementID": "R4-F16",
+      "testSuiteID": "R4-T16",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+        "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P16-need-detail-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A16-05",
+      "requirementID": "R4-F16",
+      "testSuiteID": "R4-T16",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+        "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F23-real-English-detail-system-portrait-iPhone18-1.png",
+        "R4-F23-real-English-only-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A16-06",
+      "requirementID": "R4-F16",
+      "testSuiteID": "R4-T16",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testActualCompiledAppContainsApprovedMDX",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXNodHasMultiplePartsChineseAndPairedExamples",
+        "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A17-01",
+      "requirementID": "R4-F17",
+      "testSuiteID": "R4-T17",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationsLockAndRequireExplicitAddAfterDetail",
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationLoadingEmptyAndFailureStates"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-N02-iPhone18-1.png",
+        "R4-P17-actual-recommendations-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A17-02",
+      "requirementID": "R4-F17",
+      "testSuiteID": "R4-T17",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationsLockAndRequireExplicitAddAfterDetail",
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationLoadingEmptyAndFailureStates"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-N03-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A17-03",
+      "requirementID": "R4-F17",
+      "testSuiteID": "R4-T17",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationsLockAndRequireExplicitAddAfterDetail",
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationLoadingEmptyAndFailureStates"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-N03-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A17-04",
+      "requirementID": "R4-F17",
+      "testSuiteID": "R4-T17",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationsLockAndRequireExplicitAddAfterDetail",
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationLoadingEmptyAndFailureStates"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-N02-iPhone18-1.png",
+        "R4-P17-actual-recommendations-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A17-05",
+      "requirementID": "R4-F17",
+      "testSuiteID": "R4-T17",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationsLockAndRequireExplicitAddAfterDetail",
+        "LexiDawnUITests/Round3UITests/testVocabularyRecommendationLoadingEmptyAndFailureStates"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A18-01",
+      "requirementID": "R4-F18",
+      "testSuiteID": "R4-T18",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-G10-iPhone18-1.png",
+        "R4-P18-keyboard-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A18-02",
+      "requirementID": "R4-F18",
+      "testSuiteID": "R4-T18",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P18-incorrect-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A18-03",
+      "requirementID": "R4-F18",
+      "testSuiteID": "R4-T18",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P18-incorrect-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A18-04",
+      "requirementID": "R4-F18",
+      "testSuiteID": "R4-T18",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P18-keyboard-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A18-05",
+      "requirementID": "R4-F18",
+      "testSuiteID": "R4-T18",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round3UITests/testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A19-01",
+      "requirementID": "R4-F19",
+      "testSuiteID": "R4-T19",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P19-revealed-0-system-portrait-iPhone18-1.png",
+        "R4-P19-revealed-1-system-portrait-iPhone18-1.png",
+        "R4-P19-revealed-2-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A19-02",
+      "requirementID": "R4-F19",
+      "testSuiteID": "R4-T19",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P19-revealed-0-system-portrait-iPhone18-1.png",
+        "R4-P19-revealed-1-system-portrait-iPhone18-1.png",
+        "R4-P19-revealed-2-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A19-03",
+      "requirementID": "R4-F19",
+      "testSuiteID": "R4-T19",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P12-records-system-portrait-iPhone18-1.png",
+        "R4-P19-revealed-0-system-portrait-iPhone18-1.png",
+        "R4-P19-revealed-1-system-portrait-iPhone18-1.png",
+        "R4-P19-revealed-2-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A19-04",
+      "requirementID": "R4-F19",
+      "testSuiteID": "R4-T19",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A19-05",
+      "requirementID": "R4-F19",
+      "testSuiteID": "R4-T19",
+      "executedPassingCandidates": [
+        "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A20-01",
+      "requirementID": "R4-F20",
+      "testSuiteID": "R4-T20",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P20-autosave-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A20-02",
+      "requirementID": "R4-F20",
+      "testSuiteID": "R4-T20",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A20-03",
+      "requirementID": "R4-F20",
+      "testSuiteID": "R4-T20",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A20-04",
+      "requirementID": "R4-F20",
+      "testSuiteID": "R4-T20",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A20-05",
+      "requirementID": "R4-F20",
+      "testSuiteID": "R4-T20",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P20-about-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A21-01",
+      "requirementID": "R4-F21",
+      "testSuiteID": "R4-T21",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation",
+        "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P21-accessibility-compact-system-portrait-iPhone18-1.png",
+        "R4-P21-compact-system-portrait-iPhone18-1.png",
+        "R4-P21-mdx-review-gloss-system-portrait-iPhone18-1.png",
+        "R4-P21-real-MDX-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A21-02",
+      "requirementID": "R4-F21",
+      "testSuiteID": "R4-T21",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation",
+        "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists",
+        "LexiDawnUITests/Round4UITests/testActualMDXCompactGlossIsTheMatchingAnswerForTheSameContext"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P21-accessibility-compact-system-portrait-iPhone18-1.png",
+        "R4-P21-compact-system-portrait-iPhone18-1.png",
+        "R4-P21-mdx-review-gloss-system-portrait-iPhone18-1.png",
+        "R4-P21-real-MDX-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A21-03",
+      "requirementID": "R4-F21",
+      "testSuiteID": "R4-T21",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation",
+        "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A21-04",
+      "requirementID": "R4-F21",
+      "testSuiteID": "R4-T21",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation",
+        "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P21-restored-article-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A21-05",
+      "requirementID": "R4-F21",
+      "testSuiteID": "R4-T21",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation",
+        "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A21-06",
+      "requirementID": "R4-F21",
+      "testSuiteID": "R4-T21",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation",
+        "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A22-01",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-D41-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A22-02",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F22-real-middle-system-portrait-iPhone18-1.png",
+        "R4-F22-real-top-system-portrait-iPhone18-1.png",
+        "R4-F22-reference-middle-dark-dark-portrait-iPhone18-1.png",
+        "R4-F22-reference-middle-light-light-portrait-iPhone18-1.png",
+        "R4-F22-reference-middle-paper-paper-portrait-iPhone18-1.png",
+        "R4-F22-reference-middle-system-portrait-iPhone18-1.png",
+        "R4-F22-reference-top-dark-dark-portrait-iPhone18-1.png",
+        "R4-F22-reference-top-light-light-portrait-iPhone18-1.png",
+        "R4-F22-reference-top-paper-paper-portrait-iPhone18-1.png",
+        "R4-F22-reference-top-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A22-03",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F22-real-top-system-portrait-iPhone18-1.png",
+        "R4-F22-reference-top-dark-dark-portrait-iPhone18-1.png",
+        "R4-F22-reference-top-light-light-portrait-iPhone18-1.png",
+        "R4-F22-reference-top-paper-paper-portrait-iPhone18-1.png",
+        "R4-F22-reference-top-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A22-04",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F22-partial-system-portrait-iPhone18-1.png",
+        "R4-F22-real-middle-system-portrait-iPhone18-1.png",
+        "R4-F22-real-top-system-portrait-iPhone18-1.png",
+        "R4-F22-reference-middle-dark-dark-portrait-iPhone18-1.png",
+        "R4-F22-reference-middle-light-light-portrait-iPhone18-1.png",
+        "R4-F22-reference-middle-paper-paper-portrait-iPhone18-1.png",
+        "R4-F22-reference-middle-system-portrait-iPhone18-1.png",
+        "R4-F22-reference-top-dark-dark-portrait-iPhone18-1.png",
+        "R4-F22-reference-top-light-light-portrait-iPhone18-1.png",
+        "R4-F22-reference-top-paper-paper-portrait-iPhone18-1.png",
+        "R4-F22-reference-top-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A22-05",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F22-real-internal-link-system-portrait-iPhone18-1.png",
+        "R4-F22-real-phrases-system-portrait-iPhone18-1.png",
+        "R4-F22-reference-end-dark-dark-portrait-iPhone18-1.png",
+        "R4-F22-reference-end-light-light-portrait-iPhone18-1.png",
+        "R4-F22-reference-end-paper-paper-portrait-iPhone18-1.png",
+        "R4-F22-reference-end-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A22-06",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A22-07",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A22-08",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A22-09",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F22-real-internal-link-system-portrait-iPhone18-1.png",
+        "R4-F22-real-phrases-system-portrait-iPhone18-1.png",
+        "R4-F22-reference-end-dark-dark-portrait-iPhone18-1.png",
+        "R4-F22-reference-end-light-light-portrait-iPhone18-1.png",
+        "R4-F22-reference-end-paper-paper-portrait-iPhone18-1.png",
+        "R4-F22-reference-end-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A22-10",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F22-accessibility-landscape-system-landscape-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A22-11",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A22-12",
+      "requirementID": "R4-F22",
+      "testSuiteID": "R4-T22",
+      "executedPassingCandidates": [
+        "LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont",
+        "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F22-all-failed-system-portrait-iPhone18-1.png",
+        "R4-F22-empty-system-portrait-iPhone18-1.png",
+        "R4-F22-loading-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A23-01",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A23-02",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F22-system-pronunciation-system-portrait-iPhone18-1.png",
+        "R4-F23-real-search-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A23-03",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A23-04",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F23-real-search-system-portrait-iPhone18-1.png",
+        "R4-F23-reliable-lock-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A23-05",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F23-round4-mdx-corrupt-system-portrait-iPhone18-1.png",
+        "R4-F23-round4-mdx-missing-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A23-06",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F23-real-notFound-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A23-07",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F23-real-personal-reading-system-portrait-iPhone18-1.png",
+        "R4-F23-real-personal-restart-system-portrait-iPhone18-1.png",
+        "R4-F23-real-personal-saved-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A23-08",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-V05-iPhone18-1.png",
+        "R3-V06-iPhone18-1.png",
+        "R4-F23-real-personal-reading-system-portrait-iPhone18-1.png",
+        "R4-F23-real-personal-restart-system-portrait-iPhone18-1.png",
+        "R4-F23-real-personal-saved-system-portrait-iPhone18-1.png",
+        "R4-P09-keyboard-system-portrait-iPhone18-1.png",
+        "R4-P09-restored-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A23-09",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A23-10",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A23-11",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F23-English-only-system-portrait-iPhone18-1.png",
+        "R4-F23-real-English-detail-system-portrait-iPhone18-1.png",
+        "R4-F23-real-English-only-system-portrait-iPhone18-1.png",
+        "R4-F23-real-personal-reading-system-portrait-iPhone18-1.png",
+        "R4-F23-real-personal-restart-system-portrait-iPhone18-1.png",
+        "R4-F23-real-personal-saved-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A23-12",
+      "requirementID": "R4-F23",
+      "testSuiteID": "R4-T23",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testRepositoryRequiresSuccessfulMDXBeforePersonalWriteAndRejectsChinese",
+        "LexiDawnTests/MDXDictionaryTests/testPreviousParserCacheSuppliesOnlyRecordHintAndCannotUnlockKnownChinese",
+        "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A24-01",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask",
+        "LexiDawnUITests/Round4UITests/testActualMDXCompactGlossIsTheMatchingAnswerForTheSameContext"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F22-real-internal-link-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A24-02",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-F22-real-internal-link-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A24-03",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A24-04",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A24-05",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A24-06",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A24-07",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask",
+        "LexiDawnTests/MDXDictionaryTests/testRealOfflineServiceNormalizesUsersAndVisitsWithoutNetworkProviders"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A24-08",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "matchedScreenshotFiles": [
+        "R4-P10-initial-system-portrait-iPhone18-1.png",
+        "R4-P10-multiple-lines-system-portrait-iPhone18-1.png",
+        "R4-P10-one-line-system-portrait-iPhone18-1.png",
+        "R4-P10-real-MDX-connection-system-portrait-iPhone18-1.png",
+        "R4-P10-restored-system-portrait-iPhone18-1.png",
+        "R4-P10-selected-system-portrait-iPhone18-1.png",
+        "R4-P10-wrong-system-portrait-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A24-09",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "matchedScreenshotFiles": [
+        "R3-G10-iPhone18-1.png"
+      ],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A24-10",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A24-11",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    },
+    {
+      "acceptanceID": "R4-A24-12",
+      "requirementID": "R4-F24",
+      "testSuiteID": "R4-T24",
+      "executedPassingCandidates": [
+        "LexiDawnTests/MDXDictionaryTests/testSelectedPersonalSenseCannotBorrowAnotherSenseExampleAndFreezesExampleIdentity",
+        "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples",
+        "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask",
+        "LexiDawnUITests/Round4UITests/testActualMDXCompactGlossIsTheMatchingAnswerForTheSameContext"
+      ],
+      "matchedScreenshotFiles": [],
+      "status": "independent-acceptance-open"
+    }
+  ]
+}
