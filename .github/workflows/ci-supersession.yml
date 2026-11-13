@@ -11,12 +11,13 @@ concurrency:
 jobs:
   supersede:
     if: ${{ !contains(github.event.head_commit.message, '[keep-native-evidence]') }}
-    name: Release runners held by superseded iOS verification
+    name: Release runners held by superseded main workflows
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
-      - name: Cancel only older main iOS runs
+      - name: Cancel older main runs within the acceptance scope
         env:
           GH_TOKEN: ${{ github.token }}
+          LEXIDAWN_FINAL_ACCEPTANCE: ${{ contains(github.event.head_commit.message, '[round4-final]') }}
         run: python3 scripts/ci-cancel-obsolete.py

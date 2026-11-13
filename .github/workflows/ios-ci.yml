@@ -19,6 +19,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  final-acceptance-ipa:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[round4-final]') }}
+    uses: ./.github/workflows/unsigned-ipa.yml
+    permissions:
+      contents: read
+    with:
+      final_acceptance: true
+
   round4-core:
     name: Round 4 · compile and deterministic core checks
     if: ${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[round4-core]') || contains(github.event.head_commit.message, '[round4-ui]')) }}
