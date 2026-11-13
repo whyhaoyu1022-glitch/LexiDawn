@@ -588,7 +588,14 @@
       "implementationReview": "完整标题进入可滚动原生正文区，保留原始offset与主题。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "latestRelatedVisualEvidence": {
+        "codeCommit": "dcd47b0c7fa45590a79fb37c3b88ac2939afff89",
+        "workflowRun": 43328170620,
+        "screenshot": "R4-P06-title-system-portrait-iPhone18-1.png",
+        "testOutcome": "passed",
+        "scope": "Related same-build Simulator screenshot. Per-criterion final acceptance remains open."
+      }
     },
     {
       "acceptanceID": "R4-A06-02",
@@ -732,6 +739,13 @@
           "LexiDawnTests/Round4Tests/testDWLegacyPlayerProjectionPreservesRawTextAndUTF16TokenOffsets"
         ],
         "acceptanceStillOpen": true
+      },
+      "latestRelatedVisualEvidence": {
+        "codeCommit": "dcd47b0c7fa45590a79fb37c3b88ac2939afff89",
+        "workflowRun": 43328170620,
+        "screenshot": "R4-P07-cleaned-structure-iPhone18-1.png",
+        "testOutcome": "passed",
+        "scope": "Related same-build Simulator screenshot. Per-criterion final acceptance remains open."
       }
     },
     {
@@ -1280,6 +1294,13 @@
           "LexiDawnTests/MDXDictionaryTests/testRealMDXMonthAndModalKeepSeparateIdentities"
         ],
         "acceptanceStillOpen": true
+      },
+      "latestRelatedVisualEvidence": {
+        "codeCommit": "dcd47b0c7fa45590a79fb37c3b88ac2939afff89",
+        "workflowRun": 43328170620,
+        "screenshot": "R4-P10-real-MDX-connection-system-portrait-iPhone18-1.png",
+        "testOutcome": "passed",
+        "scope": "Related same-build Simulator screenshot. Per-criterion final acceptance remains open."
       }
     },
     {
@@ -1749,11 +1770,11 @@
       "passed": false,
       "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
       "latestRelatedVisualEvidence": {
-        "codeCommit": "54cd60766b6bd3b60ca12f099a7244bcf0f58ac2",
-        "workflowRun": 43233166087,
+        "codeCommit": "dcd47b0c7fa45590a79fb37c3b88ac2939afff89",
+        "workflowRun": 43328170620,
         "screenshot": "R4-P14-contexts-system-portrait-iPhone18-1.png",
         "testOutcome": "passed",
-        "scope": "Two real lookups with one source. Per-criterion acceptance remains open."
+        "scope": "Related same-build Simulator screenshot. Per-criterion final acceptance remains open."
       }
     },
     {
@@ -2612,7 +2633,14 @@
       "implementationReview": "锚定小popover，全屏详情，44pt控件，真实保存勾号和限定撤销。",
       "status": "open-final-native-and-visual-verification-required",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "latestRelatedVisualEvidence": {
+        "codeCommit": "dcd47b0c7fa45590a79fb37c3b88ac2939afff89",
+        "workflowRun": 43328170620,
+        "screenshot": "R4-P21-mdx-review-gloss-system-portrait-iPhone18-1.png",
+        "testOutcome": "passed",
+        "scope": "Related same-build Simulator screenshot. Per-criterion final acceptance remains open."
+      }
     },
     {
       "acceptanceID": "R4-A21-03",
@@ -3587,6 +3615,13 @@
           "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
         ],
         "acceptanceStillOpen": true
+      },
+      "latestRelatedVisualEvidence": {
+        "codeCommit": "dcd47b0c7fa45590a79fb37c3b88ac2939afff89",
+        "workflowRun": 43328170620,
+        "screenshot": "R4-P10-real-MDX-connection-system-portrait-iPhone18-1.png",
+        "testOutcome": "passed",
+        "scope": "Related same-build Simulator screenshot. Per-criterion final acceptance remains open."
       }
     },
     {

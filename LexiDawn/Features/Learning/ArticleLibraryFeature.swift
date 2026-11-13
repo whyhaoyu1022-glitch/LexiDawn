@@ -24,10 +24,10 @@ struct ArticleLibraryView: View {
     @State private var editing: ReaderRoute?
     private var inventorySummary: some View {
         HStack {
-            Text("共 \(items.filter(\.readable).count) 篇").font(.headline)
+            Text("共 \(items.filter(\.readable).count) 篇").font(.headline).accessibilityIdentifier("library-total-count")
             Spacer()
-            Text("当前 \(visible.count) 篇").font(.caption).foregroundStyle(.secondary)
-        }.accessibilityElement(children: .combine).accessibilityIdentifier("library-count")
+            Text("当前 \(visible.count) 篇").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("library-filtered-count")
+        }.accessibilityIdentifier("library-count")
     }
     private var visible: [ArticleLibraryItem] {
         let term = query.trimmingCharacters(in: .whitespacesAndNewlines)

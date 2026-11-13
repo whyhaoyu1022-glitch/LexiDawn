@@ -450,22 +450,23 @@ final class Round3UITests: XCTestCase {
         let notice = app.staticTexts["article-notice"]
         let noNew = NSPredicate(format: "label CONTAINS '没有新文章'")
         expectation(for: noNew, evaluatedWith: notice); waitForExpectations(timeout: 15)
-        let inventory = app.descendants(matching: .any)["library-count"].firstMatch
+        let inventory = app.staticTexts["library-total-count"]
+        let filtered = app.staticTexts["library-filtered-count"]
         XCTAssertTrue(inventory.waitForExistence(timeout: 10))
-        XCTAssertTrue(inventory.label.contains("共 1 篇")); XCTAssertTrue(inventory.label.contains("当前 1 篇"))
+        XCTAssertEqual(inventory.label, "共 1 篇"); XCTAssertEqual(filtered.label, "当前 1 篇")
         capture("R3-A19", app: app, feature: "article", state: "deduplicated-no-new-article", origin: "explicit-original-fixture-URLProtocol")
         let search = app.searchFields.firstMatch
         for _ in 0..<4 { if search.exists && search.isHittable { break }; app.swipeDown() }
         XCTAssertTrue(search.waitForExistence(timeout: 10)); XCTAssertTrue(search.isHittable)
         search.tap(); search.typeText("Explicit fixture")
-        XCTAssertTrue(inventory.label.contains("当前 1 篇"))
+        XCTAssertEqual(filtered.label, "当前 1 篇")
         capture("R3-L02", app: app, feature: "library", state: "title-search-hit", origin: "explicit-original-fixture-URLProtocol")
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "Explicit fixture".count)); search.typeText("zzzzunfindable")
         XCTAssertEqual(search.value as? String, "zzzzunfindable")
         let noResults = app.descendants(matching: .any)["library-empty"].firstMatch
         for _ in 0..<5 { if noResults.exists && noResults.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(noResults.waitForExistence(timeout: 10))
-        XCTAssertTrue(inventory.label.contains("当前 0 篇"))
+        XCTAssertEqual(filtered.label, "当前 0 篇")
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 0)
         capture("R3-L03", app: app, feature: "library", state: "title-search-no-result", origin: "explicit-original-fixture-URLProtocol")
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "zzzzunfindable".count))
@@ -492,7 +493,7 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.buttons["library-discover"].isHittable)
         app.buttons["library-discover"].tap()
         XCTAssertTrue(app.staticTexts["无法导入完整文章，未添加到本地文章库。"].waitForExistence(timeout: 15))
-        XCTAssertTrue(app.descendants(matching: .any)["library-count"].firstMatch.label.contains("共 1 篇"))
+        XCTAssertEqual(inventory.label, "共 1 篇")
         capture("R3-L06", app: app, feature: "library", state: "refresh-failed-existing-complete-local-version-preserved", origin: "URLProtocol-offline-original-fixture")
         let local = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).firstMatch
         for _ in 0..<6 { if local.isHittable { break }; app.swipeUp() }

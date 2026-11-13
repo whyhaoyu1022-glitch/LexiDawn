@@ -8,6 +8,8 @@
 
 `dcd47b0` 的 [0.1.0（46）未签名 IPA](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43328170573/artifacts/13993084786) 已独立解包核验。IPA 为 43,904,438 字节，SHA-256 `f69c20779ac87a1028d5c2a1eb179a41d7952999c39f095041d936ba90752f89`；包内 MDX 38,774,534 字节，SHA-256 `095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443`。原生兼容运行使用 iOS 26.5 Simulator。IPA 目标为 iOS 27.0，真机验收仍开放。
 
+[同构建 21 图逐项复核](round-4-simulator-visual-review-dcd47b0.md)。
+
 ## 2026-11-13 · 统一中文释义来源
 
 已保存的进行中题组如果明确使用已停用词典，预检会归档原题、尝试次数与已有进度，并按当前 MDX 重新准备新题。若检测到既有排程日志，会报告完整性错误并保留原记录。正常 MDX 和已准入个人快照按原题恢复。
