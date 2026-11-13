@@ -1,3 +1,9 @@
+## 2026-11-13 · 文章库专项通过
+
+修复提交 `95c705f` 的[专项 43407914308](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43407914308) 仅运行 `testImportRetryDedupSearchFavoritesAndLocalRestart`，iPhone SE 第三代与 iPhone 17 Pro 各执行一次，均通过。两台均通过 503 重试、去重、搜索命中及空结果、收藏和稍后阅读重启恢复、网络失败后读取本地全文。已打开小屏截图核对键盘展开时的命中与空状态。前一[专项 43374838572](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43374838572) 已通过另外两个原文导入和更新用例。
+
+全量运行使用相同的应用及测试源码。本批请求完整 XCTest、主设备 65 项 XCUITest、SE 7 项、Pro Max 3 项、Release Simulator、截图覆盖门禁及未签名 IPA。全量结果仍待本次运行。原生测试使用 iOS 26.5 Simulator。
+
 ## 2026-11-13 · 文章库标题搜索专项
 
 [专项 43374838572](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43374838572) 已通过原文导入与个人原文更新两个用例。[专项 43376595671](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43376595671) 的两台设备均已通过刷新重试、去重和库存计数步骤。失败原图显示 iPhone SE 搜索命中被其他控件挤出视口，iPhone 17 Pro 搜索计数归零后空提示仍在滚动区域外。

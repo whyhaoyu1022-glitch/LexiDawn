@@ -1,5 +1,11 @@
 # Round 4 开发交付记录（持续更新，未完成最终验收）
 
+## 2026-11-13 · 文章库专项通过
+
+修复提交 `95c705f` 的[专项 43407914308](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43407914308) 仅运行 `testImportRetryDedupSearchFavoritesAndLocalRestart`，iPhone SE 第三代与 iPhone 17 Pro 各执行一次，均通过。两台均通过 503 重试、去重、搜索命中及空结果、收藏和稍后阅读重启恢复、网络失败后读取本地全文。已打开小屏截图核对键盘展开时的命中与空状态。前一[专项 43374838572](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43374838572) 已通过另外两个原文导入和更新用例。
+
+全量运行使用相同的应用及测试源码。本批请求完整 XCTest、主设备 65 项 XCUITest、SE 7 项、Pro Max 3 项、Release Simulator、截图覆盖门禁及未签名 IPA。全量结果仍待本次运行。原生测试使用 iOS 26.5 Simulator。
+
 ## 2026-11-13 · 原生回归整改
 
 `dcd47b0` 的 [iOS CI](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43328170620) 通过 Debug 全目标、Release Simulator、236/236 XCTest、27/27 真实 MDX 测试、15/15 文章网络测试。主设备 59/65，小屏 5/7，大屏 3/3。新增真实 MDX 的浮窗与同语境连线用例通过。截图索引合并 396 张，旧 138 场景检查缺 11 个，设备专项缺 0。已核验 P06 长标题和 P07 结构化正文实际原生截图。P07 使用经过真实抽取器和存储的明确原创 HTML，覆盖标题、引用、有序列表与保留讨论 JavaScript 的段落。
