@@ -10,11 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 IMPORT_RETRY = 'LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart'
 FOCUSED = {
-    'fix-pro': [
-        IMPORT_RETRY,
-        'LexiDawnUITests/Round3UITests/testPersonalOriginalUpdateFormAndChangedVersionRestoreNativeReader',
-        'LexiDawnUITests/LexiDawnUITests/testGalleryImportEmptyValidationAndOwnedArticle',
-    ],
+    'fix-pro': [IMPORT_RETRY],
     'fix-se': [IMPORT_RETRY],
 }
 

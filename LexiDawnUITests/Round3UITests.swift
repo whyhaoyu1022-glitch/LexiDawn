@@ -13,6 +13,12 @@ final class Round3UITests: XCTestCase {
             let attachment = XCTAttachment(string: hierarchy)
             attachment.name = "round3-export-failure-hierarchy"; attachment.lifetime = .keepAlways; add(attachment)
         }
+        if name.contains("testImportRetryDedupSearchFavoritesAndLocalRestart"), (testRun?.failureCount ?? 0) > 0 {
+            let app = XCUIApplication()
+            let attachment = XCTAttachment(string: app.debugDescription)
+            attachment.name = "round3-library-failure-hierarchy"; attachment.lifetime = .keepAlways; add(attachment)
+            capture("R3-library-retry-diagnostic", app: app, feature: "article", state: "failed-test-native-library-state", origin: "explicit-original-fixture-URLProtocol")
+        }
     }
     private func launch(_ scenario: String) -> XCUIApplication {
         let app = XCUIApplication(); app.launchEnvironment["LEXIDAWN_UI_SCENARIO"] = scenario
@@ -462,13 +468,13 @@ final class Round3UITests: XCTestCase {
         let notice = app.staticTexts["article-notice"]
         let noNew = NSPredicate(format: "label CONTAINS '没有新文章'")
         expectation(for: noNew, evaluatedWith: notice); waitForExpectations(timeout: 15)
-        let inventory = app.staticTexts["library-total-count"]
-        let filtered = app.staticTexts["library-filtered-count"]
+        let inventory = app.staticTexts.matching(NSPredicate(format: "label == %@", "共 1 篇")).firstMatch
+        let filtered = app.staticTexts.matching(NSPredicate(format: "label == %@", "当前 1 篇")).firstMatch
         let list = app.collectionViews["article-library-list"].firstMatch
         let libraryScroll = list.exists ? list : app
         for _ in 0..<5 { if inventory.exists && inventory.isHittable { break }; libraryScroll.swipeUp() }
         XCTAssertTrue(inventory.waitForExistence(timeout: 10))
-        XCTAssertEqual(inventory.label, "共 1 篇"); XCTAssertEqual(filtered.label, "当前 1 篇")
+        XCTAssertTrue(filtered.exists)
         capture("R3-A19", app: app, feature: "article", state: "deduplicated-no-new-article", origin: "explicit-original-fixture-URLProtocol")
         let search = app.searchFields.firstMatch
         for _ in 0..<4 { if search.exists && search.isHittable { break }; app.swipeDown() }
@@ -510,7 +516,7 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.buttons["library-discover"].isHittable)
         app.buttons["library-discover"].coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)).tap()
         XCTAssertTrue(app.staticTexts["无法导入完整文章，未添加到本地文章库。"].waitForExistence(timeout: 15))
-        XCTAssertEqual(inventory.label, "共 1 篇")
+        XCTAssertTrue(inventory.waitForExistence(timeout: 10))
         capture("R3-L06", app: app, feature: "library", state: "refresh-failed-existing-complete-local-version-preserved", origin: "URLProtocol-offline-original-fixture")
         let local = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).firstMatch
         for _ in 0..<6 { if local.isHittable { break }; app.swipeUp() }

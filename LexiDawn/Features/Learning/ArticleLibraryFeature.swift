@@ -27,7 +27,7 @@ struct ArticleLibraryView: View {
             Text("共 \(items.filter(\.readable).count) 篇").font(.headline).accessibilityIdentifier("library-total-count")
             Spacer()
             Text("当前 \(visible.count) 篇").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("library-filtered-count")
-        }.accessibilityIdentifier("library-count")
+        }.accessibilityElement(children: .contain)
     }
     private var visible: [ArticleLibraryItem] {
         let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
