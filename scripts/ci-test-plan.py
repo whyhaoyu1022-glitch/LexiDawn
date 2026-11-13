@@ -8,10 +8,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-IMPORT_RETRY = 'LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart'
 FOCUSED = {
-    'fix-pro': [IMPORT_RETRY],
-    'fix-se': [IMPORT_RETRY],
+    'fix-pro': [
+        'LexiDawnUITests/LexiDawnUITests/testBlockedAndFailedReasonsExplainUnavailableRecoveryAndRemainUnchanged',
+        'LexiDawnUITests/LexiDawnUITests/testHistoricalInProgressBecomesExplainedBlockedWithoutChangingArticle',
+        'LexiDawnUITests/LexiDawnUITests/testRound2SettingsPersistAndDisabledAutoAddRequiresManualAdd',
+        'LexiDawnUITests/LexiDawnUITests/testTodayShowsHonestEmptyStateWhenNoArticleProviderIsConnected',
+    ],
+    'fix-live': ['LexiDawnUITests/Round3UITests/testLiveMultipleSourcesLibraryFiltersAndCompleteLocalReaderEvidence'],
 }
 
 def plan():
@@ -54,7 +58,7 @@ if __name__ == '__main__':
         if args.suite == 'focused':
             print(json.dumps({'include': [
                 {'suite': 'fix-pro', 'device': 'iPhone-17-Pro'},
-                {'suite': 'fix-se', 'device': 'iPhone-SE-3rd-generation'},
+                {'suite': 'fix-live', 'device': 'iPhone-17-Pro'},
             ]}))
         else:
             print(json.dumps({'include': [{'suite': key, 'device': 'iPhone-SE-3rd-generation' if key == 'small' else 'iPhone-17-Pro-Max' if key == 'large' else 'iPhone-17-Pro'} for key in result]}))

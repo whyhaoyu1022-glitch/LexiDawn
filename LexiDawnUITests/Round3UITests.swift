@@ -19,6 +19,14 @@ final class Round3UITests: XCTestCase {
             attachment.name = "round3-library-failure-hierarchy"; attachment.lifetime = .keepAlways; add(attachment)
             capture("R3-library-retry-diagnostic", app: app, feature: "article", state: "failed-test-native-library-state", origin: "explicit-original-fixture-URLProtocol")
         }
+        if name.contains("testLiveMultipleSourcesLibraryFiltersAndCompleteLocalReaderEvidence"), (testRun?.failureCount ?? 0) > 0 {
+            let app = XCUIApplication()
+            let attachment = XCTAttachment(string: app.debugDescription)
+            attachment.name = "round3-live-library-failure-hierarchy"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            capture("R3-live-library-diagnostic", app: app, feature: "article", state: "live-source-test-failed", origin: "production-network-empty-isolated-store")
+        }
     }
     private func launch(_ scenario: String) -> XCUIApplication {
         let app = XCUIApplication(); app.launchEnvironment["LEXIDAWN_UI_SCENARIO"] = scenario
@@ -674,24 +682,36 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["今天没有到期词汇。"].waitForExistence(timeout: 10))
         app.tabBars.buttons["今日"].tap(); XCTAssertTrue(app.staticTexts["cycle-completed"].waitForExistence(timeout: 10)); openLibrary(app)
         let sources = [("wikipedia", "Wikipedia"), ("wikinews", "Wikinews"), ("bbc", "BBC News"), ("reuters", "Reuters"), ("ap", "AP News"), ("guardian", "The Guardian"), ("npr", "NPR"), ("dw", "Deutsche Welle"), ("voa", "VOA Learning English"), ("nasa", "NASA"), ("sciencedaily", "ScienceDaily"), ("phys", "Phys.org"), ("smithsonian", "Smithsonian Magazine")]
+        let list = app.collectionViews["article-library-list"].firstMatch
+        XCTAssertTrue(list.waitForExistence(timeout: 10))
         var inspected = 0
         for (id, title) in sources {
             let filter = app.buttons["library-source-filter"]
-            for _ in 0..<12 { if filter.isHittable { break }; app.swipeDown() }
+            for _ in 0..<12 { if filter.isHittable { break }; list.swipeDown() }
             XCTAssertTrue(filter.isHittable); filter.tap()
             let choice = app.buttons[title]
             guard choice.exists else {
                 let all = app.buttons["全部来源"]; XCTAssertTrue(all.exists); XCTAssertTrue(all.isHittable); all.tap(); continue
             }
             choice.tap()
-            let openButtons = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'"))
-            var visibleArticle = openButtons.allElementsBoundByIndex.first { $0.isEnabled && $0.isHittable }
-            for _ in 0..<10 {
-                if visibleArticle != nil { break }
-                app.swipeUp()
-                visibleArticle = openButtons.allElementsBoundByIndex.first { $0.isEnabled && $0.isHittable }
+            let sourceLabel = list.staticTexts.matching(identifier: "library-row-source-\(id)").firstMatch
+            let openButtons = list.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'"))
+            var visibleArticle: XCUIElement?
+            for _ in 0..<12 {
+                if sourceLabel.exists, let readable = openButtons.allElementsBoundByIndex.first(where: { $0.isEnabled && $0.isHittable }) {
+                    visibleArticle = readable
+                    break
+                }
+                let upper = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.32))
+                let lower = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.69))
+                if let button = openButtons.allElementsBoundByIndex.first(where: \.isEnabled),
+                   button.frame.midY < app.navigationBars.firstMatch.frame.maxY {
+                    upper.press(forDuration: 0.05, thenDragTo: lower)
+                } else {
+                    lower.press(forDuration: 0.05, thenDragTo: upper)
+                }
             }
-            let open = try XCTUnwrap(visibleArticle, "No visible readable article for imported source \(id)")
+            let open = try XCTUnwrap(visibleArticle, "No visible readable article for imported source \(id)\n\(list.debugDescription)")
             capture("R3-S-" + id + "-library", app: app, feature: "article", state: "source-filter-" + id, origin: "production-network-empty-isolated-store")
             open.tap()
             XCTAssertTrue(app.navigationBars["英文阅读"].waitForExistence(timeout: 10)); XCTAssertTrue(visibleWord(in: app).isHittable)

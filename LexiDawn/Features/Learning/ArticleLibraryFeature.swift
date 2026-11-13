@@ -44,6 +44,9 @@ struct ArticleLibraryView: View {
                 .onChange(of: searchTerm.isEmpty) { _, isEmpty in
                     if !isEmpty { scroll.scrollTo("library-results-top", anchor: .top) }
                 }
+                .onChange(of: source) { _, selectedSource in
+                    if selectedSource != "all" { scroll.scrollTo("library-results-top", anchor: .top) }
+                }
         }
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索完整文章标题")
         .searchFocused($searchFocused)
@@ -87,21 +90,27 @@ struct ArticleLibraryView: View {
                 inventorySummary.id("library-results-top")
                 if !searching { libraryFilters }
             }
-            if !searching { DiscoveryProgressCard(service: learning.discovery) }
+            if !searching, source == "all" { DiscoveryProgressCard(service: learning.discovery) }
             if visible.isEmpty && (searching || !loading) { emptyLibrary }
-            if !searching { rfcOptions }
+            if !searching, source == "all" { rfcOptions }
             ForEach(visible) { item in
                 VStack(alignment: .leading, spacing: 10) {
                     Text(ArticleTitlePresentation.display(item.title, sourceID: item.sourceID)).font(.system(.headline, design: .serif))
                     Text(([ArticleSourceRegistry.name(item.sourceID)] + item.topics + ["\(item.minutes) 分钟"]).joined(separator: " · "))
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("library-row-source-\(item.sourceID)")
                     Text(item.completed ? "已完成 · 可重读" : item.started ? "进行中 \(Int(item.percent * 100))%" : item.cycleID != nil ? "每日必做" : "未读").font(.subheadline)
-                    Button(!access.permits(articleID: item.id, cycleID: item.cycleID) ? "完成必做后解锁" : item.started ? "继续阅读" : "打开文章") {
+                    let canOpen = access.permits(articleID: item.id, cycleID: item.cycleID)
+                    Button {
                         do {
                             _ = try learning.openArticle(articleID: item.id, cycleID: item.cycleID, at: Date())
                             reader = ReaderRoute(articleID: item.id, cycleID: item.cycleID)
                         } catch { self.error = error.localizedDescription }
-                    }.disabled(!access.permits(articleID: item.id, cycleID: item.cycleID)).accessibilityIdentifier("library-open-\(item.id)")
+                    } label: {
+                        Text(!canOpen ? "完成必做后解锁" : item.started ? "继续阅读" : "打开文章")
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }.disabled(!canOpen).accessibilityIdentifier("library-open-\(item.id)")
                     HStack {
                         Button(item.favorite ? "取消收藏" : "收藏", systemImage: item.favorite ? "star.fill" : "star") { flags(item, favorite: !item.favorite) }
                         Button(item.readLater ? "移出稍后阅读" : "稍后阅读", systemImage: item.readLater ? "bookmark.fill" : "bookmark") { flags(item, later: !item.readLater) }
@@ -113,6 +122,10 @@ struct ArticleLibraryView: View {
                 // A List row's automatic button style can dispatch the whole row's
                 // actions. Opening, resetting and editing must remain independent.
                 }.buttonStyle(.borderless).padding(.vertical, 8)
+            }
+            if !searching, source != "all" {
+                DiscoveryProgressCard(service: learning.discovery)
+                rfcOptions
             }
         }.accessibilityIdentifier("article-library-list")
     }
