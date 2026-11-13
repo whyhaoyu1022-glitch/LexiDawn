@@ -657,11 +657,21 @@ final class Round3UITests: XCTestCase {
         app.buttons["library-discover"].tap()
         XCTAssertTrue(app.staticTexts["article-notice"].waitForExistence(timeout: 240), "Real publisher discovery must complete; no seeded articles")
         capture("R3-S00", app: app, feature: "article", state: "live-multiple-source-import-library", origin: "production-network-empty-isolated-store")
+        let list = app.collectionViews["article-library-list"].firstMatch
+        XCTAssertTrue(list.waitForExistence(timeout: 10))
         let results = app.buttons["article-discovery-results"].firstMatch
-        for _ in 0..<12 { if results.isHittable { break }; app.swipeUp() }
-        XCTAssertTrue(results.isHittable); results.tap()
+        for _ in 0..<12 {
+            if results.isHittable && results.frame.midY < list.frame.midY { break }
+            let start = list.coordinate(withNormalizedOffset: CGVector(dx: 0.55, dy: 0.66))
+            start.press(forDuration: 0.05, thenDragTo: list.coordinate(withNormalizedOffset: CGVector(dx: 0.55, dy: 0.46)))
+        }
+        XCTAssertTrue(results.isHittable)
+        results.coordinate(withNormalizedOffset: CGVector(dx: 0.22, dy: 0.5)).tap()
+        let expanded = NSPredicate(format: "value == %@", "已展开")
+        expectation(for: expanded, evaluatedWith: results); waitForExpectations(timeout: 8)
         let imported = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "article-discovery-result-", "已导入"))
-        XCTAssertTrue(imported.firstMatch.waitForExistence(timeout: 10))
+        for _ in 0..<8 { if imported.firstMatch.isHittable { break }; list.swipeUp() }
+        XCTAssertTrue(imported.firstMatch.isHittable, list.debugDescription)
         capture("R4-P02-actual-sources", app: app, feature: "article", state: "actual-per-source-complete-import-outcomes", origin: "production-network-empty-isolated-store")
         // Unlock through actual app actions, never by inserting completed cycles or review evidence.
         app.navigationBars.buttons.firstMatch.tap()
@@ -682,7 +692,6 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["今天没有到期词汇。"].waitForExistence(timeout: 10))
         app.tabBars.buttons["今日"].tap(); XCTAssertTrue(app.staticTexts["cycle-completed"].waitForExistence(timeout: 10)); openLibrary(app)
         let sources = [("wikipedia", "Wikipedia"), ("wikinews", "Wikinews"), ("bbc", "BBC News"), ("reuters", "Reuters"), ("ap", "AP News"), ("guardian", "The Guardian"), ("npr", "NPR"), ("dw", "Deutsche Welle"), ("voa", "VOA Learning English"), ("nasa", "NASA"), ("sciencedaily", "ScienceDaily"), ("phys", "Phys.org"), ("smithsonian", "Smithsonian Magazine")]
-        let list = app.collectionViews["article-library-list"].firstMatch
         XCTAssertTrue(list.waitForExistence(timeout: 10))
         var inspected = 0
         for (id, title) in sources {

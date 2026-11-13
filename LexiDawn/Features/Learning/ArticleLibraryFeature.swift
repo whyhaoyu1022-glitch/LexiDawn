@@ -211,7 +211,11 @@ struct DiscoveryProgressCard: View {
                 if !service.progress.sourceResults.isEmpty {
                     Button { showingResults.toggle() } label: {
                         Label("本次来源结果", systemImage: showingResults ? "chevron.up" : "chevron.down")
-                    }.font(.subheadline).accessibilityIdentifier("article-discovery-results")
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }.font(.subheadline)
+                        .accessibilityIdentifier("article-discovery-results")
+                        .accessibilityValue(showingResults ? "已展开" : "已收起")
                     if showingResults {
                         ForEach(service.progress.sourceResults) { source in
                             let description = ArticleSourceRegistry.name(source.id) + " · " + sourceStatus(source.state)

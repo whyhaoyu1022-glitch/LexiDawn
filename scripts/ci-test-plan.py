@@ -9,12 +9,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 FOCUSED = {
-    'fix-dictionary': [
-        'LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation',
-        'LexiDawnUITests/Round4UITests/testActualMDXReferenceLayoutThreeThemesLandscapeAndAccessibilityFont',
-        'LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock',
-    ],
+    'fix-live': ['LexiDawnUITests/Round3UITests/testLiveMultipleSourcesLibraryFiltersAndCompleteLocalReaderEvidence'],
 }
+
 
 def plan():
     methods = []
