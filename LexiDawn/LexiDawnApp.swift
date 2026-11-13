@@ -50,14 +50,31 @@ final class AppStartup: ObservableObject {
         // Explicit opt-in UI fixture, isolated from the production disk store. Never used in Release.
         if let scenario = ProcessInfo.processInfo.environment["LEXIDAWN_UI_SCENARIO"] {
             if scenario.hasPrefix("round4-"), let id = UUID(uuidString: ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"] ?? "") { return try round4Fixture(scenario, storeID: id) }
-            if scenario == "round3-reader-structure", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
+            if ["round3-reader-structure", "round3-reader-legacy-dw"].contains(scenario), let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
                 let url = FileManager.default.temporaryDirectory.appendingPathComponent("round3-structure-\(storeID).store")
                 let app = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
                 if try app.articleRepository.allArticleIDs().isEmpty, let learning = app.learning {
                     let paragraphs = (1...8).map { "<p>Original fixture paragraph \($0). Reading complete documents helps people understand complicated ideas. Every original sentence and the final paragraph remain preserved in this structured local article.</p>" }.joined()
                     let html = "<article><h1>Original structured fixture</h1><h2>Headings and quotation</h2><blockquote><p>This quotation discusses JavaScript and HTML5 in an original fixture.</p></blockquote><video>To view this video please enable JavaScript.</video><h2>An ordered list</h2><ol><li>First original list item.</li><li>Second original list item.</li></ol>" + paragraphs + "</article>"
                     let document = try ArticleHTMLExtractor.extract(html)
-                    _ = try learning.content.importArticle(.init(title: "明确原创夹具：标题、引用与列表", body: document.text, source: "Explicit original UI fixture author", rightsConfirmed: true), document: document, at: Date())
+                    if scenario == "round3-reader-legacy-dw" {
+                        let now = Date()
+                        guard let rights = ArticleSourceRegistry.evidence(for: "dw") else { throw FullTextImportError.rights }
+                        let blocks: [ArticleDocument.Block] = [
+                            .init(kind: .heading, text: "Original legacy player reproduction"),
+                            .init(kind: .paragraph, text: "The preceding paragraph discusses JavaScript and HTML5 in a real sentence."),
+                            .init(kind: .paragraph, text: "To view this video please enable JavaScript, and consider upgrading to a web browser that supports HTML5 video."),
+                            .init(kind: .paragraph, text: "The following paragraph remains fully readable after removing the player."),
+                        ] + document.blocks
+                        let legacy = ArticleDocument(blocks: blocks)
+                        let item = FullTextArticleImport(sourceID: "dw", canonicalURL: "https://www.dw.com/en/lexidawn-explicit-ui-fixture/a-1234",
+                            title: "Original fixture for a previously stored DW article", author: "Explicit original UI fixture author",
+                            publishedAt: now, rawContent: legacy.text, document: legacy, topics: ["技术"], rights: rights,
+                            completeDocument: true, expectedHash: fingerprint(legacy.text), verifiedAt: now)
+                        _ = try learning.content.importFullText(item, at: now)
+                    } else {
+                        _ = try learning.content.importArticle(.init(title: "明确原创夹具：标题、引用与列表", body: document.text, source: "Explicit original UI fixture author", rightsConfirmed: true), document: document, at: Date())
+                    }
                 }
                 return app
             }

@@ -50,6 +50,15 @@ final class Round3UITests: XCTestCase {
         }
         XCTAssertTrue(listItem.isHittable)
         capture("R3-R11", app: app, feature: "reader", state: "original-list-and-natural-paragraphs", origin: "explicit-original-HTML-through-real-extractor-and-Repository")
+
+        app.terminate()
+        let legacy = launch("round3-reader-legacy-dw")
+        XCTAssertTrue(legacy.buttons["open-reader"].waitForExistence(timeout: 15)); legacy.buttons["open-reader"].tap()
+        XCTAssertTrue(legacy.buttons["word-preceding"].firstMatch.waitForExistence(timeout: 10))
+        XCTAssertTrue(legacy.buttons["word-following"].firstMatch.isHittable)
+        XCTAssertTrue(legacy.buttons["word-JavaScript"].firstMatch.exists)
+        XCTAssertFalse(legacy.buttons["word-upgrading"].firstMatch.exists)
+        capture("R4-P07-legacy-dw-projection", app: legacy, feature: "reader", state: "prior-source-player-paragraph-hidden-with-actual-adjacent-paragraphs", origin: "explicit-original-disk-fixture-production-DW-display-projection")
     }
     func testPersonalOriginalUpdateFormAndChangedVersionRestoreNativeReader() throws {
         let app = launch("round3-version-change"); openLibrary(app)

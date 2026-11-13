@@ -80,6 +80,7 @@ criterion_support = {
     'R4-P18-keyboard': ['18-01','18-04'], 'R4-P18-incorrect': ['18-02','18-03'],
     'R4-P19-revealed-': ['19-01','19-02','19-03'], 'R4-P20-autosave': ['20-01'], 'R4-P20-about': ['20-05'],
     'R4-P02-actual-sources': ['02-01','05-02'], 'R4-P07-cleaned-structure': ['07-02'],
+    'R4-P07-legacy-dw-projection': ['07-01','07-02'],
     'R4-P14-contexts': ['14-01','14-02'],
     'R4-P15-merged-native-detail': ['15-01','15-02'], 'R4-P16-need-detail': ['16-01','16-04'],
     'R4-P17-actual-recommendations': ['17-01','17-04'],
