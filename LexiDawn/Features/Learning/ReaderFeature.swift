@@ -46,6 +46,10 @@ struct ReaderView: View {
     @EnvironmentObject private var dependencies: AppDependencies
     @Environment(\.scenePhase) private var scenePhase
     @State private var selection: WordLookupModel?
+    @State private var detail: WordLookupModel?
+    @State private var previousLookup: WordLookupModel?
+    @State private var pendingDetail: WordLookupModel?
+    @State private var returnToLookup = false
     @State private var wordAnchor = UnitPoint.center
     @State private var manualConfirmation = false
     @State private var fontSize: Double = 19
@@ -75,7 +79,9 @@ struct ReaderView: View {
                     }, title: ArticleTitlePresentation.display(article.title, sourceID: article.sourceID), subtitle: readerSubtitle(article), sourceID: article.sourceID)
                 .frame(maxWidth: .infinity, minHeight: 80, maxHeight: .infinity).layoutPriority(1)
                 .popover(item: $selection, attachmentAnchor: .point(wordAnchor), arrowEdge: wordAnchor.y > 0.5 ? .bottom : .top) { selected in
-                    WordLookupSheet(model: selected).presentationCompactAdaptation(.popover)
+                    WordLookupSheet(model: selected, openDetails: { openDictionaryDetail(selected) })
+                        .presentationCompactAdaptation(.popover)
+                        .onDisappear { presentPendingDetail() }
                 }
                 if model.position.completedAt != nil { Label("阅读已完成", systemImage: "checkmark.circle.fill").foregroundStyle(.green).padding(.horizontal).accessibilityIdentifier("reading-completed") }
                 else {
@@ -102,6 +108,16 @@ struct ReaderView: View {
                 Button("阅读外观", systemImage: "textformat.size") { appearancePresented = true }
                     .labelStyle(.iconOnly).accessibilityLabel("阅读外观").accessibilityIdentifier("reader-appearance")
             }
+        }
+        .fullScreenCover(item: $detail, onDismiss: restoreLookupIfRequested) { selected in
+            NavigationStack {
+                if let result = selected.result {
+                    DictionaryDetailView(result: result, context: selected.token.sentence, learning: selected.learning,
+                        articleID: selected.articleID, depth: selected.depth, theme: theme, automaticAdditionAllowed: selected.autoAdd,
+                        contextOrigin: selected.origin, lookupModel: selected, closeStack: { detail = nil },
+                        returnToParent: { returnToLookup = true; detail = nil })
+                }
+            }.preferredColorScheme(theme == "dark" ? .dark : ["paper", "light"].contains(theme) ? .light : nil)
         }
         .task {
             do { let prefs = try dependencies.preferencesRepository.load(); fontSize = prefs.readerFontSize; lineSpacing = prefs.readerLineSpacing; theme = prefs.readerTheme }
@@ -149,6 +165,27 @@ struct ReaderView: View {
             Button("取消", role: .cancel) { }
             Button("确认我已读完") { model.complete(manual: true) }
         } message: { Text("当前阅读进度为 \(Int(model.position.percent * 100))%。确认后会记录为手动完成。") }
+    }
+    private func openDictionaryDetail(_ selected: WordLookupModel) {
+        guard selected.result != nil else { return }
+        pendingDetail = selected
+        selection = nil
+    }
+    private func presentPendingDetail() {
+        guard let selected = pendingDetail else { return }
+        pendingDetail = nil
+        previousLookup = selected
+        Task { @MainActor in
+            // The popover must finish dismissing before its presenting reader opens the cover.
+            await Task.yield()
+            guard previousLookup?.id == selected.id, selection == nil else { return }
+            detail = selected
+        }
+    }
+    private func restoreLookupIfRequested() {
+        if returnToLookup { selection = previousLookup }
+        returnToLookup = false
+        previousLookup = nil
     }
     private func readerSubtitle(_ article: ReadableArticle) -> String {
         [compactSource(article), article.publishedAt?.formatted(date: .abbreviated, time: .omitted), "\(article.minutes) 分钟"]
@@ -265,10 +302,14 @@ struct WordLookupSheet: View {
     @State private var closeLookupAfterDetails = false
     @State private var theme = "system"
     @State private var preferencesError: String?
+    private var openDetails: (() -> Void)?
     init(token: EnglishToken, articleID: String, autoAdd: Bool, learning: LearningServices) {
         _model = StateObject(wrappedValue: WordLookupModel(token: token, articleID: articleID, autoAdd: autoAdd, learning: learning))
     }
-    init(model: WordLookupModel) { _model = StateObject(wrappedValue: model) }
+    init(model: WordLookupModel, openDetails: (() -> Void)? = nil) {
+        _model = StateObject(wrappedValue: model)
+        self.openDetails = openDetails
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
@@ -294,9 +335,11 @@ struct WordLookupSheet: View {
                     }.accessibilityIdentifier("add-word")
                 }
                 Spacer()
-                Button { showDetails = true } label: { Image(systemName: "arrow.up.right.circle.fill").font(.title2).frame(width: 44, height: 44) }
+                Button {
+                    if let openDetails { openDetails() } else { showDetails = true }
+                } label: { Image(systemName: "arrow.up.right.circle.fill").font(.title2).frame(width: 44, height: 44) }
                     .accessibilityLabel("查看详细释义").accessibilityIdentifier("dictionary-details").disabled(model.loading || model.error != nil || model.result == nil)
-            }.font(.subheadline)
+            }.font(.subheadline).accessibilityElement(children: .contain)
         }.padding(verticalSizeClass == .compact ? 10 : 16).frame(width: dynamicTypeSize.isAccessibilitySize ? 310 : 285).accessibilityElement(children: .contain).accessibilityIdentifier("compact-word-card")
             .accessibilityHidden(showDetails)
             .fixedSize(horizontal: false, vertical: true)
@@ -522,9 +565,11 @@ private struct DictionarySupplementContent: View {
         }
     }
 }
-struct DictionaryRelatedRoute: Identifiable {
+struct DictionaryRelatedRoute: Identifiable, Hashable {
     let id = UUID()
     let result: DictionaryResult
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 struct DictionaryDetailView: View {
     let result: DictionaryResult
@@ -538,6 +583,7 @@ struct DictionaryDetailView: View {
     var lookupModel: WordLookupModel? = nil
     var sourceToken: EnglishToken? = nil
     var closeStack: (() -> Void)? = nil
+    var returnToParent: (() -> Void)? = nil
     @EnvironmentObject private var dependencies: AppDependencies
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
@@ -549,7 +595,6 @@ struct DictionaryDetailView: View {
     @State private var selection: WordLookupModel?
     @State private var relatedRoute: DictionaryRelatedRoute?
     @State private var relatedTask: Task<Void, Never>?
-    @State private var closeAfterRelated = false
     @State private var error: String?
     var body: some View {
         ScrollView {
@@ -557,8 +602,8 @@ struct DictionaryDetailView: View {
                 DictionaryEntryHeader(headword: result.headword, ipa: DictionaryPresentation.sharedIPA(result.senses + result.personalSenses), speech: speech)
                 if speech.state == .unavailable { Text("系统英语语音不可用").font(.caption).foregroundStyle(.secondary) }
                 contextPhrases
-                DictionaryResultContent(result: result, onExampleWord: lookup, onRelatedEntry: depth < 3 ? openRelated : nil)
                 contextSections
+                DictionaryResultContent(result: result, onExampleWord: lookup, onRelatedEntry: depth < 3 ? openRelated : nil)
                 let synonyms = Array(Set(result.usableSenses.flatMap { $0.synonyms ?? [] })).filter { $0.lowercased() != result.headword.lowercased() }.sorted()
                 if !synonyms.isEmpty {
                     Button { showingSynonyms.toggle() } label: {
@@ -580,7 +625,6 @@ struct DictionaryDetailView: View {
         }.accessibilityIdentifier("dictionary-detail-scroll").clipped().background(background.ignoresSafeArea())
             .preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
             .safeAreaInset(edge: .bottom) { detailControls }
-            .accessibilityHidden(relatedRoute != nil || selection != nil)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(item: $comparison) { synonym in
                 DictionaryComparisonView(original: result, synonym: synonym, context: context, learning: learning, theme: theme)
@@ -588,15 +632,11 @@ struct DictionaryDetailView: View {
             }
             .task { refresh() }.onReceive(learning.$revision) { _ in refresh() }
             .popover(item: $selection) { WordLookupSheet(model: $0).presentationCompactAdaptation(.popover) }
-            .fullScreenCover(item: $relatedRoute, onDismiss: {
-                if closeAfterRelated { closeAfterRelated = false; closeDetails() }
-            }) { route in
-                NavigationStack {
-                    let sentence = route.result.senses.compactMap(\.examples).flatMap { $0 }.first ?? route.result.headword
-                    DictionaryDetailView(result: route.result, context: sentence, learning: learning, articleID: nil, depth: depth + 1, theme: theme, automaticAdditionAllowed: false,
-                        contextOrigin: .dictionary(headword: result.headword, evidence: BundledMDXDictionaryProvider.sourceName, text: sentence),
-                        closeStack: { closeAfterRelated = true; relatedRoute = nil })
-                }
+            .navigationDestination(item: $relatedRoute) { route in
+                let sentence = route.result.senses.compactMap(\.examples).flatMap { $0 }.first ?? route.result.headword
+                DictionaryDetailView(result: route.result, context: sentence, learning: learning, articleID: nil, depth: depth + 1, theme: theme, automaticAdditionAllowed: false,
+                    contextOrigin: .dictionary(headword: result.headword, evidence: BundledMDXDictionaryProvider.sourceName, text: sentence),
+                    closeStack: closeDetails, returnToParent: { relatedRoute = nil })
             }
             .onDisappear { speech.stop(); relatedTask?.cancel() }
     }
@@ -631,7 +671,7 @@ struct DictionaryDetailView: View {
             }
             HStack(spacing: 4) {
                 if closeStack != nil {
-                    Button { dismiss() } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
+                    Button { if let returnToParent { returnToParent() } else { dismiss() } } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
                         .accessibilityLabel(lookupModel == nil ? "返回上一个词条" : "返回查词")
                 }
                 Spacer(minLength: 0)

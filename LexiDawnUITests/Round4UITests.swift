@@ -324,7 +324,13 @@ final class Round4UITests: XCTestCase {
         capture("R4-F22-real-middle", app: app, feature: "dictionary-detail", state: "actual-MDX-verb-section-reference-hierarchy", provenance: "real-bundled-MDX-with-explicit-original-article")
         let phrases = app.staticTexts["短语动词"]; reach(phrases, app: app)
         capture("R4-F22-real-phrases", app: app, feature: "dictionary-detail", state: "actual-MDX-phrasal-verbs", provenance: "real-bundled-MDX-with-explicit-original-article")
-        let nested = app.buttons["dictionary-related-entry-nod off"].firstMatch; reach(nested, app: app); nested.tap()
+        let nested = app.buttons["dictionary-related-entry-nod off"].firstMatch; reach(nested, app: app)
+        let dictionary = app.scrollViews["dictionary-detail-scroll"].firstMatch
+        if nested.frame.midY > dictionary.frame.maxY - 70 {
+            let start = dictionary.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.65))
+            start.press(forDuration: 0.05, thenDragTo: dictionary.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.43)))
+        }
+        XCTAssertTrue(nested.isHittable); nested.tap()
         let child = app.staticTexts.matching(NSPredicate(format: "identifier == %@ AND label == %@", "dictionary-full-headword", "nod off")).firstMatch
         XCTAssertTrue(child.waitForExistence(timeout: 10))
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "identifier == %@ AND label == %@", "dictionary-full-headword", "nod")).firstMatch.exists)
@@ -367,8 +373,13 @@ final class Round4UITests: XCTestCase {
         let details = large.buttons["dictionary-details"]
         XCTAssertTrue(details.isHittable)
         capture("R4-P21-accessibility-compact", app: large, feature: "reader-dictionary", state: "actual-MDX-AXXXL-compact-detail-action-visible", provenance: "real-bundled-MDX-explicit-Dynamic-Type-setting")
-        details.tap(); XCUIDevice.shared.orientation = .landscapeLeft
-        XCTAssertTrue(large.buttons["关闭详细释义"].waitForExistence(timeout: 10)); reach(large.staticTexts["n. 名词"], app: large, count: 20)
+        details.tap()
+        let close = large.buttons["关闭详细释义"]
+        XCTAssertTrue(close.waitForExistence(timeout: 10))
+        XCUIDevice.shared.orientation = .landscapeLeft
+        let settled = NSPredicate { _, _ in large.windows.firstMatch.frame.width > large.windows.firstMatch.frame.height }
+        expectation(for: settled, evaluatedWith: large); waitForExpectations(timeout: 10)
+        XCTAssertTrue(close.isHittable); reach(large.staticTexts["n. 名词"], app: large, count: 20)
         capture("R4-F22-accessibility-landscape", app: large, feature: "dictionary-detail", state: "actual-MDX-AXXXL-landscape-readable-content-and-close-control", provenance: "real-bundled-MDX-explicit-Dynamic-Type-setting")
     }
     func testActualMDXCompactGlossIsTheMatchingAnswerForTheSameContext() {

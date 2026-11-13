@@ -369,7 +369,14 @@ jobs:
         with:
           name: LexiDawn-round4-current-native-screenshots-${{ github.run_id }}-${{ github.run_attempt }}
           compression-level: 0
-          path: combined-round4
+          path: combined-round4/screenshots
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: LexiDawn-round4-original-attachments-${{ github.run_id }}-${{ github.run_attempt }}
+          compression-level: 0
+          path: combined-round4/original-pngs.zip
           if-no-files-found: warn
       - name: Verify every required state and per-source native evidence
         run: python3 scripts/verify-round3-coverage.py combined-round3/manifest.json --report combined-round3/COVERAGE.md

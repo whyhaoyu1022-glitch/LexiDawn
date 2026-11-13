@@ -71,7 +71,7 @@ struct ReviewPracticeContent: View {
                 if extraEmpty { Text(deferredResolved ? "本次延期的词会在后续复习中再次出现。" : "额外复习暂无到期词条，刚完成的题组不会立即重复。").font(.footnote) }
                 if message != nil { Button("重试", action: { Task { await load() } }).buttonStyle(.bordered).disabled(loading) }
             }.padding(20)
-        }.safeAreaPadding(.bottom, 16).scrollDismissesKeyboard(.interactively).navigationTitle("复习").navigationBarTitleDisplayMode(.inline).task { await load() }
+        }.accessibilityIdentifier("review-scroll").safeAreaPadding(.bottom, 16).scrollDismissesKeyboard(.interactively).navigationTitle("复习").navigationBarTitleDisplayMode(.inline).task { await load() }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if !loading, let session, session.matchingComplete, session.completedAt == nil,
                    let question = session.cloze.first(where: { !$0.completed }) {

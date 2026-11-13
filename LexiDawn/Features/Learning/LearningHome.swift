@@ -156,6 +156,7 @@ struct ArticleImportView: View {
     @State private var rights = false
     @State private var eligible = true
     @State private var error: String?
+    @FocusState private var editingBody: Bool
     var body: some View {
         NavigationStack {
             Form {
@@ -164,13 +165,14 @@ struct ArticleImportView: View {
                     TextField("来源 / 用户原创", text: $source)
                     TextField("原始 URL（可选）", text: $originalURL).textInputAutocapitalization(.never).keyboardType(.URL)
                     TextField("主题", text: $topic)
-                    TextEditor(text: $bodyText).frame(minHeight: 200).accessibilityIdentifier("import-body")
+                    TextEditor(text: $bodyText).frame(minHeight: 160).focused($editingBody).accessibilityIdentifier("import-body")
                     Text("\(EnglishTokenizer.tokens(in: bodyText).count) 词 · 预计 \(max(1, Int(ceil(Double(EnglishTokenizer.tokens(in: bodyText).count) / 200)))) 分钟").font(.caption)
                 }
                 Section("授权与分配") {
                     Toggle("我有权导入此内容供本地个人使用", isOn: $rights).accessibilityIdentifier("import-rights")
                     Toggle("允许以后分配为每日文章", isOn: $eligible)
-                    Text("此确认不是第三方版权授权。内容不会公开分发或自动上传，也不会根据链接抓取正文。不会替换旧未完成任务。").font(.caption).foregroundStyle(.secondary)
+                    Text("原文仅存于本机。链接用于记录来源。")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
                 if let error { Text(error).foregroundStyle(.red) }
                 Button(editingArticleID == nil ? "保存到本地文章库" : "更新本地完整原文") {
@@ -181,13 +183,21 @@ struct ArticleImportView: View {
                         learning.changed(); dismiss()
                     } catch { self.error = error.localizedDescription }
                 }.disabled(!rights).accessibilityIdentifier("save-import")
-            }.scrollDismissesKeyboard(.interactively).navigationTitle(editingArticleID == nil ? "合法导入文章" : "更新个人原文")
+            }.accessibilityIdentifier("article-import-form").scrollDismissesKeyboard(.interactively)
+                .navigationTitle(editingArticleID == nil ? "合法导入文章" : "更新个人原文")
                 .task {
                     guard let editingArticleID else { return }
                     do { let draft = try learning.content.originalForEditing(articleID: editingArticleID, at: Date()); title = draft.title; bodyText = draft.body; source = draft.source; originalURL = draft.originalURL; topic = draft.topic; eligible = draft.eligibleForDaily }
                     catch { self.error = error.localizedDescription }
                 }
-                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } } }
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("完成输入") { editingBody = false; InputComposition.dismissKeyboard() }
+                            .accessibilityIdentifier("finish-article-input")
+                    }
+                }
                 .interactiveDismissDisabled()
         }
     }

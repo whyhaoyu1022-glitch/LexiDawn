@@ -22,6 +22,13 @@ struct ArticleLibraryView: View {
     @State private var importFailed = false
     @State private var resetting: ArticleLibraryItem?
     @State private var editing: ReaderRoute?
+    private var inventorySummary: some View {
+        HStack {
+            Text("共 \(items.filter(\.readable).count) 篇").font(.headline)
+            Spacer()
+            Text("当前 \(visible.count) 篇").font(.caption).foregroundStyle(.secondary)
+        }.accessibilityElement(children: .combine).accessibilityIdentifier("library-count")
+    }
     private var visible: [ArticleLibraryItem] {
         let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
         return items.filter { $0.readable && (term.isEmpty || ArticleTitlePresentation.display($0.title, sourceID: $0.sourceID).localizedStandardContains(term)) &&
@@ -32,11 +39,11 @@ struct ArticleLibraryView: View {
     var body: some View {
         List {
             if !query.isBlank, visible.isEmpty, !loading { emptyLibrary }
-            Button("发现新文章", systemImage: "arrow.clockwise") { beginRefresh() }
+            Button("发现新文章", systemImage: "arrow.clockwise") { beginRefresh() }.buttonStyle(.borderless)
                 .disabled(loading).accessibilityIdentifier("library-discover")
             DiscoveryProgressCard(service: learning.discovery)
             Section {
-                HStack { Text("共 \(items.filter(\.readable).count) 篇").font(.headline); Spacer(); Text("当前 \(visible.count) 篇").font(.caption).foregroundStyle(.secondary) }.accessibilityIdentifier("library-count")
+                inventorySummary
                 Picker("阅读内容", selection: $mode) {
                     Text("全部").tag("all")
                     Text("收藏 \(items.filter { $0.readable && $0.favorite }.count)").tag("favorite")
@@ -75,7 +82,7 @@ struct ArticleLibraryView: View {
                 // actions. Opening, resetting and editing must remain independent.
                 }.buttonStyle(.borderless).padding(.vertical, 8)
             }
-        }
+        }.accessibilityIdentifier("article-library-list")
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索完整文章标题")
         .searchFocused($searchFocused)
         .onSubmit(of: .search) { finishSearchInput() }
@@ -144,7 +151,7 @@ struct ArticleLibraryView: View {
         guard !loading else { return }; loading = true; notice = nil; error = nil; importFailed = false; defer { loading = false }
         do { let count = try await learning.discovery.refresh(force: true); try Task.checkCancellation(); learning.changed(); notice = count == 0 ? "没有新文章；本地完整版本保持可读。" : "已导入 \(count) 篇完整原文。"; error = nil }
         catch is CancellationError { load(); learning.changed(); notice = "已停止发现；已完整入库的文章保留。" }
-        catch { importFailed = true; self.error = error.localizedDescription }
+        catch { load(); learning.changed(); importFailed = true; self.error = error.localizedDescription }
     }
 }
 

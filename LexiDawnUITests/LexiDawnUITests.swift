@@ -325,6 +325,8 @@ extension LexiDawnUITests {
         let importButton = app.buttons["import-article-toolbar"]; XCTAssertTrue(importButton.waitForExistence(timeout: 10)); importButton.tap()
         app.textFields["import-title"].tap(); app.textFields["import-title"].typeText("My owned article")
         let editor = app.textViews["import-body"]; editor.tap(); editor.typeText("A book can help us learn. This text was written for this isolated UI test.")
+        let done = app.buttons["finish-article-input"]
+        XCTAssertTrue(done.waitForExistence(timeout: 5)); done.tap()
         let rights = app.switches["import-rights"]; try revealLearning(rights, in: app); tapNativeSwitch(rights)
         XCTAssertEqual(rights.value as? String, "1")
         let save = app.buttons["save-import"]; try revealLearning(save, in: app); save.tap()
@@ -347,12 +349,14 @@ extension LexiDawnUITests {
     }
     private func revealLearning(_ element: XCUIElement, in app: XCUIApplication) throws {
         let detail = app.scrollViews["dictionary-detail-scroll"].firstMatch
+        let importForm = app.descendants(matching: .any)["article-import-form"].firstMatch
         for _ in 0..<(detail.exists ? 28 : 8) {
             if element.exists && element.isHittable { return }
-            let area = detail.exists ? detail : app
+            let area = detail.exists ? detail : importForm.exists ? importForm : app
             let above = element.exists && element.frame.maxY < app.windows.firstMatch.frame.minY + 100
-            let start = area.coordinate(withNormalizedOffset: CGVector(dx: 0.68, dy: above ? 0.27 : 0.73))
-            start.press(forDuration: 0.05, thenDragTo: area.coordinate(withNormalizedOffset: CGVector(dx: 0.68, dy: above ? 0.72 : 0.25)))
+            let x = importForm.exists ? 0.97 : 0.68
+            let start = area.coordinate(withNormalizedOffset: CGVector(dx: x, dy: above ? 0.27 : 0.73))
+            start.press(forDuration: 0.05, thenDragTo: area.coordinate(withNormalizedOffset: CGVector(dx: x, dy: above ? 0.72 : 0.25)))
         }
         let method = name.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).last.map(String.init) ?? "unknown"
         capture("round2-unreachable-" + method, in: app)

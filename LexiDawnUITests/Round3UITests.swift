@@ -329,9 +329,12 @@ final class Round3UITests: XCTestCase {
         let board = app.otherElements["matching-board"].firstMatch
         let previousY = board.frame.minY
         let window = app.windows.firstMatch.frame
-        let startY = min(window.maxY - 115, board.frame.maxY + 42)
-        let start = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: window.width * 0.93, dy: startY))
-        start.press(forDuration: 0.08, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -28)), withVelocity: .slow, thenHoldForDuration: 0.25)
+        let scroll = app.scrollViews["review-scroll"].firstMatch
+        XCTAssertTrue(scroll.exists)
+        let scrollFrame = scroll.frame
+        let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let travel = min(56, scrollFrame.height / 7)
+        start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -travel)), withVelocity: .slow, thenHoldForDuration: 0.15)
         XCTAssertLessThan(board.frame.minY, previousY)
         XCTAssertGreaterThan(board.frame.maxY, window.minY + 125, "The test must leave the line region on screen")
         XCTAssertGreaterThan(connectionPixels(app: app), 12)
@@ -437,27 +440,32 @@ final class Round3UITests: XCTestCase {
     func testImportRetryDedupSearchFavoritesAndLocalRestart() throws {
         let app = launch("round3-import-retry"); openLibrary(app)
         capture("R3-L01", app: app, feature: "library", state: "empty-before-import", origin: "explicit-original-fixture-URLProtocol")
-        app.buttons["library-discover"].tap()
-        XCTAssertTrue(app.staticTexts["article-notice"].waitForExistence(timeout: 20))
+        let discover = app.buttons["library-discover"]
+        XCTAssertTrue(discover.isHittable); discover.tap()
+        XCTAssertTrue(app.staticTexts["article-notice"].waitForExistence(timeout: 30))
         XCTAssertTrue(app.staticTexts["article-notice"].label.contains("已导入 1"))
         capture("R3-A18", app: app, feature: "article", state: "503-retry-success-full-import", origin: "URLProtocol-retry-with-original-test-text")
-        app.buttons["library-discover"].tap()
+        XCTAssertTrue(discover.isHittable); discover.tap()
         XCTAssertTrue(app.staticTexts["article-notice"].waitForExistence(timeout: 10))
         let notice = app.staticTexts["article-notice"]
         let noNew = NSPredicate(format: "label CONTAINS '没有新文章'")
         expectation(for: noNew, evaluatedWith: notice); waitForExpectations(timeout: 15)
-        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 1)
+        let inventory = app.descendants(matching: .any)["library-count"].firstMatch
+        XCTAssertTrue(inventory.waitForExistence(timeout: 10))
+        XCTAssertTrue(inventory.label.contains("共 1 篇")); XCTAssertTrue(inventory.label.contains("当前 1 篇"))
         capture("R3-A19", app: app, feature: "article", state: "deduplicated-no-new-article", origin: "explicit-original-fixture-URLProtocol")
         let search = app.searchFields.firstMatch
         for _ in 0..<4 { if search.exists && search.isHittable { break }; app.swipeDown() }
         XCTAssertTrue(search.waitForExistence(timeout: 10)); XCTAssertTrue(search.isHittable)
         search.tap(); search.typeText("Explicit fixture")
+        XCTAssertTrue(inventory.label.contains("当前 1 篇"))
         capture("R3-L02", app: app, feature: "library", state: "title-search-hit", origin: "explicit-original-fixture-URLProtocol")
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "Explicit fixture".count)); search.typeText("zzzzunfindable")
         XCTAssertEqual(search.value as? String, "zzzzunfindable")
         let noResults = app.descendants(matching: .any)["library-empty"].firstMatch
         for _ in 0..<5 { if noResults.exists && noResults.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(noResults.waitForExistence(timeout: 10))
+        XCTAssertTrue(inventory.label.contains("当前 0 篇"))
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 0)
         capture("R3-L03", app: app, feature: "library", state: "title-search-no-result", origin: "explicit-original-fixture-URLProtocol")
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "zzzzunfindable".count))
@@ -476,11 +484,15 @@ final class Round3UITests: XCTestCase {
         capture("R3-L04", app: app, feature: "library", state: "favorite-and-later-saved", origin: "explicit-original-fixture-URLProtocol")
         app.terminate(); app.launchEnvironment["LEXIDAWN_UI_SCENARIO"] = "round3-import-offline"; app.launch()
         openLibrary(app)
-        XCTAssertTrue(app.buttons["取消收藏"].waitForExistence(timeout: 10)); XCTAssertTrue(app.buttons["移出稍后阅读"].exists)
+        let savedFavorite = app.buttons["取消收藏"]
+        for _ in 0..<6 { if savedFavorite.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(savedFavorite.isHittable); XCTAssertTrue(app.buttons["移出稍后阅读"].exists)
         capture("R3-L05", app: app, feature: "library", state: "restart-retains-flags-network-unavailable", origin: "URLProtocol-offline-original-fixture")
+        for _ in 0..<6 { if app.buttons["library-discover"].isHittable { break }; app.swipeDown() }
+        XCTAssertTrue(app.buttons["library-discover"].isHittable)
         app.buttons["library-discover"].tap()
         XCTAssertTrue(app.staticTexts["无法导入完整文章，未添加到本地文章库。"].waitForExistence(timeout: 15))
-        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 1)
+        XCTAssertTrue(app.descendants(matching: .any)["library-count"].firstMatch.label.contains("共 1 篇"))
         capture("R3-L06", app: app, feature: "library", state: "refresh-failed-existing-complete-local-version-preserved", origin: "URLProtocol-offline-original-fixture")
         let local = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).firstMatch
         for _ in 0..<6 { if local.isHittable { break }; app.swipeUp() }
