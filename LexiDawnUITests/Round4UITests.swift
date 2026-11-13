@@ -45,6 +45,28 @@ final class Round4UITests: XCTestCase {
         let open = app.buttons["open-reader"]; XCTAssertTrue(open.waitForExistence(timeout: 15)); open.tap()
         XCTAssertTrue(app.otherElements["reader-body"].firstMatch.waitForExistence(timeout: 10))
     }
+    private func showDictionaryVerbSection(_ app: XCUIApplication) {
+        let verb = app.staticTexts["dictionary-part-verb"].firstMatch
+        reach(verb, app: app)
+        let detail = app.scrollViews["dictionary-detail-scroll"].firstMatch
+        let headword = app.staticTexts["dictionary-full-headword"].firstMatch
+        let viewport = detail.frame
+        let top = viewport.minY + 24
+        let upperHalf = viewport.minY + viewport.height * 0.45
+        for _ in 0..<5 {
+            let position = verb.frame.midY
+            let headwordOffscreen = !headword.exists || headword.frame.maxY <= viewport.minY
+            if verb.isHittable && (top...upperHalf).contains(position) && headwordOffscreen { return }
+            let target = viewport.minY + viewport.height * 0.26
+            let distance = min(0.48, max(0.12, abs(position - target) / viewport.height))
+            let scrollDown = position > upperHalf || !headwordOffscreen
+            let start = detail.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: scrollDown ? 0.76 : 0.24))
+            let end = detail.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: scrollDown ? 0.76 - distance : 0.24 + distance))
+            start.press(forDuration: 0.05, thenDragTo: end)
+        }
+        XCTAssertTrue(verb.isHittable && (top...upperHalf).contains(verb.frame.midY))
+        XCTAssertTrue(!headword.exists || headword.frame.maxY <= viewport.minY)
+    }
     @discardableResult
     private func tapWord(_ word: String, app: XCUIApplication) -> String? {
         let button = app.buttons["word-" + word].firstMatch
@@ -91,7 +113,7 @@ final class Round4UITests: XCTestCase {
         XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["n. 名词"].exists)
         capture("R4-F22-reference-top", app: app, feature: "dictionary-detail", state: "headword-IPA-noun-senses-bilingual-examples")
-        let verb = app.staticTexts["dictionary-part-verb"].firstMatch; reach(verb, app: app)
+        showDictionaryVerbSection(app)
         capture("R4-F22-reference-middle", app: app, feature: "dictionary-detail", state: "verb-group-forms-and-examples")
         let phrases = app.staticTexts["短语与搭配"]; reach(phrases, app: app)
         capture("R4-F22-reference-end", app: app, feature: "dictionary-detail", state: "phrase-section-and-unobscured-bottom-controls")
@@ -320,7 +342,7 @@ final class Round4UITests: XCTestCase {
         let speak = app.buttons["dictionary-system-pronunciation"]; XCTAssertTrue(speak.exists); speak.tap()
         capture("R4-F22-system-pronunciation", app: app, feature: "dictionary-detail", state: "actual-system-pronunciation-start-or-unavailable", provenance: "real-bundled-MDX-and-iOS-system-TTS")
         if speak.label == "停止系统朗读" { speak.tap() }
-        let verb = app.staticTexts["dictionary-part-verb"].firstMatch; reach(verb, app: app)
+        showDictionaryVerbSection(app)
         capture("R4-F22-real-middle", app: app, feature: "dictionary-detail", state: "actual-MDX-verb-section-reference-hierarchy", provenance: "real-bundled-MDX-with-explicit-original-article")
         let phrases = app.staticTexts["短语动词"]; reach(phrases, app: app)
         capture("R4-F22-real-phrases", app: app, feature: "dictionary-detail", state: "actual-MDX-phrasal-verbs", provenance: "real-bundled-MDX-with-explicit-original-article")
@@ -360,7 +382,7 @@ final class Round4UITests: XCTestCase {
             expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: app.buttons["dictionary-details"]); waitForExpectations(timeout: 20)
             app.buttons["dictionary-details"].tap(); XCTAssertTrue(app.staticTexts["dictionary-ipa-summary"].waitForExistence(timeout: 10))
             capture("R4-F22-reference-top-" + theme, app: app, feature: "dictionary-detail", state: "actual-MDX-reference-headword-POS-numbered-senses", theme: theme, provenance: "real-bundled-MDX")
-            reach(app.staticTexts["dictionary-part-verb"].firstMatch, app: app, count: 20)
+            showDictionaryVerbSection(app)
             capture("R4-F22-reference-middle-" + theme, app: app, feature: "dictionary-detail", state: "actual-MDX-reference-verb-forms-paired-examples", theme: theme, provenance: "real-bundled-MDX")
             reach(app.staticTexts["来源：内置 MDX"], app: app, count: 25)
             capture("R4-F22-reference-end-" + theme, app: app, feature: "dictionary-detail", state: "actual-MDX-idioms-final-sense-bottom-controls-unobscured", theme: theme, provenance: "real-bundled-MDX")
