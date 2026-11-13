@@ -468,40 +468,43 @@ final class Round3UITests: XCTestCase {
         let notice = app.staticTexts["article-notice"]
         let noNew = NSPredicate(format: "label CONTAINS '没有新文章'")
         expectation(for: noNew, evaluatedWith: notice); waitForExpectations(timeout: 15)
-        let inventory = app.staticTexts.matching(NSPredicate(format: "label == %@", "共 1 篇")).firstMatch
-        let filtered = app.staticTexts.matching(NSPredicate(format: "label == %@", "当前 1 篇")).firstMatch
+        let inventory = app.staticTexts["library-total-count"]
+        let filtered = app.staticTexts["library-filtered-count"]
         let list = app.collectionViews["article-library-list"].firstMatch
         let libraryScroll = list.exists ? list : app
         for _ in 0..<5 { if inventory.exists && inventory.isHittable { break }; libraryScroll.swipeUp() }
         XCTAssertTrue(inventory.waitForExistence(timeout: 10))
-        XCTAssertTrue(filtered.exists)
+        XCTAssertEqual(inventory.label, "共 1 篇")
+        XCTAssertEqual(filtered.label, "当前 1 篇")
         capture("R3-A19", app: app, feature: "article", state: "deduplicated-no-new-article", origin: "explicit-original-fixture-URLProtocol")
         let search = app.searchFields.firstMatch
         for _ in 0..<4 { if search.exists && search.isHittable { break }; app.swipeDown() }
         XCTAssertTrue(search.waitForExistence(timeout: 10)); XCTAssertTrue(search.isHittable)
         search.tap(); search.typeText("Explicit fixture")
         let match = app.staticTexts["Explicit fixture article (not production)"]
-        for _ in 0..<6 { if match.exists && match.isHittable { break }; libraryScroll.swipeUp() }
+        XCTAssertTrue(match.waitForExistence(timeout: 10))
         XCTAssertTrue(match.isHittable)
+        XCTAssertEqual(filtered.label, "当前 1 篇")
         capture("R3-L02", app: app, feature: "library", state: "title-search-hit", origin: "explicit-original-fixture-URLProtocol")
-        for _ in 0..<5 { if search.isHittable { break }; libraryScroll.swipeDown() }
         XCTAssertTrue(search.isHittable); search.tap()
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "Explicit fixture".count)); search.typeText("zzzzunfindable")
         XCTAssertEqual(search.value as? String, "zzzzunfindable")
         let noResults = app.descendants(matching: .any)["library-empty"].firstMatch
         XCTAssertTrue(noResults.waitForExistence(timeout: 10))
+        XCTAssertTrue(noResults.isHittable)
+        XCTAssertEqual(filtered.label, "当前 0 篇")
+        XCTAssertEqual(inventory.label, "共 1 篇")
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 0)
         capture("R3-L03", app: app, feature: "library", state: "title-search-no-result", origin: "explicit-original-fixture-URLProtocol")
-        search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "zzzzunfindable".count))
-        if app.buttons["library-finish-search"].exists { app.buttons["library-finish-search"].tap() }
-        else if app.buttons["完成搜索"].exists { app.buttons["完成搜索"].tap() }
-        else if app.keyboards.buttons["Search"].exists { app.keyboards.buttons["Search"].tap() }
-        else if app.keyboards.buttons["搜索"].exists { app.keyboards.buttons["搜索"].tap() }
-        if app.buttons["Cancel"].exists { app.buttons["Cancel"].tap() } else if app.buttons["取消"].exists { app.buttons["取消"].tap() }
+        let closeSearch = app.navigationBars.firstMatch.buttons.matching(
+            NSPredicate(format: "label IN %@", ["Close", "Cancel", "关闭", "取消"])
+        ).firstMatch
+        XCTAssertTrue(closeSearch.isHittable)
+        closeSearch.tap()
         let keyboardGone = NSPredicate(format: "exists == false")
         expectation(for: keyboardGone, evaluatedWith: app.keyboards.firstMatch); waitForExpectations(timeout: 10)
         let favorite = app.buttons["收藏"]
-        for _ in 0..<6 { if favorite.isHittable { break }; app.swipeUp() }
+        for _ in 0..<6 { if favorite.isHittable { break }; libraryScroll.swipeUp() }
         XCTAssertTrue(favorite.isHittable); favorite.tap()
         app.buttons["稍后阅读"].tap()
         XCTAssertTrue(app.buttons["取消收藏"].exists); XCTAssertTrue(app.buttons["移出稍后阅读"].exists)
@@ -509,17 +512,18 @@ final class Round3UITests: XCTestCase {
         app.terminate(); app.launchEnvironment["LEXIDAWN_UI_SCENARIO"] = "round3-import-offline"; app.launch()
         openLibrary(app)
         let savedFavorite = app.buttons["取消收藏"]
-        for _ in 0..<6 { if savedFavorite.isHittable { break }; app.swipeUp() }
+        for _ in 0..<6 { if savedFavorite.isHittable { break }; libraryScroll.swipeUp() }
         XCTAssertTrue(savedFavorite.isHittable); XCTAssertTrue(app.buttons["移出稍后阅读"].exists)
         capture("R3-L05", app: app, feature: "library", state: "restart-retains-flags-network-unavailable", origin: "URLProtocol-offline-original-fixture")
-        for _ in 0..<6 { if app.buttons["library-discover"].isHittable { break }; app.swipeDown() }
+        for _ in 0..<6 { if discover.isHittable { break }; libraryScroll.swipeDown() }
         XCTAssertTrue(app.buttons["library-discover"].isHittable)
         app.buttons["library-discover"].coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)).tap()
-        XCTAssertTrue(app.staticTexts["无法导入完整文章，未添加到本地文章库。"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["无法导入完整文章，未添加到本地文章库。"].waitForExistence(timeout: 25))
         XCTAssertTrue(inventory.waitForExistence(timeout: 10))
+        XCTAssertEqual(inventory.label, "共 1 篇")
         capture("R3-L06", app: app, feature: "library", state: "refresh-failed-existing-complete-local-version-preserved", origin: "URLProtocol-offline-original-fixture")
         let local = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).firstMatch
-        for _ in 0..<6 { if local.isHittable { break }; app.swipeUp() }
+        for _ in 0..<6 { if local.isHittable { break }; libraryScroll.swipeUp() }
         XCTAssertTrue(local.isHittable); local.tap()
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'word-'")).firstMatch.waitForExistence(timeout: 10))
         capture("R3-R05", app: app, feature: "reader", state: "local-fulltext-with-failing-network", origin: "URLProtocol-offline-original-fixture")

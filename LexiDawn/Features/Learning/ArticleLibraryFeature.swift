@@ -22,6 +22,8 @@ struct ArticleLibraryView: View {
     @State private var importFailed = false
     @State private var resetting: ArticleLibraryItem?
     @State private var editing: ReaderRoute?
+    private var searchTerm: String { query.trimmingCharacters(in: .whitespacesAndNewlines) }
+
     private var inventorySummary: some View {
         HStack {
             Text("共 \(items.filter(\.readable).count) 篇").font(.headline).accessibilityIdentifier("library-total-count")
@@ -30,62 +32,19 @@ struct ArticleLibraryView: View {
         }.accessibilityElement(children: .contain)
     }
     private var visible: [ArticleLibraryItem] {
-        let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let term = searchTerm
         return items.filter { $0.readable && (term.isEmpty || ArticleTitlePresentation.display($0.title, sourceID: $0.sourceID).localizedStandardContains(term)) &&
             (source == "all" || $0.sourceID == source) && (topic == "all" || $0.topics.contains(topic)) &&
             (mode == "all" || mode == "favorite" && $0.favorite || mode == "later" && $0.readLater || mode == "history" && $0.started) }
             .sorted { newestFirst ? $0.fetchedAt > $1.fetchedAt : $0.fetchedAt < $1.fetchedAt }
     }
     var body: some View {
-        List {
-            if !query.isBlank, visible.isEmpty, !loading { emptyLibrary }
-            Button { beginRefresh() } label: {
-                Label("发现新文章", systemImage: "arrow.clockwise")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-            }.buttonStyle(.borderless).disabled(loading).accessibilityIdentifier("library-discover")
-            if let notice { Text(notice).font(.footnote).accessibilityIdentifier("article-notice") }
-            if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red); Button(importFailed ? "重试导入" : "重新读取本地数据") { if importFailed { beginRefresh() } else { load() } } }.accessibilityIdentifier("article-import-error") }
-            Section {
-                inventorySummary
-                Picker("阅读内容", selection: $mode) {
-                    Text("全部").tag("all")
-                    Text("收藏 \(items.filter { $0.readable && $0.favorite }.count)").tag("favorite")
-                    Text("稍后 \(items.filter { $0.readable && $0.readLater }.count)").tag("later")
-                    Text("历史").tag("history")
-                }.pickerStyle(.segmented).accessibilityIdentifier("library-mode-filter")
-                Picker("来源", selection: $source) { Text("全部来源").tag("all"); ForEach(Array(Set(items.filter(\.readable).map(\.sourceID))).sorted(), id: \.self) { Text(ArticleSourceRegistry.name($0)).tag($0) } }.accessibilityIdentifier("library-source-filter")
-                Picker("分类", selection: $topic) { Text("全部分类").tag("all"); ForEach(Array(Set(items.flatMap(\.topics))).sorted(), id: \.self) { Text($0).tag($0) } }.accessibilityIdentifier("library-topic-filter")
-                Toggle("最新导入优先", isOn: $newestFirst)
-            }
-            DiscoveryProgressCard(service: learning.discovery)
-            if query.isBlank, visible.isEmpty, !loading { emptyLibrary }
-            if query.isBlank { rfcOptions }
-            ForEach(visible) { item in
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(ArticleTitlePresentation.display(item.title, sourceID: item.sourceID)).font(.system(.headline, design: .serif))
-                    Text(([ArticleSourceRegistry.name(item.sourceID)] + item.topics + ["\(item.minutes) 分钟"]).joined(separator: " · "))
-                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                    Text(item.completed ? "已完成 · 可重读" : item.started ? "进行中 \(Int(item.percent * 100))%" : item.cycleID != nil ? "每日必做" : "未读").font(.subheadline)
-                    Button(!access.permits(articleID: item.id, cycleID: item.cycleID) ? "完成必做后解锁" : item.started ? "继续阅读" : "打开文章") {
-                        do {
-                            _ = try learning.openArticle(articleID: item.id, cycleID: item.cycleID, at: Date())
-                            reader = ReaderRoute(articleID: item.id, cycleID: item.cycleID)
-                        } catch { self.error = error.localizedDescription }
-                    }.disabled(!access.permits(articleID: item.id, cycleID: item.cycleID)).accessibilityIdentifier("library-open-\(item.id)")
-                    HStack {
-                        Button(item.favorite ? "取消收藏" : "收藏", systemImage: item.favorite ? "star.fill" : "star") { flags(item, favorite: !item.favorite) }
-                        Button(item.readLater ? "移出稍后阅读" : "稍后阅读", systemImage: item.readLater ? "bookmark.fill" : "bookmark") { flags(item, later: !item.readLater) }
-                    }.buttonStyle(.bordered).font(.caption)
-                    if item.cycleID == nil && item.started { Button("重新标记为未开始") { resetting = item }.font(.caption).disabled(!explorationAllowed) }
-                    if explorationAllowed && item.sourceID == "user-import" && item.cycleID == nil {
-                        Button("更新个人原文") { editing = ReaderRoute(articleID: item.id, cycleID: nil) }.font(.caption)
-                    }
-                // A List row's automatic button style can dispatch the whole row's
-                // actions. Opening, resetting and editing must remain independent.
-                }.buttonStyle(.borderless).padding(.vertical, 8)
-            }
-        }.accessibilityIdentifier("article-library-list")
+        ScrollViewReader { scroll in
+            articleList
+                .onChange(of: searchTerm.isEmpty) { _, isEmpty in
+                    if !isEmpty { scroll.scrollTo("library-results-top", anchor: .top) }
+                }
+        }
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索完整文章标题")
         .searchFocused($searchFocused)
         .onSubmit(of: .search) { finishSearchInput() }
@@ -111,6 +70,65 @@ struct ArticleLibraryView: View {
         } message: { _ in Text("保留原阅读与完成历史，仅为本篇探索文章建立新的阅读进度。每日任务文章不能这样重置。") }
         .fullScreenCover(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭文章") { reader = nil } } } } }
     }
+
+    private var articleList: some View {
+        let searching = !searchTerm.isEmpty
+        return List {
+            if !searching {
+                Button { beginRefresh() } label: {
+                    Label("发现新文章", systemImage: "arrow.clockwise")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }.buttonStyle(.borderless).disabled(loading).accessibilityIdentifier("library-discover")
+                if let notice { Text(notice).font(.footnote).accessibilityIdentifier("article-notice") }
+            }
+            if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red); Button(importFailed ? "重试导入" : "重新读取本地数据") { if importFailed { beginRefresh() } else { load() } } }.accessibilityIdentifier("article-import-error") }
+            Section {
+                inventorySummary.id("library-results-top")
+                if !searching { libraryFilters }
+            }
+            if !searching { DiscoveryProgressCard(service: learning.discovery) }
+            if visible.isEmpty && (searching || !loading) { emptyLibrary }
+            if !searching { rfcOptions }
+            ForEach(visible) { item in
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(ArticleTitlePresentation.display(item.title, sourceID: item.sourceID)).font(.system(.headline, design: .serif))
+                    Text(([ArticleSourceRegistry.name(item.sourceID)] + item.topics + ["\(item.minutes) 分钟"]).joined(separator: " · "))
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    Text(item.completed ? "已完成 · 可重读" : item.started ? "进行中 \(Int(item.percent * 100))%" : item.cycleID != nil ? "每日必做" : "未读").font(.subheadline)
+                    Button(!access.permits(articleID: item.id, cycleID: item.cycleID) ? "完成必做后解锁" : item.started ? "继续阅读" : "打开文章") {
+                        do {
+                            _ = try learning.openArticle(articleID: item.id, cycleID: item.cycleID, at: Date())
+                            reader = ReaderRoute(articleID: item.id, cycleID: item.cycleID)
+                        } catch { self.error = error.localizedDescription }
+                    }.disabled(!access.permits(articleID: item.id, cycleID: item.cycleID)).accessibilityIdentifier("library-open-\(item.id)")
+                    HStack {
+                        Button(item.favorite ? "取消收藏" : "收藏", systemImage: item.favorite ? "star.fill" : "star") { flags(item, favorite: !item.favorite) }
+                        Button(item.readLater ? "移出稍后阅读" : "稍后阅读", systemImage: item.readLater ? "bookmark.fill" : "bookmark") { flags(item, later: !item.readLater) }
+                    }.buttonStyle(.bordered).font(.caption)
+                    if item.cycleID == nil && item.started { Button("重新标记为未开始") { resetting = item }.font(.caption).disabled(!explorationAllowed) }
+                    if explorationAllowed && item.sourceID == "user-import" && item.cycleID == nil {
+                        Button("更新个人原文") { editing = ReaderRoute(articleID: item.id, cycleID: nil) }.font(.caption)
+                    }
+                // A List row's automatic button style can dispatch the whole row's
+                // actions. Opening, resetting and editing must remain independent.
+                }.buttonStyle(.borderless).padding(.vertical, 8)
+            }
+        }.accessibilityIdentifier("article-library-list")
+    }
+
+    @ViewBuilder private var libraryFilters: some View {
+        Picker("阅读内容", selection: $mode) {
+            Text("全部").tag("all")
+            Text("收藏 \(items.filter { $0.readable && $0.favorite }.count)").tag("favorite")
+            Text("稍后 \(items.filter { $0.readable && $0.readLater }.count)").tag("later")
+            Text("历史").tag("history")
+        }.pickerStyle(.segmented).accessibilityIdentifier("library-mode-filter")
+        Picker("来源", selection: $source) { Text("全部来源").tag("all"); ForEach(Array(Set(items.filter(\.readable).map(\.sourceID))).sorted(), id: \.self) { Text(ArticleSourceRegistry.name($0)).tag($0) } }.accessibilityIdentifier("library-source-filter")
+        Picker("分类", selection: $topic) { Text("全部分类").tag("all"); ForEach(Array(Set(items.flatMap(\.topics))).sorted(), id: \.self) { Text($0).tag($0) } }.accessibilityIdentifier("library-topic-filter")
+        Toggle("最新导入优先", isOn: $newestFirst)
+    }
+
     private var rfcOptions: some View {
         Section {
             Button { showingRFCOptions.toggle() } label: {
@@ -131,7 +149,8 @@ struct ArticleLibraryView: View {
     private var emptyLibrary: some View {
         VStack(alignment: .leading, spacing: 6) {
             Label("没有匹配的完整文章", systemImage: "books.vertical").font(.headline)
-            Text("调整筛选，或导入完整英文原文。").font(.subheadline).foregroundStyle(.secondary)
+            Text(searchTerm.isEmpty ? "调整筛选，或导入完整英文原文。" : "试试其他标题。")
+                .font(.subheadline).foregroundStyle(.secondary)
         }.padding(.vertical, 6).accessibilityElement(children: .combine).accessibilityIdentifier("library-empty")
     }
     private func finishSearchInput() { searchFocused = false; InputComposition.dismissKeyboard() }
