@@ -174,16 +174,14 @@ struct ArticleImportView: View {
                     Text("原文仅存于本机。链接用于记录来源。")
                         .font(.caption).foregroundStyle(.secondary)
                 }
-                if let error { Text(error).foregroundStyle(.red) }
-                Button(editingArticleID == nil ? "保存到本地文章库" : "更新本地完整原文") {
-                    do {
-                        let draft = ArticleImportDraft(title: title, body: bodyText, source: source, originalURL: originalURL, topic: topic, rightsConfirmed: rights, eligibleForDaily: eligible)
-                        if let editingArticleID { try learning.content.updateOriginal(articleID: editingArticleID, draft: draft, at: Date()) }
-                        else { _ = try learning.content.importArticle(draft, at: Date()) }
-                        learning.changed(); dismiss()
-                    } catch { self.error = error.localizedDescription }
-                }.disabled(!rights).accessibilityIdentifier("save-import")
             }.accessibilityIdentifier("article-import-form").scrollDismissesKeyboard(.interactively)
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    if let error {
+                        Text(error).font(.footnote).foregroundStyle(.red)
+                            .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.vertical, 8)
+                            .background(.regularMaterial)
+                    }
+                }
                 .navigationTitle(editingArticleID == nil ? "合法导入文章" : "更新个人原文")
                 .task {
                     guard let editingArticleID else { return }
@@ -192,6 +190,10 @@ struct ArticleImportView: View {
                 }
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(editingArticleID == nil ? "保存" : "更新", action: save)
+                            .disabled(!rights).accessibilityIdentifier("save-import")
+                    }
                     ToolbarItemGroup(placement: .keyboard) {
                         Spacer()
                         Button("完成输入") { editingBody = false; InputComposition.dismissKeyboard() }
@@ -200,6 +202,16 @@ struct ArticleImportView: View {
                 }
                 .interactiveDismissDisabled()
         }
+    }
+    private func save() {
+        editingBody = false
+        InputComposition.dismissKeyboard()
+        do {
+            let draft = ArticleImportDraft(title: title, body: bodyText, source: source, originalURL: originalURL, topic: topic, rightsConfirmed: rights, eligibleForDaily: eligible)
+            if let editingArticleID { try learning.content.updateOriginal(articleID: editingArticleID, draft: draft, at: Date()) }
+            else { _ = try learning.content.importArticle(draft, at: Date()) }
+            learning.changed(); dismiss()
+        } catch { self.error = error.localizedDescription }
     }
 }
 

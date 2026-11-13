@@ -481,10 +481,6 @@ extension LexiDawnUITests {
         let rights = app.switches["import-rights"]
         try revealLearning(rights, in: app)
         let save = app.buttons["save-import"]
-        for _ in 0..<6 {
-            if save.exists && save.frame.midY < app.windows.firstMatch.frame.maxY - 80 { break }
-            app.swipeUp()
-        }
         XCTAssertTrue(save.exists); XCTAssertFalse(save.isEnabled)
         capture("F05-import-without-rights-save-disabled", in: app)
         try revealLearning(rights, in: app); tapNativeSwitch(rights)
@@ -494,7 +490,8 @@ extension LexiDawnUITests {
         app.swipeDown(); app.swipeDown()
         app.textFields["import-title"].tap(); app.textFields["import-title"].typeText("My screenshot article (test-owned)")
         let editor = app.textViews["import-body"]; editor.tap(); editor.typeText("A book opens a window to science. I wrote this short passage for this isolated screenshot test. We learn by reading, remembering, and trying again. Lexidawngalleryword is deliberately an unknown word.")
-        app.swipeUp()
+        let done = app.buttons["finish-article-input"]
+        XCTAssertTrue(done.waitForExistence(timeout: 5)); done.tap()
         capture("F06-import-owned-text-preview", in: app)
         try revealLearning(save, in: app); save.tap()
         XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 10))

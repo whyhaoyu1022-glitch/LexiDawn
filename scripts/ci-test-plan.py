@@ -8,6 +8,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+IMPORT_RETRY = 'LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart'
+FOCUSED = {
+    'fix-pro': [
+        IMPORT_RETRY,
+        'LexiDawnUITests/Round3UITests/testPersonalOriginalUpdateFormAndChangedVersionRestoreNativeReader',
+        'LexiDawnUITests/LexiDawnUITests/testGalleryImportEmptyValidationAndOwnedArticle',
+    ],
+    'fix-se': [IMPORT_RETRY],
+}
+
 def plan():
     methods = []
     for path in sorted((ROOT / 'LexiDawnUITests').glob('*.swift')):
@@ -37,14 +47,22 @@ def plan():
         raise SystemExit('Full regression sharding lost or duplicated a test')
     if any(name not in methods for key in ['large', 'small'] for name in result[key]):
         raise SystemExit('Device regression references a missing method')
+    if any(name not in methods for cases in FOCUSED.values() for name in cases):
+        raise SystemExit('Focused regression references a missing method')
     return result
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(); parser.add_argument('mode', choices=['matrix', 'selectors', 'verify']); parser.add_argument('suite', nargs='?'); args = parser.parse_args()
     result = plan()
     if args.mode == 'matrix':
-        print(json.dumps({'include': [{'suite': key, 'device': 'iPhone-SE-3rd-generation' if key == 'small' else 'iPhone-17-Pro-Max' if key == 'large' else 'iPhone-17-Pro'} for key in result]}))
+        if args.suite == 'focused':
+            print(json.dumps({'include': [
+                {'suite': 'fix-pro', 'device': 'iPhone-17-Pro'},
+                {'suite': 'fix-se', 'device': 'iPhone-SE-3rd-generation'},
+            ]}))
+        else:
+            print(json.dumps({'include': [{'suite': key, 'device': 'iPhone-SE-3rd-generation' if key == 'small' else 'iPhone-17-Pro-Max' if key == 'large' else 'iPhone-17-Pro'} for key in result]}))
     elif args.mode == 'selectors':
-        for method in result[args.suite]: print('-only-testing:' + method)
+        for method in (result | FOCUSED)[args.suite]: print('-only-testing:' + method)
     else:
         print(json.dumps({'mainTotal': sum(len(v) for k, v in result.items() if k.startswith('full-')), 'suites': {k: len(v) for k, v in result.items()}}, indent=2))

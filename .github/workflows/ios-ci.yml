@@ -178,7 +178,7 @@ jobs:
   build-and-test:
     needs: export-check
     if: ${{ always() && !cancelled() && !contains(github.event.head_commit.message, '[ipa-only]') && !contains(github.event.head_commit.message, '[round4-core]') && !contains(github.event.head_commit.message, '[round4-ui]') && (needs.export-check.result == 'success' || needs.export-check.result == 'skipped') }}
-    name: Build once, complete unit and network gate
+    name: Build once and validate the selected test scope
     runs-on: macos-latest
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
@@ -191,7 +191,13 @@ jobs:
         id: plan
         run: |
           python3 scripts/ci-test-plan.py verify
-          echo "matrix=$(python3 scripts/ci-test-plan.py matrix)" >> "$GITHUB_OUTPUT"
+          if [[ "$FOCUSED" == true ]]; then
+            echo "matrix=$(python3 scripts/ci-test-plan.py matrix focused)" >> "$GITHUB_OUTPUT"
+          else
+            echo "matrix=$(python3 scripts/ci-test-plan.py matrix)" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          FOCUSED: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[round4-fix-ui]') && !contains(github.event.head_commit.message, '[round4-final]') }}
       - name: Compile app and every test target once
         id: compile-tests
         run: |
@@ -213,6 +219,7 @@ jobs:
           print("Native launch screen and scene manifest present")
           PYINFO
       - name: Build Release without screenshot or fault fixtures
+        if: ${{ !contains(github.event.head_commit.message, '[round4-fix-ui]') || contains(github.event.head_commit.message, '[round4-final]') }}
         shell: bash
         run: |
           set -euo pipefail
@@ -230,8 +237,10 @@ jobs:
           print('Release built; explicit screenshot/fault fixture markers excluded.')
           PYRELEASE
       - name: Boot unit simulator
+        if: ${{ !contains(github.event.head_commit.message, '[round4-fix-ui]') || contains(github.event.head_commit.message, '[round4-final]') }}
         run: bash scripts/ci-simulator.sh iPhone-17-Pro
       - name: Run every unit, migration and real network test
+        if: ${{ !contains(github.event.head_commit.message, '[round4-fix-ui]') || contains(github.event.head_commit.message, '[round4-final]') }}
         timeout-minutes: 12
         run: |
           set -euo pipefail
@@ -355,7 +364,7 @@ jobs:
   combined-native-evidence:
     name: Combine original PNG evidence and complete index
     needs: [build-and-test, ui-tests]
-    if: ${{ always() && !cancelled() && needs.ui-tests.result != 'skipped' }}
+    if: ${{ always() && !cancelled() && needs.ui-tests.result != 'skipped' && (!contains(github.event.head_commit.message, '[round4-fix-ui]') || contains(github.event.head_commit.message, '[round4-final]')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

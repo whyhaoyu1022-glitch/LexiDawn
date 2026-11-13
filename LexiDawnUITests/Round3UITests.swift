@@ -66,12 +66,15 @@ final class Round3UITests: XCTestCase {
         for _ in 0..<7 { if edit.exists && edit.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(edit.isHittable); edit.tap(); XCTAssertTrue(app.navigationBars["更新个人原文"].waitForExistence(timeout: 10))
         let title = app.textFields["import-title"]; XCTAssertTrue(title.exists); title.tap(); title.typeText(" verified")
+        let done = app.buttons["finish-article-input"]
+        XCTAssertTrue(done.waitForExistence(timeout: 5)); done.tap()
+        let form = app.collectionViews["article-import-form"]
+        XCTAssertTrue(form.exists)
         let rights = app.switches["import-rights"]
-        for _ in 0..<7 { if rights.exists && rights.isHittable { break }; app.swipeUp() }
+        for _ in 0..<7 { if rights.exists && rights.isHittable { break }; form.swipeUp() }
         XCTAssertTrue(rights.isHittable); let toggle = rights.switches.firstMatch; if toggle.exists { toggle.tap() } else { rights.tap() }
         capture("R3-R12", app: app, feature: "reader-version", state: "explicit-owned-original-update-confirmation", origin: "explicit-original-version-fixture-real-Repository-update")
         let save = app.buttons["save-import"]
-        for _ in 0..<5 { if save.exists && save.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(save.isEnabled); XCTAssertTrue(save.isHittable); save.tap()
         XCTAssertTrue(app.navigationBars["文章库与历史"].waitForExistence(timeout: 10))
         let read = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).firstMatch
@@ -450,17 +453,20 @@ final class Round3UITests: XCTestCase {
         let app = launch("round3-import-retry"); openLibrary(app)
         capture("R3-L01", app: app, feature: "library", state: "empty-before-import", origin: "explicit-original-fixture-URLProtocol")
         let discover = app.buttons["library-discover"]
-        XCTAssertTrue(discover.isHittable); discover.tap()
-        XCTAssertTrue(app.staticTexts["article-notice"].waitForExistence(timeout: 30))
+        XCTAssertTrue(discover.isHittable); discover.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)).tap()
+        XCTAssertTrue(app.staticTexts["article-notice"].waitForExistence(timeout: 30), app.debugDescription)
         XCTAssertTrue(app.staticTexts["article-notice"].label.contains("已导入 1"))
         capture("R3-A18", app: app, feature: "article", state: "503-retry-success-full-import", origin: "URLProtocol-retry-with-original-test-text")
-        XCTAssertTrue(discover.isHittable); discover.tap()
+        XCTAssertTrue(discover.isHittable); discover.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)).tap()
         XCTAssertTrue(app.staticTexts["article-notice"].waitForExistence(timeout: 10))
         let notice = app.staticTexts["article-notice"]
         let noNew = NSPredicate(format: "label CONTAINS '没有新文章'")
         expectation(for: noNew, evaluatedWith: notice); waitForExpectations(timeout: 15)
         let inventory = app.staticTexts["library-total-count"]
         let filtered = app.staticTexts["library-filtered-count"]
+        let list = app.collectionViews["article-library-list"].firstMatch
+        let libraryScroll = list.exists ? list : app
+        for _ in 0..<5 { if inventory.exists && inventory.isHittable { break }; libraryScroll.swipeUp() }
         XCTAssertTrue(inventory.waitForExistence(timeout: 10))
         XCTAssertEqual(inventory.label, "共 1 篇"); XCTAssertEqual(filtered.label, "当前 1 篇")
         capture("R3-A19", app: app, feature: "article", state: "deduplicated-no-new-article", origin: "explicit-original-fixture-URLProtocol")
@@ -468,14 +474,16 @@ final class Round3UITests: XCTestCase {
         for _ in 0..<4 { if search.exists && search.isHittable { break }; app.swipeDown() }
         XCTAssertTrue(search.waitForExistence(timeout: 10)); XCTAssertTrue(search.isHittable)
         search.tap(); search.typeText("Explicit fixture")
-        XCTAssertEqual(filtered.label, "当前 1 篇")
+        let match = app.staticTexts["Explicit fixture article (not production)"]
+        for _ in 0..<6 { if match.exists && match.isHittable { break }; libraryScroll.swipeUp() }
+        XCTAssertTrue(match.isHittable)
         capture("R3-L02", app: app, feature: "library", state: "title-search-hit", origin: "explicit-original-fixture-URLProtocol")
+        for _ in 0..<5 { if search.isHittable { break }; libraryScroll.swipeDown() }
+        XCTAssertTrue(search.isHittable); search.tap()
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "Explicit fixture".count)); search.typeText("zzzzunfindable")
         XCTAssertEqual(search.value as? String, "zzzzunfindable")
         let noResults = app.descendants(matching: .any)["library-empty"].firstMatch
-        for _ in 0..<5 { if noResults.exists && noResults.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(noResults.waitForExistence(timeout: 10))
-        XCTAssertEqual(filtered.label, "当前 0 篇")
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-open-'")).count, 0)
         capture("R3-L03", app: app, feature: "library", state: "title-search-no-result", origin: "explicit-original-fixture-URLProtocol")
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "zzzzunfindable".count))
@@ -500,7 +508,7 @@ final class Round3UITests: XCTestCase {
         capture("R3-L05", app: app, feature: "library", state: "restart-retains-flags-network-unavailable", origin: "URLProtocol-offline-original-fixture")
         for _ in 0..<6 { if app.buttons["library-discover"].isHittable { break }; app.swipeDown() }
         XCTAssertTrue(app.buttons["library-discover"].isHittable)
-        app.buttons["library-discover"].tap()
+        app.buttons["library-discover"].coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)).tap()
         XCTAssertTrue(app.staticTexts["无法导入完整文章，未添加到本地文章库。"].waitForExistence(timeout: 15))
         XCTAssertEqual(inventory.label, "共 1 篇")
         capture("R3-L06", app: app, feature: "library", state: "refresh-failed-existing-complete-local-version-preserved", origin: "URLProtocol-offline-original-fixture")

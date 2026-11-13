@@ -39,9 +39,13 @@ struct ArticleLibraryView: View {
     var body: some View {
         List {
             if !query.isBlank, visible.isEmpty, !loading { emptyLibrary }
-            Button("发现新文章", systemImage: "arrow.clockwise") { beginRefresh() }.buttonStyle(.borderless)
-                .disabled(loading).accessibilityIdentifier("library-discover")
-            DiscoveryProgressCard(service: learning.discovery)
+            Button { beginRefresh() } label: {
+                Label("发现新文章", systemImage: "arrow.clockwise")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }.buttonStyle(.borderless).disabled(loading).accessibilityIdentifier("library-discover")
+            if let notice { Text(notice).font(.footnote).accessibilityIdentifier("article-notice") }
+            if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red); Button(importFailed ? "重试导入" : "重新读取本地数据") { if importFailed { beginRefresh() } else { load() } } }.accessibilityIdentifier("article-import-error") }
             Section {
                 inventorySummary
                 Picker("阅读内容", selection: $mode) {
@@ -54,8 +58,7 @@ struct ArticleLibraryView: View {
                 Picker("分类", selection: $topic) { Text("全部分类").tag("all"); ForEach(Array(Set(items.flatMap(\.topics))).sorted(), id: \.self) { Text($0).tag($0) } }.accessibilityIdentifier("library-topic-filter")
                 Toggle("最新导入优先", isOn: $newestFirst)
             }
-            if let notice { Text(notice).font(.footnote).accessibilityIdentifier("article-notice") }
-            if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red); Button(importFailed ? "重试导入" : "重新读取本地数据") { if importFailed { beginRefresh() } else { load() } } }.accessibilityIdentifier("article-import-error") }
+            DiscoveryProgressCard(service: learning.discovery)
             if query.isBlank, visible.isEmpty, !loading { emptyLibrary }
             if query.isBlank { rfcOptions }
             ForEach(visible) { item in
