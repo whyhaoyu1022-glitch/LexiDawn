@@ -2,9 +2,9 @@
 
 状态：**全部21张原图已逐张人工查看；本轮仅形成计划，尚未整改代码、运行新测试或取得整改后真机截图。**
 
-用户2026-11-06的新批注及本次指令优先于旧SPEC中的冲突UI/交互要求。所有强制项继续在[开发任务书](../plans/round-4-development-specification.md)统一验收。
+用户2026-11-06的新批注及本次指令优先于旧SPEC中的冲突UI/交互要求。所有强制项继续在[开发任务书](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/6054b03932e036ab3205488ed9e5af60fa7495fa/docs/plans/round-4-development-specification.md)统一验收。
 
-**2026-11-07后续指令：** 本文保留首次21图批注与当时事实，不改写原话；当前规范已升级v1.1，尤其个人补义入口须遵循[词典补充](../plans/round-4-dictionary-detail-addendum.md)。新增3张参考使用R4-R01–R03，见[独立审阅](round-4-dictionary-reference-audit-2026-11-07.md)，不计作本包新增问题图。
+**2026-11-07后续指令：** 本文保留首次21图批注与当时事实，不改写原话；当前规范已升级v1.1，尤其个人补义入口须遵循[词典补充](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/6054b03932e036ab3205488ed9e5af60fa7495fa/docs/plans/round-4-dictionary-detail-addendum.md)。新增3张参考使用R4-R01–R03，见[独立审阅](round-4-dictionary-reference-audit-2026-11-07.md)，不计作本包新增问题图。
 
 ## 原始证据与阅读方法
 
@@ -14,7 +14,7 @@
 
 图像边长约1206×2622；未从分辨率猜手机型号/iOS版本。当前代码审查基线main `6840b2d0d786c88d6c067feebd16df968c50849a`，此前IPA构建代码`39c5f7056644972ca0030a1cb041400a08d52c3c`。截图本身未暴露build，正式复现必须记录实装包与设备信息，不能仅由文件名断言版本。
 
-原图定位使用“上传包/IMG_xxxx.heic”；本文不把预览图当整改后截图。完整哈希、尺寸、摘录、要求与验收在[机器可读清单](round-4-feedback-manifest.json)。
+原图定位使用“上传包/IMG_xxxx.heic”；本文不把预览图当整改后截图。完整哈希、尺寸、摘录、要求与验收在[机器可读清单](../../../reviews/round-4-feedback-manifest.json)。
 
 | 审阅ID | 原图 | 页面/问题 | 优先级 | 需求 / 测试 |
 |---|---|---|---|---|

@@ -1,150 +1,44 @@
-## 2026-11-13 · MDX 释义路径
+# 架构与仓库目录
 
-已保存的进行中题组如果明确使用已停用词典，预检会归档原题、尝试次数与已有进度，并按当前 MDX 重新准备新题。若检测到既有排程日志，会报告完整性错误并保留原记录。正常 MDX 和已准入个人快照按原题恢复。
+## 仓库目录
 
-浮窗、搜索、详情、推荐和生词预览通过同一个 DictionaryLookupService 读取 MDX，生词列表按需读取可见项。准备新复习会话时，预检结果随词条 ID 传入组题事务，按来源语境选义并冻结答案。派生缓存继续保留记录位置及历史资料。个人资格使用当前文件 SHA 的成功查询证据；新题再次检查资格。
+| 路径 | 职责 |
+|---|---|
+| `LexiDawn.xcodeproj/`、`Package.swift` | Xcode 工程、共享 scheme 和 SwiftPM 清单 |
+| `LexiDawn/AppCore/` | 初始化持久化容器，装配依赖与学习服务 |
+| `LexiDawn/Domain/` | 学习状态机、来源准入、词形与词义、组题、FSRS 规则 |
+| `LexiDawn/Data/` | SwiftData 记录、事务与迁移，文章获取、MDX 和各 Repository |
+| `LexiDawn/Features/`、`LexiDawn/DesignSystem/` | 原生页面、视图模型和共用样式 |
+| `LexiDawn/Resources/` | 运行资源与原生资产。根目录的 `assets/` 放设计概念 |
+| `LexiDawnTests/`、`LexiDawnUITests/` | 单元、真实磁盘迁移、网络、兼容和原生交互验证 |
+| `Dictionary Data/` | 两份原始 MDX 分包、验证恢复工具和使用说明 |
+| `scripts/`、`.github/workflows/` | 构建、分组、验证、打包和采集证据 |
+| `docs/`、`artifacts/` | 现行文档、历史归档、机器清单及运行证据 |
 
-## 2026-11-11 · 词典与文章显示
+路径是接口的一部分。打包把 `docs/signing.md` 作为安装说明复制到 IPA 的外层 ZIP。截图脚本读取 `docs/reviews/round-4-feedback-manifest.json`、其内三张参考图的 `repositoryFile`、`artifacts/round-4/original-image-recheck.json` 和 `artifacts/round-3/screenshots/coverage-requirements.json`。这些路径变动需要与调用者同步。
 
-MDX 解析版本 SHA + html-9。语境匹配在隔离的排序器中对实际词性排序，MDX 和个人义项保留各自身份。生词与阅读器共用词典内容布局，个人编辑保留独立资格检查。文章发现服务发布本次运行的来源结果、阶段与实际入库数。旧 DW 阅读投影按结构删去固定播放器段，展示位置映射到未改写的原文 UTF-16 偏移。
+## 层与事务
 
-## 2026-11-10 当前执行补充
+SwiftUI 及 UIKit 控件提供呈现和交互。ViewModel/Service 管理请求与取消、校验输入和调用 Repository。Domain 定义状态、身份和门禁。Repository 拥有 SwiftData 写入、事务和重新读取。应用运行时由 `DependencyContainer` 组装 `LearningServices`。
 
-原生运行42923122043完成编译及233 XCTest，232通过、1项真实MDX联想词补充失败。HTML7已读取原文件的联想词与双语用法，排除同形上标，持久保留SHA绑定的记录位置；清缓存后仍从MDX重新读取释义。234 XCTest与62 XCUITest为当前源码数量。21张上传原图与三张词典参考已逐张查看，验收及运行截图见交付记录。
+`RepositoryWriter` 在 MainActor 上为每次写入创建独立 `ModelContext`，关闭自动保存。成功后才发布结果。失败回滚并弃用该上下文，新读操作用独立上下文。跨模型同一业务动作需在同一事务提交。当前受支持的是单应用、单容器、串行写入。早期版本的旧 schema 在冷启动前保留原 store/WAL/SHM，在不改写正文的前提下迁移并留历史快照。真实历史 schema 用冻结夹具建库后再升级。细节见[数据决策](decisions.md)。
 
-> **2026-11-09 负责人规则覆盖：唯一词典来源为 App 内置 MDX。** 两个 ZIP 只在构建阶段由仓库 merge.py 恢复并验证；运行时原生 C 读取压缩索引与记录块，由 Swift Actor 查询，系统 libxml2 提取词义，AVSpeechSynthesizer 发音。不需要 MDD、词典图片、在线音频，不支持用户导入词典，不向任何在线词典查询。只有 MDX 成功确认无中文或无词条，才允许结构化个人义项；资源/解析故障不等于查无词条。历史外部缓存及个人数据保留，外部缓存不再参与展示或新题。下文旧多 Provider、CC-CEDICT、在线回退及未知失败可补义规则均属历史，已被本段取代。文章来源规则不变。实现及测试尚在进行，不能据此关闭 144 项验收。
+## 发现与阅读
 
-# 当前架构与数据模型（Round3历史验证单列）
+`ArticleDiscoveryService` 统一协调今日、书库和探索。来源注册区分 RSS/API/列表和准入依据。HTML 提取器产生结构化块，`ContentRepository` 验证并提交正文和证据。失败留可诊断结果，部分成功已提交的数据保留。完整文章范围见[文章规范](spec-addendum-content-and-dictionary.md)。
 
-全量 CI [41436291391](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41436291391) 已完成且成功，测试代码为 `b13d6b4e21e425472d059770319d88cd7c50a15e`。Debug/Release、186 XCTest（0失败）、49主 XCUITest（0失败）、SE7/大屏3（均0失败）、导出专项及截图合并全部通过；327张编号截图覆盖138项要求，缺失0项。当前交付自动化证据与完整截图包，最终视觉验收由负责人逐图确认；真机/iOS27/完整VoiceOver听读及Instruments未实测。本次仅文档与证据收尾，不修改应用、测试或CI代码。 [完整交付报告](reviews/round-3-final-delivery-2026-11-02.md)。
-
-沿用 SwiftUI → ViewModel/Service → Domain/Repository → RepositoryWriter → SwiftData。网络不在 View，数据库操作在 Repository；UI只维护选择与草稿。每次写使用独立 context，关闭 autosave，同步 save/rollback，读取用新context，不复用失败上下文。
-
-## 文章链路
-
-`ArticleSourceRegistry/Audit → ArticleDiscoveryService → ArticleFetchService → ArticleWebPageExtractor/ArticleHTMLExtractor → ArticleDocumentNormalizer/QualityValidator → ContentRepository.importFullText`。候选只在内存，ephemeral URLSession无cookie/磁盘缓存、固定HTTPS白名单重定向、有限重试/退避、最多3来源并行。并发refresh加入同一Task；取消在持久化前检查。失败日志仅来源/诊断码/时间/计数。
-
-ArticleRecord旧bodyText物理列为rawContent，新增structuredBody、author、rights evidence、extractionVersion、completenessVerifiedAt、favorite/readLater等optional列。正文与结构/证据同事务，canonical和SHA去重；失败不覆盖旧有效版本。个人模式importBasis与出版社授权scope分开。新增 `ArticleContentVersionRecord` 原样保存个人原文旧版本；只解锁后未指派user-local可显式更新，旧完成进度归档，不更改每日原文。
-
-启动先before-round3冷备份、幂等回填；不完整或授权不可证明旧文章迁入 `ArticleHistoryArchiveRecord`，保留周期/生词/日志引用，不回流推荐/阅读。未知schema/迁移失败保留原库报错，不清库。
-
-## 门禁与阅读器
-
-ArticleLearningAccess以最早未完成周期为current，所有库/历史/收藏/稍后/探索及Reader打开/save/complete复用；全部必做完成且当前学习日有完成周期才允许自由阅读。收藏只改标记。探索开始写真实进度，重置需确认并归档；不会建每日周期。
-
-ReaderTextProjection维护显示重排到原始UTF16映射，raw/hash不变；TextKit渲染原结构、动态字体、点击及复用可见词元AX。版本变化仅按唯一原段落恢复，否则回首并提示。Reader全页/导航/浮窗共用主题。简明词典仅最多2条原始义项（有中文时优先），详情保留全部；嵌套最多3层。
+`ArticleLearningAccess` 统一处理周期、读者路径、书库标记和历史的阅读门禁。原生 TextKit 渲染文章，`ReaderTextProjection` 维护展示到原文 UTF-16 偏移。词元辅助功能由原生桥接提供。短的词典英文例句使用 SwiftUI 富文本点击，复用同一分词和查词模型。
 
 ## 词典与生词
 
-生产查询链路为 `DictionaryLookupService → BundledMDXDictionaryProvider(actor) → MDXReader(C/zlib) → MDXEntryParser(libxml2)`；缓存回写 SwiftData 与资格凭据同事务。引擎惰性 SHA 校验和索引初始化，保留词头索引与一个记录块、128 个词条 LRU，不把完整解压库放到主线程。其他网络 Provider/CC-CEDICT 只在 DEBUG Simulator 编译供历史解析/故障夹具回归，Release 不含它们，运行时没有自动回退。
+`DictionaryLookupService` 调用 `BundledMDXDictionaryProvider` actor。C 读引擎和 zlib 按需读取记录块，系统 libxml2 解析 HTML 字段。Swift 首次查询校验 SHA 并建立索引，内存缓存最多 128 个查询词。缓存绑定 MDX SHA 和 HTML 解析版本（当前 `html-9`）。同 SHA 的旧派生记录号可帮助定位，显示数据须经当前解析版本读取。支持范围见[实际文件格式](<../Dictionary Data/README.md>)。
 
-MDX 有中文时个人义项锁定；只有成功无词/无中文凭据才可保存个人多词性/义项、配对例句、搭配、习语、语域、备注。资源失败撤销当前写资格但保留个人内容与笔记。旧字符串无损迁为未确认 legacyPersonal；变更/删除归档前一修订，JSON/CSV 保留历史。MDX 缓存绑定 SHA 与 HTML 解析版本，历史外部缓存不参与当前词义。
-
-词汇详情、阅读器浮层与全屏、推荐复用 DictionaryResultContent；浮层最多两条中文，详情保留全部分组。AVSpeechSynthesizer 开始/停止，退出停止，不读 IPA。词汇页提供原生离线搜索，浏览不自动加入，无文章的词可明确创建，不伪造文章上下文。
+详情、简明浮层、生词、推荐和复习共享词义身份。领域策略、服务和 Repository 同时审核个人中文写入资格。变更义项会保存修订历史，笔记独立保存。旧第三方缓存与旧个人文本留历史。原有解析或故障夹具属于测试路径，Release 的词典查询指向内置 MDX。
 
 ## 复习
 
-MatchingBoard用AnchorPreference/Canvas画Bezier线；双端禁用，ReviewQueueService事务拒绝重复消费。FSRSScheduler为FSRS4.5固定参数DSR实现，保存版本/S/D/间隔/计数/日志。旧basic日志不改写；下次真实复习才转换状态。
+`ReviewEntryCoordinator` 统一预检，`ReviewRepository` 保存题组与冻结答案，`MatchingBoard` 负责真实连线布局，`FSRSScheduler` 保存算法版本 `fsrs-4.5-lexidawn-1` 和可重放的评分证据。一次提交包含答题、日志、排程和关联周期变化。事件重复提交幂等，已完成会话不能被较旧的结果覆盖。额外复习使用自己的会话 ID 和事件域。
 
-题组持久化原句、实际surface答案、整词/短语遮空与明确原文拼写变体，旧题语境安全回填不改变答案/尝试/提示/完成。缺可靠中文阻止出题。回答、反馈、排程、日志和周期同事务；重新载入清理旧输入/反馈。额外复习purpose=extra、extra|sessionID命名空间，不建DailyStudyCycle或重锁探索。
+## 验证入口
 
-## CI与支持范围
-
-一次Debug test-products编译后，全单元/真实网络/Release关卡，通过才在同工具链/架构4主UI组与2设备专项test-without-building；原始PNG和xcresult失败也上传。旧计数不作当前证明，准确结果见STATUS。产品iOS27保持，当前验证仅已批准iOS26.5/Xcode26.6。单应用单容器MainActor串行写受支持；不承诺跨进程多容器竞争。真机/iOS27/Instruments/完整VoiceOver尚无通过证据。
-
-以下保留历史架构演进记录；旧“未接入”和旧basic排程叙述仅表示当时状态。
-
-
-生词语境新增nullable contextKind/contextTitle/contextAttribution，reader/dictionary/historical分别表示原文、实际词典文本、历史未知类型。词典语境保存原词/原始来源行，关联文章仅作为阅读会话关联；导出保留kind与证据。未知旧类型不推断，显式新点词才补证。短语的完整源范围由Domain在原始全文/词典文本中核验，WordLookupModel协调读取与创建子查词，错误与生词提交错误分离。新ReviewState写入new及零评分计数，首次Again为learning，已复习失败为relearning；旧日志不改写。
-
----
-
-# 架构
-
-> 前半部分保留 Round 1 历史基线与不变量；当前生产功能、Round 2 验证结果和未完成项见文末及 Round 2 开发交付自述。
-
-依据 SPEC §15.3：“数据修改通过 Repository / Use Case 统一执行。”保留 SwiftUI / Domain / Repository / SwiftData 分层，领域与 Repository 写入在 MainActor；Round 2 词典资源由独立 actor 加载。
-
-- Domain：`DailyStudyCycle` 可抛错初始化、只读对外状态和统一 `validate()`。通用更新不能 completed/deferred。阅读完成需文章 ID、内容哈希、有效进度及明确确认；手动确认允许低进度，不增加查词要求。复习空队列只由完整可复习集合的 reader 生成绑定 cycleID/版本/时间的证据，三个复习状态一次性解析；不可用 reader 抛错。正常/部分复习结果由 reader 读取固定已保存会话、题目与已答 ID 的结构化结果约束，源事件时间保持不变。生产未实现这些模块，不产生伪结果。
-- Data：新增字段均可选，保留原有字段/实体。Record.domain() 走同一领域验证。已知旧 deferred/无证据完成状态在显式恢复事务中存档全部原标量与证据后变成说明清楚的 blocked；无法辨认的状态或关联异常终止恢复，不删除或合并数据。
-- Repository：`RepositoryWriter` 关闭 autosave，每次同步写入使用专属ModelContext，统一save/catch/rollback，失败上下文直接弃用，不复用其缓存；读取使用新context。真只读磁盘测试证实仅rollback不足以清除注册幽灵对象。创建必须同一上下文写文章和周期；移除非原子 fallback。普通保存验证文章存在、身份不变、日期/文章指派唯一、状态不回退、完成证据和内容版本匹配。current 总是最早未完成周期；历史多个未完成记录保留。文章相同 ID 仅接受完全相同快照重试，不覆盖已分配正文。
-- Article：Candidate 负责许可/缓存期限、来源与图片署名、HTTP(S) URL、正文/主题门禁；正文 SHA-256、英文词数和按 200 词/分钟估算阅读时间由正文计算。所有 Repository 文章入口复用门禁。历史缺少缓存权利的文章不推断获得许可，后续阅读器必须重新核验。
-- AppCore：生产打开原默认数据库 URL，先创建父目录并保留一次升级前数据库/WAL/SHM 冷启动备份；自动轻量迁移仅新增可选列。不支持活动外部写入下文件备份；当前无 extension/后台独立写进程。打开失败提供真实重试，无删除重建分支。
-- Today：读取偏好固定/设备时区；统一使用 Gregorian yyyy-MM-dd 学习日期。显示四任务原因；未接入操作 disabled，说明当前尚不能恢复学习。“重新读取已保存状态”只重读/执行安全恢复；启动“重新打开存储”重新执行初始化。
-
-保障范围：同一应用单一容器、串行 MainActor Repository 是受支持写入口。不同 context 的顺序读取有测试；没有对多容器/跨进程竞争作数据库唯一约束承诺。唯一性使用同一同步 unit of work 的事务性去重，不能把主线程串行解释成跨进程锁。Preferences返回用于编辑的托管记录，save先捕获完整独立快照、回滚编辑context，再在专属写context应用。调用者不要跨await悬置编辑；UI保存后重新load。
-
-迁移支持范围与计数语义见 ADR-004–007；实际升级成功必须以两个历史 schema 磁盘测试为准，当前模型重开测试不能替代迁移测试。
-
-原生窗口和CI定位：App Debug/Release均启用标准UILaunchScreen与UIApplicationSceneManifest生成，CI读取真实产物plist校验；XCUITest实际验证现代窗口尺寸。UI定位仅操作标识today-scroll，按可用viewport和目标方向滚动，无进展附截图/层级失败；不通过跳过点击来隐藏不可见控件。固定iPhone17Pro/iOS26.5兼容环境，共享derivedData但不跳过target。详见ADR-010及本轮报告。
-
-实际验证：代码 `309afe81aecfbfd84e5a9f52251c59f8e32c0575` 的 [run 41170754181](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41170754181) **success**：XCTest 61/0、XCUITest 8/0；UI用例合计 321.466 秒。artifact [13031277540](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41170754181/artifacts/13031277540)。
-
-复习源结果的recordedAt相对上一个已保存会话结果不可回退；复习已完成时，其完整结果凭据即保持不变，即使文章仍未完成。领域命令与直接Repository更新都执行该检查；初次延迟结果仍可早于周期updatedAt高水位，保留源事件时间。
-
-## Round 2 当前交付范围（2026-10-31）
-
-生产入口现使用真实 LearningServices；此前“生产未接入”的 Round 1 文字仅说明历史状态。已提供：合法粘贴导入、随附 RFC 8890 原文与官方刷新、原生词级点击阅读器、节流进度和重启恢复、明确阅读确认、CC-CEDICT 本地反向查词与详情、生词搜索/笔记/安全撤销/确认删除、持久化连线与拼写、确定性基础排程、真实设置、事件统计、文章库/历史和探索门禁。
-
-来源的全文/缓存权利以 IETF TLP 5 §3(c)(i) 为依据，原文完整保留并核对 SHA-256。词典派生索引使用 CC BY-SA 4.0，可能对应词不冒称已消歧的语境义；来源不提供英语音标、词性或例句时如实说明。用户导入仅限本地，不代表取得公开版权。探索与每日指派分离；文章库保留历史与授权失效元数据。
-
-排程为 `lexidawn-basic-1`，不是 FSRS。M4 的语境消歧、丰富短语、可靠英语词性/IPA，M5 的额外复习、M6 的高级词汇推荐和 M7/M9 尚未交付。没有通知/AI/账号/上传/付费服务或签名 IPA。iOS 27 产品目标保留；CI 仅验证已批准 iOS 26.5 模拟器。
-
-本批功能及验证状态以 [Round 2 开发交付自述](reviews/round-2-development-delivery.md) 为准；独立验收尚未执行。
-
-### Round 2 实际层级
-
-`LearningRootView → ViewModel/意图 → Content/Reader/Vocabulary/Review 服务 → RepositoryWriter → SwiftData`。Today 仍通过原 DailyCycleService 获取最早周期；复习和阅读在同一 context 内调用原 StudyCycleRepository.applyInTransaction，不建立第二套任务状态。UI 仅保存页面选择与输入草稿，持久化真值在 Repository。
-
-正文入口与元数据分开：ContentRepository.read 返回 ReadableArticle，library 仅返回不含正文的 ArticleLibraryItem；授权失效时保留 hash/关联，阻止展示并提供原文入口。探索路由与 ReaderProgressService 写入口均有门禁；已指派文章只能沿原周期继续。统计从完成证据/进度/会话结果重建，不维护多个页面计数器。
-
-词典数据加载在 actor 内，主线程只提交必要缓存实体；TextKit 按正文版本解析token，点击二分命中；不在每帧重新hash/分词。进度2秒节流，离开/后台刷写。短英文详情复用同一命中组件；动态高度与嵌套深度受控。
-
-
-## Round 2 已核验的应用代码结果
-
-应用代码 `fcac01b3d40b311b51c7a0fea4e6329d0300ca92` 的 [Actions 41194434948](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41194434948) 已结束 **success**：**93 XCTest/0失败、13 UI/0失败**，逐项匹配106个测试方法，无遗漏。artifact [13040631627](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41194434948/artifacts/13040631627) 包含unit/UI xcresult、完整日志及原生截图。最小“真实文章→阅读→查词→生词→连线→拼写→周期完成→探索解锁”场景已通过模拟器UI；磁盘重开与两版旧schema升级在同一套回归中通过。UI共615.006秒，3504词微基准平均0.024秒，波动较大，不能作为真机帧率承诺。
-
-后续测试定位增强提交 `1b2e26b39c33aff434298ab141eff426725caf24` 仅增加重启后foreground/hittable等待和一次真实坐标触摸，保留恢复百分比与可见词元位置断言。最终文档提交的SHA/Actions以GitHub History和交付答复为准；本节不冒用应用代码的绿色运行作为其他SHA的证明。
-
-这是 iOS26.5兼容模拟器/Xcode26.6 结果，不代表iOS27、真机、签名IPA、全量无障碍或独立验收通过。详细范围、全部失败及未完成项见 Round 2 开发交付自述。
-
-
-
-2026-11-01 · 负责人特别指示的公开官网全文模式：允许个人使用场景下直接尝试11个官网来源（BBC、Reuters、AP、Guardian、NPR、DW、VOA、NASA、ScienceDaily、Phys.org、Smithsonian）；旧出版社许可审核不改写为授权。FullTextRightsEvidence.importBasis=owner-directed-personal-use-2026-11-01，grant.scope=personal-full-text，与audited-full-text分开。只请求公开HTTPS页面，固定主机白名单及重定向检查，无登录、验证码处理、浏览器、代理或付费墙绕过。RSS/列表只在内存中发现候选；完整闭合正文子树或明确articleBody、正文长度/段落/原文一致性和数据库事务验证通过后才入库；任何失败不留下候选。Wikinews另按CC BY4.0及2024-12-17创建日期门槛接入。最多3条来源管线并行，首篇原文导入后更新首页，各来源独立失败/退避。新增8个确定性测试及真实网络五来源导入门槛测试，尚未执行，不把配置11源当作11源成功。
-
-
-继续修复公开来源：RSS候选http仅升级为同站https后再抓取，绝不降级HTTPS；添加仅来源ID/计数/诊断码的发现与提取诊断，无候选URL、标题或正文。NASA补充article语义根，仍要求完整闭合和全文验证。Wiktionary按英文节补充原始IPA/词形/词源/例句，例句不作为独立义项，缓存schema升级3；提供同义词真实义项/例句对照页面及独立加载失败重试，不生成词义解释。新增确定性英文节测试。当前源码147单元/31 UI，待新SHA验证。
-
-
-修复Wikimedia批量发现请求误用只适用于单页的revisions rvlimit/rvdir：恢复info批量发现，Wikinews创建日期另发单页请求；固定revision全文和日期门槛保留。到期正文现在同事务迁出ArticleRecord到历史归档，历史引用/标题/计数仍可恢复但不可阅读推荐；已核验同版本RFC可恢复到原身份，用户学习关系不变。新增到期无partial ArticleRecord与持久刷新退避测试；原到期、时钟回拨和RFC恢复旧测试未删除或改断言。源码149 XCTest/31 UI，待对应新SHA验证。
-
-
-语境排序补充Apple公开NaturalLanguage句向量的本机语义相似度：仅在模型可用时参与，缺失时回退原词性/词汇规则；原始义项不改写不生成。排序预计算各义项分数，避免sort比较器重复模型推理。CI在UI回归前立即上传单元日志便于定位真实外网与迁移错误，完整UI测试和最终xcresult上传不变。
-
-
-继续补齐验收：文章库搜索绑定公开searchFocused并提供完成搜索，保留结果与收藏持久化断言；阅读浮窗继承三主题，补充三主题浮窗截图；新增took/taken及look into、carry out、take into account、play a role in逐项真实UI嵌套查询/返回测试（原创语境夹具与真实本地词典明确区分）。复习反馈展示评分依据、原定日期→下次日期，新增Hard/Good实际作答、重启持久化截图；原Again显示答案截图测试保留。正文提取优先显式正文根，标题作者日期作为独立元数据保留，支持WebPage/Person引用及毫秒日期，不编造作者；新增确定性测试。当前源码152 XCTest/35 UI（旧93/20全保留），新增内容待对应SHA执行；最新已完成151/0的结果不冒用于新增测试。
-
-
-并发与状态补齐：同一发现服务的并发调用加入同一Task并返回相同真实入库结果，取消传播并在入库前再次检查；不再把正在刷新误报成无新文章。新增并发原子导入测试。文章库按业务门禁禁用未解锁文章，收藏不建周期；网络失败与本地读写失败使用相应安全重试，避免把本地问题误导为重新抓网。源码154 XCTest/35 UI，待最新SHA执行。
-
-
-语境拼写完整性：新题组固定保存sourceContext和contextSnapshotVersion；按原句实际词形（took/taken）出题，整段短语统一遮空。旧题组只回填可安全遮空的语境，答案/提示/尝试/完成/排程不变，不能匹配时用原有独立拼写题。两个新增确定性测试覆盖语法、短语答案不泄露、语境不可被后续源数据改写及旧会话恢复。新增字段为optional轻量迁移，冻结Round2磁盘迁移测试保留。源码156 XCTest/35 UI，待对应SHA验证。
-
-
-数据失败UI补齐：编辑释义/笔记后清除旧“已保存”，每次保存先取消成功状态，失败保留草稿；词典异步完成不能清掉笔记保存错误。复习提交失败清理上一次正确反馈。新增第三次实际Repository保存单次失败场景，验证先成功→改草稿→失败无旧成功标签→安全重试→重启保留笔记，四张原始PNG截图。源码156 XCTest/36 UI，原93/20全部保留。
-
-
-词典数据质量复核：Wiktionary音标和词形按实际词性章节归属，避免把名词/动词不同发音和变形混在每个义项中；不明确归属时不补造。新增record名词/动词独立音标/变形夹具测试，Provider缓存schema升级4。源码157 XCTest/36 UI，既有测试断言不变。
-
-
-2026-11-01 · 生词本与额外复习实装（待对应提交验证）：生词本新增待复习/逾期/近7日/较熟悉筛选及最近添加/到期/字母/复习优先级排序，展示可用音标/词性/最近和下次时间；原全部/单词/短语筛选保留。用户主动导出JSON/CSV包含实际词条、个人释义/笔记、来源上下文、真实词典缓存义项、排程和不可变日志，不上传。额外复习使用purpose=extra及extra|sessionID独立命名空间，不创建DailyStudyCycle，复用实际配对/拼写/事务排程，恢复未完成额外题组且不重复刚完成的未来到期词。purpose新增optional字段，历史required会话不重写。个人中文释义生成复习无需英语外网，其他中文从真实本地词典按句子语境排序；无可靠中文仍阻止出题。拼写优先近期遗忘/较长词形，答案与原句继续固定。新增3个确定性回归及1个原生额外复习重启UI；当前164 XCTest/39 UI，原93/20保留。探索完整呈现和词汇推荐继续实现，不宣称统一完成。
-
-
-2026-11-01 · 探索和推荐融合实现（新代码待运行）：探索读取完整本地文章，按集中配置的25/20/20/15/10/5/5权重排序，原生主题封面、来源/日期/词数/阅读时长和未开始状态；支持主题筛选、直接收藏/稍后、发现/取消及安全错误重试。首次真正进入Reader即保存inProgress；用户确认重新标记时归档原进度（新增optional archivedAt，原百分比/完成日期保留）而非删除学习历史；每日任务不可重置。词汇Tab保留可管理生词本，并新增高级词汇/短语推荐入口，未完成任务时锁定；候选从实际本地全文词元提取、保留实际词形/偏移、排除已有词，再查询真实词典，没有可靠数据则不展示。仅显式加入写生词；推荐详情及嵌套查词禁用自动加入。新增词形/推荐无自动添加/探索归档确定性测试及3项原生UI场景，当前167 XCTest/42 UI，旧93/20保留。上一提交4b09989的快速关卡发现生词本toolbar少一个闭括号，已静态确认修复；不是CI通过声明。ebd7f44的编译/Release/完整单元关卡已success，后续新提交不借用该结果。
-
-
-2026-11-01 · 复习义项与拼写变体补齐：用户可在生词详情明确选择中文义项，来源ID、原文中文和原始来源证据独立持久化，清词典缓存不丢用户选择；修改个人释义才切换选择，笔记更新不改义项。新题组优先使用明确选择，已固定题组不被后续修改改写。英美拼写仅从Provider原始释义中明确的Alternative/British/American spelling of关系生成并固定可接受答案，不猜测词形、不把其他时态视为正确。新增2项确定性测试覆盖清缓存、题组不变及明确变体判定。新增均optional字段，旧schema磁盘测试保留。当前169 XCTest/42 UI待新SHA验证。25f7fdb的快速构建关卡发现推荐Model.catch中error同名遮蔽，已更正为self.error；其他同名赋值一并静态检查。
-
-
-2026-11-01 · 恢复并提交个人全文版本更新：仅允许解锁后的未指派user-local文章，显式确认完整原文；旧全文/结构/署名保存在新增ArticleContentVersionRecord，旧完成进度归档，未完成位置按唯一原段落恢复且新进度归零。每日已指派文章拒绝更新。新增事务故障回归检查失败不留版本孤儿、不替换当前正文/授权，原周期数量不变。170单元/42 UI源码，新增版本UI与其余截图补充继续恢复，未声明新功能验收通过。
+原生测试和 Release 核验在 macOS Actions 执行。产品目标最低 iOS 27.0，当前 Xcode 26.6 / iOS 26.5 Simulator 仅用于兼容验证。按[测试计划](test-plan.md)区分仓库检查、宿主 MDX 检查、原生测试、真机与独立实拍审阅。

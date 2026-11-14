@@ -1,61 +1,26 @@
-# Dictionary Data
+# 内置词典数据
 
-本目录保存经授权可使用的词典数据分块，以及拆分、合并和完整性校验工具。
+`dic_data-package-001.zip` 和 `dic_data-package-002.zip` 是同一份 MDX 的二进制分包。每包包含 manifest 与分块。工程从本目录读取两个原包，文件名和目录供构建脚本使用。
 
-## 已上传的数据包
+从仓库根目录验证恢复，需要 Python 3。
 
-两个 ZIP 包已从仓库根目录移动到本目录。请保留原文件名：
-
-- `dic_data-package-001.zip`
-- `dic_data-package-002.zip`
-
-每个 ZIP 包都包含对应的二进制分块、`manifest.json` 和上传说明。两个包都必须存在，才能完整恢复原始文件。
-
-## 合并与校验
-
-需要 Python 3。进入本目录后运行：
-
-```bash
-python3 merge.py --output ../dic_data_restored
-```
-
-也可以从仓库根目录运行：
-
-```bash
+```sh
 python3 "Dictionary Data/merge.py" \
   --package-dir "Dictionary Data" \
-  --output dic_data_restored
+  --manifest-package "dic_data-package-001.zip" \
+  --output /tmp/LexiDawn-BundledDictionary.mdx
+wc -c /tmp/LexiDawn-BundledDictionary.mdx
+shasum -a 256 /tmp/LexiDawn-BundledDictionary.mdx
+python3 scripts/verify-bundled-dictionary.py --mdx /tmp/LexiDawn-BundledDictionary.mdx
 ```
 
-合并程序会：
-1. 从第一个 ZIP 包读取清单；
-2. 检查每个 ZIP 包内的清单是否一致；
-3. 按清单顺序提取数据分块；
-4. 校验每个分块的字节数和 SHA-256；
-5. 校验合并文件的总字节数和 SHA-256；
-6. 只有全部校验通过后才生成最终文件。
+| 属性 | 已验证值 |
+|---|---|
+| 原文件名 | `dic_data(1)` |
+| 大小 | 38,774,534 字节 |
+| SHA-256 | `095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443` |
+| 格式 | MDX 2.0，UTF-16LE XML 头，UTF-8 HTML 记录，未加密 |
 
-如果任一分块缺失、包名不正确或校验失败，程序会报错并删除临时输出文件。
+`merge.py` 比对 manifest，并按清单顺序核验每块及完整文件的大小与哈希。校验通过后才替换输出。需要制备分包时，使用现有 `split.py --help` 查看参数。
 
-## 原始文件校验信息
-
-- 原始文件名：`dic_data(1)`
-- 原始大小：`38,774,534` bytes
-- 原始 SHA-256：`095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443`
-
-## 工具
-
-- `split.py`：将本地二进制文件拆分成 ZIP 数据包，并生成 SHA-256 清单。
-- `merge.py`：从 ZIP 数据包恢复原文件，并执行完整性校验。
-
-重新拆分其他文件的示例：
-
-```bash
-python3 split.py "/path/to/input-file" --output-dir .
-```
-
-默认每个原始分块为 20,000,000 bytes。
-
-## 访问与版权
-
-本仓库设置为 Private。请仅在你持有的许可允许的范围内存储、备份和使用数据。私有仓库并不自动授予额外的复制、云端存储或再分发权利。不要向未获授权的人分享仓库、数据包或恢复后的文件。
+Xcode Build Phase 在中间目录恢复文件，成品应用含完整单文件 `BundledDictionary.mdx`，供设备离线查询。[词典功能规范](../docs/plans/round-4-dictionary-detail-addendum.md) · [实际 IPA 核验](../docs/reviews/round-4-final-delivery.md#ipa-与内置词典)

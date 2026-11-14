@@ -1,6 +1,6 @@
 # Round 4 · 54cd607 原生截图复核
 
-本次复核使用同一提交的 [Simulator 原始截图](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43233166087/artifacts/13961012885) 和 [21 张原图的逐项复核](round-4-original-image-recheck-2026-11-11.md)。255 张 PNG 的 SHA 与图片格式均核验。190 张来自通过的方法，65 张来自失败的方法。对照包保留 21 张 HEIC、三张 JPEG、255 张原始 PNG、失败子集及逐图索引。对照包 SHA-256 为 `9d8e9ce6e3dccfe98ea4efb5b0e870170ed6bb56c491ffc881bb5d1c7761798a`。
+本次复核使用同一提交的 [Simulator 原始截图](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43233166087/artifacts/13961012885) 和 [21 张原图的逐项复核](../../../reviews/round-4-original-image-recheck-2026-11-11.md)。255 张 PNG 的 SHA 与图片格式均核验。190 张来自通过的方法，65 张来自失败的方法。对照包保留 21 张 HEIC、三张 JPEG、255 张原始 PNG、失败子集及逐图索引。对照包 SHA-256 为 `9d8e9ce6e3dccfe98ea4efb5b0e870170ed6bb56c491ffc881bb5d1c7761798a`。
 
 | 范围 | 实际观察 | 当前整改 |
 |---|---|---|

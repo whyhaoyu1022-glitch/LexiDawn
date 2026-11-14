@@ -1,5 +1,5 @@
 {
-  "status": "in-progress-not-final-accepted",
+  "status": "independent-acceptance-open",
   "requirements": 24,
   "testFamilies": 24,
   "acceptanceCriteria": 144,
@@ -22,9 +22,9 @@
         "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
       ],
       "implementationReview": "今日来源用注册名与真实可选作者；原元数据保留，日期/时区精简。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -52,9 +52,9 @@
         "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
       ],
       "implementationReview": "今日来源用注册名与真实可选作者；原元数据保留，日期/时区精简。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -82,9 +82,9 @@
         "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
       ],
       "implementationReview": "今日来源用注册名与真实可选作者；原元数据保留，日期/时区精简。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -112,9 +112,9 @@
         "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
       ],
       "implementationReview": "今日来源用注册名与真实可选作者；原元数据保留，日期/时区精简。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -142,9 +142,9 @@
         "LexiDawnTests/Round4Tests/testRound3RealDiskSchemaUpgradePreservesOriginalsAndLearningRelationsTwice"
       ],
       "implementationReview": "今日来源用注册名与真实可选作者；原元数据保留，日期/时区精简。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -172,9 +172,9 @@
         "LexiDawnUITests/Round3UITests/testLiveMultipleSourcesLibraryFiltersAndCompleteLocalReaderEvidence"
       ],
       "implementationReview": "三个入口共用真实发现服务；RFC在次级技术文档中。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A02-02",
@@ -193,9 +193,9 @@
         "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
       ],
       "implementationReview": "三个入口共用真实发现服务；RFC在次级技术文档中。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A02-03",
@@ -214,9 +214,9 @@
         "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
       ],
       "implementationReview": "三个入口共用真实发现服务；RFC在次级技术文档中。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A02-04",
@@ -235,9 +235,9 @@
         "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
       ],
       "implementationReview": "三个入口共用真实发现服务；RFC在次级技术文档中。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A02-05",
@@ -256,9 +256,9 @@
         "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
       ],
       "implementationReview": "三个入口共用真实发现服务；RFC在次级技术文档中。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A03-01",
@@ -277,9 +277,9 @@
         "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes"
       ],
       "implementationReview": "今日删除重复库存；摘要和书库读取完整本地数量，标题仅展示投影解码。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A03-02",
@@ -298,9 +298,9 @@
         "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes"
       ],
       "implementationReview": "今日删除重复库存；摘要和书库读取完整本地数量，标题仅展示投影解码。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A03-03",
@@ -319,9 +319,9 @@
         "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes"
       ],
       "implementationReview": "今日删除重复库存；摘要和书库读取完整本地数量，标题仅展示投影解码。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A03-04",
@@ -340,9 +340,9 @@
         "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes"
       ],
       "implementationReview": "今日删除重复库存；摘要和书库读取完整本地数量，标题仅展示投影解码。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A03-05",
@@ -361,9 +361,9 @@
         "LexiDawnUITests/Round4UITests/testTodayCompactSourceInventoryAndVisibleLibraryScopes"
       ],
       "implementationReview": "今日删除重复库存；摘要和书库读取完整本地数量，标题仅展示投影解码。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A04-01",
@@ -382,9 +382,9 @@
         "LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart"
       ],
       "implementationReview": "四类明显入口、独立收藏/稍后、数量与筛选即时读回。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A04-02",
@@ -403,9 +403,9 @@
         "LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart"
       ],
       "implementationReview": "四类明显入口、独立收藏/稍后、数量与筛选即时读回。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A04-03",
@@ -424,9 +424,9 @@
         "LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart"
       ],
       "implementationReview": "四类明显入口、独立收藏/稍后、数量与筛选即时读回。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A04-04",
@@ -445,9 +445,9 @@
         "LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart"
       ],
       "implementationReview": "四类明显入口、独立收藏/稍后、数量与筛选即时读回。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A04-05",
@@ -466,9 +466,9 @@
         "LexiDawnUITests/Round3UITests/testImportRetryDedupSearchFavoritesAndLocalRestart"
       ],
       "implementationReview": "四类明显入口、独立收藏/稍后、数量与筛选即时读回。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A05-01",
@@ -486,9 +486,9 @@
         "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
       ],
       "implementationReview": "runID/活跃来源/真实阶段与计数；明确停止、迟到run隔离。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A05-02",
@@ -506,9 +506,9 @@
         "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
       ],
       "implementationReview": "runID/活跃来源/真实阶段与计数；明确停止、迟到run隔离。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A05-03",
@@ -526,9 +526,9 @@
         "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
       ],
       "implementationReview": "runID/活跃来源/真实阶段与计数；明确停止、迟到run隔离。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A05-04",
@@ -546,9 +546,9 @@
         "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
       ],
       "implementationReview": "runID/活跃来源/真实阶段与计数；明确停止、迟到run隔离。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A05-05",
@@ -566,9 +566,9 @@
         "LexiDawnUITests/Round4UITests/testDiscoveryShowsRealSourceProgressAndCancelKeepsLocalStore"
       ],
       "implementationReview": "runID/活跃来源/真实阶段与计数；明确停止、迟到run隔离。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A06-01",
@@ -586,9 +586,9 @@
         "LexiDawnUITests/Round4UITests/testReaderCompleteTitleTenRotationsAndThreeCompactThemes"
       ],
       "implementationReview": "完整标题进入可滚动原生正文区，保留原始offset与主题。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "latestRelatedVisualEvidence": {
         "codeCommit": "dcd47b0c7fa45590a79fb37c3b88ac2939afff89",
         "workflowRun": 43328170620,
@@ -613,9 +613,9 @@
         "LexiDawnUITests/Round4UITests/testReaderCompleteTitleTenRotationsAndThreeCompactThemes"
       ],
       "implementationReview": "完整标题进入可滚动原生正文区，保留原始offset与主题。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A06-03",
@@ -633,9 +633,9 @@
         "LexiDawnUITests/Round4UITests/testReaderCompleteTitleTenRotationsAndThreeCompactThemes"
       ],
       "implementationReview": "完整标题进入可滚动原生正文区，保留原始offset与主题。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A06-04",
@@ -653,9 +653,9 @@
         "LexiDawnUITests/Round4UITests/testReaderCompleteTitleTenRotationsAndThreeCompactThemes"
       ],
       "implementationReview": "完整标题进入可滚动原生正文区，保留原始offset与主题。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A06-05",
@@ -673,9 +673,9 @@
         "LexiDawnUITests/Round4UITests/testReaderCompleteTitleTenRotationsAndThreeCompactThemes"
       ],
       "implementationReview": "完整标题进入可滚动原生正文区，保留原始offset与主题。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A07-01",
@@ -696,9 +696,9 @@
         "LexiDawnUITests/Round3UITests/testStructuredOriginalReaderShowsHeadingsQuoteAndList"
       ],
       "implementationReview": "DOM来源规则清理新文；旧文可恢复投影不改raw/hash。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -728,9 +728,9 @@
         "LexiDawnUITests/Round3UITests/testStructuredOriginalReaderShowsHeadingsQuoteAndList"
       ],
       "implementationReview": "DOM来源规则清理新文；旧文可恢复投影不改raw/hash。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -767,9 +767,9 @@
         "LexiDawnUITests/Round3UITests/testStructuredOriginalReaderShowsHeadingsQuoteAndList"
       ],
       "implementationReview": "DOM来源规则清理新文；旧文可恢复投影不改raw/hash。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -799,9 +799,9 @@
         "LexiDawnUITests/Round3UITests/testStructuredOriginalReaderShowsHeadingsQuoteAndList"
       ],
       "implementationReview": "DOM来源规则清理新文；旧文可恢复投影不改raw/hash。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -831,9 +831,9 @@
         "LexiDawnUITests/Round3UITests/testStructuredOriginalReaderShowsHeadingsQuoteAndList"
       ],
       "implementationReview": "DOM来源规则清理新文；旧文可恢复投影不改raw/hash。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -861,9 +861,9 @@
         "LexiDawnUITests/Round4UITests/testPreflightCancelAndExplicitAllDeferralDoNotPretendAnswers"
       ],
       "implementationReview": "统一预检，词条错误补录资格/选义/延期，存储错误不忽略。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -890,9 +890,9 @@
         "LexiDawnUITests/Round4UITests/testPreflightCancelAndExplicitAllDeferralDoNotPretendAnswers"
       ],
       "implementationReview": "统一预检，词条错误补录资格/选义/延期，存储错误不忽略。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -919,9 +919,9 @@
         "LexiDawnUITests/Round4UITests/testPreflightCancelAndExplicitAllDeferralDoNotPretendAnswers"
       ],
       "implementationReview": "统一预检，词条错误补录资格/选义/延期，存储错误不忽略。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -948,9 +948,9 @@
         "LexiDawnUITests/Round4UITests/testPreflightCancelAndExplicitAllDeferralDoNotPretendAnswers"
       ],
       "implementationReview": "统一预检，词条错误补录资格/选义/延期，存储错误不忽略。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -977,9 +977,9 @@
         "LexiDawnUITests/Round4UITests/testPreflightCancelAndExplicitAllDeferralDoNotPretendAnswers"
       ],
       "implementationReview": "统一预检，词条错误补录资格/选义/延期，存储错误不忽略。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1008,9 +1008,9 @@
         "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
       ],
       "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1039,9 +1039,9 @@
         "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
       ],
       "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1070,9 +1070,9 @@
         "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
       ],
       "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1101,9 +1101,9 @@
         "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
       ],
       "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1132,9 +1132,9 @@
         "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
       ],
       "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1163,9 +1163,9 @@
         "LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel"
       ],
       "implementationReview": "词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1193,9 +1193,9 @@
         "LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates"
       ],
       "implementationReview": "真实曲线/编号/虚线，选中可取消；May和may独立来源身份。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1223,9 +1223,9 @@
         "LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates"
       ],
       "implementationReview": "真实曲线/编号/虚线，选中可取消；May和may独立来源身份。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1253,9 +1253,9 @@
         "LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates"
       ],
       "implementationReview": "真实曲线/编号/虚线，选中可取消；May和may独立来源身份。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1284,9 +1284,9 @@
         "LexiDawnUITests/Round4UITests/testActualMDXCompactGlossIsTheMatchingAnswerForTheSameContext"
       ],
       "implementationReview": "真实曲线/编号/虚线，选中可取消；May和may独立来源身份。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1321,9 +1321,9 @@
         "LexiDawnUITests/Round3UITests/testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates"
       ],
       "implementationReview": "真实曲线/编号/虚线，选中可取消；May和may独立来源身份。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1351,9 +1351,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
       ],
       "implementationReview": "保存seed/mask，分散前中后，保留分隔；原句重复词冻结实际选择位置。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1382,9 +1382,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
       ],
       "implementationReview": "保存seed/mask，分散前中后，保留分隔；原句重复词冻结实际选择位置。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1413,9 +1413,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
       ],
       "implementationReview": "保存seed/mask，分散前中后，保留分隔；原句重复词冻结实际选择位置。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1444,9 +1444,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
       ],
       "implementationReview": "保存seed/mask，分散前中后，保留分隔；原句重复词冻结实际选择位置。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1475,9 +1475,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRepeatedArticleWordsFreezeTheTappedOccurrenceAndRejectAmbiguousPersonalExamples"
       ],
       "implementationReview": "保存seed/mask，分散前中后，保留分隔；原句重复词冻结实际选择位置。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1504,9 +1504,9 @@
         "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
       ],
       "implementationReview": "实际完成/延期数量，日志次级折叠、无成功重试墙。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1532,9 +1532,9 @@
         "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
       ],
       "implementationReview": "实际完成/延期数量，日志次级折叠、无成功重试墙。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1560,9 +1560,9 @@
         "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
       ],
       "implementationReview": "实际完成/延期数量，日志次级折叠、无成功重试墙。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1588,9 +1588,9 @@
         "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
       ],
       "implementationReview": "实际完成/延期数量，日志次级折叠、无成功重试墙。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1616,9 +1616,9 @@
         "LexiDawnTests/Round4Tests/testRevealRequiresPersistedCorrectionAndSchedulesAgainExactlyOnce"
       ],
       "implementationReview": "实际完成/延期数量，日志次级折叠、无成功重试墙。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1644,9 +1644,9 @@
         "LexiDawnUITests/Round3UITests/testExploreCardsFavoritesAndConfirmedResetPreserveNativeReadingFlow"
       ],
       "implementationReview": "单篇完整主题渐变卡，标题/元数据/操作在卡内，门禁继续。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A13-02",
@@ -1664,9 +1664,9 @@
         "LexiDawnUITests/Round3UITests/testExploreCardsFavoritesAndConfirmedResetPreserveNativeReadingFlow"
       ],
       "implementationReview": "单篇完整主题渐变卡，标题/元数据/操作在卡内，门禁继续。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A13-03",
@@ -1684,9 +1684,9 @@
         "LexiDawnUITests/Round3UITests/testExploreCardsFavoritesAndConfirmedResetPreserveNativeReadingFlow"
       ],
       "implementationReview": "单篇完整主题渐变卡，标题/元数据/操作在卡内，门禁继续。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A13-04",
@@ -1704,9 +1704,9 @@
         "LexiDawnUITests/Round3UITests/testExploreCardsFavoritesAndConfirmedResetPreserveNativeReadingFlow"
       ],
       "implementationReview": "单篇完整主题渐变卡，标题/元数据/操作在卡内，门禁继续。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A13-05",
@@ -1724,9 +1724,9 @@
         "LexiDawnUITests/Round3UITests/testExploreCardsFavoritesAndConfirmedResetPreserveNativeReadingFlow"
       ],
       "implementationReview": "单篇完整主题渐变卡，标题/元数据/操作在卡内，门禁继续。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A14-01",
@@ -1744,9 +1744,9 @@
         "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary"
       ],
       "implementationReview": "按文章分组真实原句，去重复语境和URL，源记录未删除。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A14-02",
@@ -1766,9 +1766,9 @@
         "LexiDawnUITests/Round4UITests/testTwoLookupsFromOneArticleRetainBothSentencesAndOneSource"
       ],
       "implementationReview": "按文章分组真实原句，去重复语境和URL，源记录未删除。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "latestRelatedVisualEvidence": {
         "codeCommit": "dcd47b0c7fa45590a79fb37c3b88ac2939afff89",
         "workflowRun": 43328170620,
@@ -1793,9 +1793,9 @@
         "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary"
       ],
       "implementationReview": "按文章分组真实原句，去重复语境和URL，源记录未删除。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A14-04",
@@ -1813,9 +1813,9 @@
         "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary"
       ],
       "implementationReview": "按文章分组真实原句，去重复语境和URL，源记录未删除。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A14-05",
@@ -1833,9 +1833,9 @@
         "LexiDawnUITests/Round3UITests/testNestedDictionaryWordKeepsDictionaryEvidenceInVocabulary"
       ],
       "implementationReview": "按文章分组真实原句，去重复语境和URL，源记录未删除。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A15-01",
@@ -1853,9 +1853,9 @@
         "LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock"
       ],
       "implementationReview": "生词与全屏共用词头和完整内容；无重复详细词典入口。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A15-02",
@@ -1874,9 +1874,9 @@
         "LexiDawnUITests/Round4UITests/testActualBundledMDXDetailAndSystemPronunciation"
       ],
       "implementationReview": "生词与全屏共用词头和完整内容；无重复详细词典入口。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A15-03",
@@ -1894,9 +1894,9 @@
         "LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock"
       ],
       "implementationReview": "生词与全屏共用词头和完整内容；无重复详细词典入口。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A15-04",
@@ -1914,9 +1914,9 @@
         "LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock"
       ],
       "implementationReview": "生词与全屏共用词头和完整内容；无重复详细词典入口。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A15-05",
@@ -1934,9 +1934,9 @@
         "LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock"
       ],
       "implementationReview": "生词与全屏共用词头和完整内容；无重复详细词典入口。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A16-01",
@@ -1958,9 +1958,9 @@
         "LexiDawnUITests/Round4UITests/testActualOfflineSearchCreatesStructuredPersonalEntryAndRestoresAfterRestart"
       ],
       "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -1991,9 +1991,9 @@
         "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
       ],
       "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2024,9 +2024,9 @@
         "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
       ],
       "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2057,9 +2057,9 @@
         "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
       ],
       "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2090,9 +2090,9 @@
         "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
       ],
       "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2123,9 +2123,9 @@
         "LexiDawnTests/MDXDictionaryTests/testMissingAndCorruptMDXHaveDistinctErrors"
       ],
       "implementationReview": "唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2154,9 +2154,9 @@
         "LexiDawnUITests/Round3UITests/testVocabularyRecommendationLoadingEmptyAndFailureStates"
       ],
       "implementationReview": "紧凑词头/真实IPA/中文，详情复用，只有主动加入才写入。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A17-02",
@@ -2175,9 +2175,9 @@
         "LexiDawnUITests/Round3UITests/testVocabularyRecommendationLoadingEmptyAndFailureStates"
       ],
       "implementationReview": "紧凑词头/真实IPA/中文，详情复用，只有主动加入才写入。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A17-03",
@@ -2196,9 +2196,9 @@
         "LexiDawnUITests/Round3UITests/testVocabularyRecommendationLoadingEmptyAndFailureStates"
       ],
       "implementationReview": "紧凑词头/真实IPA/中文，详情复用，只有主动加入才写入。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A17-04",
@@ -2217,9 +2217,9 @@
         "LexiDawnUITests/Round3UITests/testVocabularyRecommendationLoadingEmptyAndFailureStates"
       ],
       "implementationReview": "紧凑词头/真实IPA/中文，详情复用，只有主动加入才写入。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A17-05",
@@ -2238,9 +2238,9 @@
         "LexiDawnUITests/Round3UITests/testVocabularyRecommendationLoadingEmptyAndFailureStates"
       ],
       "implementationReview": "紧凑词头/真实IPA/中文，详情复用，只有主动加入才写入。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A18-01",
@@ -2258,9 +2258,9 @@
         "LexiDawnUITests/Round3UITests/testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce"
       ],
       "implementationReview": "反馈session/question/attempt/revision绑定，输入清理，保存失败无成功。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A18-02",
@@ -2278,9 +2278,9 @@
         "LexiDawnUITests/Round3UITests/testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce"
       ],
       "implementationReview": "反馈session/question/attempt/revision绑定，输入清理，保存失败无成功。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A18-03",
@@ -2298,9 +2298,9 @@
         "LexiDawnUITests/Round3UITests/testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce"
       ],
       "implementationReview": "反馈session/question/attempt/revision绑定，输入清理，保存失败无成功。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A18-04",
@@ -2318,9 +2318,9 @@
         "LexiDawnUITests/Round3UITests/testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce"
       ],
       "implementationReview": "反馈session/question/attempt/revision绑定，输入清理，保存失败无成功。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A18-05",
@@ -2338,9 +2338,9 @@
         "LexiDawnUITests/Round3UITests/testReviewAnswerSaveFailureKeepsBothOptionsAvailableAndRetryPersistsOnce"
       ],
       "implementationReview": "反馈session/question/attempt/revision绑定，输入清理，保存失败无成功。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A19-01",
@@ -2359,9 +2359,9 @@
         "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
       ],
       "implementationReview": "揭示保持题目、不自动填入，亲自纠正、Again、事务幂等和恢复。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2389,9 +2389,9 @@
         "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
       ],
       "implementationReview": "揭示保持题目、不自动填入，亲自纠正、Again、事务幂等和恢复。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2419,9 +2419,9 @@
         "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
       ],
       "implementationReview": "揭示保持题目、不自动填入，亲自纠正、Again、事务幂等和恢复。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2449,9 +2449,9 @@
         "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
       ],
       "implementationReview": "揭示保持题目、不自动填入，亲自纠正、Again、事务幂等和恢复。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2479,9 +2479,9 @@
         "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
       ],
       "implementationReview": "揭示保持题目、不自动填入，亲自纠正、Again、事务幂等和恢复。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2508,9 +2508,9 @@
         "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated"
       ],
       "implementationReview": "偏好自动保存、草稿/失败恢复、真实Bundle和Why Haoyu。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A20-02",
@@ -2528,9 +2528,9 @@
         "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated"
       ],
       "implementationReview": "偏好自动保存、草稿/失败恢复、真实Bundle和Why Haoyu。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A20-03",
@@ -2548,9 +2548,9 @@
         "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated"
       ],
       "implementationReview": "偏好自动保存、草稿/失败恢复、真实Bundle和Why Haoyu。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A20-04",
@@ -2568,9 +2568,9 @@
         "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated"
       ],
       "implementationReview": "偏好自动保存、草稿/失败恢复、真实Bundle和Why Haoyu。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A20-05",
@@ -2588,9 +2588,9 @@
         "LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated"
       ],
       "implementationReview": "偏好自动保存、草稿/失败恢复、真实Bundle和Why Haoyu。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A21-01",
@@ -2609,9 +2609,9 @@
         "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
       ],
       "implementationReview": "锚定小popover，全屏详情，44pt控件，真实保存勾号和限定撤销。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A21-02",
@@ -2631,9 +2631,9 @@
         "LexiDawnUITests/Round4UITests/testActualMDXCompactGlossIsTheMatchingAnswerForTheSameContext"
       ],
       "implementationReview": "锚定小popover，全屏详情，44pt控件，真实保存勾号和限定撤销。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "latestRelatedVisualEvidence": {
         "codeCommit": "dcd47b0c7fa45590a79fb37c3b88ac2939afff89",
         "workflowRun": 43328170620,
@@ -2659,9 +2659,9 @@
         "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
       ],
       "implementationReview": "锚定小popover，全屏详情，44pt控件，真实保存勾号和限定撤销。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A21-04",
@@ -2680,9 +2680,9 @@
         "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
       ],
       "implementationReview": "锚定小popover，全屏详情，44pt控件，真实保存勾号和限定撤销。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A21-05",
@@ -2701,9 +2701,9 @@
         "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
       ],
       "implementationReview": "锚定小popover，全屏详情，44pt控件，真实保存勾号和限定撤销。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A21-06",
@@ -2722,9 +2722,9 @@
         "LexiDawnUITests/Round3UITests/testVocabularySaveFailureDoesNotClaimSuccessAndRetryPersists"
       ],
       "implementationReview": "锚定小popover，全屏详情，44pt控件，真实保存勾号和限定撤销。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance."
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。"
     },
     {
       "acceptanceID": "R4-A22-01",
@@ -2748,9 +2748,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
       ],
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2782,9 +2782,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
       ],
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2816,9 +2816,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
       ],
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2850,9 +2850,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
       ],
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2884,9 +2884,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
       ],
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2918,9 +2918,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
       ],
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2952,9 +2952,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
       ],
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -2986,9 +2986,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
       ],
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3020,9 +3020,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
       ],
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3054,9 +3054,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
       ],
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3088,9 +3088,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
       ],
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3122,9 +3122,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRealMDXIdiomsKeepTheirOwnExamplesAndReopenThroughNativeRecordHints"
       ],
       "implementationReview": "对照三JPEG：词头/IPA、A/B词性、圈号、成对例句、独立短语/习语、底栏safe area。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3158,9 +3158,9 @@
         "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
       ],
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3195,9 +3195,9 @@
         "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
       ],
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3232,9 +3232,9 @@
         "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
       ],
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3269,9 +3269,9 @@
         "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
       ],
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3306,9 +3306,9 @@
         "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
       ],
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3343,9 +3343,9 @@
         "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
       ],
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3380,9 +3380,9 @@
         "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
       ],
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3417,9 +3417,9 @@
         "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
       ],
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3454,9 +3454,9 @@
         "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
       ],
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3491,9 +3491,9 @@
         "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
       ],
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3528,9 +3528,9 @@
         "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
       ],
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3565,9 +3565,9 @@
         "LexiDawnUITests/Round4UITests/testActualMissingAndCorruptMDXResourcesShowErrorsAndDisableDetails"
       ],
       "implementationReview": "多词性/义项/配对例句/搭配/备注/版本历史；多层MDX资格锁与旧数据保留。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3603,9 +3603,9 @@
         "LexiDawnUITests/Round4UITests/testActualMDXCompactGlossIsTheMatchingAnswerForTheSameContext"
       ],
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3648,9 +3648,9 @@
         "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
       ],
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3686,9 +3686,9 @@
         "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
       ],
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3724,9 +3724,9 @@
         "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
       ],
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3762,9 +3762,9 @@
         "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
       ],
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3800,9 +3800,9 @@
         "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
       ],
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3839,9 +3839,9 @@
         "LexiDawnTests/MDXDictionaryTests/testRealOfflineServiceNormalizesUsersAndVisitsWithoutNetworkProviders"
       ],
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3877,9 +3877,9 @@
         "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
       ],
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3915,9 +3915,9 @@
         "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
       ],
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3953,9 +3953,9 @@
         "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
       ],
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -3991,9 +3991,9 @@
         "LexiDawnTests/Round4Tests/testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask"
       ],
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -4030,9 +4030,9 @@
         "LexiDawnUITests/Round4UITests/testActualMDXCompactGlossIsTheMatchingAnswerForTheSameContext"
       ],
       "implementationReview": "记录义项原始身份、修订、来源、原句目标range/例句ID；新题原子冻结，旧题不改答案。",
-      "status": "open-final-native-and-visual-verification-required",
+      "status": "open-independent-acceptance",
       "passed": false,
-      "evidenceBoundary": "Code references and candidate tests are not a successful acceptance result. Latest source changes require a new native run; iOS26.5 compatibility cannot prove iOS27 device acceptance.",
+      "evidenceBoundary": "同构建的通过候选及截图见 latestNativeEvidence。此项独立验收仍开放。iOS 27 真机状态单独记录。",
       "priorNativeUnitEvidence": {
         "sourceCommit": "524d1ad574e33c783dd7913fe18c6eac9381618f",
         "run": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236272",
@@ -4044,5 +4044,13 @@
         "acceptanceStillOpen": true
       }
     }
-  ]
+  ],
+  "latestNativeEvidence": {
+    "sourceCommit": "4be478e2e778bea4da2095e65a637e5df117f7be",
+    "workflowRun": "https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43420154858",
+    "runtime": "iOS 26.5 Simulator, Xcode 26.6",
+    "repositoryFile": "docs/reviews/round-4-native-evidence-4be478e.json",
+    "criteriaWithPassingCandidates": 144,
+    "criteriaWithDirectScreenshotLinks": 79
+  }
 }

@@ -311,15 +311,15 @@ Round2Tests 中有 3500 词 token 命中微基准，但这不是在实际 UI 以
 
 ### 6.1 参考链接
 
-- 规格书：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/SPEC.md
-- 开发方交付自述：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/docs/reviews/round-2-development-delivery.md
-- 测试：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnUITests/LexiDawnUITests.swift
-- 阅读正文容器：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Features/Learning/InteractiveEnglishText.swift
-- 阅读页面：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Features/Learning/ReaderFeature.swift
-- 连线/拼写：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Features/Learning/ReviewFeature.swift
-- 复习存储：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Data/ReviewRepository.swift
-- 内容许可/来源：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Data/ContentRepository.swift
-- 词典/生词：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Data/VocabularyRepository.swift
+- 规格书：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/aa8022688ea532ffffef2a731869d61924cce5f0/SPEC.md
+- 开发方交付自述：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/aa8022688ea532ffffef2a731869d61924cce5f0/docs/reviews/round-2-development-delivery.md
+- 测试：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/aa8022688ea532ffffef2a731869d61924cce5f0/LexiDawnUITests/LexiDawnUITests.swift
+- 阅读正文容器：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/aa8022688ea532ffffef2a731869d61924cce5f0/LexiDawn/Features/Learning/InteractiveEnglishText.swift
+- 阅读页面：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/aa8022688ea532ffffef2a731869d61924cce5f0/LexiDawn/Features/Learning/ReaderFeature.swift
+- 连线/拼写：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/aa8022688ea532ffffef2a731869d61924cce5f0/LexiDawn/Features/Learning/ReviewFeature.swift
+- 复习存储：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/aa8022688ea532ffffef2a731869d61924cce5f0/LexiDawn/Data/ReviewRepository.swift
+- 内容许可/来源：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/aa8022688ea532ffffef2a731869d61924cce5f0/LexiDawn/Data/ContentRepository.swift
+- 词典/生词：https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/aa8022688ea532ffffef2a731869d61924cce5f0/LexiDawn/Data/VocabularyRepository.swift
 - 本轮原始截图：https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/41203516341/artifacts/13043837675
 
 ---

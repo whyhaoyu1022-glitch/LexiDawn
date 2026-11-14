@@ -11,7 +11,7 @@ main构建代码 `39c5f7056644972ca0030a1cb041400a08d52c3c`，[专用打包42027
 
 ## 图标与范围
 
-原概念文件的IDAT实际截断且无IEND；按用户适配授权保留原件，内置imagegen按SPEC原品牌方向重建书/金色日出/深蓝背景，1024RGB AppIcon已接入Xcode资源编译。主图及完整提示见[处理记录](../../assets/AppIcon-design.md)。保持LexiDawn显示名称及Bundle ID com.lexidawn.app。
+原概念文件的IDAT实际截断且无IEND；按用户适配授权保留原件，内置imagegen按SPEC原品牌方向重建书/金色日出/深蓝背景，1024RGB AppIcon已接入Xcode资源编译。主图及完整提示见[处理记录](../../../../assets/AppIcon-design.md)。保持LexiDawn显示名称及Bundle ID com.lexidawn.app。
 
 所有Swift业务和既有测试均未修改；本次不声称运行了全量回归。此前通过的186单元/49主UI结果仍属于b13d6b4，不能冒充本次真机安装通过。SDK实际支持26.0最低目标，命令级覆盖不改SPEC原27.0目标。
 
@@ -23,6 +23,6 @@ main构建代码 `39c5f7056644972ca0030a1cb041400a08d52c3c`，[专用打包42027
 
 ## 安装与保护数据
 
-[完整AltServer步骤](../signing.md)：Windows Shift或Mac Option点击AltServer → Sideload .ipa… → 选择本IPA/手机 → 用户在自己的电脑输入Apple账户 → 签名安装 → 手机信任开发者及开启开发者模式。免费账户通常7天重签；用同账户覆盖安装，不先删除App，避免删除本地学习数据。也可安装AltStore Classic，通过My Apps/+导入并Refresh All。
+[完整AltServer步骤](../../../signing.md)：Windows Shift或Mac Option点击AltServer → Sideload .ipa… → 选择本IPA/手机 → 用户在自己的电脑输入Apple账户 → 签名安装 → 手机信任开发者及开启开发者模式。免费账户通常7天重签；用同账户覆盖安装，不先删除App，避免删除本地学习数据。也可安装AltStore Classic，通过My Apps/+导入并Refresh All。
 
 本次源码提交39c5f7056644972ca0030a1cb041400a08d52c3c；后续仅结果文档回填用[skip ci]，不重新打包或重跑测试。可下载的IPA和manifest均锁定上述构建提交。

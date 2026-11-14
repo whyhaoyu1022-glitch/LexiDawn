@@ -100,11 +100,11 @@ xcresult、完整 unit/UI 日志及 keepAlways 原生截图由现有 workflow �
 
 ### 可复核代码与文档
 
-- [阅读器/查词/首页/生词/复习/设置](https://github.com/whyhaoyu1022-glitch/LexiDawn/tree/main/LexiDawn/Features/Learning)
-- [数据模型及Repository](https://github.com/whyhaoyu1022-glitch/LexiDawn/tree/main/LexiDawn/Data)
-- [规则与排程](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Domain/Learning/LearningRules.swift)
-- [Round2 XCTest](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnTests/Round2Tests.swift)、[UI测试](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnUITests/LexiDawnUITests.swift)
-- [需求追踪](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/docs/requirements-traceability.md)、[测试计划](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/docs/test-plan.md)、[开发日志](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/docs/daily/2026-10-31-round-2.md)
+- [阅读器/查词/首页/生词/复习/设置](https://github.com/whyhaoyu1022-glitch/LexiDawn/tree/fcac01b3d40b311b51c7a0fea4e6329d0300ca92/LexiDawn/Features/Learning)
+- [数据模型及Repository](https://github.com/whyhaoyu1022-glitch/LexiDawn/tree/fcac01b3d40b311b51c7a0fea4e6329d0300ca92/LexiDawn/Data)
+- [规则与排程](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/fcac01b3d40b311b51c7a0fea4e6329d0300ca92/LexiDawn/Domain/Learning/LearningRules.swift)
+- [Round2 XCTest](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/fcac01b3d40b311b51c7a0fea4e6329d0300ca92/LexiDawnTests/Round2Tests.swift)、[UI测试](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/fcac01b3d40b311b51c7a0fea4e6329d0300ca92/LexiDawnUITests/LexiDawnUITests.swift)
+- [需求追踪](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/fcac01b3d40b311b51c7a0fea4e6329d0300ca92/docs/requirements-traceability.md)、[测试计划](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/fcac01b3d40b311b51c7a0fea4e6329d0300ca92/docs/test-plan.md)、[开发日志](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/fcac01b3d40b311b51c7a0fea4e6329d0300ca92/docs/daily/2026-10-31-round-2.md)
 
 
 本文CI表为已经结束的应用代码运行记录。最终文档和测试定位增强提交自己的CI在交付答复单独列出；不将运行中状态预填为成功。后续独立验收应使用答复中的最终main SHA、Actions及artifact核对。

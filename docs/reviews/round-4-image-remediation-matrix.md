@@ -1,33 +1,37 @@
-# Round4 原21项与三参考逐项整改对照
+# Round 4 反馈原图与最终整改
 
-2026-11-11 已实际打开用户上传的21张原始 HEIC，逐一核对原件 SHA、画面标注和当前实现，详见[逐张原图复核](round-4-original-image-recheck-2026-11-11.md)。三张词典参考 JPEG 与较早版本42张实际运行截图也已逐张查看。以下是当前代码与新版待复验项。
+表中 PNG 来自通过的最终构建 `4be478e`，均可在分类 ZIP 的 `FEEDBACK.html` 中与原件对照。原图图注与逐张观察见[上传原图复核](round-4-original-image-recheck-2026-11-11.md)。
 
-| 原图 / 功能 / 测试族 | 原文件 | 本轮具体整改 | 最终状态 |
-|---|---|---|---|
-| R4-P01 / R4-F01 / R4-T01 | IMG_8854.heic | 今日来源用注册名与真实可选作者；原元数据保留，日期/时区精简。 | 待最终原生测试与整改图 |
-| R4-P02 / R4-F02 / R4-T02 | IMG_8857.heic | 三个入口共用真实发现服务；RFC在次级技术文档中。 | 待最终原生测试与整改图 |
-| R4-P03 / R4-F03 / R4-T03 | IMG_8858.heic | 今日删除重复库存；摘要和书库读取完整本地数量，标题仅展示投影解码。 | 待最终原生测试与整改图 |
-| R4-P04 / R4-F04 / R4-T04 | IMG_8859.heic | 四类明显入口、独立收藏/稍后、数量与筛选即时读回。 | 待最终原生测试与整改图 |
-| R4-P05 / R4-F05 / R4-T05 | IMG_8860.heic | runID/活跃来源/真实阶段与计数；明确停止、迟到run隔离。 | 待最终原生测试与整改图 |
-| R4-P06 / R4-F06 / R4-T06 | IMG_8862.heic | 完整标题进入可滚动原生正文区，保留原始offset与主题。 | 待最终原生测试与整改图 |
-| R4-P07 / R4-F07 / R4-T07 | IMG_8863.heic | DOM来源规则清理新文；旧文可恢复投影不改raw/hash。 | 待最终原生测试与整改图 |
-| R4-P08 / R4-F08 / R4-T08 | IMG_8864.heic | 统一预检，词条错误补录资格/选义/延期，存储错误不忽略。 | 待最终原生测试与整改图 |
-| R4-P09 / R4-F09 / R4-T09 | IMG_8866.heic | 词形保留原形，结构化个人/笔记自动保存，IME/草稿/事务防线。 | 待最终原生测试与整改图 |
-| R4-P10 / R4-F10 / R4-T10 | IMG_8867.heic | 真实曲线/编号/虚线，选中可取消；May和may独立来源身份。 | 待最终原生测试与整改图 |
-| R4-P11 / R4-F11 / R4-T11 | IMG_8869.heic | 保存seed/mask，分散前中后，保留分隔；原句重复词冻结实际选择位置。 | 待最终原生测试与整改图 |
-| R4-P12 / R4-F12 / R4-T12 | IMG_8870.heic | 实际完成/延期数量，日志次级折叠、无成功重试墙。 | 待最终原生测试与整改图 |
-| R4-P13 / R4-F13 / R4-T13 | IMG_8872.heic | 单篇完整主题渐变卡，标题/元数据/操作在卡内，门禁继续。 | 待最终原生测试与整改图 |
-| R4-P14 / R4-F14 / R4-T14 | IMG_8873.heic | 按文章分组真实原句，去重复语境和URL，源记录未删除。 | 待最终原生测试与整改图 |
-| R4-P15 / R4-F15 / R4-T15 | IMG_8875.heic | 生词与全屏共用词头和完整内容；无重复详细词典入口。 | 待最终原生测试与整改图 |
-| R4-P16 / R4-F16 / R4-T16 | IMG_8876.heic | 唯一实际MDX、Actor/块缓存/typed error，原ZIP构建恢复，系统TTS。 | 待最终原生测试与整改图 |
-| R4-P17 / R4-F17 / R4-T17 | IMG_8878.heic | 紧凑词头/真实IPA/中文，详情复用，只有主动加入才写入。 | 待最终原生测试与整改图 |
-| R4-P18 / R4-F18 / R4-T18 | IMG_8879.heic | 反馈session/question/attempt/revision绑定，输入清理，保存失败无成功。 | 待最终原生测试与整改图 |
-| R4-P19 / R4-F19 / R4-T19 | IMG_8880.heic | 揭示保持题目、不自动填入，亲自纠正、Again、事务幂等和恢复。 | 待最终原生测试与整改图 |
-| R4-P20 / R4-F20 / R4-T20 | IMG_8881.heic | 偏好自动保存、草稿/失败恢复、真实Bundle和Why Haoyu。 | 待最终原生测试与整改图 |
-| R4-P21 / R4-F21 / R4-T21 | IMG_8883.heic | 锚定小popover，全屏详情，44pt控件，真实保存勾号和限定撤销。 | 待最终原生测试与整改图 |
+| 反馈 | 整改内容 | 最终版代表截图 |
+|---|---|---|
+| R4-P01 · IMG_8854.heic | 今日卡保留简短来源与可用作者，完整来源留到详情。标题、学习日与实际任务状态可读。 | `R4-P01-today-system-portrait-iPhone18-1.png` |
+| R4-P02 · IMG_8857.heic | 今日、文章库与探索调用同一发现服务，RFC 作为次级入口。展示逐源真实结果，区分检查、入库、无新文和失败。 | `R4-P02-actual-sources-iPhone18-1.png` |
+| R4-P03 · IMG_8858.heic | 今日只提供文章库入口和真实总量。标题展示修正常见实体与折行，原元数据继续保存。 | `R4-P03-inventory-summary-system-portrait-iPhone18-1.png` |
+| R4-P04 · IMG_8859.heic | 显示本地总量、当前结果量和四类范围。收藏、稍后独立持久，筛选与空状态及时更新。 | `R4-P04-library-scopes-system-portrait-iPhone18-1.png` |
+| R4-P05 · IMG_8860.heic | 同次发现共享运行 ID、来源计数、正在处理的来源与阶段、入库、去重和失败。用户明确停止，状态不编造。 | `R4-P05-progress-system-portrait-iPhone18-1.png` |
+| R4-P06 · IMG_8862.heic | 完整标题自然换行，横屏和辅助大字仍能滚动到正文。来源、日期、作者布局紧凑。 | `R4-P06-title-system-portrait-iPhone18-1.png` |
+| R4-P07 · IMG_8863.heic | 按结构清理网页控件，保留正文、标题、引用、列表和图注。旧文章映射可追溯，不改原内容。 | `R4-P07-cleaned-structure-iPhone18-1.png` |
+| R4-P08 · IMG_8864.heic | 三个入口预检统一。可处理的缺义允许补录、选义或延期，真正数据损坏明示错误。延期保留原排程。 | `R4-P08-preflight-system-portrait-iPhone18-1.png` |
+| R4-P09 · IMG_8866.heic | 规范化 user/users、visit/visits，并保留真实词形和句子。输入结束等场景自动保存，支持输入法及失败草稿。 | `R4-P09-restored-system-portrait-iPhone18-1.png` |
+| R4-P10 · IMG_8867.heic | 连线可见并随布局移动，按 ID 匹配，错误、取消和重新选择可分辨。中文来自当前有资格的义项，区分 may 与 May。 | `R4-P10-real-MDX-connection-system-portrait-iPhone18-1.png` |
+| R4-P11 · IMG_8869.heic | 前中后稳定挖空，常规隐藏约 25%–45% 有效字母，保留标点与分隔符。重新打开使用已保存掩码。 | `R4-P11-mask-1-system-portrait-iPhone18-1.png` |
+| R4-P12 · IMG_8870.heic | 完成页显示完成数、延期数、继续与返回。历史排程留在次级详情。 | `R4-P12-complete-system-portrait-iPhone18-1.png` |
+| R4-P13 · IMG_8872.heic | 每篇使用单独主题渐变卡。标题、来源、日期、主题和阅读信息在卡内，收藏/稍后与打开分别命中。 | `R3-X01-iPhone18-1.png` |
+| R4-P14 · IMG_8873.heic | 同源标题和元数据展示一次。保留所有不同原句，支持折叠，来源 URL 归入溯源信息。 | `R4-P14-contexts-system-portrait-iPhone18-1.png` |
+| R4-P15 · IMG_8875.heic | 生词详情和阅读查词复用完整词典。小卡箭头直达全屏，不重复多一层详情。 | `R4-P15-recommendation-detail-iPhone18-1.png` |
+| R4-P16 · IMG_8876.heic | 生产仅使用 Bundle MDX。能区分加载、资源失败、英英和无词结果，无在线字典或自动回退。 | `R4-P16-need-detail-system-portrait-iPhone18-1.png` |
+| R4-P17 · IMG_8878.heic | 紧凑显示真实词头/短语、IPA、中文简义。点击读详情，明确加入时才写库。 | `R4-P17-actual-recommendations-iPhone18-1.png` |
+| R4-P18 · IMG_8879.heic | 反馈与会话、题目、尝试和修订绑定，切题清除旧状态，写入成功再展示结果。 | `R4-P18-incorrect-system-portrait-iPhone18-1.png` |
+| R4-P19 · IMG_8880.heic | 揭示不自动填入或推进。输入完整正确答案才可继续，仍为 Again，重启恢复且排程幂等。 | `R4-P19-wrong-correction-system-portrait-iPhone18-1.png` |
+| R4-P20 · IMG_8881.heic | 控件和文本自动持久化，失败保留原值及草稿。关于显示实际版本、构建和开发者。 | `R4-P20-about-system-portrait-iPhone18-1.png` |
+| R4-P21 · IMG_8883.heic | 小浮层靠近原词，最多两条中文及词性/音标。添加撤销按真实结果，详情关闭后回到原位。 | `R4-P21-mdx-review-gloss-system-portrait-iPhone18-1.png` |
 
 ## 三张词典参考
 
-IMG_8884：紧凑衬线词头+共有IPA，A.名词、圈号、搭配和逐条例句译文。IMG_8885：保持长条目连续阅读，B.动词及实际词形；只有MDX有证据才拆vi/vt。IMG_8886：独立PHRASAL VERBS/IDIOMS、真实子词条导航、返回/词名/关闭胶囊，末行不遮挡。所有入口复用共享内容；不从截图编造数据。
+| 参考 | 最终实际 MDX 画面 |
+|---|---|
+| [IMG_8884.jpeg](references/round-4-dictionary/IMG_8884.jpeg) | `R4-F22-real-top-system-portrait-iPhone18-1.png` |
+| [IMG_8885.jpeg](references/round-4-dictionary/IMG_8885.jpeg) | `R4-F22-real-middle-system-portrait-iPhone18-1.png` |
+| [IMG_8886.jpeg](references/round-4-dictionary/IMG_8886.jpeg) | `R4-F22-real-phrases-system-portrait-iPhone18-1.png` |
 
-[144项逐条状态与源码/候选测试](round-4-acceptance-status.json) · [42图逐张复核](../../artifacts/round-4/screenshots/VISUAL-REVIEW.md)。最终截图、每条实际测试结果、CI和IPA必须绑定最终提交，仍须补齐。
+分类 ZIP 的词典参考页同时列出真实 MDX 在浅色、深色、暖纸色的首、中、末段。原运行、下载与验收边界见[交付报告](round-4-final-delivery.md#截图交付)。

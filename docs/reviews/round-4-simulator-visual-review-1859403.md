@@ -1,5 +1,7 @@
 # Round 4 · 1859403 原图与模拟器画面对照
 
+> 此页保存较早构建的视觉复核。最新版原生运行与证据见 [Round 4 交付报告](round-4-final-delivery.md)。
+
 在 iOS 26.5 Simulator 的同一构建中逐一打开了上传的 21 张原图与对应运行画面，并对照三张词典参考图。原图、参考图与 375 张原生 PNG 的字节和 SHA-256 已验证。364 张来自通过的方法，11 张来自失败的方法；ZIP 的失败目录另外包含通过方法中有意验证的错误状态。
 
 [全量运行 43409540624](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43409540624) · [原生 PNG 与索引](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43409540624/artifacts/14031552586)。

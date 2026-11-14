@@ -6,4 +6,4 @@
 
 独立核验的[未签名 IPA](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43034236319/artifacts/13863316237)为 0.1.0(29)，arm64、最低 iOS 27.0，文件 43,822,877 字节。实际包内 MDX 为 38,774,534 字节，指定 SHA-256 一致。原生 UI 在 iOS 26.5 Simulator 运行。
 
-详见[持续交付记录](../reviews/round-4-final-delivery.md)。
+详见[持续交付记录](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/6054b03932e036ab3205488ed9e5af60fa7495fa/docs/reviews/round-4-final-delivery.md)。

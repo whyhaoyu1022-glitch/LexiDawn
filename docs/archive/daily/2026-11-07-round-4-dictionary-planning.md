@@ -6,7 +6,7 @@
 
 三张JPEG逐张完整读取，记录哈希/尺寸和首中末布局；明确参考中底栏遮挡不照搬、不把截图文字当生产词库。核查现有Free/Wiktionary适配、单字符串userMeaning和复习选义路径；查阅Oxford、Free与MediaWiki/Wiktionary官方文档，能力调查与Live结果分开。
 
-新增[完整补充](../plans/round-4-dictionary-detail-addendum.md)和[参考审阅](../reviews/round-4-dictionary-reference-audit-2026-11-07.md)，将36条验收/3族并入主任务书和机器清单。严格保留原21原件身份、批注和108个既有验收编号，修改规范冲突不改历史画面事实。
+新增[完整补充](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/6054b03932e036ab3205488ed9e5af60fa7495fa/docs/plans/round-4-dictionary-detail-addendum.md)和[参考审阅](../reviews/round-4/round-4-dictionary-reference-audit-2026-11-07.md)，将36条验收/3族并入主任务书和机器清单。严格保留原21原件身份、批注和108个既有验收编号，修改规范冲突不改历史画面事实。
 
 ## 边界与后续
 

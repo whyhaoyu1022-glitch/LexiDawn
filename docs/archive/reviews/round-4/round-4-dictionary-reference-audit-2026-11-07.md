@@ -4,7 +4,7 @@
 
 本批为详细词典页设计参考R4-R01–R03，和首次21张问题图R4-P01–P21分开编号。三张不同文件展示同一词的首/中/末不同位置，内容部分重叠；不是24张互不重复的原始问题图。原件字节未改，作为本文参考附件保留，未加入App Asset或生产词库。
 
-规范以[词典补充](../plans/round-4-dictionary-detail-addendum.md)和[主任务书](../plans/round-4-development-specification.md)为准；完整元数据/新增36条验收见[机器清单](round-4-feedback-manifest.json)。
+规范以[词典补充](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/6054b03932e036ab3205488ed9e5af60fa7495fa/docs/plans/round-4-dictionary-detail-addendum.md)和[主任务书](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/6054b03932e036ab3205488ed9e5af60fa7495fa/docs/plans/round-4-development-specification.md)为准；完整元数据/新增36条验收见[机器清单](../../../reviews/round-4-feedback-manifest.json)。
 
 | 参考ID | 原图 | 尺寸 | 字节数 | SHA-256 |
 |---|---|---|---|---|
@@ -14,7 +14,7 @@
 
 ## R4-R01 · IMG_8884.jpeg
 
-![R4-R01 负责人提供的详细词典设计参考](references/round-4-dictionary/IMG_8884.jpeg)
+![R4-R01 负责人提供的详细词典设计参考](../../../reviews/references/round-4-dictionary/IMG_8884.jpeg)
 
 **画面事实：** 词头与英美IPA、A名词组、编号义项、语域、搭配及双语例句，底部悬浮返回/词条/关闭条。
 
@@ -26,7 +26,7 @@
 
 ## R4-R02 · IMG_8885.jpeg
 
-![R4-R02 负责人提供的详细词典设计参考](references/round-4-dictionary/IMG_8885.jpeg)
+![R4-R02 负责人提供的详细词典设计参考](../../../reviews/references/round-4-dictionary/IMG_8885.jpeg)
 
 **画面事实：** 名词续义与习语、B不及物动词及词形变化、多个义项/例句、C及物动词开头；与首图有内容重叠。
 
@@ -38,7 +38,7 @@
 
 ## R4-R03 · IMG_8886.jpeg
 
-![R4-R03 负责人提供的详细词典设计参考](references/round-4-dictionary/IMG_8886.jpeg)
+![R4-R03 负责人提供的详细词典设计参考](../../../reviews/references/round-4-dictionary/IMG_8886.jpeg)
 
 **画面事实：** C及物动词续义、短语动词独立分节与短语词头/词性/义项，底部胶囊工具条；末行遮挡风险不照搬。
 

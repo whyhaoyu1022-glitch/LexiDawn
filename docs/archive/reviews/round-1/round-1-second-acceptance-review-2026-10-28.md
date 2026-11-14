@@ -89,11 +89,11 @@ CI 通过的是 Xcode runner 上的 iOS 26.5 兼容模拟器构建/测试。工�
 
 代码证据：
 
-- [DailyTasks.swift — TaskStatus.isSatisfied(for:)](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L29-L38)
-- [DailyTasks.swift — TaskStatus.transitioned(to:reason:)](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L41-L60)
-- [DailyTasks.swift — DailyStudyCycle.update](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L246-L299)
-- [测试 testDeferredStagesCanSatisfyCycleOnlyWithReasons](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnTests/LexiDawnTests.swift#L124-L137)
-- [测试 helper complete(_:with:at:)](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnTests/LexiDawnTests.swift#L403-L408)
+- [DailyTasks.swift — TaskStatus.isSatisfied(for:)](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L29-L38)
+- [DailyTasks.swift — TaskStatus.transitioned(to:reason:)](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L41-L60)
+- [DailyTasks.swift — DailyStudyCycle.update](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L246-L299)
+- [测试 testDeferredStagesCanSatisfyCycleOnlyWithReasons](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawnTests/LexiDawnTests.swift#L124-L137)
+- [测试 helper complete(_:with:at:)](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawnTests/LexiDawnTests.swift#L403-L408)
 
 整改确实修复了文章任务的一个入口：`update(task:to:reason:at:)` 会拒绝 article → deferred。但复习任务、连线阶段和拼写阶段仍然有以下行为：
 
@@ -103,7 +103,7 @@ CI 通过的是 Xcode runner 上的 iOS 26.5 兼容模拟器构建/测试。工�
 4. 周期完成后，只要任意一个复习状态是 deferred，`completionReason` 就会被设置为 `completed-with-no-review-items`，即使调用者给出的理由根本不是“没有应复习词条”。
 5. 测试 helper 使用 `reason: "test"` 也能将三个复习状态设为 deferred 并完成周期；现有测试证明的是“只要有字符串理由就可以跳过”，而不是“系统确认队列为空才可以跳过”。
 
-这违反 [SPEC §2.2.1 任务状态枚举](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/SPEC.md#L204-L217)：deferred 必须是系统明确判定无需执行的结果；也违反 [SPEC §2.1 每日必做任务组成](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/SPEC.md#L176-L186)。
+这违反 [SPEC §2.2.1 任务状态枚举](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/SPEC.md#L204-L217)：deferred 必须是系统明确判定无需执行的结果；也违反 [SPEC §2.1 每日必做任务组成](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/SPEC.md#L176-L186)。
 
 **必须整改：**
 
@@ -119,9 +119,9 @@ CI 通过的是 Xcode runner 上的 iOS 26.5 兼容模拟器构建/测试。工�
 
 代码证据：
 
-- [DailyTasks.swift — DailyStudyCycle 初始化与状态属性](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L181-L250)
-- [DailyTasks.swift — article deferred 更新限制](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L259-L299)
-- [PersistenceModels.swift — DailyStudyCycleRecord.domain()](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Data/PersistenceModels.swift#L140-L170)
+- [DailyTasks.swift — DailyStudyCycle 初始化与状态属性](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L181-L250)
+- [DailyTasks.swift — article deferred 更新限制](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L259-L299)
+- [PersistenceModels.swift — DailyStudyCycleRecord.domain()](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Data/PersistenceModels.swift#L140-L170)
 
 当前更新入口禁止文章转为 deferred，这是正确的。但不变量并没有在模型所有入口上成立：
 
@@ -149,11 +149,11 @@ CI 通过的是 Xcode runner 上的 iOS 26.5 兼容模拟器构建/测试。工�
 
 代码证据：
 
-- [DailyTasks.swift — ensureCurrentCycle 的保存分支](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L359-L404)
-- [Repositories.swift — StudyCycleRepository.save(_:)](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Data/Repositories.swift#L27-L44)
-- [Repositories.swift — save(cycle:candidate:fetchedAt:)](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Data/Repositories.swift#L49-L90)
-- [Repositories.swift — ArticleRepository.save(candidate:fetchedAt:)](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Data/Repositories.swift#L92-L109)
-- [Repositories.swift — PreferencesRepository.save(_:)](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Data/Repositories.swift#L159-L173)
+- [DailyTasks.swift — ensureCurrentCycle 的保存分支](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L359-L404)
+- [Repositories.swift — StudyCycleRepository.save(_:)](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Data/Repositories.swift#L27-L44)
+- [Repositories.swift — save(cycle:candidate:fetchedAt:)](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Data/Repositories.swift#L49-L90)
+- [Repositories.swift — ArticleRepository.save(candidate:fetchedAt:)](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Data/Repositories.swift#L92-L109)
+- [Repositories.swift — PreferencesRepository.save(_:)](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Data/Repositories.swift#L159-L173)
 
 积极的部分：
 
@@ -181,7 +181,7 @@ CI 通过的是 Xcode runner 上的 iOS 26.5 兼容模拟器构建/测试。工�
 
 代码证据：
 
-- [testDiskContainerReopenRestoresCycleArticleAndPreferences](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnTests/LexiDawnTests.swift#L254-L285)
+- [testDiskContainerReopenRestoresCycleArticleAndPreferences](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawnTests/LexiDawnTests.swift#L254-L285)
 
 当前测试确实使用临时磁盘 `ModelConfiguration(url:)`，在两个作用域中创建容器，且测试已在 CI 运行通过。这是正确的进步。
 
@@ -209,11 +209,11 @@ ArticleRecord 的 bodyText 是在第一个容器关闭前查询的；**第二个
 
 代码证据：
 
-- [testInvalidCandidateCannotCreateCycleOrArticle](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnTests/LexiDawnTests.swift#L300-L309)
-- [testRetryingFailedRepositoryWriteCanSucceedWithoutDuplicateCycle](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnTests/LexiDawnTests.swift#L332-L341)
-- [testTodayViewModelRetryRepeatsFailedWrite](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnTests/LexiDawnTests.swift#L343-L362)
-- [FailingCycleStore](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnTests/LexiDawnTests.swift#L423-L439)
-- [需求追踪矩阵中的 R1-004 至 R1-006](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/docs/requirements-traceability.md)
+- [testInvalidCandidateCannotCreateCycleOrArticle](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawnTests/LexiDawnTests.swift#L300-L309)
+- [testRetryingFailedRepositoryWriteCanSucceedWithoutDuplicateCycle](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawnTests/LexiDawnTests.swift#L332-L341)
+- [testTodayViewModelRetryRepeatsFailedWrite](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawnTests/LexiDawnTests.swift#L343-L362)
+- [FailingCycleStore](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawnTests/LexiDawnTests.swift#L423-L439)
+- [需求追踪矩阵中的 R1-004 至 R1-006](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/docs/requirements-traceability.md)
 
 具体问题：
 
@@ -233,15 +233,15 @@ ArticleRecord 的 bodyText 是在第一个容器关闭前查询的；**第二个
 
 规格依据：
 
-- [SPEC §19.1 Article](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/SPEC.md#L1886-L1909)
-- [SPEC §19.9 UserPreferences](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/SPEC.md#L2088-L2120)
+- [SPEC §19.1 Article](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/SPEC.md#L1886-L1909)
+- [SPEC §19.9 UserPreferences](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/SPEC.md#L2088-L2120)
 
 代码证据：
 
-- [ArticleCandidate 字段定义](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L94-L137)
-- [ArticleRecord 字段](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Data/PersistenceModels.swift#L4-L24)
-- [ArticleRepository.makeArticleRecord](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Data/Repositories.swift#L115-L134)
-- [UserPreferencesRecord](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Data/PersistenceModels.swift#L175-L278)
+- [ArticleCandidate 字段定义](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L94-L137)
+- [ArticleRecord 字段](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Data/PersistenceModels.swift#L4-L24)
+- [ArticleRepository.makeArticleRecord](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Data/Repositories.swift#L115-L134)
+- [UserPreferencesRecord](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Data/PersistenceModels.swift#L175-L278)
 
 发现：
 
@@ -264,10 +264,10 @@ ArticleRecord 的 bodyText 是在第一个容器关闭前查询的；**第二个
 
 代码证据：
 
-- [TodayViewModel.load/retry/start](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Features/Today/TodayFeature.swift#L39-L109)
-- [TodayView.actionButtons](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Features/Today/TodayFeature.swift#L212-L243)
-- [TaskStatusRow](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Features/Today/TodayFeature.swift#L278-L291)
-- [当前 UI 测试文件](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnUITests/LexiDawnUITests.swift)
+- [TodayViewModel.load/retry/start](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Features/Today/TodayFeature.swift#L39-L109)
+- [TodayView.actionButtons](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Features/Today/TodayFeature.swift#L212-L243)
+- [TaskStatusRow](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Features/Today/TodayFeature.swift#L278-L291)
+- [当前 UI 测试文件](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawnUITests/LexiDawnUITests.swift)
 
 积极的部分：未接入的按钮已禁用，`start(task:)` 是 no-op，不再伪造 `inProgress`。这是 R1-002 的有效修复。
 
@@ -292,7 +292,7 @@ ArticleRecord 的 bodyText 是在第一个容器关闭前查询的；**第二个
 
 ### R2-008 — P1：文章 completed 仍没有领域层证据约束
 
-规格依据：[SPEC §2.5 阅读任务完成定义](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/SPEC.md#L261-L270)。
+规格依据：[SPEC §2.5 阅读任务完成定义](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/SPEC.md#L261-L270)。
 
 当前 `TaskStatus.canTransition` 允许 ready → completed，`DailyCycleService.updateTask` 也接受任意内部调用者传入 article + completed。这个方法没有阅读进度、达到 90% 的证据或用户明确确认完成的参数。
 
@@ -302,7 +302,7 @@ ArticleRecord 的 bodyText 是在第一个容器关闭前查询的；**第二个
 
 ### R2-009 — P2：carryOverCount 仍依赖应用被打开的日期，不等于完整跨日次数
 
-代码证据：[DailyTasks.swift — markCarryOverIfNeeded](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L301-L326)。
+代码证据：[DailyTasks.swift — markCarryOverIfNeeded](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L301-L326)。
 
 当前实现只在“当前本地日期晚于分配日期，且与上一次记录的 carry-over 日期不同”时加 1。如果任务分配在 10 月 26 日，用户直到 10 月 29 日才重新打开应用，当前逻辑只加 1，而不是根据中间经过的学习日期计算跨日次数。
 
@@ -374,7 +374,7 @@ SPEC 把 `carryOverCount` 定义为跨日次数，但没有进一步明确它是
 
 ### R2-012 — P1：模型版本字段存在，但没有验证从旧 schema 升级的迁移路径
 
-规格依据：[SPEC §19.10 数据迁移与一致性](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/SPEC.md#L2122-L2133)。
+规格依据：[SPEC §19.10 数据迁移与一致性](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/SPEC.md#L2122-L2133)。
 
 当前 `UserPreferencesRecord` 有 `schemaVersion` 字段，但仓库中没有读取该版本并执行迁移的逻辑，也没有 `VersionedSchema` / `SchemaMigrationPlan` 或使用旧版本数据库文件的迁移回归测试。整改报告称新增字段可进行轻量迁移，但当前磁盘重开测试是“用当前模型创建数据库，再用当前模型打开”，并没有用上一版本模型建立旧数据库再升级。
 
@@ -446,17 +446,17 @@ SPEC 把 `carryOverCount` 定义为跨日次数，但没有进一步明确它是
 
 - [当前 main HEAD](https://github.com/whyhaoyu1022-glitch/LexiDawn/commit/ee8eee95526d91623ed40803a550b8dfeab55c07)
 - [最新 main CI run 40600352579](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40600352579)
-- [AI 整改报告](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/docs/reviews/round-1-remediation-report-2026-10-27.md)
-- [上一份独立验收报告](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/docs/reviews/round-1-acceptance-review-2026-10-27.md)
+- [AI 整改报告](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/docs/reviews/round-1-remediation-report-2026-10-27.md)
+- [上一份独立验收报告](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/docs/reviews/round-1-acceptance-review-2026-10-27.md)
 - [PR #1（closed，unmerged）](https://github.com/whyhaoyu1022-glitch/LexiDawn/pull/1)
-- [DailyTasks.swift](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Domain/DailyTasks/DailyTasks.swift)
-- [PersistenceModels.swift](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Data/PersistenceModels.swift)
-- [Repositories.swift](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Data/Repositories.swift)
-- [TodayFeature.swift](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawn/Features/Today/TodayFeature.swift)
-- [单元测试](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnTests/LexiDawnTests.swift)
-- [UI 测试](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/LexiDawnUITests/LexiDawnUITests.swift)
-- [CI workflow](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/.github/workflows/ios-ci.yml)
-- [SPEC.md](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/SPEC.md)
-- [需求追踪矩阵](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/docs/requirements-traceability.md)
-- [测试计划](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/docs/test-plan.md)
-- [STATUS.md](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/STATUS.md)
+- [DailyTasks.swift](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Domain/DailyTasks/DailyTasks.swift)
+- [PersistenceModels.swift](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Data/PersistenceModels.swift)
+- [Repositories.swift](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Data/Repositories.swift)
+- [TodayFeature.swift](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawn/Features/Today/TodayFeature.swift)
+- [单元测试](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawnTests/LexiDawnTests.swift)
+- [UI 测试](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/LexiDawnUITests/LexiDawnUITests.swift)
+- [CI workflow](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/.github/workflows/ios-ci.yml)
+- [SPEC.md](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/SPEC.md)
+- [需求追踪矩阵](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/docs/requirements-traceability.md)
+- [测试计划](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/docs/test-plan.md)
+- [STATUS.md](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/ee8eee95526d91623ed40803a550b8dfeab55c07/STATUS.md)

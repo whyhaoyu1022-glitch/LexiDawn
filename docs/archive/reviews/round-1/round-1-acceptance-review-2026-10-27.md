@@ -221,7 +221,7 @@ workflow 也没有设置 resultBundlePath 或上传 xcresult artifact 的步骤�
 
 证据：
 
-- [SPEC.md §19.3](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/SPEC.md)：isCurrent 当前周期标识需保持唯一；同时定义 completionReason。
+- [SPEC.md §19.3](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/c9f9cdd47cfc117ee342b1700ddca5373eb7842a/SPEC.md)：isCurrent 当前周期标识需保持唯一；同时定义 completionReason。
 - [DailyTasks.swift 第 118–159 行](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/round1-daily-cycle/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L118)：DailyStudyCycle 的 isCurrent 默认值为 true。
 - [DailyTasks.swift 第 247 行起](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/round1-daily-cycle/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L247)：ensureCurrentCycle 创建新周期时没有把旧周期 isCurrent 设为 false。
 - [PersistenceModels.swift 第 63–90 行](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/round1-daily-cycle/LexiDawn/Data/PersistenceModels.swift#L63)：isCurrent 只是普通 Bool，没有唯一性约束或维护逻辑；模型没有 completionReason 字段。
@@ -243,7 +243,7 @@ DailyStudyCycle 还缺少规格中的 completionReason。任务阶段 reason 字
 
 证据：
 
-- [SPEC.md §2.3](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/SPEC.md)：明确要求周期创建使用数据库事务和幂等约束。
+- [SPEC.md §2.3](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/c9f9cdd47cfc117ee342b1700ddca5373eb7842a/SPEC.md)：明确要求周期创建使用数据库事务和幂等约束。
 - [Repositories.swift 第 27–40 行](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/round1-daily-cycle/LexiDawn/Data/Repositories.swift#L27)：周期记录只按 cycleID upsert，没有 assignedLocalDate 唯一约束。
 - [Repositories.swift 第 47–75 行](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/round1-daily-cycle/LexiDawn/Data/Repositories.swift#L47)：文章记录保存会单独执行 context.save()。
 - [DailyTasks.swift 第 247–292 行](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/round1-daily-cycle/LexiDawn/Domain/DailyTasks/DailyTasks.swift#L247)：ensureCurrentCycle 先查询，再选择候选，再保存文章和周期。
@@ -302,7 +302,7 @@ DailyStudyCycle 还缺少规格中的 completionReason。任务阶段 reason 字
 
 证据：
 
-- [SPEC.md §19.1](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/SPEC.md) 定义了 displayTitle、difficulty、imageURL、imageAttribution 等文章字段。
+- [SPEC.md §19.1](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/c9f9cdd47cfc117ee342b1700ddca5373eb7842a/SPEC.md) 定义了 displayTitle、difficulty、imageURL、imageAttribution 等文章字段。
 - [PersistenceModels.swift 第 1–40 行](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/round1-daily-cycle/LexiDawn/Data/PersistenceModels.swift#L1) 当前 ArticleRecord 缺少 displayTitle、difficulty、imageURL、imageAttribution。
 - [PersistenceModels.swift 第 19 行](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/round1-daily-cycle/LexiDawn/Data/PersistenceModels.swift#L19)：contentStatus 使用任意 String，而非受约束的状态类型。
 - [Repositories.swift 第 47–75 行](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/round1-daily-cycle/LexiDawn/Data/Repositories.swift#L47)：候选保存时使用 ArticleRecord 默认值，licenseVerified 默认 false、contentStatus 默认 unavailable、bodyText 默认 nil。
@@ -547,7 +547,7 @@ markCarryOverIfNeeded 的条件判断 assignedLocalDate != localDate。只要当
 - [此前单元测试失败 run 40415631070](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40415631070)
 - [此前模拟器目的地失败 run 40337877307](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40337877307)
 - [main 最近已知失败 run 40184339319](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/40184339319)
-- [SPEC.md](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/main/SPEC.md)
+- [SPEC.md](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/c9f9cdd47cfc117ee342b1700ddca5373eb7842a/SPEC.md)
 - [DailyTasks.swift](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/round1-daily-cycle/LexiDawn/Domain/DailyTasks/DailyTasks.swift)
 - [PersistenceModels.swift](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/round1-daily-cycle/LexiDawn/Data/PersistenceModels.swift)
 - [Repositories.swift](https://github.com/whyhaoyu1022-glitch/LexiDawn/blob/round1-daily-cycle/LexiDawn/Data/Repositories.swift)

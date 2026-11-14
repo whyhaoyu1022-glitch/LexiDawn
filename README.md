@@ -1,54 +1,22 @@
 # 词光 LexiDawn
 
-原生 iOS 英文全文阅读、离线查词、生词管理和间隔复习应用。SwiftUI、SwiftData，保持 Domain / Service / Repository 分层。
+词光是面向个人学习的原生 iPhone 应用。读完整英文文章、点词离线查释义，保存生词和笔记，再按 FSRS 4.5 复习。项目使用 SwiftUI、必要的 UIKit 和 SwiftData。
 
-Round 4 在原 main 开发，144 项最终验收仍在进行。已逐张核对上传包的 21 张 HEIC 与三张词典参考 JPEG。从六个模拟器测试分组恢复的 262 张实拍保留了实际测试结果。[当前状态](STATUS.md) · [持续交付记录](docs/reviews/round-4-final-delivery.md) · [原图复核](docs/reviews/round-4-original-image-recheck-2026-11-11.md) · [逐图对照](docs/reviews/round-4-simulator-visual-review-8538fdf.md)。
+- **阅读**支持完整原文、收藏、稍后阅读和历史。今日、文章库与探索共享发现进度。
+- **查词**使用内置 MDX，阅读器浮层、生词和复习共用词义身份。MDX 成功确认无中文时可补个人释义。发音由 iOS 系统语音提供。
+- **复习**包含可保存和恢复的连线与拼写。学习进度、个人词条和笔记保存在设备上，词汇可导出 JSON 或 CSV。
 
-## 当前词典规则
+[当前进度和下载](STATUS.md) · [iPhone 安装](docs/signing.md) · [文档索引](docs/README.md)
 
-所有当前中文释义共用内置 MDX。阅读器浮窗、详情、离线搜索、推荐、生词列表和新连线／拼写题使用同一义项身份。只有本词 MDX 成功返回无中文或无词条，且持久资格仍有效时，才能使用标记为个人内容的已保存义项；新复习题还要求个人义项已确认。资源错误不启用个人义。历史用户内容、冻结题和排程继续保存。
+## 开发
 
-唯一词典来源：App 内置 MDX。`Dictionary Data/` 中两个ZIP是同一文件的分块，构建时由原 `merge.py` 按manifest恢复、验证，完整单一文件进入App Bundle。运行时不下载、不访问GitHub，不支持用户导入词典，无其他词典Provider或自动回退。
+用 Xcode 打开 `LexiDawn.xcodeproj`，选择 `LexiDawn` scheme。生产目标最低 iOS 27.0。当前 CI 使用 Xcode 26.6 和 iOS 26.5 Simulator 做兼容验证，实际设备结果见当前状态。
 
-批准MDX为38,774,534字节，SHA256 `095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443`。实际MDX2.0/UTF8 HTML/未加密，原生C/zlib按需读块，Swift Actor管理索引和128词LRU，系统libxml2解析结构。只声明支持这份实测格式，不宣称通用加密/LZO支持。App不包含Python解释器。
-
-系统发音使用 AVSpeechSynthesizer，可开始、停止和报告系统语音不可用。不需要MDD、词典图片、音频文件或在线发音API。音标只展示，不当普通英文朗读。
-
-只有MDX成功确认没有中文释义或没有词条，才允许结构化个人词。支持多词性、多义项、配对例句/翻译、搭配/短语/习语、语法/语域/场景/备注、确认和修订历史。MDX已有中文时所有个人义写入口锁定，独立笔记仍可编辑；旧个人内容只读保留。资源缺失/损坏/解析错误绝不冒充无词。
-
-完整词典、阅读浮层、生词和复习共享词义身份。新题冻结义项、来源版本、原句/原词形/位置、答案和seed/mask；进行中题不因新查询暗换答案。显示答案后必须亲自输入正确答案，仍计Again，FSRS事件幂等。
-
-## 产品入口
-
-- 今日：继续最早未完成周期，精简来源、真实阅读/连线/拼写状态，只保留文章库总量摘要。
-- 文章库：完整本地库存、当前结果数、全部/收藏/稍后/历史可见筛选；收藏和稍后独立持久化。
-- 发现：今日、书库和探索共用 ArticleDiscoveryService，展示真实runID、来源数/阶段/活跃来源、导入/去重/失败及停止。
-- 阅读器：完整离线原文、自然段落/标题/列表/引用、原始offset映射、阅读恢复、三主题/横屏/动态字体；点词显示附近小浮层，箭头进入完整词典。
-- 探索和词汇推荐：完成当前必做后解锁；主题渐变卡、收藏/稍后和紧凑词卡；浏览推荐不会自动加入。
-- 生词：离线搜索、多词性个人编辑、笔记自动保存/草稿恢复、版本历史、安全撤销、JSON/CSV导出。
-- 复习：真实可见曲线连线、按题反馈、持久化拼写与纠正、FSRS4.5、明确延期、简洁完成页和次级日志。
-- 设置：自动保存及失败重试，关于页开发者Why Haoyu、实际Bundle版本/build。
-
-已有周期、全文、笔记、词汇、上下文、排程、已完成及未完成题组保留；升级前备份，失败报错，不删除数据库或要求重装清库。
-
-## 文章数据
-
-继续尝试已登记的BBC、Reuters、AP、Guardian、NPR、DW、VOA、NASA、ScienceDaily、Phys.org、Smithsonian、Wikipedia/Wikinews公开完整正文。配置不代表实际成功，逐源尝试/结果分别记录。不绕过登录、验证码或付费墙；完整性/事务检查不通过就放弃，无摘要、链接或WebView阅读降级。原始来源元数据保留在数据层及次级详情。
-
-## 实际验证与构建
-
-提交 fe2cde3 通过 Debug 全目标和 Release Simulator 编译，236 项 XCTest 中 235 项通过。其未签名 IPA 为 0.1.0(34)，实际 App 包内的 MDX 大小与 SHA 均已下载验证。前后提交的结果按各自 SHA 记录。[原生运行](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43230590847) · [IPA 核验](artifacts/round-4/ipa-fe2cde3-verification.json)。
-
-当前代码保留 236 项 XCTest 和 64 项 XCUITest。实现提交 54cd607 的完整原生回归及未签名包单独记录。[原生回归](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43233166087) · [IPA 构建](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43233165869)。
-
-新增了词形与词性结合的真实 MDX 查词、冻结复习义项、来源上下文去重及手动纠正后换题的检查。
-
-产品最低iOS27.0。当前CI Xcode26.6/SDK26.5及临时iOS26.5 Simulator仅为兼容验证，不能冒充iOS27真机验收。Linux开发容器无Xcode/Simulator，真实原生运行由macOS Actions完成。所有旧测试保留；4主UI分组和SE/大屏专项穷尽分配，fail-fast关闭，逐方法核对实际执行，失败也导出原始PNG/xcresult。
+构建阶段用 Python 3 验证并恢复仓库中的两个 ZIP，生成完整的 `BundledDictionary.mdx`。[词典数据目录](<Dictionary Data/README.md>)
 
 ```sh
 python3 scripts/ci-test-plan.py verify
 python3 scripts/test-bundled-dictionary.py
-xcodebuild -project LexiDawn.xcodeproj -scheme LexiDawn -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
 ```
 
-[主规范](SPEC.md) · [Round4规范](docs/plans/round-4-development-specification.md) · [词典补充](docs/plans/round-4-dictionary-detail-addendum.md) · [架构](docs/architecture.md) · [追踪](docs/requirements-traceability.md) · [测试计划](docs/test-plan.md) · [安装说明](docs/signing.md)。历史Round3结果单独保留于[原交付报告](docs/reviews/round-3-final-delivery-2026-11-02.md)，不得作为本轮通过证据。
+这两条命令分别验证测试分组和词典恢复与读取。[测试计划](docs/test-plan.md) · [产品规格](SPEC.md) · [工程约定](AGENTS.md)
