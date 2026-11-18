@@ -2,6 +2,7 @@
 
 | 文档 | 用途 |
 |---|---|
+| [2026-11-18 真机反馈整改](round-4-device-feedback-2026-11-18.md) | 七张新图、口述问题、后续修复和实际专项运行结果 |
 | [Round 4 正式交付记录](round-4-final-delivery.md) | 最新通过构建、截图、IPA、迁移与独立验收状态 |
 | [反馈清单](round-4-feedback-manifest.json) | 21 张原反馈、3 张参考及 144 条标准，供证据脚本读取 |
 | [验收账本](round-4-acceptance-status.json) | 每条标准的实现位置及独立验收状态 |

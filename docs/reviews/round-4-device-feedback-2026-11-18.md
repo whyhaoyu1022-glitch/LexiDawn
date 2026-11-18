@@ -25,6 +25,10 @@
 | `946d418` | 57 项核心 XCTest 和 10 项受影响 XCUITest 通过。原生截图包含 applied 与 apply 的上下顺序、整段短语和移除既有词条。 | [专项运行](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44321906439) · [专项截图](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44321906439/artifacts/14436208453) |
 | `5c1cd14` | 59 项核心 XCTest 中有一项失败。真实 MDX 的 `take account of` 和 `take sth into account` 共用义项，此版本只识别第一个标签。 | [专项运行](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44323377594) |
 | `6df100d` | 修正共用义项的别名身份。仅选择失败用例，两次尝试在分配 macOS runner 前取消，没有执行此次复跑。全量回归和本批 IPA 待该用例通过。 | [单用例复跑](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44325053234) |
+| `a101b35` | 真实 MDX 短语语法槽及共用义项别名、带音节点的独立词形迁移，2/2 XCTest 通过。已编译全部 App 与测试目标。 | [两项回归](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44417334553) |
+| `0b7ec16` | 完成页“继续”明确请求下一批，去掉重复入口。额外复习重启、继续后空队列及不重复刚完成词的原生 UI 用例通过；截图导出成功。 | [单项 UI 回归](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44419033058) |
+
+2026-11-19 补查：身份迁移排序的两端统一使用持久词形，防止音节点旧词覆盖已固定的独立 MDX 词形；测试验证重复迁移、笔记和两份学习状态保留。CI 固定 macOS 26 ARM 镜像。新建的隔离 Simulator 最多启动两次，每次有明确超时；失败保留诊断。旧任务普通取消未结束时，在复查 main 身份后强制取消旧运行，不删除运行记录或产物。所有专项回归通过后，执行最终全量验证与新 IPA 构建；该批结果待运行结束登记。
 
 宿主恢复与完整扫描通过，分包异常测试 8 项。字典为 MDX 2.0、UTF-8、38,774,534 bytes，共校验 203,181 条索引记录及别名链。SHA-256 为 `095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443`。
 

@@ -1,6 +1,6 @@
 # 当前状态
 
-2026-11-18 真机反馈已有新的修复代码和专项验证记录。查看[逐图记录](docs/reviews/round-4-device-feedback-2026-11-18.md)。
+2026-11-19：真机反馈修复的专项回归已通过。此前 57 项核心 XCTest、10 项受影响 UI 通过并产生 50 张原生截图；后续短语别名、音节点迁移的两项 XCTest，以及完成页“继续”的单项 UI 回归均通过。现执行最终全量回归与新 IPA 构建，新截图包尚未交付。查看[逐图记录及最新运行](docs/reviews/round-4-device-feedback-2026-11-18.md)。
 
 修复前的 Round 4 全量原生兼容回归已通过。验证代码为 `4be478e2e778bea4da2095e65a637e5df117f7be`，运行使用 Xcode 26.6 与 iOS 26.5 Simulator。[最终 CI](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43420154858)
 
