@@ -30,7 +30,7 @@ jobs:
   round4-core:
     name: Round 4 · compile and deterministic core checks
     if: ${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[round4-core]') || contains(github.event.head_commit.message, '[round4-ui]')) }}
-    runs-on: macos-latest
+    runs-on: ${{ contains(github.event.head_commit.message, '[device-phrase]') && 'macos-26-intel' || 'macos-latest' }}
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
