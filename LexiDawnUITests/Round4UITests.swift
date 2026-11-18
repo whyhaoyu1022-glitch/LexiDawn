@@ -27,7 +27,6 @@ final class Round4UITests: XCTestCase {
         app.launchEnvironment["LEXIDAWN_UI_STORE_ID"] = UUID().uuidString; app.launch(); return app
     }
     private func reach(_ element: XCUIElement, app: XCUIApplication, upward: Bool = true, count: Int = 12) {
-        if app.keyboards.firstMatch.exists, app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
         for _ in 0..<count {
             if element.exists && element.isHittable { break }
             let bounds = app.windows.firstMatch.frame
@@ -177,7 +176,6 @@ final class Round4UITests: XCTestCase {
         let add = app.buttons["添加义项"]; reach(add, app: app); add.tap()
         let part = app.buttons["personal-part-of-speech"].firstMatch; reach(part, app: app); part.tap(); app.buttons["n. 名词"].tap()
         let meaning = app.textFields["personal-meaning"].firstMatch; reach(meaning, app: app); replace(meaning, with: "明确的个人中文测试义")
-        if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
         let confirm = app.switches["确认作为学习义项"].firstMatch; reach(confirm, app: app); confirm.tap()
         let notes = app.textFields["vocabulary-notes"]; reach(notes, app: app); replace(notes, with: "Round Four autosaved note")
         capture("R4-P09-keyboard", app: app, feature: "vocabulary", state: "personal-POS-Chinese-and-note-editing")
@@ -269,7 +267,8 @@ final class Round4UITests: XCTestCase {
         let app = launch("round4-library"); app.tabBars.buttons["我的"].tap()
         let name = app.textFields["settings-name"]; XCTAssertTrue(name.waitForExistence(timeout: 10)); replace(name, with: "Round Four")
         XCTAssertFalse(app.buttons["save-settings"].exists)
-        if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+        XCTAssertFalse(app.buttons["完成输入"].exists)
+        app.staticTexts["settings-profile-heading"].tap()
         app.tabBars.buttons["今日"].tap(); app.tabBars.buttons["我的"].tap()
         XCTAssertEqual(app.textFields["settings-name"].value as? String, "Round Four")
         capture("R4-P20-autosave", app: app, feature: "settings", state: "preferences-saved-without-save-button")
@@ -301,6 +300,24 @@ final class Round4UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["已停止发现；已完整入库的文章保留。"].waitForExistence(timeout: 10))
         capture("R4-P05-cancelled", app: app, feature: "article-discovery", state: "cancelled-candidate-not-imported")
     }
+    func testRepeatedReaderLookupCanRemoveExistingWordFromDetail() {
+        let app = launch("round4-mdx-contexts")
+        reader(app)
+        let word = app.buttons.matching(identifier: "word-nod").firstMatch
+        XCTAssertTrue(word.waitForExistence(timeout: 10)); word.tap()
+        XCTAssertTrue(app.buttons["undo-word"].waitForExistence(timeout: 15))
+        app.buttons["close-word"].tap()
+        word.tap()
+        XCTAssertTrue(app.buttons["remove-word"].waitForExistence(timeout: 15))
+        XCTAssertFalse(app.buttons["undo-word"].exists)
+        let detail = app.buttons["dictionary-details"]
+        XCTAssertTrue(detail.isEnabled); detail.tap()
+        let remove = app.buttons["remove-word"]
+        XCTAssertTrue(remove.waitForExistence(timeout: 15)); remove.tap()
+        XCTAssertTrue(app.buttons["add-word"].waitForExistence(timeout: 10))
+        capture("R4-device-remove-existing", app: app, feature: "vocabulary", state: "existing-word-removed-from-reader-detail")
+    }
+
     func testTwoLookupsFromOneArticleRetainBothSentencesAndOneSource() throws {
         let app = launch("round4-mdx-contexts")
         reader(app)
@@ -314,7 +331,7 @@ final class Round4UITests: XCTestCase {
         let second = words.element(boundBy: 1)
         reach(second, app: app); second.tap()
         XCTAssertTrue(close.waitForExistence(timeout: 10))
-        XCTAssertTrue(app.staticTexts["已加入"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["remove-word"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["undo-word"].exists)
         close.tap(); app.buttons["返回今日"].tap(); app.tabBars.buttons["词汇"].tap()
         let entry = app.buttons["vocabulary-entry-nod"]; reach(entry, app: app); entry.tap()
@@ -457,10 +474,8 @@ final class Round4UITests: XCTestCase {
         let add = app.buttons["添加义项"]; reach(add, app: app); add.tap()
         let part = app.buttons["personal-part-of-speech"].firstMatch; reach(part, app: app); part.tap(); app.buttons["n. 名词"].tap()
         let meaning = app.textFields["personal-meaning"].firstMatch; reach(meaning, app: app); replace(meaning, with: "个人离线测试词义")
-        if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
         let confirm = app.switches["确认作为学习义项"].firstMatch; reach(confirm, app: app); confirm.tap()
         let notes = app.textFields["vocabulary-notes"]; reach(notes, app: app); replace(notes, with: "Actual MDX absence, personal content")
-        if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
         expectation(for: NSPredicate(format: "label == %@", "已自动保存"), evaluatedWith: app.staticTexts["annotation-save-state"]); waitForExpectations(timeout: 10)
         capture("R4-F23-real-personal-saved", app: app, feature: "personal-dictionary", state: "actual-MDX-notFound-structured-personal-POS-confirmed-notes-persisted", provenance: "real-bundled-MDX-and-user-created-content-real-Repository")
         app.terminate(); app.launch(); app.tabBars.buttons["词汇"].tap()

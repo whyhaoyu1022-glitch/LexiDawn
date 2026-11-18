@@ -55,12 +55,20 @@ struct ReviewPracticeContent: View {
                             Button("返回") { if let returnToday { returnToday() } else { dismiss() } }.buttonStyle(.bordered)
                             Button("继续") { Task { await load() } }.buttonStyle(.borderedProminent)
                         }.frame(maxWidth: .infinity)
-                    } else if !session.matchingComplete { matching(session) }
+                    } else if !session.matchingComplete {
+                        if let board = session.matching.first(where: { !$0.completed })?.matchingBoard {
+                            matching(session, board: board)
+                        }
+                    }
                     else {
                         Button { showCompletedMatches.toggle() } label: {
                             Label("连线已完成 · 查看全部连接", systemImage: showCompletedMatches ? "chevron.up" : "chevron.down")
                         }.accessibilityIdentifier("show-completed-matches").accessibilityValue(showCompletedMatches ? "已展开" : "已收起")
-                        if showCompletedMatches { matching(session) }
+                        if showCompletedMatches {
+                            ForEach(Array(Set(session.matching.map(\.matchingBoard))).sorted(), id: \.self) { board in
+                                matching(session, board: board)
+                            }
+                        }
                         cloze(session)
                     }
                 } else if emptyResolved { Label(deferredResolved ? "本组已按你的选择延期，未计作答对。" : "今天没有到期词汇。", systemImage: "checkmark.circle") }
@@ -69,8 +77,13 @@ struct ReviewPracticeContent: View {
                     DisclosureGroup("查看本次复习记录") { ForEach(schedules, id: \.self) { Text($0).font(.footnote).accessibilityIdentifier("review-next-due") } }
                 }
                 if extraEmpty { Text(deferredResolved ? "本次延期的词会在后续复习中再次出现。" : "额外复习暂无到期词条，刚完成的题组不会立即重复。").font(.footnote) }
+                if !loading, message == nil, session?.completedAt != nil || emptyResolved {
+                    Button("额外复习", systemImage: "plus.circle") { Task { await load(requestExtra: true) } }
+                        .buttonStyle(.bordered).accessibilityIdentifier("start-extra-review")
+                }
                 if message != nil { Button("重试", action: { Task { await load() } }).buttonStyle(.bordered).disabled(loading) }
             }.padding(20)
+                .background { Color.clear.contentShape(Rectangle()).onTapGesture { spellingFocused = false } }
         }.accessibilityIdentifier("review-scroll").safeAreaPadding(.bottom, 16).scrollDismissesKeyboard(.interactively).navigationTitle("复习").navigationBarTitleDisplayMode(.inline).task { await load() }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if !loading, let session, session.matchingComplete, session.completedAt == nil,
@@ -83,12 +96,15 @@ struct ReviewPracticeContent: View {
                         .background(.regularMaterial)
                 }
             }
-            .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { spellingFocused = false } } }
             .reviewEntryGate(entryGate, learning: learning)
             .onChange(of: selected) { _, _ in feedback = nil; feedbackFor = nil; matchingNeedsSelection = false }
             .onChange(of: activeQuestionKey) { _, _ in spelling = ""; feedback = nil; feedbackFor = nil; feedbackIdentity = nil; answerPhase = restoredPhase }
             .onChange(of: feedback) { _, message in if let message { UIAccessibility.post(notification: .announcement, argument: message) } }
-            .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await load() } } }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active, !loading, session?.completedAt != nil || session == nil {
+                    Task { await load() }
+                }
+            }
     }
     private var activeQuestionKey: String {
         guard let session else { return "" }
@@ -101,11 +117,15 @@ struct ReviewPracticeContent: View {
     private func feedbackBelongs(to questionID: String, in session: ReviewSessionView) -> Bool {
         feedbackIdentity?.sessionID == session.id && feedbackIdentity?.questionID == questionID && feedbackIdentity?.revision == session.revision
     }
-    private func matching(_ session: ReviewSessionView) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+    private func matching(_ session: ReviewSessionView, board: Int) -> some View {
+        let questions = session.matching.filter { $0.matchingBoard == board }
+        let boardCount = (session.matching.last?.matchingBoard ?? 0) + 1
+        let current = ReviewSessionView(id: session.id, matching: questions, cloze: [], completedAt: session.completedAt, revision: session.revision)
+        return VStack(alignment: .leading, spacing: 16) {
             Text("1 · 连线 \(session.matching.filter(\.completed).count)/\(session.matching.count)").font(.headline)
+            if boardCount > 1 { Text("第 \(board + 1) / \(boardCount) 组").font(.caption).foregroundStyle(.secondary) }
             Text(verticalSizeClass == .compact ? "先点英文，再点中文；完成的两端均不可再选。" : "先点英文，再点对应中文。已完成的连接会保留。")
-            MatchingBoard(session: session, selected: $selected, submit: { questionID, option in
+            MatchingBoard(session: current, selected: $selected, submit: { questionID, option in
                 if submit(questionID: questionID, answer: option.senseID, matchingOptionID: option.id) { selected = nil }
             }, noSelection: { matchingNeedsSelection = true })
             if matchingNeedsSelection { Label("请先选择英文词条", systemImage: "hand.tap").font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("review-feedback") }
@@ -121,6 +141,7 @@ struct ReviewPracticeContent: View {
                     Text(ClozeContext.mask(sentence, answer: question.answer, targetRange: question.sourceRange)).font(.body).accessibilityIdentifier("cloze-context")
                 }
                 Text(question.prompt).font(.largeTitle.monospaced()).accessibilityIdentifier("cloze-prompt")
+                    .onTapGesture { spellingFocused = false }
                 if let meaning = session.matching.first(where: { $0.entryID == question.entryID }) {
                     Text(meaning.answer).font(.headline)
                     if meaning.meaning?.originKind == "personal" { Text("个人释义").font(.caption).foregroundStyle(.secondary) }
@@ -152,7 +173,8 @@ struct ReviewPracticeContent: View {
             Button("显示答案") { _ = submit(questionID: questionID, answer: "", reveal: true) }
         }
     }
-    private func load() async {
+    private func load(requestExtra: Bool = false) async {
+        guard !loading else { return }
         let generation = UUID(); loadGeneration = generation
         var preparingExtra = false
         loading = true; message = nil; selected = nil; spelling = ""; feedback = nil; feedbackFor = nil; emptyResolved = false; schedules = []; extraMode = false; extraEmpty = false; showCompletedMatches = false
@@ -174,15 +196,24 @@ struct ReviewPracticeContent: View {
             deferredResolved = restoredCycle?.reviewEvidence?.isUserDeferral == true
             if prepared?.completedAt != nil || emptyResolved {
                 preparingExtra = true
-                let extra = try await learning.review.prepareExtra(dailyLimit: prefs.dailyReviewLimit, pairCount: prefs.matchingPairCount, clozeCount: prefs.clozeQuestionCount, at: Date())
+                let extra = if requestExtra {
+                    try await learning.review.prepareExtra(dailyLimit: prefs.dailyReviewLimit, pairCount: prefs.matchingPairCount, clozeCount: prefs.clozeQuestionCount, at: Date())
+                } else {
+                    try learning.review.extraSession()
+                }
                 guard generation == loadGeneration, !Task.isCancelled else { return }
                 if let extra { session = extra; extraMode = true; emptyResolved = false; schedules = try learning.review.extraScheduleFeedback(sessionID: extra.id) }
-                else { extraEmpty = true }
+                else { extraEmpty = requestExtra }
             }
             answerPhase = restoredPhase
             learning.changed()
-        } catch { self.message = error.localizedDescription; entryGate.adopt(error, cycleID: cycleID, extra: preparingExtra, completion: { Task { await load() } }) }
-        loading = false
+        } catch is CancellationError {
+            return
+        } catch {
+            guard generation == loadGeneration, !Task.isCancelled else { return }
+            self.message = error.localizedDescription
+            entryGate.adopt(error, cycleID: cycleID, extra: preparingExtra, completion: { Task { await load(requestExtra: preparingExtra) } })
+        }
     }
     @discardableResult private func submit(questionID: String, answer: String, matchingOptionID: String? = nil, reveal: Bool = false, hint: Bool = false) -> Bool {
         guard let cycleID else { return false }
@@ -233,9 +264,10 @@ struct ReviewEntryProblem: Identifiable {
     func cancel() { generation = UUID(); busy = false; problem = nil; ready = nil }
     func open(dependencies: AppDependencies, learning: LearningServices, onReady: @escaping () -> Void) async {
         guard !busy else { return }
-        ready = onReady; await retry(dependencies: dependencies, learning: learning)
+        extra = false; ready = onReady; await retry(dependencies: dependencies, learning: learning)
     }
     func adopt(_ error: Error, cycleID: UUID?, extra: Bool = false, completion: @escaping () -> Void) {
+        guard !(error is CancellationError) else { return }
         self.cycleID = cycleID; self.extra = extra; ready = completion
         problem = ReviewEntryProblem(message: error.localizedDescription, issue: error as? ReviewMeaningIssue)
     }
@@ -245,11 +277,14 @@ struct ReviewEntryProblem: Identifiable {
         do {
             let all = try learning.cycles.fetchAll()
             guard let cycle = all.first(where: \.hasOutstandingWork) ?? all.last else { ready?(); return }
-            cycleID = cycle.cycleID; extra = cycle.reviewTaskStatus == .completed || cycle.reviewTaskStatus == .deferred
+            cycleID = cycle.cycleID
+            let retryExtra = extra
+            extra = false
             let prefs = try dependencies.preferencesRepository.load()
             let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: prefs.dailyReviewLimit, pairCount: prefs.matchingPairCount, clozeCount: prefs.clozeQuestionCount, at: Date())
             let current = try learning.cycles.fetch(by: cycle.cycleID)
-            if prepared?.completedAt != nil || current?.reviewEvidence != nil {
+            if retryExtra, prepared?.completedAt != nil || current?.reviewEvidence != nil {
+                extra = true
                 _ = try await learning.review.prepareExtra(dailyLimit: prefs.dailyReviewLimit, pairCount: prefs.matchingPairCount, clozeCount: prefs.clozeQuestionCount, at: Date())
             }
             guard generation == token, !Task.isCancelled else { return }

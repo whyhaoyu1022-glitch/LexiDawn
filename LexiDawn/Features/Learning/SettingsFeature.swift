@@ -42,11 +42,14 @@ struct LearningSettingsView: View {
                         Button("保留当前设置") { resolveConflict(restore: false) }
                     }
                 }
-                Section("个人资料") {
-                    TextField("昵称", text: $name).focused($editingText, equals: .name).accessibilityIdentifier("settings-name")
+                Section {
+                    TextField("昵称", text: $name).submitLabel(.done).focused($editingText, equals: .name).accessibilityIdentifier("settings-name")
                     Picker("年龄段（可选）", selection: $age) { Text("不填写").tag(""); Text("未满 18 岁").tag("under18"); Text("18–24 岁").tag("18-24"); Text("25–44 岁").tag("25-44"); Text("45 岁及以上").tag("45+") }
                     TextField("学习目标", text: $goal).focused($editingText, equals: .goal)
                     TextField("兴趣主题（逗号分隔）", text: $topics).focused($editingText, equals: .topics)
+                } header: {
+                    Text("个人资料").frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+                        .onTapGesture { editingText = nil; save() }.accessibilityIdentifier("settings-profile-heading")
                 }
                 Section("阅读与查词") {
                     Stepper("字号：\(Int(fontSize)) pt", value: $fontSize, in: 14...32)
@@ -80,7 +83,6 @@ struct LearningSettingsView: View {
                         }.frame(maxWidth: .infinity).padding(.vertical, 8).padding(.horizontal, 16).background(.regularMaterial)
                     }
                 }
-                .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { InputComposition.dismissKeyboard(); save() } } }
                 .onSubmit { editingText = nil; save() }
                 .onChange(of: editingText) { previous, current in if previous != nil, previous != current { save() } }
                 .onChange(of: signature) { _, _ in scheduleSave() }

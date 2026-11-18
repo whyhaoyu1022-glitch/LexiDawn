@@ -856,7 +856,7 @@ struct ReviewSessionResult: Equatable, Sendable, Codable {
         guard clozeAnsweredIDs.isEmpty || matchingComplete else { throw TaskStatusError.verifiedEvidenceRequired }
         for (index, pair) in [(matchingQuestionIDs, matchingAnsweredIDs), (clozeQuestionIDs, clozeAnsweredIDs)].enumerated() {
             let (questions, answers) = pair
-            if index == 1, questions.isEmpty, answers.isEmpty, clozeExclusionReason == "targets-under-three-letters" { continue }
+            if index == 1, questions.isEmpty, answers.isEmpty, ["targets-under-three-letters", "no-verifiable-mdx-context"].contains(clozeExclusionReason ?? "") { continue }
             guard !questions.isEmpty, questions.allSatisfy({ !$0.isBlank }), Set(questions).count == questions.count,
                   Set(answers).count == answers.count, Set(answers).isSubset(of: Set(questions)) else { throw TaskStatusError.verifiedEvidenceRequired }
         }

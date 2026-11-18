@@ -1,6 +1,6 @@
 import Foundation
 
-struct RecommendedVocabulary: Identifiable {
+struct RecommendedVocabulary: Identifiable, Codable {
     var id: String { candidate.id }
     let candidate: VocabularyRecommendationCandidate
     let result: DictionaryResult

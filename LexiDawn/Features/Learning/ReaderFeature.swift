@@ -70,8 +70,8 @@ struct ReaderView: View {
                         do {
                             let auto = try dependencies.preferencesRepository.load().autoAddOnWordTap; model.flush()
                             guard model.article != nil else { return }
-                            let lookup = WordLookupModel(token: token, articleID: model.articleID, autoAdd: auto, learning: model.learning)
-                            lookup.startAddition(); lookup.startLookup(); selection = lookup
+                            let lookup = WordLookupModel(token: token, articleID: model.articleID, autoAdd: auto, learning: model.learning, sourceText: article.body)
+                            selection?.cancelLookup(); lookup.startLookup(); selection = lookup
                         }
                         catch { model.error = error.localizedDescription }
                     }, document: article.document, onWordAnchor: { point, size in
@@ -216,11 +216,14 @@ struct ReaderView: View {
     @Published var result: DictionaryResult?
     @Published var error: String?
     @Published var addition: VocabularyAddition?
-    @Published var existing = false
+    @Published private(set) var existingEntryID: String?
+    var existing: Bool { existingEntryID != nil }
     @Published var loading = false
     @Published var vocabularyError: String?
     @Published private(set) var phraseError: String?
-    private var started = false
+    private var automaticActionHandled = false
+    private var resolvedToken: EnglishToken?
+    private let sourceText: String?
     private var lookupGeneration = UUID()
     private var lookupJob = UUID()
     private var lookupTask: Task<Void, Never>?
@@ -229,7 +232,11 @@ struct ReaderView: View {
     let autoAdd: Bool
     let learning: LearningServices
     let origin: VocabularyContextOrigin
-    init(token: EnglishToken, articleID: String?, autoAdd: Bool, learning: LearningServices, depth: Int = 0, origin: VocabularyContextOrigin = .reader) { self.token = token; self.articleID = articleID; self.autoAdd = autoAdd; self.learning = learning; self.depth = depth; self.origin = origin }
+    init(token: EnglishToken, articleID: String?, autoAdd: Bool, learning: LearningServices, depth: Int = 0,
+         origin: VocabularyContextOrigin = .reader, sourceText: String? = nil) {
+        self.token = token; self.articleID = articleID; self.autoAdd = autoAdd; self.learning = learning
+        self.depth = depth; self.origin = origin; self.sourceText = sourceText ?? origin.sourceText
+    }
     func startLookup(force: Bool = false) {
         guard force || result == nil, lookupTask == nil else { return }
         let job = UUID()
@@ -241,37 +248,57 @@ struct ReaderView: View {
         }
     }
     func cancelLookup() { lookupTask?.cancel(); lookupTask = nil; lookupJob = UUID(); lookupGeneration = UUID(); loading = false }
-    func begin() async {
-        startAddition()
-        await lookup()
-    }
-    func startAddition() { if !started { started = true; add(explicit: false) } }
+    func begin() async { await lookup() }
     func refreshMembership() {
+        guard let result else { return }
         do {
-            if try learning.vocabulary.find(surface: token.surface, context: token.sentence) == nil { addition = nil; existing = false }
-            else if addition == nil { existing = true }
+            existingEntryID = try learning.vocabulary.find(canonicalHeadword: result.savedHeadword)?.id
+            if existingEntryID == nil { addition = nil }
         } catch { vocabularyError = error.localizedDescription }
     }
     func lookup() async {
         let generation = UUID(); lookupGeneration = generation; loading = true; error = nil
         defer { if lookupGeneration == generation { loading = false } }
         do {
-            let value = try await learning.dictionary.lookup(token.surface, context: token.sentence)
+            let resolved: (DictionaryResult, EnglishToken)
+            if let sourceText {
+                resolved = try await learning.dictionary.lookup(token, sourceText: sourceText)
+            } else {
+                resolved = (try await learning.dictionary.lookup(token.surface, context: token.sentence), token)
+            }
             guard generation == lookupGeneration, !Task.isCancelled else { return }
-            result = value; error = nil
+            result = resolved.0; resolvedToken = resolved.1; error = nil
+            refreshMembership()
+            if !automaticActionHandled {
+                automaticActionHandled = true
+                if autoAdd, articleID != nil { add(explicit: false) }
+            }
         } catch is CancellationError { }
         catch { if generation == lookupGeneration { result = nil; self.error = error.localizedDescription } }
     }
     func add(explicit: Bool) {
+        guard let result, let resolvedToken else { return }
         do {
             let saved: VocabularyAddition?
-            if let articleID { saved = try learning.vocabulary.add(token: token, articleID: articleID, autoAdd: autoAdd, explicit: explicit, origin: origin, at: Date()) }
-            else if explicit { saved = try learning.vocabulary.addDictionaryEntry(headword: result?.headword ?? EnglishTokenizer.lemma(token.surface, context: token.sentence), surface: token.surface, context: token.sentence, at: Date()) }
-            else { saved = nil }
-            if let saved { self.addition = saved; existing = !saved.created; learning.changed() }
-            else { existing = try learning.vocabulary.find(surface: token.surface, context: token.sentence) != nil }
+            if let articleID {
+                saved = try learning.vocabulary.add(token: resolvedToken, articleID: articleID, autoAdd: autoAdd,
+                    explicit: explicit, origin: origin, lookup: result, at: Date())
+            } else if explicit {
+                saved = try learning.vocabulary.addDictionaryEntry(headword: result.savedHeadword, surface: resolvedToken.surface,
+                    context: resolvedToken.sentence, lookup: result, at: Date())
+            } else { saved = nil }
+            if let saved {
+                addition = saved; existingEntryID = saved.entryID; learning.changed()
+            }
             vocabularyError = nil
-        } catch { self.vocabularyError = error.localizedDescription }
+        } catch { vocabularyError = error.localizedDescription }
+    }
+    func remove() {
+        guard let existingEntryID else { return }
+        do {
+            try learning.vocabulary.remove(entryID: existingEntryID, at: Date())
+            self.existingEntryID = nil; addition = nil; vocabularyError = nil; learning.changed()
+        } catch { vocabularyError = error.localizedDescription }
     }
     func phraseLookup(_ phrase: String) -> WordLookupModel? {
         phraseError = nil
@@ -288,7 +315,7 @@ struct ReaderView: View {
     }
     func undo() {
         guard let addition else { return }
-        do { try learning.vocabulary.undo(addition, at: Date()); self.addition = nil; existing = false; learning.changed(); vocabularyError = nil }
+        do { try learning.vocabulary.undo(addition, at: Date()); self.addition = nil; existingEntryID = nil; learning.changed(); vocabularyError = nil }
         catch { self.vocabularyError = error.localizedDescription }
     }
 }
@@ -328,16 +355,19 @@ struct WordLookupSheet: View {
             HStack {
                 if model.addition?.created == true {
                     Button { model.undo() } label: { Label("撤销", systemImage: "checkmark.circle.fill") }.accessibilityIdentifier("undo-word")
-                } else if model.existing { Label("已加入", systemImage: "checkmark.circle").foregroundStyle(.secondary) }
+                } else if model.existing {
+                    Button(role: .destructive, action: model.remove) { Label("移出生词本", systemImage: "minus.circle") }
+                        .accessibilityIdentifier("remove-word")
+                }
                 else {
                     Button(model.vocabularyError == nil ? "加入生词本" : "重试保存生词", systemImage: model.vocabularyError == nil ? "plus.circle" : "arrow.clockwise") {
                         model.add(explicit: true)
-                    }.accessibilityIdentifier("add-word")
+                    }.accessibilityIdentifier("add-word").disabled(model.result == nil || model.loading)
                 }
                 Spacer()
                 Button {
                     if let openDetails { openDetails() } else { showDetails = true }
-                } label: { Image(systemName: "arrow.up.right.circle.fill").font(.title2).frame(width: 44, height: 44) }
+                } label: { Image(systemName: "chevron.right.circle.fill").font(.title2).frame(width: 44, height: 44) }
                     .accessibilityLabel("查看详细释义").accessibilityIdentifier("dictionary-details").disabled(model.loading || model.error != nil || model.result == nil)
             }.font(.subheadline).accessibilityElement(children: .contain)
         }.padding(verticalSizeClass == .compact ? 10 : 16).frame(width: dynamicTypeSize.isAccessibilitySize ? 310 : 285).accessibilityElement(children: .contain).accessibilityIdentifier("compact-word-card")
@@ -434,7 +464,10 @@ struct DictionaryResultContent: View {
     private var parts: [String] {
         let values: [String] = senses.reduce(into: []) { values, sense in let key = group(sense); if !values.contains(key) { values.append(key) } }
         let order = ["noun", "verb", "intransitive verb", "transitive verb", "modal verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "interjection", "determiner", "phrase"]
+        let preferredGroup = result.captureSpelling != nil ? result.quickSenses.first.map(group) : nil
         let main = values.filter { $0.hasPrefix("part|") }.sorted { lhs, rhs in
+            if lhs == preferredGroup && rhs != preferredGroup { return true }
+            if rhs == preferredGroup && lhs != preferredGroup { return false }
             let a = order.firstIndex(of: lhs.components(separatedBy: "|")[1]) ?? order.count
             let b = order.firstIndex(of: rhs.components(separatedBy: "|")[1]) ?? order.count
             return a == b ? (values.firstIndex(of: lhs) ?? 0) < (values.firstIndex(of: rhs) ?? 0) : a < b
@@ -447,12 +480,12 @@ struct DictionaryResultContent: View {
         return BilingualMeaningPolicy.partName(key.components(separatedBy: "|")[1])
     }
     var body: some View {
-        LazyVStack(alignment: .leading, spacing: 26) {
+        VStack(alignment: .leading, spacing: 26) {
             if senses.isEmpty {
                 ContentUnavailableView(result.hasMDXEntry ? "词典已收录，暂无中文释义" : "暂无英中释义", systemImage: "text.book.closed", description: Text("可在生词本补充中文释义和例句。"))
             }
             ForEach(Array(parts.enumerated()), id: \.element) { groupIndex, part in
-                LazyVStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 16) {
                     if part.hasPrefix("section|") {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(alignment: .firstTextBaseline) {
@@ -491,10 +524,11 @@ private struct DictionarySenseBody: View {
     let onRelatedEntry: ((String) -> Void)?
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
-            if let related = sense.lexicalHeadword, related != headword {
+            if sense.sectionKind != nil, let related = sense.lexicalHeadword,
+               EnglishTokenizer.normalized(related) != EnglishTokenizer.normalized(headword) {
                 if let onRelatedEntry {
-                    Button { onRelatedEntry(related) } label: { HStack { Text(related).font(.system(.title3, design: .serif).weight(.semibold)); Image(systemName: "arrow.up.right").font(.caption) } }
-                        .buttonStyle(.plain).accessibilityIdentifier("dictionary-related-entry-" + related)
+                    Button { onRelatedEntry(related) } label: { Text(related).font(.system(.title3, design: .serif).weight(.semibold)) }
+                        .accessibilityIdentifier("dictionary-related-entry-" + related)
                 } else { Text(related).font(.system(.title3, design: .serif).weight(.semibold)) }
             }
             if let labels = sense.usageLabels, !labels.isEmpty { Text(labels.joined(separator: " · ")).font(.caption).foregroundStyle(.primary.opacity(0.65)) }
@@ -530,16 +564,27 @@ private struct DictionarySupplementContent: View {
     let sense: DictionarySense
     let onExampleWord: ((EnglishToken, DictionarySense, String) -> Void)?
     let onRelatedEntry: ((String) -> Void)?
+    private func referenceLabel(_ word: String) -> some View {
+        Text(EnglishTokenizer.displaySpelling(word))
+            .font(.subheadline.weight(.medium)).multilineTextAlignment(.leading)
+            .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
+            .contentShape(RoundedRectangle(cornerRadius: 12))
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if let synonyms = sense.synonyms, !synonyms.isEmpty { Text("近义词  " + synonyms.joined(separator: " · ")).font(.footnote).foregroundStyle(.primary.opacity(0.65)) }
             if let antonyms = sense.antonyms, !antonyms.isEmpty { Text("反义词  " + antonyms.joined(separator: " · ")).font(.footnote).foregroundStyle(.primary.opacity(0.65)) }
             if let references = sense.seeAlso, !references.isEmpty {
                 DisclosureGroup("另见") {
-                    ForEach(references, id: \.self) { word in
-                        if let onRelatedEntry { Button(word) { onRelatedEntry(word) }.accessibilityIdentifier("dictionary-reference-" + word) }
-                        else { Text(word) }
-                    }
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 118), alignment: .leading)], spacing: 8) {
+                        ForEach(references, id: \.self) { word in
+                            if let onRelatedEntry {
+                                Button { onRelatedEntry(word) } label: { referenceLabel(word) }
+                                    .buttonStyle(.plain).accessibilityIdentifier("dictionary-reference-" + word)
+                            } else { referenceLabel(word) }
+                        }
+                    }.padding(.top, 8)
                 }.font(.subheadline)
             }
             if let notes = sense.usageNotes, !notes.isEmpty {
@@ -598,12 +643,20 @@ struct DictionaryDetailView: View {
     @State private var error: String?
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 24) {
                 DictionaryEntryHeader(headword: result.headword, ipa: DictionaryPresentation.sharedIPA(result.senses + result.personalSenses), speech: speech)
                 if speech.state == .unavailable { Text("系统英语语音不可用").font(.caption).foregroundStyle(.secondary) }
                 contextPhrases
                 contextSections
                 DictionaryResultContent(result: result, onExampleWord: lookup, onRelatedEntry: depth < 3 ? openRelated : nil)
+                if let base = result.baseEntry, !base.senses.isEmpty {
+                    Divider().padding(.vertical, 4)
+                    DictionaryEntryHeader(headword: base.headword, ipa: DictionaryPresentation.sharedIPA(base.senses), speech: speech)
+                    DictionaryResultContent(result: DictionaryResult(headword: base.headword, senses: base.senses,
+                        updatedAt: result.updatedAt, sourceURL: result.sourceURL, licenseURL: result.licenseURL),
+                        onExampleWord: lookup, onRelatedEntry: depth < 3 ? openRelated : nil)
+                }
+
                 let synonyms = Array(Set(result.usableSenses.flatMap { $0.synonyms ?? [] })).filter { $0.lowercased() != result.headword.lowercased() }.sorted()
                 if !synonyms.isEmpty {
                     Button { showingSynonyms.toggle() } label: {
@@ -687,9 +740,13 @@ struct DictionaryDetailView: View {
                         footerHeadword(icon: "checkmark.circle.fill")
                         Text("已加入生词本").font(.caption).foregroundStyle(.secondary)
                     }
-                    if addition?.created == true {
+                    if (lookupModel?.addition ?? addition)?.created == true {
                         Button(action: undo) { Image(systemName: "arrow.uturn.backward").frame(width: 44, height: 44) }
                             .accessibilityLabel("撤销本次加入").accessibilityIdentifier("undo-word")
+                    } else {
+                        Button(role: .destructive, action: remove) {
+                            Image(systemName: "minus.circle").frame(width: 44, height: 44)
+                        }.accessibilityLabel("移出生词本").accessibilityIdentifier("remove-word")
                     }
                 }
                 Spacer(minLength: 0)
@@ -701,7 +758,7 @@ struct DictionaryDetailView: View {
         }.padding(.horizontal, 20).padding(.bottom, 8)
     }
     private func footerHeadword(icon: String) -> some View {
-        Label(result.headword, systemImage: icon).font(.headline).lineLimit(1)
+        Label(result.savedHeadword, systemImage: icon).font(.headline).lineLimit(1)
     }
     private func closeDetails() {
         if let closeStack { closeStack() } else { dismiss() }
@@ -727,10 +784,10 @@ struct DictionaryDetailView: View {
         do {
             let auto = try dependencies.preferencesRepository.load().autoAddOnWordTap
             let model = WordLookupModel(token: token, articleID: articleID, autoAdd: articleID != nil && automaticAdditionAllowed && auto, learning: learning, depth: depth + 1, origin: origin)
-            model.startAddition(); selection = model
+            selection = model
         } catch { self.error = error.localizedDescription }
     }
-    private func refresh() { do { entry = try learning.vocabulary.find(surface: result.headword) } catch { self.error = error.localizedDescription } }
+    private func refresh() { do { entry = try learning.vocabulary.find(canonicalHeadword: result.savedHeadword) } catch { self.error = error.localizedDescription } }
     private func add() {
         do {
             if let lookupModel {
@@ -739,12 +796,22 @@ struct DictionaryDetailView: View {
                 guard let saved = lookupModel.addition else { throw LearningError.invalid("加入结果尚未确认，请重试。") }
                 addition = saved
             } else if let articleID, let sourceToken {
-                addition = try learning.vocabulary.add(token: sourceToken, articleID: articleID, autoAdd: false, explicit: true, origin: contextOrigin, at: Date())
-            } else { addition = try learning.vocabulary.addDictionaryEntry(headword: result.headword, surface: sourceToken?.surface, context: context, at: Date()) }
+                addition = try learning.vocabulary.add(token: sourceToken, articleID: articleID, autoAdd: false, explicit: true, origin: contextOrigin, lookup: result, at: Date())
+            } else { addition = try learning.vocabulary.addDictionaryEntry(headword: result.headword, surface: sourceToken?.surface, context: context, lookup: result, at: Date()) }
             learning.changed(); refresh(); error = nil
         } catch { self.error = error.localizedDescription }
     }
+    private func remove() {
+        guard let entry else { return }
+        do {
+            try learning.vocabulary.remove(entryID: entry.id, at: Date())
+            self.entry = nil; addition = nil; error = nil; learning.changed()
+        } catch { self.error = error.localizedDescription }
+    }
     private func undo() {
+        if let lookupModel {
+            lookupModel.undo(); error = lookupModel.vocabularyError; refresh(); return
+        }
         guard let addition else { return }
         do { try learning.vocabulary.undo(addition, at: Date()); self.addition = nil; learning.changed(); refresh(); error = nil }
         catch { self.error = error.localizedDescription }

@@ -15,6 +15,7 @@ struct ReviewQuestion: Identifiable, Equatable {
     var maskIndices: [Int]? = nil
     var sourceRange: NSRange? = nil
     var sourceExampleID: String? = nil
+    var matchingBoard = 0
 }
 struct ReviewSessionView: Equatable {
     let id: String
@@ -26,6 +27,21 @@ struct ReviewSessionView: Equatable {
     var matchingComplete: Bool { !matching.isEmpty && matching.allSatisfy(\.completed) }
 }
 
+enum ReviewQueuePolicy {
+    static let boardStride = 100
+
+    /// Protect due repetitions and give new words a share when both queues are
+    /// busy. Each queue is oldest-first, so a large import cannot jump the line.
+    static func select<ID>(due: [ID], new: [ID], limit: Int) -> [ID] {
+        guard limit > 0 else { return [] }
+        let reservedNew = due.isEmpty ? limit : limit / 4
+        let firstDue = min(due.count, limit - min(reservedNew, new.count))
+        let firstNew = min(new.count, limit - firstDue)
+        return Array(due.prefix(firstDue)) + Array(new.prefix(firstNew)) +
+            Array(due.dropFirst(firstDue).prefix(limit - firstDue - firstNew))
+    }
+}
+
 @MainActor final class ReviewQueueService: ReviewQueueReading, ReviewSessionReading {
     private let writer: RepositoryWriter
     private let cycles: StudyCycleRepository
@@ -34,23 +50,25 @@ struct ReviewSessionView: Equatable {
          saveContext: @escaping (ModelContext) throws -> Void = { try $0.save() }) {
         writer = RepositoryWriter(context: context, saveContext: saveContext); self.cycles = cycles; self.dictionary = dictionary
     }
-    private func eligible(in context: ModelContext, at now: Date) throws -> [VocabularyEntryRecord] {
+    private func eligible(in context: ModelContext, at now: Date, limit: Int? = nil) throws -> [VocabularyEntryRecord] {
         guard now.timeIntervalSince1970.isFinite else { throw LearningError.invalid("复习时间无效。") }
         let entries = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.deletedAt == nil && $0.canonicalEntryID == nil }
         let states = try context.fetch(FetchDescriptor<ReviewStateRecord>())
         guard Set(entries.map(\.entryID)).count == entries.count, Set(states.map(\.entryID)).count == states.count else { throw PersistenceError.integrity("词汇或复习状态重复") }
+        let indexedStates = Dictionary(uniqueKeysWithValues: states.map { ($0.entryID, $0) })
+        var due: [VocabularyEntryRecord] = [], new: [VocabularyEntryRecord] = []
         for entry in entries {
-            guard let state = states.first(where: { $0.entryID == entry.entryID }), state.dueAt.timeIntervalSince1970.isFinite,
+            guard let state = indexedStates[entry.entryID], state.dueAt.timeIntervalSince1970.isFinite,
                   state.repetitions >= 0, state.intervalDays >= 0, [BasicReviewScheduler.version, FSRSScheduler.version].contains(state.algorithmVersion) else {
                 throw PersistenceError.integrity("词条 \(entry.lemma) 的复习状态缺失或不受支持，不能证明队列为空")
             }
+            if state.repetitions == 0 { new.append(entry) }
+            else if state.dueAt <= now { due.append(entry) }
         }
-        let due = entries.filter { entry in states.contains { $0.entryID == entry.entryID && ($0.repetitions == 0 || $0.dueAt <= now) } }
-        return due.sorted { left, right in
-            let a = states.first { $0.entryID == left.entryID }?.dueAt ?? now
-            let b = states.first { $0.entryID == right.entryID }?.dueAt ?? now
-            return (a, left.addedAt, left.entryID) < (b, right.addedAt, right.entryID)
-        }
+        due.sort { (indexedStates[$0.entryID]?.dueAt ?? now, $0.addedAt, $0.entryID) <
+            (indexedStates[$1.entryID]?.dueAt ?? now, $1.addedAt, $1.entryID) }
+        new.sort { ($0.addedAt, $0.entryID) < ($1.addedAt, $1.entryID) }
+        return ReviewQueuePolicy.select(due: due, new: new, limit: limit ?? (due.count + new.count))
     }
     func eligibleQueue(for cycleID: UUID, at timestamp: Date) throws -> ReviewQueueSnapshot {
         try writer.read { context in
@@ -70,8 +88,16 @@ struct ReviewSessionView: Equatable {
         guard dailyLimit > 0, pairCount > 0, clozeCount > 0 else { throw LearningError.invalid("复习题量设置无效。") }
         let originalIDs: [String] = try writer.write {
             let context = writer.context
-            if let existing = try context.fetch(FetchDescriptor<ReviewPreparationRecord>()).first(where: { $0.cycleID == cycleID.uuidString }) { return existing.selectedEntryIDs }
-            let ids = Array(try eligible(in: context, at: now).prefix(min(dailyLimit, pairCount))).map(\.entryID)
+            let pending = try context.fetch(FetchDescriptor<ReviewPreparationRecord>()).first { $0.cycleID == cycleID.uuidString }
+            let ids = try eligible(in: context, at: now, limit: dailyLimit).map(\.entryID)
+            if let pending {
+                let active = Set(try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.deletedAt == nil }.map(\.entryID))
+                let retained = pending.selectedEntryIDs.filter(active.contains)
+                if retained != pending.selectedEntryIDs || retained.isEmpty {
+                    pending.selectedEntryIDs = retained + ids.filter { !retained.contains($0) }.prefix(max(0, dailyLimit - retained.count))
+                }
+                return pending.selectedEntryIDs
+            }
             context.insert(ReviewPreparationRecord(cycleID: cycleID, entries: ids, at: now)); return ids
         }
         let skipped = try deferredIDs(cycleID: cycleID)
@@ -79,7 +105,7 @@ struct ReviewSessionView: Equatable {
             let entries = try context.fetch(FetchDescriptor<VocabularyEntryRecord>())
             return try originalIDs.filter { !skipped.contains($0) }.map { id in
                 guard let entry = entries.first(where: { $0.entryID == id && $0.deletedAt == nil }) else { throw LearningError.invalid("本次词条已移除，请返回生词本核对。") }
-                return (id, entry.lemma)
+                return (id, entry.dictionaryEntryID ?? entry.lemma)
             }
         }
         let lookups = try await primeMeanings(selected, at: now)
@@ -111,7 +137,7 @@ struct ReviewSessionView: Equatable {
             let session = ReviewSessionRecord(cycleID: cycleID, entries: chosen.map(\.entryID), at: max(now, cycle.createdAtUTC), limit: dailyLimit)
             session.deferredEntryIDs = skipped.sorted()
             context.insert(session)
-            try insertExercises(session: session, chosen: chosen, lookups: lookups, clozeCount: clozeCount, context: context)
+            try insertExercises(session: session, chosen: chosen, lookups: lookups, clozeCount: clozeCount, pairCount: pairCount, context: context)
         }
         return try session(cycleID: cycleID)
     }
@@ -166,6 +192,7 @@ struct ReviewSessionView: Equatable {
         func questions(_ stage: String) throws -> [ReviewQuestion] {
             try exercises.filter { $0.stage == stage }.sorted { $0.position < $1.position }.map { exercise in
                 var question = ReviewQuestion(id: exercise.exerciseID, entryID: exercise.entryID, stage: stage, prompt: exercise.prompt, answer: exercise.answer, senseID: exercise.senseID, attempts: exercise.attempts, usedHint: exercise.usedHint, completed: exercise.completedAt != nil, context: exercise.sourceContext, acceptedAnswers: exercise.acceptedAnswers ?? [exercise.answer])
+                question.matchingBoard = stage == "matching" ? exercise.position / ReviewQueuePolicy.boardStride : 0
                 question.contextOrigin = exercise.contextOriginKind
                 question.revealed = exercise.revealed
                 question.maskSeed = exercise.maskSeed; question.maskIndices = exercise.maskIndices
@@ -213,7 +240,7 @@ struct ReviewSessionView: Equatable {
         return lookups
     }
     private func resolveMeaning(_ entry: VocabularyEntryRecord, lookup: DictionaryResult, context: ModelContext) throws -> DictionarySense {
-        guard entry.lemma == lookup.headword else { throw LearningError.invalid("复习词条发生变化，请重新查词。") }
+        guard (entry.dictionaryEntryID ?? entry.lemma) == lookup.headword else { throw LearningError.invalid("复习词条发生变化，请重新查词。") }
         let official = lookup.reliableChinese
         let known = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).contains { $0.lemma == entry.lemma && $0.mdxSHA == BundledMDXDictionaryProvider.sourceSHA && $0.reliableChineseKnown }
         let aliases = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.canonicalEntryID == entry.entryID }.map(\.entryID)
@@ -236,7 +263,7 @@ struct ReviewSessionView: Equatable {
         }
         throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "还没有可复习的英中义项。请补充词性、中文并确认学习义项，或本次延期。", canEditPersonal: true)
     }
-    private func insertExercises(session: ReviewSessionRecord, chosen: [VocabularyEntryRecord], lookups: [String: DictionaryResult], clozeCount: Int, context: ModelContext) throws {
+    private func insertExercises(session: ReviewSessionRecord, chosen: [VocabularyEntryRecord], lookups: [String: DictionaryResult], clozeCount: Int, pairCount: Int, context: ModelContext) throws {
         let sources = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).sorted { ($0.createdAt, $0.contextID) < ($1.createdAt, $1.contextID) }
         let states = try context.fetch(FetchDescriptor<ReviewStateRecord>())
         let articles = try context.fetch(FetchDescriptor<ArticleRecord>())
@@ -246,8 +273,8 @@ struct ReviewSessionView: Equatable {
             return aLapses == bLapses ? a.entryID < b.entryID : aLapses > bLapses
         }
         let spellingIDs = Set(ranked.prefix(clozeCount).map(\.entryID))
-        if spellingIDs.isEmpty { session.clozeExclusionReason = "targets-under-three-letters" }
-        var meanings = Set<String>()
+        var spellingCount = 0
+        var boards: [Set<String>] = []
         for (position, entry) in chosen.enumerated() {
             guard let lookup = lookups[entry.entryID] else { throw PersistenceError.integrity("缺少本次 MDX 复习查询结果") }
             let sense = try resolveMeaning(entry, lookup: lookup, context: context)
@@ -255,9 +282,12 @@ struct ReviewSessionView: Equatable {
             let identities = Set([entry.entryID] + aliases)
             let source = sources.first { identities.contains($0.entryID) }
             let meaning = sense.zh
-            guard meanings.insert(meaning).inserted else { throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "与本组另一词的中文答案相同，请明确选择其他语境义或本次延期。", canEditPersonal: !BilingualMeaningPolicy.trusted(sense)) }
+            let board = boards.firstIndex { $0.count < min(pairCount, ReviewQueuePolicy.boardStride) && !$0.contains(meaning) } ?? boards.count
+            if board == boards.count { boards.append([]) }
+            let matchingPosition = board * ReviewQueuePolicy.boardStride + boards[board].count
+            boards[board].insert(meaning)
             let snapshot = try JSONEncoder().encode(sense)
-            let matching = ReviewExerciseRecord(sessionID: session.sessionID, entryID: entry.entryID, stage: "matching", position: position, prompt: entry.lemma, answer: meaning, senseID: sense.id)
+            let matching = ReviewExerciseRecord(sessionID: session.sessionID, entryID: entry.entryID, stage: "matching", position: matchingPosition, prompt: entry.lemma, answer: meaning, senseID: sense.id)
             matching.meaningSnapshot = snapshot; context.insert(matching)
             matching.sourceArticleID = source?.articleID; matching.sourceContextID = source?.contextID; matching.sourceSurface = source?.surface
             if spellingIDs.contains(entry.entryID) {
@@ -282,7 +312,10 @@ struct ReviewSessionView: Equatable {
                         if value.sentence != nil { projection = value; contextOrigin = "personal-example"; exampleID = example.id; break }
                     }
                 }
-                guard projection.sentence != nil else { throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "缺少包含目标词的有效例句，请补充例句或本次延期。", canEditPersonal: !BilingualMeaningPolicy.trusted(sense)) }
+                if projection.sentence == nil {
+                    if BilingualMeaningPolicy.trusted(sense) { continue }
+                    throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "缺少包含目标词的有效例句，请补充例句或本次延期。", canEditPersonal: true)
+                }
                 let seed = session.sessionID + "|" + entry.entryID
                 let mask = SpellingMaskPolicy.mask(projection.answer, seed: seed)
                 let question = ReviewExerciseRecord(sessionID: session.sessionID, entryID: entry.entryID, stage: "cloze", position: position, prompt: mask.text, answer: projection.answer, senseID: sense.id)
@@ -292,8 +325,11 @@ struct ReviewSessionView: Equatable {
                 question.sourceRangeLocation = projection.targetRange?.location; question.sourceRangeLength = projection.targetRange?.length
                 question.sourceExampleID = exampleID
                 question.acceptedAnswers = SpellingAnswerPolicy.variants(answer: projection.answer, lemma: entry.lemma, senses: lookup.senses)
-                context.insert(question)
+                context.insert(question); spellingCount += 1
             }
+        }
+        if spellingCount == 0 {
+            session.clozeExclusionReason = spellingIDs.isEmpty ? "targets-under-three-letters" : "no-verifiable-mdx-context"
         }
     }
     private func requireExtraAllowed(context: ModelContext, at now: Date) throws {
@@ -344,7 +380,7 @@ struct ReviewSessionView: Equatable {
         try archiveRetiredDictionarySession(cycleID: nil, at: now)
         if let saved = try extraSession() { return saved }
         guard dailyLimit > 0, pairCount > 0, clozeCount > 0 else { throw LearningError.invalid("额外复习题量无效。") }
-        let selected = try writer.read { context in Array(try extraEligible(in: context, at: now).prefix(min(dailyLimit, pairCount))).map { ($0.entryID, $0.lemma) } }
+        let selected = try writer.read { context in Array(try extraEligible(in: context, at: now).prefix(dailyLimit)).map { ($0.entryID, $0.dictionaryEntryID ?? $0.lemma) } }
         guard !selected.isEmpty else { return nil }
         let lookups = try await primeMeanings(selected, at: now)
         try Task.checkCancellation()
@@ -352,11 +388,11 @@ struct ReviewSessionView: Equatable {
             let context = writer.context
             try requireExtraAllowed(context: context, at: now)
             if let pending = try context.fetch(FetchDescriptor<ReviewSessionRecord>()).first(where: { $0.purpose == "extra" && $0.completedAt == nil }) { return pending.sessionID }
-            let chosen = Array(try extraEligible(in: context, at: now).prefix(min(dailyLimit, pairCount)))
+            let chosen = Array(try extraEligible(in: context, at: now).prefix(dailyLimit))
             guard chosen.map(\.entryID) == selected.map(\.0) else { throw LearningError.invalid("词汇队列已变化，请重试额外复习。") }
             let session = ReviewSessionRecord(cycleID: UUID(), entries: chosen.map(\.entryID), at: now, limit: dailyLimit)
             session.purpose = "extra"; session.cycleID = "extra|" + session.sessionID
-            context.insert(session); try insertExercises(session: session, chosen: chosen, lookups: lookups, clozeCount: clozeCount, context: context)
+            context.insert(session); try insertExercises(session: session, chosen: chosen, lookups: lookups, clozeCount: clozeCount, pairCount: pairCount, context: context)
             return session.sessionID
         }
         return try extraSession(sessionID: id)
@@ -398,15 +434,21 @@ struct ReviewSessionView: Equatable {
             guard let question = exercises.first(where: { $0.exerciseID == questionID }) else { throw LearningError.invalid("题目不属于当前已保存会话。") }
             if question.completedAt != nil { return true }
             guard session.completedAt == nil, question.stage == "matching" || exercises.filter({ $0.stage == "matching" }).allSatisfy({ $0.completedAt != nil }) else { throw LearningError.invalid("请先完成连线阶段。") }
+            guard now.timeIntervalSince1970.isFinite else { throw LearningError.invalid("复习时间无效。") }
             let timestamp = max(now, session.updatedAt)
             if hint { question.usedHint = true; session.revision += 1; session.updatedAt = timestamp; return false }
             if question.stage == "matching" {
+                let matching = exercises.filter { $0.stage == "matching" }
+                let board = question.position / ReviewQueuePolicy.boardStride
+                let currentBoard = matching.filter { $0.completedAt == nil }.map { $0.position / ReviewQueuePolicy.boardStride }.min()
+                guard board == currentBoard else { throw LearningError.invalid("请先完成当前这组连线。") }
+                let options = matching.filter { $0.position / ReviewQueuePolicy.boardStride == board }
                 if let matchingOptionID {
-                    guard let option = exercises.first(where: { $0.stage == "matching" && $0.exerciseID == matchingOptionID && $0.senseID == answer }) else {
+                    guard let option = options.first(where: { $0.exerciseID == matchingOptionID && $0.senseID == answer }) else {
                         throw LearningError.invalid("此释义不属于当前题组，请重新选择。")
                     }
                     guard option.completedAt == nil else { throw LearningError.invalid("此释义已完成配对，请选择未完成的释义。") }
-                } else if exercises.contains(where: { $0.stage == "matching" && $0.senseID == answer && $0.completedAt != nil }) {
+                } else if options.contains(where: { $0.senseID == answer && $0.completedAt != nil }) {
                     throw LearningError.invalid("此释义已完成配对，请选择未完成的释义。")
                 }
             }
@@ -433,9 +475,10 @@ struct ReviewSessionView: Equatable {
                     guard let state = states.first(where: { $0.entryID == entryID }), !logs.contains(where: { $0.eventID == "\(session.sessionID)|\(entryID)" }) else { throw PersistenceError.integrity("复习排程状态缺失或日志重复") }
                     let entryQuestions = exercises.filter { $0.entryID == entryID }
                     let grade: BasicReviewScheduler.Grade = entryQuestions.contains(where: \.revealed) ? .again : entryQuestions.allSatisfy(\.firstTryCorrect) ? .good : .hard
+                    let reviewedAt = max(timestamp, state.lastReviewedAt ?? timestamp)
                     let memory = try FSRSScheduler.schedule(stability: state.stability ?? (state.repetitions > 0 ? Double(max(1, state.intervalDays)) : nil),
                         difficulty: state.difficulty ?? (state.repetitions > 0 ? 5 : nil),
-                        elapsedDays: max(0, timestamp.timeIntervalSince(state.lastReviewedAt ?? timestamp) / 86400), grade: grade)
+                        elapsedDays: max(0, reviewedAt.timeIntervalSince(state.lastReviewedAt ?? reviewedAt) / 86400), grade: grade)
                     let interval = memory.intervalDays
                     state.stability = memory.stability; state.difficulty = memory.difficulty; state.retrievability = memory.retrievability
                     state.algorithmVersion = FSRSScheduler.version
@@ -444,9 +487,9 @@ struct ReviewSessionView: Equatable {
                     state.hardCount = (state.hardCount ?? 0) + (grade == .hard ? 1 : 0)
                     state.goodCount = (state.goodCount ?? 0) + (grade == .good ? 1 : 0)
                     state.lastGradeSource = extraSessionID == nil ? "matching-and-spelling" : "extra-matching-and-spelling"
-                    let next = timestamp.addingTimeInterval(Double(interval) * 86400)
-                    context.insert(ReviewLogRecord(sessionID: session.sessionID, entryID: entryID, grade: grade.rawValue, at: timestamp, previousDueAt: state.dueAt, nextDueAt: next))
-                    state.dueAt = next; state.intervalDays = interval; state.repetitions += 1; state.lapses += grade == .again ? 1 : 0; state.lastReviewedAt = timestamp
+                    let next = reviewedAt.addingTimeInterval(Double(interval) * 86400)
+                    context.insert(ReviewLogRecord(sessionID: session.sessionID, entryID: entryID, grade: grade.rawValue, at: reviewedAt, previousDueAt: state.dueAt, nextDueAt: next))
+                    state.dueAt = next; state.intervalDays = interval; state.repetitions += 1; state.lapses += grade == .again ? 1 : 0; state.lastReviewedAt = reviewedAt
                 }
                 session.completedAt = timestamp
             }
@@ -480,7 +523,9 @@ struct ReviewSessionView: Equatable {
             guard let sentence = question.sourceContext, let location = question.sourceRangeLocation, let length = question.sourceRangeLength,
                   ClozeContext.validates(NSRange(location: location, length: length), answer: question.answer, sentence: sentence) else { throw PersistenceError.integrity("冻结的原句位置无效，保留题组并停止提交") }
         }
-        guard !matching.isEmpty, (!cloze.isEmpty || session.clozeExclusionReason == "targets-under-three-letters" && matching.allSatisfy { $0.prompt.filter(\.isLetter).count < 3 }), Set(matching.map(\.entryID)) == Set(session.selectedEntryIDs),
+        let documentedExclusion = session.clozeExclusionReason == "no-verifiable-mdx-context" ||
+            session.clozeExclusionReason == "targets-under-three-letters" && matching.allSatisfy { $0.prompt.filter(\.isLetter).count < 3 }
+        guard !matching.isEmpty, (!cloze.isEmpty || documentedExclusion), Set(matching.map(\.entryID)) == Set(session.selectedEntryIDs),
               matching.count == session.selectedEntryIDs.count, Set(cloze.map(\.entryID)).isSubset(of: Set(session.selectedEntryIDs)),
               Set(exercises.map(\.exerciseID)).count == exercises.count,
               exercises.allSatisfy({ ["matching", "cloze"].contains($0.stage) && !$0.answer.isBlank && $0.attempts >= 0 }),

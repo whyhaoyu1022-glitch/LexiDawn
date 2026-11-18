@@ -130,6 +130,30 @@ struct WiktionaryDictionaryProvider: DictionaryProvider {
 
 #endif
 
+enum DictionaryGrammar {
+    static func matches(_ sense: DictionarySense, part: String) -> Bool {
+        guard let value = sense.partOfSpeech?.lowercased() else { return false }
+        return value == part || value.hasSuffix(" " + part)
+    }
+
+    static func clearPart(surface: String, context: String) -> String? {
+        guard !context.isBlank, let range = context.range(of: surface, options: [.caseInsensitive, .literal]) else { return nil }
+        let word = EnglishTokenizer.normalized(surface)
+        guard word.hasSuffix("ed") || word.hasSuffix("ing") else { return nil }
+        let tokens = EnglishTokenizer.tokens(in: context)
+        guard let index = tokens.firstIndex(where: { $0.range == NSRange(range, in: context) }) else { return nil }
+        let previous = index > 0 ? EnglishTokenizer.normalized(tokens[index - 1].surface) : ""
+        let tagger = NLTagger(tagSchemes: [.lexicalClass])
+        tagger.string = context
+        tagger.setLanguage(.english, range: context.startIndex..<context.endIndex)
+        let tag = tagger.tag(at: range.lowerBound, unit: .word, scheme: .lexicalClass).0
+        if ["have", "has", "had"].contains(previous) { return "verb" }
+        if tag == .verb, ["i", "we", "you", "he", "she", "it", "they"].contains(previous) { return "verb" }
+        if tag == .adjective { return "adjective" }
+        return nil
+    }
+}
+
 actor DictionaryAggregator {
     static let versions = [BundledMDXDictionaryProvider.sourceName: BundledMDXDictionaryProvider.sourceVersion]
     private let providers: [(String, any DictionaryProvider)]

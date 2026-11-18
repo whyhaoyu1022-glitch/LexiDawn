@@ -4,6 +4,73 @@ import SwiftData
 
 @MainActor final class Round4Tests: XCTestCase {
     let now = Date(timeIntervalSince1970: 1_798_300_000)
+    func testForegroundRefreshTwoHourBoundaryAndClockRollback() {
+        let beginning = Date(timeIntervalSince1970: 1_000)
+        XCTAssertTrue(ForegroundRefreshPolicy.shouldCheck(last: nil, now: beginning))
+        XCTAssertFalse(ForegroundRefreshPolicy.shouldCheck(last: beginning, now: beginning.addingTimeInterval(7_199)))
+        XCTAssertTrue(ForegroundRefreshPolicy.shouldCheck(last: beginning, now: beginning.addingTimeInterval(7_200)))
+        XCTAssertFalse(ForegroundRefreshPolicy.shouldCheck(last: beginning, now: beginning.addingTimeInterval(-180)))
+    }
+
+    func testFiftyNewWordsAndDueRepetitionsDoNotCollapseDailyBudget() {
+        let new = Array(100..<150), due = Array(1...15)
+        XCTAssertEqual(ReviewQueuePolicy.select(due: due, new: new, limit: 12), Array(1...9) + [100, 101, 102])
+        XCTAssertEqual(ReviewQueuePolicy.select(due: [], new: new, limit: 12), Array(100..<112))
+        XCTAssertEqual(ReviewQueuePolicy.select(due: due, new: [], limit: 12), Array(1...12))
+        XCTAssertEqual(new.count, 50)
+        XCTAssertEqual(ReviewQueuePolicy.select(due: [4], new: [100], limit: 12), [4, 100])
+    }
+
+    func testCancellationDoesNotProduceReviewPreparationError() {
+        let gate = ReviewEntryCoordinator()
+        gate.adopt(CancellationError(), cycleID: nil, completion: {})
+        XCTAssertNil(gate.problem)
+        gate.adopt(LearningError.invalid("存储失败"), cycleID: nil, completion: {})
+        XCTAssertEqual(gate.problem?.message, "存储失败")
+    }
+
+    func testDailyCapTwelveResumesTwoBoardsAndSchedulesEachWordOnce() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let text = "Apple bread carrot dinner engine forest garden honey island jacket kettle lemon mango."
+        let article = try learning.content.importArticle(.init(title: "Original twelve-word review regression", body: text,
+            source: "Original XCTest author", rightsConfirmed: true), at: now)
+        var values: [String: [DictionarySense]] = [:]
+        for (index, token) in EnglishTokenizer.tokens(in: text).enumerated() {
+            let word = EnglishTokenizer.lemma(token.surface)
+            _ = try learning.vocabulary.add(token: token, articleID: article, autoAdd: true, at: now.addingTimeInterval(Double(index)))
+            values[word] = [DictionarySense(id: "explicit-board-fixture|" + word, en: word, zh: "原创测试义" + String(index),
+                line: "Explicit review board fixture", partOfSpeech: "noun")]
+        }
+        try learning.dictionary.configureDictionaryEvidence(providers: [("explicit-board-fixture", OriginalReviewDictionaryFixture(values: values))])
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else {
+            return XCTFail("Expected review cycle")
+        }
+        let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 12, pairCount: 6, clozeCount: 3, at: now)
+        let session = try XCTUnwrap(prepared)
+        XCTAssertEqual(session.matching.count, 12)
+        XCTAssertEqual(session.matching.filter { $0.matchingBoard == 0 }.count, 6)
+        XCTAssertEqual(session.matching.filter { $0.matchingBoard == 1 }.count, 6)
+        let later = try XCTUnwrap(session.matching.first { $0.matchingBoard == 1 })
+        XCTAssertThrowsError(try learning.review.submit(cycleID: cycle.cycleID, questionID: later.id, answer: later.senseID, matchingOptionID: later.id, at: now))
+        for question in session.matching.filter({ $0.matchingBoard == 0 }) {
+            XCTAssertTrue(try learning.review.submit(cycleID: cycle.cycleID, questionID: question.id, answer: question.senseID, matchingOptionID: question.id, at: now))
+        }
+        let resumed = ReviewQueueService(context: ModelContext(app.modelContainer), cycles: learning.cycles, dictionary: learning.dictionary)
+        let current = try XCTUnwrap(resumed.session(cycleID: cycle.cycleID))
+        XCTAssertEqual(current.matching.first(where: { !$0.completed })?.id, later.id)
+        for question in current.matching where !question.completed {
+            XCTAssertTrue(try resumed.submit(cycleID: cycle.cycleID, questionID: question.id, answer: question.senseID, matchingOptionID: question.id, at: now))
+        }
+        for question in current.cloze {
+            XCTAssertTrue(try resumed.submit(cycleID: cycle.cycleID, questionID: question.id, answer: question.answer, at: now))
+        }
+        let logs = try ModelContext(app.modelContainer).fetch(FetchDescriptor<ReviewLogRecord>())
+        XCTAssertEqual(logs.count, 12); XCTAssertTrue(logs.allSatisfy { $0.nextDueAt > now })
+        XCTAssertEqual(try resumed.pendingCount(at: now), 1)
+        let latest = try XCTUnwrap(logs.map(\.nextDueAt).max())
+        XCTAssertEqual(try resumed.pendingCount(at: latest), 13)
+    }
+
     func testEnglishOnlyDoesNotLockPersonalChineseDefinitions() {
         let english = DictionarySense(id: "en", en: "Explicit English fixture definition", zh: "", line: "Fixture", sources: [BundledMDXDictionaryProvider.sourceName], sourceRevision: BundledMDXDictionaryProvider.sourceVersion, originKind: "mdx")
         XCTAssertFalse(BilingualMeaningPolicy.trusted(english))

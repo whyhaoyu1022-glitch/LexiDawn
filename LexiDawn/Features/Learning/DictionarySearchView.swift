@@ -76,6 +76,7 @@ struct DictionarySearchView: View {
                     }
                     if let saveError { Label(saveError, systemImage: "exclamationmark.circle").foregroundStyle(.red) }
                 }.padding(24)
+                    .background { Color.clear.contentShape(Rectangle()).onTapGesture { queryFocused = false } }
             }.scrollDismissesKeyboard(.interactively)
                 .navigationTitle("词典").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("关闭词典") { dismiss() } } }
@@ -98,7 +99,7 @@ struct DictionarySearchView: View {
             details = SearchSelection(result: result, surface: model.query.trimmingCharacters(in: .whitespacesAndNewlines))
         } label: {
             VStack(alignment: .leading, spacing: 12) {
-                HStack { Text(result.headword).font(.system(.title, design: .serif)); Spacer(); Image(systemName: "arrow.up.right") }
+                HStack { Text(result.headword).font(.system(.title, design: .serif)); Spacer(); Image(systemName: "chevron.right") }
                 if result.quickSenses.isEmpty { Text("已收录，暂无中文释义").font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("dictionary-search-english-only") }
                 else { DictionaryQuickMeaning(result: result) }
             }.frame(maxWidth: .infinity, alignment: .leading).padding(20)

@@ -80,8 +80,11 @@ final class Round3UITests: XCTestCase {
         for _ in 0..<7 { if edit.exists && edit.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(edit.isHittable); edit.tap(); XCTAssertTrue(app.navigationBars["更新个人原文"].waitForExistence(timeout: 10))
         let title = app.textFields["import-title"]; XCTAssertTrue(title.exists); title.tap(); title.typeText(" verified")
-        let done = app.buttons["finish-article-input"]
-        XCTAssertTrue(done.waitForExistence(timeout: 5)); done.tap()
+        let keyboard = app.keyboards.firstMatch
+        XCTAssertTrue(keyboard.exists)
+        XCTAssertFalse(app.buttons["finish-article-input"].exists)
+        app.collectionViews["article-import-form"].swipeUp()
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: keyboard); waitForExpectations(timeout: 5)
         let form = app.collectionViews["article-import-form"]
         XCTAssertTrue(form.exists)
         let rights = app.switches["import-rights"]
@@ -218,6 +221,8 @@ final class Round3UITests: XCTestCase {
     }
     func testExtraReviewRestartsSameQuestionAndDoesNotRelockExplore() throws {
         let app = launch("round3-extra-review"); app.tabBars.buttons["复习"].tap()
+        let start = app.buttons["start-extra-review"]
+        XCTAssertTrue(start.waitForExistence(timeout: 15)); start.tap()
         XCTAssertTrue(app.staticTexts["extra-review-label"].waitForExistence(timeout: 15))
         capture("R3-E01", app: app, feature: "extra-review", state: "new-extra-session-after-required-completion", origin: "explicit-extra-review-fixture-real-domain-evidence")
         let word = app.buttons["match-word-internet"]; XCTAssertTrue(word.exists); word.tap(); app.buttons["match-meaning-互联网（额外复习夹具）"].tap()
@@ -397,7 +402,6 @@ final class Round3UITests: XCTestCase {
             let meaning = app.textFields["personal-meaning"].firstMatch
             for _ in 0..<8 { if meaning.isHittable { break }; app.swipeUp() }
             XCTAssertTrue(meaning.isHittable); meaning.tap(); meaning.typeText("我对原文词语的个人理解")
-            if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
             let confirm = app.switches["确认作为学习义项"].firstMatch
             for _ in 0..<8 { if confirm.isHittable { break }; app.swipeUp() }
             XCTAssertTrue(confirm.isHittable); confirm.tap()
@@ -413,7 +417,6 @@ final class Round3UITests: XCTestCase {
         let notes = app.textFields["vocabulary-notes"]
         for _ in 0..<20 { if notes.exists && notes.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(notes.isHittable); notes.tap(); notes.typeText("真实文章学习笔记")
-        if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
         expectation(for: NSPredicate(format: "label == %@", "已自动保存"), evaluatedWith: app.staticTexts["annotation-save-state"]); waitForExpectations(timeout: 10)
         capture("R3-C04", app: app, feature: "vocabulary", state: "actual-MDX-meaning-and-explicit-user-note-saved", origin: "production-article-network-real-bundled-MDX-user-note")
         app.navigationBars.buttons["生词本"].tap()
@@ -853,10 +856,10 @@ final class Round3UITests: XCTestCase {
         let notes = app.textFields["vocabulary-notes"]
         for _ in 0..<20 { if notes.exists && notes.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(notes.isHittable); notes.tap(); notes.typeText("First note")
-        app.buttons["完成输入"].tap()
+        app.staticTexts["vocabulary-notes-heading"].tap()
         expectation(for: NSPredicate(format: "label == %@", "已自动保存"), evaluatedWith: app.staticTexts["annotation-save-state"]); waitForExpectations(timeout: 10)
         capture("R3-V04", app: app, feature: "vocabulary", state: "initial-note-autosave-success", origin: "explicit-Repository-note-save-fault-real-MDX")
-        notes.tap(); notes.typeText(" Second note draft"); app.buttons["完成输入"].tap()
+        notes.tap(); notes.typeText(" Second note draft"); app.staticTexts["vocabulary-notes-heading"].tap()
         XCTAssertTrue(app.staticTexts["明确故障注入：释义与笔记保存失败，草稿已保留。"].waitForExistence(timeout: 10))
         XCTAssertNotEqual(app.staticTexts["annotation-save-state"].label, "已自动保存"); XCTAssertTrue((notes.value as? String)?.contains("Second note draft") == true)
         capture("R3-V05", app: app, feature: "vocabulary", state: "note-save-failed-draft-kept-no-stale-success", origin: "explicit-Repository-note-save-fault-real-MDX")

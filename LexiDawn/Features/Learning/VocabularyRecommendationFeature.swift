@@ -1,32 +1,18 @@
 import SwiftUI
 
 @MainActor final class VocabularyRecommendationModel: ObservableObject {
-    @Published var items: [RecommendedVocabulary] = []
-    @Published var loading = false
     @Published var allowed = false
     @Published var error: String?
     @Published var saved: Set<String> = []
-    private var generation = UUID()
     func refreshMembership(_ learning: LearningServices) {
         do { saved = Set(try learning.vocabulary.entries().map(\.lemma)); allowed = try learning.explorationAllowed() }
         catch { self.error = error.localizedDescription; allowed = false }
-    }
-    func load(_ learning: LearningServices) async {
-        let request = UUID(); generation = request; items = []; error = nil; loading = true
-        defer { if generation == request { loading = false } }
-        refreshMembership(learning); guard allowed else { return }
-        do {
-            _ = try await learning.recommendationService().discover { value in
-                if request == self.generation && !Task.isCancelled { self.items.append(value) }
-            }
-        } catch is CancellationError { }
-        catch { if generation == request { self.error = error.localizedDescription } }
     }
     func add(_ item: RecommendedVocabulary, learning: LearningServices) {
         do {
             guard try learning.explorationAllowed() else { throw LearningError.invalid("请先完成当前必做任务。") }
             let token = EnglishToken(surface: item.candidate.surface, range: item.candidate.range, sentence: item.candidate.sentence)
-            _ = try learning.vocabulary.add(token: token, articleID: item.candidate.articleID, autoAdd: false, explicit: true, at: Date())
+            _ = try learning.vocabulary.add(token: token, articleID: item.candidate.articleID, autoAdd: false, explicit: true, lookup: item.result, at: Date())
             learning.changed(); refreshMembership(learning); error = nil
         } catch { self.error = error.localizedDescription }
     }
@@ -35,7 +21,6 @@ struct VocabularyRecommendationView: View {
     @ObservedObject var learning: LearningServices
     let continueToday: () -> Void
     @StateObject private var model = VocabularyRecommendationModel()
-    @State private var retry = 0
     @State private var selection: RecommendedVocabulary?
     var body: some View {
         List {
@@ -48,8 +33,8 @@ struct VocabularyRecommendationView: View {
                     Button("继续今日任务", action: continueToday)
                 }
             } else {
-                if model.loading { ProgressView("正在寻找新的词汇…").accessibilityIdentifier("recommendation-loading") }
-                let visible = model.items.filter { !model.saved.contains($0.candidate.lemma) }
+                if learning.refreshingRecommendations { ProgressView("正在寻找新的词汇…").accessibilityIdentifier("recommendation-loading") }
+                let visible = learning.recommendedVocabulary.filter { !model.saved.contains($0.result.savedHeadword) }
                 ForEach(visible) { item in
                     Button { selection = item } label: {
                         VStack(alignment: .leading, spacing: 8) {
@@ -63,11 +48,20 @@ struct VocabularyRecommendationView: View {
                             .background(LinearGradient(colors: ReadingPalette.colors(topic: item.candidate.topic), startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 20))
                     }.buttonStyle(.plain).accessibilityIdentifier("recommendation-detail-" + item.candidate.lemma).listRowBackground(Color.clear).listRowSeparator(.hidden)
                 }
-                if visible.isEmpty && !model.loading && model.error == nil { ContentUnavailableView("暂无新的推荐词条", systemImage: "text.magnifyingglass", description: Text("导入更多完整文章后重试；不会重复推荐已在生词本中的词。")) }
-                if model.error == nil && !model.loading { Button("重新寻找推荐") { retry += 1 } }
+                if visible.isEmpty && !learning.refreshingRecommendations && model.error == nil { ContentUnavailableView("暂无新的推荐词条", systemImage: "text.magnifyingglass", description: Text("导入更多完整文章后重试；不会重复推荐已在生词本中的词。")) }
             }
-            if let error = model.error { Text(error).foregroundStyle(.red); Button("重试推荐") { retry += 1 } }
-        }.navigationTitle("词汇推荐").task(id: retry) { await model.load(learning) }
+            if let error = model.error ?? learning.recommendationError {
+                Text(error).foregroundStyle(.red)
+                if model.allowed { Button("重试推荐") { Task { await learning.refreshRecommendations(retry: true) } } }
+            }
+        }.navigationTitle("词汇推荐").task {
+            model.refreshMembership(learning)
+            #if DEBUG && targetEnvironment(simulator)
+            if !learning.productionNetworking, model.allowed {
+                await learning.refreshRecommendations()
+            }
+            #endif
+        }
             .onReceive(learning.$revision) { _ in model.refreshMembership(learning) }
             .navigationDestination(isPresented: Binding(get: { selection != nil }, set: { if !$0 { selection = nil } })) {
                 if let item = selection {

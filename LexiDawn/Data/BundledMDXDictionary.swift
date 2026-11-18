@@ -35,7 +35,7 @@ enum MDXEntryIdentity {
 actor BundledMDXDictionaryProvider: DictionaryProvider {
     static let sourceName = "内置 MDX"
     static let sourceSHA = "095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443"
-    static let sourceVersion = sourceSHA + "-html-9"
+    static let sourceVersion = sourceSHA + "-html-10"
     private let resource: URL?
     private var reader: OpaquePointer?
     private var index: [String: [Int]] = [:]
@@ -47,7 +47,7 @@ actor BundledMDXDictionaryProvider: DictionaryProvider {
     deinit { if let reader { ld_mdx_close(reader) } }
 
     private static func foldedKey(_ key: String) -> String {
-        key.lowercased().replacingOccurrences(of: "’", with: "'")
+        EnglishTokenizer.normalized(key)
     }
 
     private func initialize() throws {
@@ -182,7 +182,7 @@ enum MDXEntryParser {
         var headword: String? {
             guard let value = ld_html_headword(pointer) else { return nil }
             defer { ld_html_free(value) }
-            return String(cString: value).split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            return EnglishTokenizer.displaySpelling(String(cString: value)).split(whereSeparator: \.isWhitespace).joined(separator: " ")
         }
         func attribute(_ key: String) -> String {
             guard let value = key.withCString({ ld_html_attribute(pointer, $0) }) else { return "" }

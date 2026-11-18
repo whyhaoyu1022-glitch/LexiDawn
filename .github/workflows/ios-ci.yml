@@ -47,7 +47,7 @@ jobs:
           TEST_RUN_FILE="$(python3 -c 'import os,pathlib; print(next((pathlib.Path(os.environ["RUNNER_TEMP"])/"round4/Build/Products").glob("*.xctestrun")))')"
           xcodebuild test-without-building -xctestrun "$TEST_RUN_FILE" -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/round4-core.xcresult" -only-testing:LexiDawnTests/Round4Tests -only-testing:LexiDawnTests/MDXDictionaryTests 2>&1 | tee "${RUNNER_TEMP}/round4-core.log"
       - name: Isolate UI simulator after core tests
-        if: contains(github.event.head_commit.message, '[round4-ui]')
+        if: contains(github.event.head_commit.message, '[round4-ui]') || contains(github.event.head_commit.message, '[device-fix]')
         run: |
           xcrun simctl shutdown "$LEXIDAWN_SIMULATOR_ID"
           bash scripts/ci-simulator.sh iPhone-17-Pro
@@ -58,8 +58,15 @@ jobs:
           set -euo pipefail
           TEST_RUN_FILE="$(python3 -c 'import os,pathlib; print(next((pathlib.Path(os.environ["RUNNER_TEMP"])/"round4/Build/Products").glob("*.xctestrun")))')"
           xcodebuild test-without-building -xctestrun "$TEST_RUN_FILE" -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/round4-ui.xcresult" -only-testing:LexiDawnUITests/Round4UITests 2>&1 | tee "${RUNNER_TEMP}/round4-ui.log"
+      - name: Run affected device-feedback UI tests
+        if: contains(github.event.head_commit.message, '[device-fix]')
+        timeout-minutes: 14
+        run: |
+          set -euo pipefail
+          TEST_RUN_FILE="$(python3 -c 'import os,pathlib; print(next((pathlib.Path(os.environ["RUNNER_TEMP"])/"round4/Build/Products").glob("*.xctestrun")))')"
+          xcodebuild test-without-building -xctestrun "$TEST_RUN_FILE" -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/round4-ui.xcresult"             -only-testing:LexiDawnUITests/Round4UITests/testRepeatedReaderLookupCanRemoveExistingWordFromDetail             -only-testing:LexiDawnUITests/Round4UITests/testTwoLookupsFromOneArticleRetainBothSentencesAndOneSource             -only-testing:LexiDawnUITests/Round4UITests/testBilingualReferenceHierarchyCompactPopupAndReliableEditLock             -only-testing:LexiDawnUITests/Round4UITests/testSettingsAutosaveAboutAndLibraryScopesRemainGated             -only-testing:LexiDawnUITests/Round4UITests/testMatchingLinesWrongFeedbackRevealCorrectionAndCompletion             -only-testing:LexiDawnUITests/Round4UITests/testActualMDXCompactGlossIsTheMatchingAnswerForTheSameContext             -only-testing:LexiDawnUITests/Round3UITests/testExtraReviewRestartsSameQuestionAndDoesNotRelockExplore             -only-testing:LexiDawnUITests/Round3UITests/testVocabularyRecommendationsLockAndRequireExplicitAddAfterDetail             -only-testing:LexiDawnUITests/Round3UITests/testNoteSaveFailurePreservesDraftAndNeverLeavesOldSuccessLabel             2>&1 | tee "${RUNNER_TEMP}/round4-ui.log"
       - name: Export original Round 4 screenshots even on failure
-        if: ${{ always() && contains(github.event.head_commit.message, '[round4-ui]') }}
+        if: ${{ always() && (contains(github.event.head_commit.message, '[round4-ui]') || contains(github.event.head_commit.message, '[device-fix]')) }}
         run: |
           if [[ -f "${RUNNER_TEMP}/round4-ui.xcresult/Info.plist" ]]; then
             xcrun xcresulttool export attachments --path "${RUNNER_TEMP}/round4-ui.xcresult" --output-path "${RUNNER_TEMP}/round4-native"
@@ -80,7 +87,7 @@ jobs:
           if-no-files-found: warn
 
       - uses: actions/upload-artifact@v4
-        if: ${{ always() && contains(github.event.head_commit.message, '[round4-ui]') }}
+        if: ${{ always() && (contains(github.event.head_commit.message, '[round4-ui]') || contains(github.event.head_commit.message, '[device-fix]')) }}
         with:
           name: LexiDawn-round4-screenshots-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/round4-evidence

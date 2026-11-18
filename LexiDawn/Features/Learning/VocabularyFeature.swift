@@ -72,19 +72,28 @@ private struct VocabularyListRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(item.lemma).font(.headline)
-            if let ipa = meaning?.ipa { Text(ipa).font(.caption.monospaced()) }
+            if item.mdxLookupKey == nil || item.mdxLookupKey == item.lemma, let ipa = meaning?.ipa { Text(ipa).font(.caption.monospaced()) }
             if let part = meaning?.partOfSpeech { Text(BilingualMeaningPolicy.partName(part)).font(.caption).foregroundStyle(.secondary) }
             if let meaning { Text(meaning.zh).font(.subheadline).lineLimit(2) }
             if let lookupError { Text(lookupError).font(.caption).foregroundStyle(.secondary).lineLimit(2) }
             Text("\(item.type == "word" ? "单词" : "短语") · \(item.addedAt.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.secondary)
-            if let due = item.dueAt { Text("下次复习：" + due.formatted(date: .abbreviated, time: .shortened)).font(.caption) }
+            if let due = item.dueAt {
+                if item.repetitions == 0 { Text("待首次复习").font(.caption) }
+                else {
+                    TimelineView(.periodic(from: .now, by: 60)) { timeline in
+                        let label = due <= timeline.date ? "已到期：" : "下次复习："
+                        Text(label + due.formatted(date: .abbreviated, time: .shortened)).font(.caption)
+                            .foregroundStyle(due <= timeline.date ? Color.orange : Color.primary)
+                    }
+                }
+            }
             if let last = item.lastReviewedAt { Text("最近复习：" + last.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary) }
         }.task(id: item) {
             meaning = nil; lookupError = nil
             do {
-                let result = try await dictionary.previewCanonical(item.lemma)
+                let result = try await dictionary.previewCanonical(item.mdxLookupKey ?? item.lemma)
                 try Task.checkCancellation()
-                meaning = result.quickSenses.first
+                meaning = result.quickSenses.first(where: { $0.id == item.reviewMeaningSenseID }) ?? result.quickSenses.first
             } catch is CancellationError { }
             catch { if !Task.isCancelled { lookupError = "释义暂不可用，打开词条可重试" } }
         }
@@ -335,7 +344,7 @@ struct VocabularyDetailView: View {
         return result
     }
     private var displayedIPA: String? {
-        if let result = displayedResult { return DictionaryPresentation.sharedIPA(result.senses + result.personalSenses) }
+        if let result = displayedResult, result.headword == item.lemma { return DictionaryPresentation.sharedIPA(result.senses + result.personalSenses) }
         return nil
     }
     var body: some View {
@@ -343,10 +352,18 @@ struct VocabularyDetailView: View {
             VStack(alignment: .leading, spacing: 26) {
                 DictionaryEntryHeader(headword: item.lemma, ipa: displayedIPA, speech: speech)
                 if speech.state == .unavailable { Text("系统英语语音不可用").font(.caption).foregroundStyle(.secondary) }
-                if item.surfaces != [item.lemma] { Text(item.surfaces.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
+                let originalForms = Set(item.surfaces.map(EnglishTokenizer.displaySpelling)).subtracting([item.lemma]).sorted()
+                if !originalForms.isEmpty { Text(originalForms.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
                 if let result = displayedResult, !result.usableSenses.isEmpty { DictionaryResultContent(result: result, onExampleWord: { token, sense, text in lookupWord(token, origin: .dictionary(headword: item.lemma, evidence: sense.line, text: text)) }, onRelatedEntry: openRelated) }
                 else if let result { Label(result.hasMDXEntry ? "词典已收录，暂无中文释义" : "词典未收录，可在下方补充。", systemImage: "text.book.closed").font(.subheadline).foregroundStyle(.secondary) }
                 else if dictionaryError == nil { ProgressView("正在查询英中释义…") }
+                if let base = result?.baseEntry, let current = result, !base.senses.isEmpty {
+                    Divider()
+                    DictionaryEntryHeader(headword: base.headword, ipa: DictionaryPresentation.sharedIPA(base.senses), speech: speech)
+                    DictionaryResultContent(result: DictionaryResult(headword: base.headword, senses: base.senses,
+                        updatedAt: current.updatedAt, sourceURL: current.sourceURL, licenseURL: current.licenseURL),
+                        onRelatedEntry: openRelated)
+                }
                 if result == nil, let cacheError = item.dictionaryCacheError { Text(cacheError).font(.caption).foregroundStyle(.secondary) }
                 if let dictionaryError { Text(dictionaryError).font(.footnote).foregroundStyle(.secondary); Button("重试词典") { Task { await lookup() } } }
                 if let result {
@@ -386,7 +403,8 @@ struct VocabularyDetailView: View {
                     }
                 }
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("我的笔记").font(.headline)
+                    Text("我的笔记").font(.headline).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+                        .onTapGesture { focusedField = nil; annotation.flush() }.accessibilityIdentifier("vocabulary-notes-heading")
                     TextField("记录自己的理解", text: $annotation.notes, axis: .vertical).lineLimit(3...8).focused($focusedField, equals: "notes").accessibilityIdentifier("vocabulary-notes").disabled(annotation.hasDraftConflict)
                     if !annotation.state.isEmpty { Text(annotation.state).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("annotation-save-state") }
                     if let error = annotation.error { Text(error).font(.caption).foregroundStyle(.red); Button("重试保存", action: annotation.retrySave) }
@@ -399,8 +417,13 @@ struct VocabularyDetailView: View {
                         }
                     }
                 }
-                Button("移出生词本", role: .destructive) { removeConfirmation = true }.font(.footnote).padding(.top, 10)
+                Button(role: .destructive) { focusedField = nil; removeConfirmation = true } label: {
+                    Label("移出生词本", systemImage: "minus.circle").font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(Color.red.opacity(0.55)) }
+                }.buttonStyle(.plain).foregroundStyle(.red).padding(.top, 10).accessibilityIdentifier("vocabulary-remove")
             }.padding(24)
+                .background { Color.clear.contentShape(Rectangle()).onTapGesture { focusedField = nil; annotation.flush() } }
         }.background(theme == "paper" ? LexiDawnColor.paperWarm : Color(uiColor: .systemBackground))
             .preferredColorScheme(theme == "dark" ? .dark : ["paper", "light"].contains(theme) ? .light : nil)
             .scrollDismissesKeyboard(.interactively).navigationTitle("词条").navigationBarTitleDisplayMode(.inline)
@@ -411,7 +434,6 @@ struct VocabularyDetailView: View {
             .onReceive(learning.$revision) { _ in annotation.refreshPolicy() }
             .onChange(of: scenePhase) { _, phase in if phase != .active { annotation.flush() } }
             .onDisappear { annotation.flush(); speech.stop(); relatedTask?.cancel() }
-            .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成输入") { focusedField = nil } } }
             .task {
                 do { theme = try dependencies.preferencesRepository.load().readerTheme } catch { annotation.error = error.localizedDescription }
                 showingPersonalEditor = annotation.state == "已恢复未保存草稿" ||
@@ -480,7 +502,7 @@ struct VocabularyDetailView: View {
         annotation.senses.swapAt(index, index + delta)
     }
     private func lookup() async {
-        do { result = try await learning.dictionary.lookupCanonical(item.lemma); dictionaryError = nil; annotation.refreshPolicy() }
+        do { result = try await learning.dictionary.lookupSaved(item); dictionaryError = nil; annotation.refreshPolicy() }
         catch { result = nil; dictionaryError = error.localizedDescription; annotation.refreshPolicy() }
     }
     private func choose(_ sense: DictionarySense) {

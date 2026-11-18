@@ -241,12 +241,24 @@ final class EnglishTextContainer: UIView {
 
 /// Short dictionary passages use native attributed links so List row accessibility does not
 /// flatten a UIKit container. Tokenisation and lookup actions are shared with the long reader.
-struct InlineEnglishText: View {
-    let text: String
-    let onWord: (EnglishToken) -> Void
-    var emphasized = false
-    private var tokens: [EnglishToken] { EnglishTokenizer.tokens(in: text) }
-    private var linkedText: AttributedString {
+@MainActor private final class LinkedEnglishText {
+    private static let cache: NSCache<NSString, LinkedEnglishText> = {
+        let cache = NSCache<NSString, LinkedEnglishText>()
+        cache.countLimit = 1024
+        cache.totalCostLimit = 512_000
+        return cache
+    }()
+    let tokens: [EnglishToken]
+    let linked: AttributedString
+
+    static func layout(for text: String) -> LinkedEnglishText {
+        if let previous = cache.object(forKey: text as NSString) { return previous }
+        let layout = LinkedEnglishText(text)
+        cache.setObject(layout, forKey: text as NSString, cost: text.utf8.count + layout.tokens.count * 64)
+        return layout
+    }
+    private init(_ text: String) {
+        tokens = EnglishTokenizer.tokens(in: text)
         var value = AttributedString(text)
         for token in tokens {
             guard let range = Range(token.range, in: text),
@@ -254,14 +266,21 @@ struct InlineEnglishText: View {
                   let end = AttributedString.Index(range.upperBound, within: value) else { continue }
             value[start..<end].link = URL(string: "lexidawn-word://token/\(token.range.location)")
         }
-        return value
+        linked = value
     }
+}
+
+struct InlineEnglishText: View {
+    let text: String
+    let onWord: (EnglishToken) -> Void
+    var emphasized = false
     var body: some View {
-        Text(linkedText).font(.system(.body, design: .serif).weight(emphasized ? .medium : .regular)).lineSpacing(4).tint(.primary)
+        let layout = LinkedEnglishText.layout(for: text)
+        Text(layout.linked).font(.system(.body, design: .serif).weight(emphasized ? .medium : .regular)).lineSpacing(4).tint(.primary)
             .fixedSize(horizontal: false, vertical: true)
             .environment(\.openURL, OpenURLAction { url in
                 guard url.scheme == "lexidawn-word", let offset = Int(url.lastPathComponent),
-                      let token = EnglishTokenizer.token(at: offset, tokens: tokens) else { return .discarded }
+                      let token = EnglishTokenizer.token(at: offset, tokens: layout.tokens) else { return .discarded }
                 onWord(token); return .handled
             })
     }

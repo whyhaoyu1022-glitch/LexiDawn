@@ -10,6 +10,52 @@ import AVFoundation
         XCTAssertNil(Bundle.main.url(forResource: "cedict-reverse", withExtension: "json"))
         XCTAssertNil(Bundle.main.url(forResource: "dic_data-package-001", withExtension: "zip"))
     }
+    func testRealMDXIndependentInflectionsAliasesAndSyllableSpelling() async throws {
+        let app = try AppDependencies.makeLearningInMemory()
+        let learning = try XCTUnwrap(app.learning)
+        let dictionary = learning.dictionary
+        let adjective = try await dictionary.lookup("applied", context: "This degree focuses on applied mathematics.")
+        XCTAssertEqual(adjective.headword, "applied")
+        XCTAssertEqual(adjective.quickSenses.first?.partOfSpeech, "adjective")
+        XCTAssertEqual(adjective.baseEntry?.headword, "apply")
+        XCTAssertTrue(adjective.quickSenses.allSatisfy(BilingualMeaningPolicy.trusted))
+        let verb = try await dictionary.lookup("applied", context: "They had applied for a scholarship.")
+        XCTAssertEqual(verb.headword, "apply")
+        XCTAssertEqual(verb.savedHeadword, "applied")
+        XCTAssertTrue(verb.quickSenses.first?.partOfSpeech?.contains("verb") == true)
+        let alias = try await dictionary.lookup("cured")
+        XCTAssertEqual(alias.headword, "cure"); XCTAssertNil(alias.baseEntry)
+        let dotted = try await dictionary.lookup("rep·re·sen·ta·tive")
+        let plain = try await dictionary.lookup("representative")
+        XCTAssertEqual(dotted.headword, "representative")
+        XCTAssertEqual(dotted.quickSenses.map(\.id), plain.quickSenses.map(\.id))
+        XCTAssertTrue(dotted.quickSenses.allSatisfy { $0.lexicalHeadword?.contains("·") == false })
+    }
+
+    func testRealMDXReaderPersistsTheSelectedPhraseAndExactForm() async throws {
+        let app = try AppDependencies.makeLearningInMemory()
+        let learning = try XCTUnwrap(app.learning)
+        let text = "The pilots can take off now. This course teaches applied mathematics."
+        let now = Date()
+        let article = try learning.content.importArticle(.init(title: "Original phrase and form regression", body: text,
+            source: "Original XCTest author", rightsConfirmed: true), at: now)
+        let tokens = EnglishTokenizer.tokens(in: text)
+        let take = try XCTUnwrap(tokens.first { $0.surface == "take" })
+        let (phrase, span) = try await learning.dictionary.lookup(take, sourceText: text, at: now)
+        XCTAssertEqual(phrase.headword, "take off"); XCTAssertEqual(span.surface, "take off")
+        XCTAssertEqual((text as NSString).substring(with: span.range), span.surface)
+        XCTAssertTrue(phrase.quickSenses.allSatisfy(BilingualMeaningPolicy.trusted))
+        let entry = try learning.vocabulary.add(token: span, articleID: article, autoAdd: true, lookup: phrase, at: now)
+        let applied = try XCTUnwrap(tokens.first { $0.surface == "applied" })
+        let form = try await learning.dictionary.lookup(applied.surface, context: applied.sentence, at: now)
+        _ = try learning.vocabulary.add(token: applied, articleID: article, autoAdd: true, lookup: form, at: now)
+        let recovered = VocabularyRepository(context: ModelContext(app.modelContainer))
+        let stored = try recovered.entries()
+        XCTAssertEqual(Set(stored.map(\.lemma)), ["take off", "applied"])
+        XCTAssertEqual(stored.first { $0.id == entry?.entryID }?.type, "phrase")
+        XCTAssertEqual(stored.first { $0.lemma == "applied" }?.reviewMeaningSenseID, form.quickSenses.first?.id)
+    }
+
     func testRealMDXNodHasMultiplePartsChineseAndPairedExamples() async throws {
         let values = try await BundledMDXDictionaryProvider().lookup("nod")
         let chinese = values.filter(BilingualMeaningPolicy.trusted)

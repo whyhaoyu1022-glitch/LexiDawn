@@ -4,6 +4,7 @@ struct LearningRootView: View {
     @EnvironmentObject private var dependencies: AppDependencies
     @ObservedObject var learning: LearningServices
     @State private var tab = 0
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var reviewGate = ReviewEntryCoordinator()
     var body: some View {
         TabView(selection: Binding(get: { tab }, set: { value in
@@ -16,6 +17,9 @@ struct LearningRootView: View {
             ReviewPracticeView(learning: learning, returnToday: { tab = 0 }).tabItem { Label("复习", systemImage: "rectangle.stack") }.tag(3)
             LearningSettingsView(learning: learning).tabItem { Label("我的", systemImage: "person") }.tag(4)
         }.tint(LexiDawnColor.dawn500).reviewEntryGate(reviewGate, learning: learning)
+            .task(id: scenePhase) {
+                if scenePhase == .active { await learning.checkForegroundRefresh() }
+            }
     }
 }
 struct LiveTodayView: View {
@@ -79,13 +83,10 @@ struct LiveTodayView: View {
                 ToolbarItem(placement: .topBarLeading) { NavigationLink { ArticleLibraryView(learning: learning) } label: { Label("文章库与历史", systemImage: "books.vertical") }.accessibilityIdentifier("article-library") }
                 ToolbarItem(placement: .primaryAction) { Button("导入") { importSheet = true }.accessibilityIdentifier("import-article-toolbar") }
             }
-            .task {
-                reload()
-                await refreshDiscovered()
-            }.refreshable { reload(); await refreshDiscovered() }
+            .task { reload() }.refreshable { reload(); await refreshDiscovered(force: true) }
             .onReceive(learning.$revision) { _ in reload() }
-            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in reload(); Task { await refreshDiscovered() } }
-            .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in reload(); Task { await refreshDiscovered() } }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in reload() }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in reload() }
             .sheet(isPresented: $importSheet) { ArticleImportView(learning: learning) }
             .fullScreenCover(item: $reader) { route in NavigationStack { ReaderView(route: route, learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("返回今日") { reader = nil } } } } }
             .sheet(isPresented: $review) { NavigationStack { ReviewPracticeContent(learning: learning).toolbar { ToolbarItem(placement: .confirmationAction) { Button("返回今日") { review = false; reload() } } } } }
@@ -166,7 +167,10 @@ struct ArticleImportView: View {
                     TextField("原始 URL（可选）", text: $originalURL).textInputAutocapitalization(.never).keyboardType(.URL)
                     TextField("主题", text: $topic)
                     TextEditor(text: $bodyText).frame(minHeight: 160).focused($editingBody).accessibilityIdentifier("import-body")
-                    Text("\(EnglishTokenizer.tokens(in: bodyText).count) 词 · 预计 \(max(1, Int(ceil(Double(EnglishTokenizer.tokens(in: bodyText).count) / 200)))) 分钟").font(.caption)
+                    Text("\(EnglishTokenizer.tokens(in: bodyText).count) 词")
+                        .font(.caption).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+                        .onTapGesture { editingBody = false; InputComposition.dismissKeyboard() }
+                        .accessibilityIdentifier("import-word-count")
                 }
                 Section("授权与分配") {
                     Toggle("我有权导入此内容供本地个人使用", isOn: $rights).accessibilityIdentifier("import-rights")
@@ -193,11 +197,6 @@ struct ArticleImportView: View {
                     ToolbarItem(placement: .confirmationAction) {
                         Button(editingArticleID == nil ? "保存" : "更新", action: save)
                             .disabled(!rights).accessibilityIdentifier("save-import")
-                    }
-                    ToolbarItemGroup(placement: .keyboard) {
-                        Spacer()
-                        Button("完成输入") { editingBody = false; InputComposition.dismissKeyboard() }
-                            .accessibilityIdentifier("finish-article-input")
                     }
                 }
                 .interactiveDismissDisabled()
@@ -249,7 +248,16 @@ struct LiveExploreView: View {
                     }
                 } else {
                     Section {
-                        Picker("主题", selection: $topic) { Text("所有主题").tag("all"); ForEach(Array(Set(articles.flatMap(\.topics))).sorted(), id: \.self) { Text($0).tag($0) } }.accessibilityIdentifier("explore-topic-filter")
+                        HStack {
+                            Text("主题")
+                            Spacer()
+                            Picker("主题", selection: $topic) {
+                                Text("所有主题").tag("all")
+                                ForEach(Array(Set(articles.flatMap(\.topics))).sorted(), id: \.self) { Text($0).tag($0) }
+                            }.labelsHidden().pickerStyle(.menu).accessibilityIdentifier("explore-topic-filter")
+                        }.padding(.horizontal, 14).padding(.vertical, 8)
+                            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18))
+                            .listRowBackground(Color.clear).listRowSeparator(.hidden)
                         if visible.isEmpty {
                             ContentUnavailableView("暂无可读推荐", systemImage: "sparkle.magnifyingglass", description: Text(articles.isEmpty ? "暂无合法探索内容，可先导入文章。" : "当前主题暂无未读文章，可以调整主题。"))
                         }
@@ -296,11 +304,7 @@ struct ExploreArticleCard: View {
     let prominent: Bool
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text(article.topics.first ?? "阅读").font(.caption.weight(.semibold))
-                Spacer()
-                Image(systemName: "arrow.up.right")
-            }.opacity(0.85)
+            Text(article.topics.first ?? "阅读").font(.caption.weight(.semibold)).opacity(0.85)
             Text(ArticleTitlePresentation.display(article.title, sourceID: article.sourceID)).font(.system(prominent ? .title2 : .title3, design: .serif).weight(.semibold)).fixedSize(horizontal: false, vertical: true)
             Text([ArticleSourceRegistry.name(article.sourceID), article.author?.isBlank == false ? article.author : nil, article.publishedAt.map { $0.formatted(date: .abbreviated, time: .omitted) }, "\(article.minutes)分钟"].compactMap { $0 }.joined(separator: " · "))
                 .font(.caption).opacity(0.85).fixedSize(horizontal: false, vertical: true)

@@ -112,6 +112,7 @@ struct DiscoverySourceResult: Equatable, Sendable, Identifiable {
 }
 @MainActor final class ArticleDiscoveryService: ObservableObject {
     @Published private(set) var progress = DiscoveryProgress()
+    var didStart: (@MainActor (Date) -> Void)?
     func cancelRefresh() { operation?.cancel() }
 
     private let fetcher: ArticleFetchService
@@ -135,6 +136,7 @@ struct DiscoverySourceResult: Equatable, Sendable, Identifiable {
     private func performRefresh(force: Bool, at now: Date, onImport: (@MainActor () -> Void)?) async throws -> Int {
         guard !refreshing else { return 0 }
         refreshing = true
+        didStart?(now)
         var scheduled = Set<String>()
         let ids = sourceIDs.filter { ArticleSourceRegistry.canAttempt($0) && scheduled.insert($0).inserted }
         progress = DiscoveryProgress(phase: .running, totalSources: ids.count)

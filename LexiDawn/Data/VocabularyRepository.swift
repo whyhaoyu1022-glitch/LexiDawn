@@ -67,6 +67,7 @@ struct VocabularyItem: Identifiable, Equatable, Codable {
     var personalHistory: [PersonalMeaningRevision]? = nil
     var dictionaryCacheError: String? = nil
     var reliableChineseKnown: Bool? = nil
+    var mdxLookupKey: String? = nil
     var reviewMeaningSenseID: String? = nil
     var reviewMeaningText: String? = nil
     var reviewMeaningEvidence: String? = nil
@@ -117,7 +118,7 @@ enum VocabularyQuery {
             guard search.isBlank || item.searchableText.contains(where: { $0.localizedCaseInsensitiveContains(search) }) else { return false }
             switch status {
             case .all: return true
-            case .due: return item.dueAt.map { $0 <= now } ?? false
+            case .due: return item.repetitions == 0 || (item.dueAt.map { $0 <= now } ?? false)
             case .overdue: return item.dueAt.map { $0 < Calendar.current.startOfDay(for: now) } ?? false
             case .recent: return item.addedAt >= now.addingTimeInterval(-7 * 86400)
             case .familiar: return item.repetitions >= 3 && item.intervalDays >= 21
@@ -172,7 +173,8 @@ struct VocabularyAddition {
                     addedAt: record.addedAt, meaning: record.userMeaning, notes: record.notes,
                     contexts: attached.map(\.sentence), sourceArticleID: attached.first?.articleID,
                     dictionaryMeanings: definitions, sourceContexts: sourceItems)
-                let providerRows = providerCaches.filter { $0.lemma == record.lemma && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
+                value.mdxLookupKey = record.dictionaryEntryID
+                let providerRows = providerCaches.filter { $0.lemma == (record.dictionaryEntryID ?? record.lemma) && DictionaryAggregator.versions[$0.providerID] == $0.sourceVersion }
                 var decoded: [DictionarySense] = []
                 for row in providerRows {
                     do { decoded += try JSONDecoder().decode([DictionarySense].self, from: row.payload) }
@@ -182,7 +184,7 @@ struct VocabularyAddition {
                 value.legacyAnnotations = aliases.map { VocabularyLegacyAnnotation(id: $0.entryID, originalLemma: $0.lemma, meaning: $0.userMeaning, notes: $0.notes) }
                 value.personalSenses = try record.personalSensesData.map { try JSONDecoder().decode([PersonalDictionarySense].self, from: $0) }
                 value.personalHistory = try record.personalMeaningHistoryData.map { try JSONDecoder().decode([PersonalMeaningRevision].self, from: $0) }
-                do { value.reliableChineseKnown = try hasReliableChinese(lemma: record.lemma, context: context) }
+                do { value.reliableChineseKnown = try hasReliableChinese(lemma: record.dictionaryEntryID ?? record.lemma, context: context) }
                 catch { value.dictionaryCacheError = error.localizedDescription }
                 value.ipa = value.dictionarySenses.compactMap(\.ipa).first
                 value.reviewMeaningSenseID = record.reviewMeaningSenseID
@@ -223,26 +225,26 @@ struct VocabularyAddition {
             guard Set(rows.map(\.normalizedKey)).count == rows.count else { throw PersistenceError.integrity("重复生词身份") }
             for alias in rows where alias.canonicalEntryID != nil {
                 guard let root = rows.first(where: { $0.entryID == alias.canonicalEntryID }), root.canonicalEntryID == nil,
-                      root.entryType == alias.entryType, EnglishTokenizer.lemma(root.lemma) == EnglishTokenizer.lemma(alias.lemma) else { throw PersistenceError.integrity("词形合并引用损坏，原记录保留") }
+                      root.entryType == alias.entryType, Self.persistedSpelling(root) == Self.persistedSpelling(alias) else { throw PersistenceError.integrity("词形合并引用损坏，原记录保留") }
             }
             let roots = rows.filter { $0.canonicalEntryID == nil && $0.languageCode == "en" }
-            return roots.contains { $0.lemma != EnglishTokenizer.lemma($0.lemma) } || Set(roots.map { $0.entryType + "|" + EnglishTokenizer.lemma($0.lemma) }).count != roots.count
+            return roots.contains { $0.lemma != Self.persistedSpelling($0) } || Set(roots.map { $0.entryType + "|" + Self.persistedSpelling($0) }).count != roots.count
         }
         guard needed else { return }
         try writer.write {
             let context = writer.context
             let rows = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.languageCode == "en" }
             var evidence = try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>())
-            let groups = Dictionary(grouping: rows, by: { $0.entryType + "|" + EnglishTokenizer.lemma($0.lemma) })
+            let groups = Dictionary(grouping: rows, by: { $0.entryType + "|" + Self.persistedSpelling($0) })
             let states = try context.fetch(FetchDescriptor<ReviewStateRecord>())
             for records in groups.values {
                 let sorted = records.filter { $0.canonicalEntryID == nil }.sorted {
-                    let a = ($0.deletedAt == nil ? 0 : 1, $0.lemma == EnglishTokenizer.lemma($0.lemma) ? 0 : 1, $0.addedAt, $0.entryID)
+                    let a = ($0.deletedAt == nil ? 0 : 1, $0.lemma == Self.persistedSpelling($0) ? 0 : 1, $0.addedAt, $0.entryID)
                     let b = ($1.deletedAt == nil ? 0 : 1, $1.lemma == EnglishTokenizer.lemma($1.lemma) ? 0 : 1, $1.addedAt, $1.entryID)
                     return a < b
                 }
                 guard let root = sorted.first else { continue }
-                let canonical = EnglishTokenizer.lemma(root.lemma)
+                let canonical = Self.persistedSpelling(root)
                 let known = evidence.filter { $0.reliableChineseKnown && EnglishTokenizer.lemma($0.lemma) == canonical }
                 if !known.isEmpty, !evidence.contains(where: { $0.lemma == canonical }) {
                     let record = DictionaryEligibilityRecord(lemma: canonical, at: known.map(\.checkedAt).max() ?? root.addedAt, evidence: known.map(\.evidence).joined(separator: "\n"))
@@ -259,9 +261,17 @@ struct VocabularyAddition {
             }
         }
     }
+    private static func persistedSpelling(_ record: VocabularyEntryRecord) -> String {
+        record.dictionaryEntryID == nil ? EnglishTokenizer.lemma(record.lemma) : EnglishTokenizer.dictionarySpelling(record.lemma)
+    }
+    func find(canonicalHeadword: String) throws -> VocabularyItem? {
+        try entries(type: canonicalHeadword.contains(" ") ? "phrase" : "word").first { $0.lemma == canonicalHeadword }
+    }
     func find(surface: String, type: String? = nil, context: String = "") throws -> VocabularyItem? {
         let lemma = EnglishTokenizer.lemma(surface, context: context)
-        return try entries(type: type ?? (lemma.contains(" ") ? "phrase" : "word")).first { $0.lemma == lemma }
+        let spelling = EnglishTokenizer.dictionarySpelling(surface)
+        let candidates = try entries(type: type ?? (lemma.contains(" ") ? "phrase" : "word"))
+        return candidates.first { $0.lemma == spelling && $0.mdxLookupKey != nil } ?? candidates.first { $0.lemma == lemma }
     }
     func export(_ format: VocabularyExportFormat, at now: Date) throws -> Data {
         let items = try entries()
@@ -283,11 +293,11 @@ struct VocabularyAddition {
         }
         return Data((rows.map { $0.map(quote).joined(separator: ",") }.joined(separator: "\r\n") + "\r\n").utf8)
     }
-    func add(token: EnglishToken, articleID: String, autoAdd: Bool, explicit: Bool = false, origin: VocabularyContextOrigin = .reader, at now: Date) throws -> VocabularyAddition? {
+    func add(token: EnglishToken, articleID: String, autoAdd: Bool, explicit: Bool = false, origin: VocabularyContextOrigin = .reader, lookup: DictionaryResult? = nil, at now: Date) throws -> VocabularyAddition? {
         guard autoAdd || explicit else { return nil }
         try normalizeIdentities()
         if case let .dictionary(headword, evidence, _) = origin, headword.isBlank || evidence.isBlank { throw LearningError.invalid("词典语境缺少真实词条或来源证据，未加入生词本。") }
-        let lemma = EnglishTokenizer.lemma(token.surface, context: token.sentence)
+        let lemma = lookup?.savedHeadword ?? EnglishTokenizer.lemma(token.surface, context: token.sentence)
         let type = lemma.contains(" ") ? "phrase" : "word"
         guard !lemma.isBlank, lemma.count <= 100, !EnglishTokenizer.tokens(in: lemma).isEmpty else { throw LearningError.invalid("不是有效英文词条。") }
         return try writer.write {
@@ -299,6 +309,7 @@ struct VocabularyAddition {
             let record: VocabularyEntryRecord
             let created: Bool
             if let existing = records.first {
+                if existing.deletedAt != nil && !explicit { return nil }
                 record = existing; created = existing.deletedAt != nil
                 if created { record.deletedAt = nil; record.addedAt = now; record.creationToken = nonce }
                 record.revision += 1; record.lastOpenedAt = max(now, record.lastOpenedAt)
@@ -307,6 +318,7 @@ struct VocabularyAddition {
                 record = VocabularyEntryRecord(lemma: lemma, surface: token.surface, type: type, at: now, from: articleID, token: nonce)
                 context.insert(record); context.insert(ReviewStateRecord(entryID: record.entryID, at: now)); created = true
             }
+            try Self.pinLookup(lookup, to: record)
             let states = try context.fetch(FetchDescriptor<ReviewStateRecord>()).filter { $0.entryID == record.entryID }
             guard states.count == 1 else { throw PersistenceError.integrity("生词复习状态缺失或重复，不能假定队列为空") }
             if created, let state = states.first { state.dueAt = min(state.dueAt, now) }
@@ -340,16 +352,17 @@ struct VocabularyAddition {
         }
     }
     /// Explicit dictionary action. A dictionary word does not need a fabricated article.
-    func addDictionaryEntry(headword: String, surface: String? = nil, context sentence: String = "", requiresPersonalEligibility: Bool = false, at now: Date) throws -> VocabularyAddition {
-        let lemma = EnglishTokenizer.lemma(headword), type = lemma.contains(" ") ? "phrase" : "word"
+    func addDictionaryEntry(headword: String, surface: String? = nil, context sentence: String = "", requiresPersonalEligibility: Bool = false, lookup: DictionaryResult? = nil, at now: Date) throws -> VocabularyAddition {
+        let lemma = lookup?.savedHeadword ?? EnglishTokenizer.lemma(headword), type = lemma.contains(" ") ? "phrase" : "word"
         let original = surface?.trimmingCharacters(in: .whitespacesAndNewlines) ?? headword
         guard !lemma.isBlank, lemma.count <= 100, !EnglishTokenizer.tokens(in: lemma).isEmpty else { throw LearningError.invalid("请输入有效英文词头。") }
-        guard !original.isBlank, original.count <= 100, EnglishTokenizer.lemma(original, context: sentence) == lemma else { throw LearningError.invalid("原始词形与规范词头不一致，请重新查词。") }
+        guard !original.isBlank, original.count <= 100, (EnglishTokenizer.lemma(original, context: sentence) == lemma ||
+            lookup?.savedHeadword == lemma && lookup?.reliableChinese.isEmpty == false && EnglishTokenizer.dictionarySpelling(original) == lemma) else { throw LearningError.invalid("原始词形与规范词头不一致，请重新查词。") }
         try normalizeIdentities()
         return try writer.write {
             let context = writer.context
             guard try context.fetch(FetchDescriptor<DictionaryEligibilityRecord>()).contains(where: {
-                $0.lemma == lemma && $0.mdxSHA == BundledMDXDictionaryProvider.sourceSHA && ["chinese", "noChinese", "notFound"].contains($0.lookupStatus ?? "")
+                $0.lemma == (lookup?.headword ?? lemma) && $0.mdxSHA == BundledMDXDictionaryProvider.sourceSHA && ["chinese", "noChinese", "notFound"].contains($0.lookupStatus ?? "")
             }) else { throw LearningError.invalid("请先完成本次 MDX 查询，不能把引擎故障当作查无此词。") }
             if requiresPersonalEligibility, try !personalAllowed(lemma: lemma, context: context) {
                 throw LearningError.invalid("该词条当前不可创建个人释义，请重查词典。")
@@ -361,22 +374,39 @@ struct VocabularyAddition {
                 let states = try context.fetch(FetchDescriptor<ReviewStateRecord>()).filter { $0.entryID == existing.entryID }
                 guard states.count == 1 else { throw PersistenceError.integrity("生词复习状态缺失或重复，不能重新添加") }
                 if !existing.surfaceForms.contains(original) { existing.surfaceForms.append(original); existing.revision += 1 }
+                try Self.pinLookup(lookup, to: existing)
                 if existing.deletedAt == nil { return VocabularyAddition(entryID: existing.entryID, created: false, token: nil, revision: existing.revision) }
                 existing.deletedAt = nil; existing.addedAt = now; existing.creationToken = token; existing.revision += 1
                 if let state = states.first { state.dueAt = min(state.dueAt, now) }
                 return VocabularyAddition(entryID: existing.entryID, created: true, token: token, revision: existing.revision)
             }
             let entry = VocabularyEntryRecord(lemma: lemma, surface: original, type: type, at: now, from: "dictionary", token: token)
+            try Self.pinLookup(lookup, to: entry)
             context.insert(entry); context.insert(ReviewStateRecord(entryID: entry.entryID, at: now))
             return VocabularyAddition(entryID: entry.entryID, created: true, token: token, revision: entry.revision)
         }
+    }
+    private static func pinLookup(_ lookup: DictionaryResult?, to record: VocabularyEntryRecord) throws {
+        guard let lookup, let sense = lookup.quickSenses.first(where: {
+            BilingualMeaningPolicy.trusted($0) && $0.partOfSpeech?.isBlank == false
+        }) else { return }
+        if record.dictionaryEntryID == nil {
+            record.dictionaryEntryID = lookup.headword
+        }
+        // A repeat tap records the new occurrence without changing a learner's
+        // previously selected answer or an already-frozen review question.
+        guard record.reviewMeaningSenseID == nil else { return }
+        record.reviewMeaningSenseID = sense.id
+        record.reviewMeaningText = sense.zh
+        record.reviewMeaningEvidence = sense.line
+        record.reviewMeaningSnapshotData = try JSONEncoder().encode(sense)
     }
     func annotate(entryID: String, meaning: String, notes: String, at now: Date) throws {
         guard meaning.count <= 200, notes.count <= 2000 else { throw LearningError.invalid("个人释义或笔记过长。") }
         try writer.write {
             guard let entry = try writer.context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID }), entry.deletedAt == nil else { throw LearningError.invalid("词条已移除。") }
             let updatedMeaning = meaning.isBlank ? nil : meaning
-            if entry.userMeaning != updatedMeaning, try !personalAllowed(lemma: entry.lemma, context: writer.context) {
+            if entry.userMeaning != updatedMeaning, try !personalAllowed(lemma: entry.dictionaryEntryID ?? entry.lemma, context: writer.context) {
                 throw LearningError.invalid("MDX 未确认缺少中文释义，不能修改个人释义。你的笔记仍可保存。")
             }
             if entry.userMeaning != updatedMeaning { entry.reviewMeaningSenseID = nil; entry.reviewMeaningText = nil; entry.reviewMeaningEvidence = nil; entry.reviewMeaningSnapshotData = nil }
@@ -394,11 +424,11 @@ struct VocabularyAddition {
     func personalEditingAllowed(entryID: String) throws -> Bool {
         try writer.read { context in
             guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID && $0.deletedAt == nil }) else { throw LearningError.invalid("词条已移除。") }
-            return try personalAllowed(lemma: entry.lemma, context: context)
+            return try personalAllowed(lemma: entry.dictionaryEntryID ?? entry.lemma, context: context)
         }
     }
     func personalEditingAllowed(headword: String) throws -> Bool {
-        try writer.read { try personalAllowed(lemma: EnglishTokenizer.lemma(headword), context: $0) }
+        try writer.read { try personalAllowed(lemma: EnglishTokenizer.dictionarySpelling(headword), context: $0) }
     }
     /// Display only saved content. Drafts and retired external records are never consulted.
     func personalDictionarySenses(headword: String) throws -> [DictionarySense] {
@@ -426,7 +456,7 @@ struct VocabularyAddition {
         try writer.write {
             let context = writer.context
             guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID && $0.deletedAt == nil }) else { throw LearningError.invalid("词条已移除。") }
-            guard try personalAllowed(lemma: entry.lemma, context: context) else { throw LearningError.invalid("请先完成 MDX 查询。已有中文释义或词典故障时不能编辑个人释义，草稿保留。") }
+            guard try personalAllowed(lemma: entry.dictionaryEntryID ?? entry.lemma, context: context) else { throw LearningError.invalid("请先完成 MDX 查询。已有中文释义或词典故障时不能编辑个人释义，草稿保留。") }
             let old = try entry.personalSensesData.map { try JSONDecoder().decode([PersonalDictionarySense].self, from: $0) } ?? []
             let updated = senses.map { draft -> PersonalDictionarySense in
                 var value = draft
@@ -461,12 +491,12 @@ struct VocabularyAddition {
         try writer.write {
             let context = writer.context
             guard let entry = try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).first(where: { $0.entryID == entryID && $0.deletedAt == nil }) else { throw LearningError.invalid("词条不存在或已移除。") }
-            if let lookup, lookup.headword != entry.lemma { throw LearningError.invalid("词条已经变化，请重新查词。") }
+            if let lookup, lookup.headword != (entry.dictionaryEntryID ?? entry.lemma) { throw LearningError.invalid("词条已经变化，请重新查词。") }
             if let sense = lookup?.reliableChinese.first(where: { $0.id == sourceSenseID }) {
                 guard sense.partOfSpeech?.isBlank == false else { throw LearningError.invalid("该 MDX 义项未提供词性，暂不能用作复习标准答案。") }
                 entry.reviewMeaningSenseID = sense.id; entry.reviewMeaningText = sense.zh; entry.reviewMeaningEvidence = sense.line; entry.reviewMeaningSnapshotData = try JSONEncoder().encode(sense); entry.revision += 1; return
             }
-            guard lookup?.reliableChinese.isEmpty != false, try personalAllowed(lemma: entry.lemma, context: context) else { throw LearningError.invalid("请选择内置 MDX 中的中文义项。") }
+            guard lookup?.reliableChinese.isEmpty != false, try personalAllowed(lemma: entry.dictionaryEntryID ?? entry.lemma, context: context) else { throw LearningError.invalid("请选择内置 MDX 中的中文义项。") }
             let personal = try entry.personalSensesData.map { try JSONDecoder().decode([PersonalDictionarySense].self, from: $0) } ?? []
             guard let sense = personal.filter(\.reviewReady).map({ $0.dictionarySense(entryID: entryID) }).first(where: { $0.id == sourceSenseID }) else { throw LearningError.invalid("请选择已确认、具有词性与中文的个人义项。") }
             entry.reviewMeaningSenseID = sense.id; entry.reviewMeaningText = sense.zh; entry.reviewMeaningEvidence = sense.line
@@ -511,7 +541,12 @@ struct DictionarySense: Codable, Equatable, Identifiable, Sendable {
     var sourceWarnings: [String]? = nil
 }
 
-struct DictionaryResult: Equatable {
+struct DictionaryBaseEntry: Equatable, Codable {
+    let headword: String
+    let senses: [DictionarySense]
+}
+
+struct DictionaryResult: Equatable, Codable {
     let headword: String
     let senses: [DictionarySense]
     let updatedAt: Date
@@ -523,6 +558,9 @@ struct DictionaryResult: Equatable {
     var versions: [String: String] = [:]
     var personalSenses: [DictionarySense] = []
     var contextualOrder: [String] = []
+    var captureSpelling: String? = nil
+    var baseEntry: DictionaryBaseEntry? = nil
+    var savedHeadword: String { captureSpelling ?? headword }
     var usableSenses: [DictionarySense] {
         let official = senses.filter(BilingualMeaningPolicy.trusted)
         guard reliableChinese.isEmpty else { return official }
@@ -588,12 +626,59 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
         }
     }
     func lookup(_ surface: String, context: String = "", at now: Date = Date()) async throws -> DictionaryResult {
-        var result = try await lookupCanonical(EnglishTokenizer.lemma(surface, context: context), at: now)
-        let senses = result.quickSenses
-        if !context.isBlank && senses.count > 1 {
-            result.contextualOrder = try await ordering.senseIDs(senses, surface: surface, context: context)
+        let base = EnglishTokenizer.lemma(surface, context: context)
+        let exact = EnglishTokenizer.dictionarySpelling(surface)
+        var result = try await lookupCanonical(base, at: now)
+        if EnglishTokenizer.normalized(exact) != EnglishTokenizer.normalized(base) {
+            var form = try await lookupCanonical(exact, at: now)
+            let independent = form.reliableChinese.contains {
+                $0.lexicalHeadword.map(EnglishTokenizer.dictionarySpelling) == exact
+            }
+            if independent {
+                if let grammar = DictionaryGrammar.clearPart(surface: surface, context: context),
+                   !form.reliableChinese.contains(where: { DictionaryGrammar.matches($0, part: grammar) }),
+                   result.reliableChinese.contains(where: { DictionaryGrammar.matches($0, part: grammar) }) {
+                    result.captureSpelling = exact
+                    let ranked = try await ordering.senseIDs(result.quickSenses, surface: surface, context: context)
+                    let matching = Set(result.quickSenses.filter { DictionaryGrammar.matches($0, part: grammar) }.map(\.id))
+                    result.contextualOrder = ranked.filter(matching.contains) + ranked.filter { !matching.contains($0) }
+                    return result
+                }
+                form.baseEntry = DictionaryBaseEntry(headword: result.headword, senses: result.usableSenses.filter(BilingualMeaningPolicy.trusted))
+                result = form
+            }
+        }
+        if !context.isBlank && result.quickSenses.count > 1 {
+            result.contextualOrder = try await ordering.senseIDs(result.quickSenses, surface: surface, context: context)
         }
         return result
+    }
+
+    func lookup(_ token: EnglishToken, sourceText: String, at now: Date = Date()) async throws -> (DictionaryResult, EnglishToken) {
+        let word = try await lookup(token.surface, context: token.sentence, at: now)
+        let candidates = EnglishPhraseRecognizer.adjacent(to: token, in: sourceText)
+        for candidate in candidates {
+            let spelling = EnglishTokenizer.normalized(candidate.surface)
+            let parts = spelling.split(separator: " ", maxSplits: 1)
+            let inflected = parts.count == 2 ? EnglishTokenizer.lemma(String(parts[0])) + " " + parts[1] : spelling
+            let keys = spelling == inflected ? [spelling] : [spelling, inflected]
+            let parent = word.senses + (word.baseEntry?.senses ?? [])
+            for key in keys {
+                if let nested = parent.first(where: {
+                    $0.lexicalHeadword.map(EnglishTokenizer.normalized) == key && $0.sectionKind != nil && BilingualMeaningPolicy.trusted($0)
+                })?.lexicalHeadword {
+                    let entry = try await subentry(nested, from: word, at: now)
+                    if !entry.reliableChinese.isEmpty { return (entry, candidate) }
+                }
+                // A normal MDX headword can be a phrase even when the tapped
+                // word is not its dictionary parent.
+                let result = try await previewCanonical(key)
+                if result.reliableChinese.contains(where: { $0.lexicalHeadword.map(EnglishTokenizer.normalized) == key }) {
+                    return (try await lookupCanonical(key, at: now), candidate)
+                }
+            }
+        }
+        return (word, token)
     }
     /// A persisted vocabulary identity was disambiguated at capture time.
     func lookupCanonical(_ key: String, at now: Date = Date()) async throws -> DictionaryResult {
@@ -608,6 +693,19 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
         try cache.save(key, senses: senses, successful: [BundledMDXDictionaryProvider.sourceName], at: now)
         return try presentation(key, senses: senses, at: now)
     }
+    func lookupSaved(_ item: VocabularyItem, at now: Date = Date()) async throws -> DictionaryResult {
+        var result = try await lookupCanonical(item.mdxLookupKey ?? item.lemma, at: now)
+        let baseKey = EnglishTokenizer.lemma(item.lemma)
+        if result.headword == item.lemma, baseKey != item.lemma, !result.reliableChinese.isEmpty {
+            let base = try await lookupCanonical(baseKey, at: now)
+            result.baseEntry = DictionaryBaseEntry(headword: base.headword, senses: base.usableSenses.filter(BilingualMeaningPolicy.trusted))
+        }
+        if let selected = item.reviewMeaningSenseID, result.quickSenses.contains(where: { $0.id == selected }) {
+            result.contextualOrder = [selected] + result.quickSenses.map(\.id).filter { $0 != selected }
+        }
+        return result
+    }
+
     /// List rows read the same MDX without granting edit permission or writing a cache for each visible row.
     func previewCanonical(_ key: String) async throws -> DictionaryResult {
         let senses = try await readMDX(key)
@@ -625,7 +723,7 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
         return senses
     }
     func subentry(_ headword: String, from parent: DictionaryResult, at now: Date = Date()) async throws -> DictionaryResult {
-        let candidates = parent.senses.filter { $0.lexicalHeadword?.caseInsensitiveCompare(headword) == .orderedSame }
+        let candidates = (parent.senses + (parent.baseEntry?.senses ?? [])).filter { $0.lexicalHeadword?.caseInsensitiveCompare(headword) == .orderedSame }
         if candidates.isEmpty, parent.senses.contains(where: { sense in
             ((sense.seeAlso ?? []) + (sense.synonyms ?? []) + (sense.antonyms ?? [])).contains { $0.caseInsensitiveCompare(headword) == .orderedSame }
         }) { return try await lookup(headword, at: now) }
@@ -633,7 +731,7 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
         guard let native = provider as? BundledMDXDictionaryProvider, !hints.isEmpty else { throw MDXDictionaryError.invalidEntry("此内部词条缺少 MDX 记录身份") }
         let senses = try await native.lookupSubentry(headword, recordHints: hints)
         try Task.checkCancellation()
-        let key = EnglishTokenizer.lemma(headword)
+        let key = EnglishTokenizer.dictionarySpelling(headword)
         try cache.save(key, senses: senses, successful: [BundledMDXDictionaryProvider.sourceName], at: now)
         return try presentation(key, senses: senses, at: now)
     }

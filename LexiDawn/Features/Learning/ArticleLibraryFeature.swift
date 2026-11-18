@@ -52,12 +52,6 @@ struct ArticleLibraryView: View {
         .searchFocused($searchFocused)
         .onSubmit(of: .search) { finishSearchInput() }
         .scrollDismissesKeyboard(.interactively)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("完成搜索", action: finishSearchInput).accessibilityIdentifier("library-finish-search")
-            }
-        }
         .navigationTitle("文章库与历史")
         .toolbarBackground(.visible, for: .navigationBar)
         .refreshable { await beginRefresh().value }

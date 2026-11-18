@@ -51,8 +51,15 @@ struct EnglishTokenizer {
         guard lower > 0, NSLocationInRange(offset, tokens[lower - 1].range) else { return nil }
         return tokens[lower - 1]
     }
+    static func displaySpelling(_ surface: String) -> String {
+        surface.filter { $0 != "·" && $0 != "‧" && $0 != "∙" }
+    }
+    static func dictionarySpelling(_ surface: String) -> String {
+        let display = displaySpelling(surface)
+        return ["May", "US"].contains(display) ? display : normalized(display)
+    }
     static func normalized(_ surface: String) -> String {
-        surface.precomposedStringWithCanonicalMapping.lowercased().replacingOccurrences(of: "’", with: "'")
+        displaySpelling(surface).precomposedStringWithCanonicalMapping.lowercased().replacingOccurrences(of: "’", with: "'")
             .split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
     static func lemma(_ surface: String, context: String) -> String {
@@ -73,7 +80,7 @@ struct EnglishTokenizer {
         if key.hasSuffix("'s") { key = String(key.dropLast(2)) }
         else if key.hasSuffix("'") { key = String(key.dropLast()) }
         // Explicit English irregular forms; avoid destructive generic suffix stripping.
-        let irregular = ["users": "user", "visits": "visit", "prices": "price", "provides": "provide", "took": "take", "taken": "take", "takes": "take", "carried out": "carry out", "taking into account": "take into account", "looked into": "look into", "played a role in": "play a role in", "ran": "run", "running": "run", "runs": "run", "went": "go", "gone": "go", "children": "child", "mice": "mouse"]
+        let irregular = ["applied": "apply", "interested": "interest", "cured": "cure", "users": "user", "visits": "visit", "prices": "price", "provides": "provide", "took": "take", "taken": "take", "takes": "take", "carried out": "carry out", "taking into account": "take into account", "looked into": "look into", "played a role in": "play a role in", "ran": "run", "running": "run", "runs": "run", "went": "go", "gone": "go", "children": "child", "mice": "mouse"]
         if let lemma = irregular[key] { return lemma }
         if key.contains(" ") {
             var words = key.split(separator: " ").map(String.init)
@@ -173,7 +180,7 @@ struct ArticleLearningAccess {
 }
 
 
-struct VocabularyRecommendationCandidate: Identifiable {
+struct VocabularyRecommendationCandidate: Identifiable, Codable {
     var id: String { lemma }
     let lemma: String, surface: String, sentence: String, articleID: String, topic: String
     let score: Int
@@ -199,5 +206,14 @@ enum VocabularyRecommendationRules {
             }
         }
         return Array(result.values.sorted { $0.score == $1.score ? $0.lemma < $1.lemma : $0.score > $1.score }.prefix(max(0, limit)))
+    }
+}
+
+
+enum ForegroundRefreshPolicy {
+    static let interval: TimeInterval = 2 * 60 * 60
+    static func shouldCheck(last: Date?, now: Date) -> Bool {
+        guard let last else { return true }
+        return now.timeIntervalSince(last) >= interval
     }
 }

@@ -273,7 +273,7 @@ extension LexiDawnUITests {
         XCTAssertTrue(book.waitForExistence(timeout: 10)); book.tap()
         XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10)); app.buttons["close-word"].tap()
         book.tap()
-        XCTAssertTrue(app.staticTexts["已加入"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["remove-word"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["undo-word"].exists); capture("F30-existing-word-safe-no-undo", in: app); app.buttons["close-word"].tap()
         let body = app.descendants(matching: .any)["reader-body"].firstMatch
         XCTAssertTrue(body.waitForExistence(timeout: 5)); body.swipeUp(); body.swipeUp(); body.swipeUp()
@@ -325,8 +325,11 @@ extension LexiDawnUITests {
         let importButton = app.buttons["import-article-toolbar"]; XCTAssertTrue(importButton.waitForExistence(timeout: 10)); importButton.tap()
         app.textFields["import-title"].tap(); app.textFields["import-title"].typeText("My owned article")
         let editor = app.textViews["import-body"]; editor.tap(); editor.typeText("A book can help us learn. This text was written for this isolated UI test.")
-        let done = app.buttons["finish-article-input"]
-        XCTAssertTrue(done.waitForExistence(timeout: 5)); done.tap()
+        let keyboard = app.keyboards.firstMatch
+        XCTAssertTrue(keyboard.exists)
+        XCTAssertFalse(app.buttons["finish-article-input"].exists)
+        app.collectionViews["article-import-form"].swipeUp()
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: keyboard); waitForExpectations(timeout: 5)
         let rights = app.switches["import-rights"]; try revealLearning(rights, in: app); tapNativeSwitch(rights)
         XCTAssertEqual(rights.value as? String, "1")
         let save = app.buttons["save-import"]; try revealLearning(save, in: app); save.tap()
@@ -490,8 +493,11 @@ extension LexiDawnUITests {
         app.swipeDown(); app.swipeDown()
         app.textFields["import-title"].tap(); app.textFields["import-title"].typeText("My screenshot article (test-owned)")
         let editor = app.textViews["import-body"]; editor.tap(); editor.typeText("A book opens a window to science. I wrote this short passage for this isolated screenshot test. We learn by reading, remembering, and trying again. Lexidawngalleryword is deliberately an unknown word.")
-        let done = app.buttons["finish-article-input"]
-        XCTAssertTrue(done.waitForExistence(timeout: 5)); done.tap()
+        let keyboard = app.keyboards.firstMatch
+        XCTAssertTrue(keyboard.exists)
+        XCTAssertFalse(app.buttons["finish-article-input"].exists)
+        app.collectionViews["article-import-form"].swipeUp()
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: keyboard); waitForExpectations(timeout: 5)
         capture("F06-import-owned-text-preview", in: app)
         try revealLearning(save, in: app); save.tap()
         XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 10))
@@ -531,7 +537,7 @@ extension LexiDawnUITests {
         capture("S04-vocabulary-detail-personal-meaning", in: app)
         let notes = app.textFields["vocabulary-notes"].firstMatch; try revealLearning(notes, in: app)
         notes.tap(); notes.typeText(" - Reviewed in the real RFC")
-        app.buttons["完成输入"].tap()
+        app.staticTexts["vocabulary-notes-heading"].tap()
         expectation(for: NSPredicate(format: "label == %@", "已自动保存"), evaluatedWith: app.staticTexts["annotation-save-state"]); waitForExpectations(timeout: 10)
         XCTAssertFalse(app.buttons["save-vocabulary-annotation"].exists)
         capture("S05-vocabulary-notes-saved", in: app)
