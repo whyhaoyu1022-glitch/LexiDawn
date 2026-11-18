@@ -21,7 +21,11 @@ enum EnglishPhraseRecognizer {
         let source = text as NSString
         guard tapped.range.location >= 0, tapped.range.location < source.length,
               tapped.range.length > 0, tapped.range.length <= source.length - tapped.range.location else { return [] }
-        let paragraph = source.paragraphRange(for: tapped.range)
+        let current = source.paragraphRange(for: tapped.range)
+        let previous = current.location > 0 ? source.paragraphRange(for: NSRange(location: current.location - 1, length: 0)) : current
+        let end = NSMaxRange(current)
+        let next = end < source.length ? source.paragraphRange(for: NSRange(location: end, length: 0)) : current
+        let paragraph = NSUnionRange(NSUnionRange(previous, current), next)
         let excerpt = source.substring(with: paragraph)
         let words = EnglishTokenizer.tokens(in: excerpt)
         guard let center = words.firstIndex(where: {
@@ -31,11 +35,11 @@ enum EnglishPhraseRecognizer {
         for start in max(0, center - 2)...center {
             for end in center...min(words.count - 1, center + 2) where end > start {
                 let group = words[start...end]
-                guard group.allSatisfy({ $0.sentence == words[center].sentence }),
-                      zip(group, group.dropFirst()).allSatisfy({ left, right in
+                guard zip(group, group.dropFirst()).allSatisfy({ left, right in
                           let gap = NSRange(location: NSMaxRange(left.range) + paragraph.location,
                                             length: right.range.location - NSMaxRange(left.range))
-                          return source.substring(with: gap).allSatisfy(\.isWhitespace)
+                          let space = source.substring(with: gap)
+                          return space.allSatisfy(\.isWhitespace) && space.filter(\.isNewline).count <= 1
                       }) else { continue }
                 let span = NSRange(location: words[start].range.location + paragraph.location,
                                    length: NSMaxRange(words[end].range) - words[start].range.location)

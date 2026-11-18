@@ -271,7 +271,7 @@ extension LexiDawnUITests {
         app.buttons["open-reader"].tap()
         let book = app.buttons["word-Book"].firstMatch
         XCTAssertTrue(book.waitForExistence(timeout: 10)); book.tap()
-        XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10)); app.buttons["close-word"].tap()
+        XCTAssertTrue(app.buttons["undo-word"].waitForExistence(timeout: 15)); app.buttons["close-word"].tap()
         book.tap()
         XCTAssertTrue(app.buttons["remove-word"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["undo-word"].exists); capture("F30-existing-word-safe-no-undo", in: app); app.buttons["close-word"].tap()

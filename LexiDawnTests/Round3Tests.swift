@@ -319,7 +319,7 @@ private actor CacheRequestProbe: DictionaryProvider {
         XCTAssertThrowsError(try learning.openArticle(articleID: id, cycleID: cycle.cycleID, at: tomorrow))
         XCTAssertEqual(try learning.cycles.fetchAll().count, 1, "Checking a gate cannot fabricate a new daily cycle")
     }
-    func testPhraseSourceSpanIncludesFirstWordAcrossHardBreakAndRejectsUnrelatedRepeatedWord() throws {
+    func testPhraseSourceSpanIncludesFirstWordAcrossHardBreakAndRejectsUnrelatedRepeatedWord() async throws {
         let text = "Earlier original sentence. We take\n  into account every result, then inspect the account."
         let source = text as NSString, first = source.range(of: "account"), last = source.range(of: "account", options: .backwards)
         let tapped = EnglishToken(surface: "account", range: first, sentence: "We take into account every result, then inspect the account.")
@@ -332,9 +332,14 @@ private actor CacheRequestProbe: DictionaryProvider {
         let nested = try XCTUnwrap(EnglishPhraseRecognizer.token(for: "carry out", around: .init(surface: "out", range: ns.range(of: "out"), sentence: "We carry out the study."), sourceText: definition))
         XCTAssertEqual(nested.range.location, ns.range(of: "carry").location)
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
-        let id = try learning.content.importArticle(.init(title: "Explicit source-position fixture", body: text, source: "Fixture author", rightsConfirmed: true), at: now)
-        let model = WordLookupModel(token: .init(surface: "account", range: NSRange(location: NSNotFound, length: 7), sentence: tapped.sentence), articleID: id, autoAdd: true, learning: learning)
-        XCTAssertNil(model.phraseLookup("take into account")); XCTAssertNotNil(model.phraseError); XCTAssertNil(model.vocabularyError)
+        XCTAssertTrue(EnglishPhraseRecognizer.adjacent(to: tapped, in: text).contains { $0.range == phrase.range })
+        let invalid = EnglishToken(surface: "account", range: NSRange(location: NSNotFound, length: 7), sentence: tapped.sentence)
+        do {
+            _ = try await learning.dictionary.lookup(invalid, sourceText: text)
+            XCTFail("A missing source offset cannot authorize phrase capture.")
+        } catch let error as LearningError {
+            XCTAssertEqual(error, .invalid("无法核验本次查词的原文位置。"))
+        }
         XCTAssertTrue(try learning.vocabulary.entries().isEmpty)
     }
     func testDictionaryNestedContextKeepsItsRealEvidenceAndCannotMasqueradeAsArticleSentence() throws {

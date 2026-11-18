@@ -59,6 +59,21 @@ import AVFoundation
         XCTAssertEqual(stored.first { $0.lemma == "applied" }?.reviewMeaningSenseID, form.quickSenses.first?.id)
     }
 
+    func testRealMDXPhraseGrammarSlotsMatchFromEitherBoundary() async throws {
+        let app = try AppDependencies.makeLearningInMemory()
+        let learning = try XCTUnwrap(app.learning)
+        let text = "They will look into the complaint. The team must carry out a study. We take into account every result."
+        let tokens = EnglishTokenizer.tokens(in: text)
+        for (surface, expected) in [("look", "look into"), ("out", "carry out"), ("account", "take into account")] {
+            let token = try XCTUnwrap(tokens.first { $0.surface == surface })
+            let (entry, matched) = try await learning.dictionary.lookup(token, sourceText: text)
+            XCTAssertEqual(matched.surface, expected)
+            XCTAssertEqual(entry.headword, expected)
+            XCTAssertTrue(entry.quickSenses.contains { $0.sectionKind != nil && BilingualMeaningPolicy.trusted($0) })
+            XCTAssertTrue(entry.quickSenses.contains { $0.usageLabels?.contains(where: { $0.contains("sth") }) == true })
+        }
+    }
+
     func testRealMDXNodHasMultiplePartsChineseAndPairedExamples() async throws {
         let values = try await BundledMDXDictionaryProvider().lookup("nod")
         let chinese = values.filter(BilingualMeaningPolicy.trusted)

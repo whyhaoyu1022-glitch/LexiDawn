@@ -12,7 +12,7 @@
 | IMG_8960 · representative 长详情 | 替换估算高度的嵌套懒栈，缓存例句富文本与点词索引。审核直立/横屏、深浅色、暖纸及大字。滚动流畅度需要目标设备实测。 | 词典视图及目标设备验收 |
 | IMG_8961 · 含音节点的词头和加入按钮 | 从标识与展示去除词内音节点，保留标点语义和原历史数据，重复身份以既有别名合并。 | 真实 MDX 音节点用例、旧词条迁移测试 |
 | 同词重复点击与快速移除 | 加入后可在浮窗和完整详情显式移除，首次加入可撤销。实际持久化后才更新状态。软删除保留历史。生词详情提供足够大的红色描边操作。 | `testRepeatedReaderLookupCanRemoveExistingWordFromDetail` |
-| 语境短语 | 在点击位置前后各两词内，优先匹配最长且有 MDX 中文的连续短语。浮窗用短语义，生词本保存短语、原文词形、位置和选定义项。 | `testRealMDXReaderPersistsTheSelectedPhraseAndExactForm` |
+| 语境短语 | 在点击位置前后各两词内，优先匹配最长且有 MDX 中文的连续短语。支持词典的语法占位符，如 `look into sth` 与 `carry sth ↔ out`。浮窗用短语义，生词本保存短语、原文词形、位置和选定义项。 | `testRealMDXReaderPersistsTheSelectedPhraseAndExactForm` |
 | 两小时文章和词汇推荐 | 入口使用 App 前台激活。两小时以内不自动重查。文章共用发现进度；推荐保留上次本地结果，阅读门禁控制展示。 | `testForegroundRefreshTwoHourBoundaryAndClockRollback` |
 | 输入结束与自动保存 | 去掉自定义完成输入按钮。失焦、隐藏键盘和离页继续提交，与输入法合成和失败草稿兼容。 | 设置、个人义项及笔记失败恢复 UI |
 | 每日上限、大量新词和旧词复习 | 单组连线与每日总量独立。有 12 个合格词且释义可区分时，两组各 6。同释义分开到不同组。已保存的旧会话恢复原先的题组。到期旧词按到期先后，新词按加入先后；混合积压时给新词预留约四分之一，其余词留到后续周期。已经到期的准确标记为已到期，答题后按实际时间保存下一次到期。 | `testFiftyNewWordsAndDueRepetitionsDoNotCollapseDailyBudget`、`testDailyCapTwelveResumesTwoBoardsAndSchedulesEachWordOnce` |

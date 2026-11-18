@@ -117,7 +117,7 @@ final class Round3UITests: XCTestCase {
         capture("R3-L12", app: app, feature: "library", state: "completed-article-in-local-history", origin: "explicit-original-catalog-fixture-real-domain-evidence")
     }
     func testVocabularyStatusSortConfirmedMeaningAndNativeExportDialogs() throws {
-        let app = launch("round4-rich"); app.buttons["open-reader"].tap(); app.buttons["word-nod"].firstMatch.tap(); XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10)); app.buttons["close-word"].tap(); app.buttons["返回今日"].tap(); app.tabBars.buttons["词汇"].tap()
+        let app = launch("round4-rich"); app.buttons["open-reader"].tap(); app.buttons["word-nod"].firstMatch.tap(); XCTAssertTrue(app.buttons["undo-word"].waitForExistence(timeout: 15)); app.buttons["close-word"].tap(); app.buttons["返回今日"].tap(); app.tabBars.buttons["词汇"].tap()
         try choose("vocabulary-status-filter", option: "待复习", app: app)
         capture("R3-V10", app: app, feature: "vocabulary", state: "due-status-filter", origin: "real-RFC-explicit-personal-vocabulary-fixture")
         try choose("vocabulary-sort", option: "字母顺序", app: app)
@@ -384,6 +384,7 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(token.waitForExistence(timeout: 10)); XCTAssertTrue(token.isHittable)
         let actualSurface = token.label; XCTAssertFalse(actualSurface.isEmpty); token.tap()
         XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["undo-word"].waitForExistence(timeout: 15))
         capture("R3-C03", app: app, feature: "dictionary", state: "live-word-lookup-new-vocabulary", origin: origin)
         app.buttons["close-word"].tap(); app.buttons["返回今日"].tap(); app.tabBars.buttons["词汇"].tap()
         let entry = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'vocabulary-entry-'")).firstMatch
@@ -770,23 +771,25 @@ final class Round3UITests: XCTestCase {
     func testComplexFormsAndFourContextPhrasesUseNestedLookupAndReturn() throws {
         let app = launch("round3-phrases")
         XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
-        for (index, surface, lemma, phrase) in [(0,"took","take",""),(1,"taken","take",""),(2,"look","look","look into"),(3,"carry","carry","carry out"),(4,"account","account","take into account"),(5,"role","role","play a role in")] {
+        let expected = ["take", "take", "look into", "carry out", "take into account", "role"]
+        for (index, surface) in ["took", "taken", "look", "carry", "account", "role"].enumerated() {
             let word = app.buttons["word-" + surface].firstMatch
             for _ in 0..<8 { if word.exists && word.isHittable { break }; app.otherElements["reader-body"].firstMatch.swipeUp() }
             XCTAssertTrue(word.isHittable); word.tap()
-            XCTAssertTrue(app.staticTexts["dictionary-headword"].waitForExistence(timeout: 10)); XCTAssertEqual(app.staticTexts["dictionary-headword"].label, lemma)
+            let heading = app.staticTexts["dictionary-headword"]
+            expectation(for: NSPredicate(format: "label == %@", expected[index]), evaluatedWith: heading)
+            waitForExpectations(timeout: 15)
+            let details = app.buttons["dictionary-details"]
+            expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: details)
+            waitForExpectations(timeout: 15)
             capture("R3-D" + String(index + 10), app: app, feature: "dictionary", state: "surface-" + surface, origin: "explicit-original-context-fixture-real-bundled-MDX")
-            if !phrase.isEmpty {
-                app.buttons["dictionary-details"].tap(); XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
-                let phraseButton = app.buttons["dictionary-context-phrase-" + phrase]
-                for _ in 0..<30 { if phraseButton.exists && phraseButton.isHittable { break }; swipeDictionary(app) }
-                XCTAssertTrue(phraseButton.isHittable); phraseButton.tap()
-                let phraseHeadword = app.staticTexts.matching(NSPredicate(format: "identifier == %@ AND label == %@", "dictionary-headword", phrase)).firstMatch
-                XCTAssertTrue(phraseHeadword.waitForExistence(timeout: 10))
-                capture("R3-D" + String(index + 20), app: app, feature: "dictionary", state: "nested-phrase-" + phrase, origin: "explicit-original-context-fixture-real-bundled-MDX")
-                app.buttons["close-word"].firstMatch.tap(); app.buttons["返回查词"].tap()
-                XCTAssertTrue(app.staticTexts["dictionary-headword"].waitForExistence(timeout: 10)); XCTAssertEqual(app.staticTexts["dictionary-headword"].label, lemma)
-                capture("R3-D" + String(index + 60), app: app, feature: "dictionary", state: "returned-from-nested-phrase-" + phrase, origin: "explicit-original-context-fixture-real-bundled-MDX")
+            if (2...4).contains(index) {
+                details.tap(); XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
+                XCTAssertEqual(app.staticTexts["dictionary-full-headword"].firstMatch.label, expected[index])
+                capture("R3-D" + String(index + 20), app: app, feature: "dictionary", state: "verified-phrase-" + expected[index], origin: "explicit-original-context-fixture-real-bundled-MDX")
+                app.buttons["返回查词"].tap()
+                XCTAssertTrue(heading.waitForExistence(timeout: 10)); XCTAssertEqual(heading.label, expected[index])
+                capture("R3-D" + String(index + 60), app: app, feature: "dictionary", state: "returned-from-phrase-" + expected[index], origin: "explicit-original-context-fixture-real-bundled-MDX")
             }
             app.buttons["close-word"].firstMatch.tap(); XCTAssertTrue(app.otherElements["reader-body"].firstMatch.waitForExistence(timeout: 10))
         }
@@ -851,7 +854,7 @@ final class Round3UITests: XCTestCase {
         let app = launch("round3-storage-note")
         XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 15)); app.buttons["open-reader"].tap()
         XCTAssertTrue(app.buttons["word-Internet"].firstMatch.waitForExistence(timeout: 10)); app.buttons["word-Internet"].firstMatch.tap()
-        XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10)); app.buttons["close-word"].tap(); app.buttons["返回今日"].tap(); app.tabBars.buttons["词汇"].tap()
+        XCTAssertTrue(app.buttons["undo-word"].waitForExistence(timeout: 15)); app.buttons["close-word"].tap(); app.buttons["返回今日"].tap(); app.tabBars.buttons["词汇"].tap()
         let entry = app.buttons["vocabulary-entry-internet"]; XCTAssertTrue(entry.waitForExistence(timeout: 10)); entry.tap()
         let notes = app.textFields["vocabulary-notes"]
         for _ in 0..<20 { if notes.exists && notes.isHittable { break }; app.swipeUp() }

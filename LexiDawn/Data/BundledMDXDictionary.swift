@@ -37,7 +37,7 @@ enum MDXEntryIdentity {
 actor BundledMDXDictionaryProvider: DictionaryProvider {
     static let sourceName = "内置 MDX"
     static let sourceSHA = "095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443"
-    static let sourceVersion = sourceSHA + "-html-10"
+    static let sourceVersion = sourceSHA + "-html-11"
     private let resource: URL?
     private var reader: OpaquePointer?
     private var index: [String: [Int]] = [:]
@@ -179,6 +179,24 @@ actor BundledMDXDictionaryProvider: DictionaryProvider {
 
 /// DOM traversal uses the system libxml2 HTML parser. Only source classes are
 /// interpreted; scripts, remote CSS, audio/image references are never executed.
+enum MDXPhraseSpelling {
+    private static let slots: Set<String> = ["sb", "sth", "sb/sth", "sth/sb", "sb's"]
+    static func display(_ value: String) -> String {
+        EnglishTokenizer.displaySpelling(value)
+            .replacingOccurrences(of: "ˌ", with: "").replacingOccurrences(of: "ˈ", with: "")
+            .replacingOccurrences(of: "↔", with: " ")
+            .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+    /// MDX grammar slots are labels, never literal article words. Keep
+    /// alternatives and parenthesized lexical words until the source provides
+    /// an exact form for them.
+    static func identity(_ value: String) -> String {
+        let label = display(value)
+        let words = label.split(whereSeparator: \.isWhitespace)
+        let literal = words.filter { !slots.contains(EnglishTokenizer.normalized(String($0))) }
+        return literal.count >= 2 ? literal.joined(separator: " ") : label
+    }
+}
 enum MDXEntryParser {
     private struct Node {
         let pointer: UnsafeMutableRawPointer
@@ -254,10 +272,6 @@ enum MDXEntryParser {
             return values
         }
     }
-    private static func plainHeadword(_ value: String) -> String {
-        value.replacingOccurrences(of: "ˌ", with: "").replacingOccurrences(of: "ˈ", with: "").replacingOccurrences(of: "↔", with: " ")
-            .split(whereSeparator: \.isWhitespace).joined(separator: " ")
-    }
     static func supplement(_ html: String, recordID: String) throws -> (notes: [DictionaryTextNote], references: [String]) {
         let data = Array(html.utf8)
         guard let document = data.withUnsafeBytes({ ld_html_parse($0.baseAddress?.assumingMemoryBound(to: CChar.self), $0.count) }) else { throw MDXDictionaryError.invalidEntry("补充用法页无法解析") }
@@ -300,11 +314,11 @@ enum MDXEntryParser {
             var definitions = originalDefinitions
             // Phrase aliases can point at their parent page. Isolate matching
             // phrase/idiom subtrees instead of assigning all parent senses to it.
-            if plainHeadword(head).lowercased() != requested.lowercased() && (requested.contains(" ") || subentryOnly) {
+            if EnglishTokenizer.normalized(head) != EnglishTokenizer.normalized(requested) && (requested.contains(" ") || subentryOnly) {
                 requiresSubentry = true
                 let phraseGroups = entry.descendants("t-pv-g") + entry.descendants("t-idm-g") + entry.descendants("t-id-g")
                 let selected = phraseGroups.filter { group in
-                    (group.descendants("t-pv") + group.descendants("t-idm") + group.descendants("t-id")).contains { plainHeadword($0.text).lowercased() == requested.lowercased() }
+                    (group.descendants("t-pv") + group.descendants("t-idm") + group.descendants("t-id")).contains { EnglishTokenizer.normalized(MDXPhraseSpelling.identity($0.text)) == EnglishTokenizer.normalized(MDXPhraseSpelling.identity(requested)) }
                 }
                 definitions = selected.flatMap { $0.descendants("t-def") }
                 if definitions.isEmpty { continue }
@@ -325,7 +339,10 @@ enum MDXEntryParser {
                 let groupLabels = phrase?.children.first(where: { $0.has("t-top-g") }).map { top in
                     ["t-label", "t-gram", "t-reg", "t-geo", "t-use"].flatMap { top.descendants($0).map(\.text) }
                 } ?? []
-                let labels = Array(NSOrderedSet(array: localLabels + groupLabels)) as? [String] ?? []
+                let phraseTemplate = phraseHead.map(MDXPhraseSpelling.display)
+                let phraseIdentity = phraseHead.map(MDXPhraseSpelling.identity)
+                let grammarLabel = phraseTemplate != phraseIdentity ? phraseTemplate.map { [$0] } ?? [] : []
+                let labels = Array(NSOrderedSet(array: grammarLabel + localLabels + groupLabels)) as? [String] ?? []
                 let pairedCollocations = Set(examples.flatMap { $0.2.components(separatedBy: " · ") }.filter { !$0.isEmpty })
                 let collocations = scope.descendants("t-cf").map(\.text).filter { !pairedCollocations.contains($0) }
                 let sourceID = entry.attribute("data-hkoup-entry")
@@ -336,7 +353,7 @@ enum MDXEntryParser {
                     sources: [BundledMDXDictionaryProvider.sourceName], exampleTranslations: examples.map(\.1),
                     usageLabels: labels.isEmpty ? nil : labels, relatedPhrases: collocations.isEmpty ? nil : collocations,
                     sourceRevision: BundledMDXDictionaryProvider.sourceVersion, originKind: "mdx")
-                sense.lexicalHeadword = phraseHead.map(plainHeadword) ?? head
+                sense.lexicalHeadword = phraseIdentity ?? head
                 sense.sectionKind = phrase?.has("t-pv-g") == true ? "phrasalVerb" : phrase != nil ? "idiom" : nil
                 sense.policyVersion = BilingualMeaningPolicy.version
                 sense.entryGroupID = recordID + "|" + sourceID

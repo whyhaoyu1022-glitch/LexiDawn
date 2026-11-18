@@ -641,7 +641,7 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
         if EnglishTokenizer.normalized(exact) != EnglishTokenizer.normalized(base) {
             var form = try await lookupCanonical(exact, at: now)
             let independent = form.reliableChinese.contains {
-                $0.lexicalHeadword.map(EnglishTokenizer.dictionarySpelling) == exact
+                $0.lexicalHeadword.map(EnglishTokenizer.dictionarySpelling) == exact && $0.partOfSpeech?.isBlank == false
             }
             if let grammar = DictionaryGrammar.clearPart(surface: surface, context: context, tokenOffset: tokenOffset),
                (!independent || !form.reliableChinese.contains(where: { DictionaryGrammar.matches($0, part: grammar) })),
@@ -664,29 +664,46 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
     }
 
     func lookup(_ token: EnglishToken, sourceText: String, at now: Date = Date()) async throws -> (DictionaryResult, EnglishToken) {
+        let source = sourceText as NSString
+        guard token.range.location >= 0, token.range.location < source.length, token.range.length > 0,
+              token.range.length <= source.length - token.range.location,
+              source.substring(with: token.range) == token.surface else {
+            throw LearningError.invalid("无法核验本次查词的原文位置。")
+        }
         let offset = ClozeContext.relativeLocation(sentence: token.sentence, in: sourceText, absoluteLocation: token.range.location)
         let word = try await lookup(token.surface, context: token.sentence, tokenOffset: offset, at: now)
         let candidates = EnglishPhraseRecognizer.adjacent(to: token, in: sourceText)
-        let parent = word.senses + (word.baseEntry?.senses ?? [])
+        var parents = [word.headword: word]
+        var checked = Set([word.headword])
         for candidate in candidates {
             let spelling = EnglishTokenizer.normalized(candidate.surface)
-            let parts = spelling.split(separator: " ", maxSplits: 1)
-            let inflected = parts.count == 2 ? EnglishTokenizer.lemma(String(parts[0])) + " " + String(parts[1]) : spelling
+            let words = spelling.split(separator: " ")
+            guard let first = words.first, let last = words.last else { continue }
+            let firstLemma = EnglishTokenizer.lemma(String(first))
+            let lastLemma = EnglishTokenizer.lemma(String(last))
+            let inflected = ([firstLemma] + words.dropFirst().map(String.init)).joined(separator: " ")
             let keys = spelling == inflected ? [spelling] : [spelling, inflected]
             for key in keys {
-                if let nested = parent.first(where: {
-                    $0.lexicalHeadword.map(EnglishTokenizer.normalized) == key && $0.sectionKind != nil && BilingualMeaningPolicy.trusted($0)
-                })?.lexicalHeadword {
-                    let entry = try await subentry(nested, from: word, at: now)
-                    if !entry.reliableChinese.isEmpty { return (entry, candidate) }
-                }
-                // A normal MDX headword can be a phrase even when the tapped
-                // word is not its dictionary parent.
-                let result: DictionaryResult
-                do { result = try await previewCanonical(key) }
-                catch MDXDictionaryError.unmatchedSubentry { continue }
-                if result.reliableChinese.contains(where: { $0.lexicalHeadword.map(EnglishTokenizer.normalized) == key }) {
+                let indexed: DictionaryResult?
+                do { indexed = try await previewCanonical(key) }
+                catch MDXDictionaryError.unmatchedSubentry { indexed = nil }
+                if let indexed, indexed.reliableChinese.contains(where: { $0.lexicalHeadword.map(EnglishTokenizer.normalized) == key }) {
                     return (try await lookupCanonical(key, at: now), candidate)
+                }
+                // The MDX uses parent entries for some phrasal verbs and idioms.
+                // Check both boundaries so a tap on any word can resolve the phrase.
+                for parentKey in [word.headword, firstLemma, lastLemma] {
+                    if checked.insert(parentKey).inserted {
+                        parents[parentKey] = try await previewCanonical(parentKey)
+                    }
+                    guard let parent = parents[parentKey] else { continue }
+                    let senses = parent.senses + (parent.baseEntry?.senses ?? [])
+                    if let nested = senses.first(where: {
+                        $0.lexicalHeadword.map(EnglishTokenizer.normalized) == key && $0.sectionKind != nil && BilingualMeaningPolicy.trusted($0)
+                    })?.lexicalHeadword {
+                        let entry = try await subentry(nested, from: parent, at: now)
+                        if !entry.reliableChinese.isEmpty { return (entry, candidate) }
+                    }
                 }
             }
         }

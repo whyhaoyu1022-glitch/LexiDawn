@@ -429,7 +429,7 @@ struct VocabularyDetailView: View {
             .scrollDismissesKeyboard(.interactively).navigationTitle("词条").navigationBarTitleDisplayMode(.inline)
             .onChange(of: annotation.senses) { _, _ in annotation.changed(); if focusedField == nil { annotation.flush() } }
             .onChange(of: annotation.notes) { _, _ in annotation.changed() }
-            .onChange(of: focusedField) { _, value in if value == nil { annotation.flush() } }
+            .onChange(of: focusedField) { previous, current in if previous != nil, previous != current { annotation.flush() } }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidHideNotification)) { _ in annotation.flush() }
             .onReceive(learning.$revision) { _ in annotation.refreshPolicy() }
             .onChange(of: scenePhase) { _, phase in if phase != .active { annotation.flush() } }

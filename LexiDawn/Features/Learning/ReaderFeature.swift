@@ -220,7 +220,6 @@ struct ReaderView: View {
     var existing: Bool { existingEntryID != nil }
     @Published var loading = false
     @Published var vocabularyError: String?
-    @Published private(set) var phraseError: String?
     private var automaticActionHandled = false
     private var resolvedToken: EnglishToken?
     private let sourceText: String?
@@ -299,19 +298,6 @@ struct ReaderView: View {
             try learning.vocabulary.remove(entryID: existingEntryID, at: Date())
             self.existingEntryID = nil; addition = nil; vocabularyError = nil; learning.changed()
         } catch { vocabularyError = error.localizedDescription }
-    }
-    func phraseLookup(_ phrase: String) -> WordLookupModel? {
-        phraseError = nil
-        do {
-            let text: String?
-            if origin.kind == "reader" {
-                guard let articleID else { throw LearningError.invalid("原文章关联缺失，不能猜测短语位置。") }
-                text = try learning.content.read(articleID: articleID, at: Date()).body
-            }
-            else { text = origin.sourceText }
-            guard let text, let phraseToken = EnglishPhraseRecognizer.token(for: phrase, around: token, sourceText: text) else { throw LearningError.invalid("无法核验本次短语的原始位置，请返回原文或释义重新点词。") }
-            return WordLookupModel(token: phraseToken, articleID: articleID, autoAdd: autoAdd, learning: learning, depth: depth + 1, origin: origin)
-        } catch { phraseError = error.localizedDescription; return nil }
     }
     func undo() {
         guard let addition else { return }
@@ -646,7 +632,6 @@ struct DictionaryDetailView: View {
             VStack(alignment: .leading, spacing: 24) {
                 DictionaryEntryHeader(headword: result.headword, ipa: DictionaryPresentation.sharedIPA(result.senses + result.personalSenses), speech: speech)
                 if speech.state == .unavailable { Text("系统英语语音不可用").font(.caption).foregroundStyle(.secondary) }
-                contextPhrases
                 contextSections
                 DictionaryResultContent(result: result, onExampleWord: lookup, onRelatedEntry: depth < 3 ? openRelated : nil)
                 if let base = result.baseEntry, !base.senses.isEmpty {
@@ -692,22 +677,6 @@ struct DictionaryDetailView: View {
                     closeStack: closeDetails, returnToParent: { relatedRoute = nil })
             }
             .onDisappear { speech.stop(); relatedTask?.cancel() }
-    }
-    @ViewBuilder private var contextPhrases: some View {
-        if let lookupModel, depth < 3 {
-            let phrases = EnglishPhraseRecognizer.phrases(around: lookupModel.token.surface, sentence: context)
-            if !phrases.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("语境短语").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                    ForEach(phrases, id: \.self) { phrase in
-                        Button(phrase) {
-                            selection = lookupModel.phraseLookup(phrase)
-                            error = lookupModel.phraseError
-                        }.accessibilityIdentifier("dictionary-context-phrase-" + phrase)
-                    }
-                }
-            }
-        }
     }
     @ViewBuilder private var contextSections: some View {
         if !context.isBlank {
