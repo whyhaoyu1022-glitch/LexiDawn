@@ -6,6 +6,7 @@ Uses only the ephemeral workflow token; never deletes runs, artifacts, or anothe
 import json
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 
@@ -62,6 +63,29 @@ def main():
             if error.code != 409:
                 raise
             print('Run already finished or is being cancelled', run['id'])
+
+    # A hung runner can keep a workflow active after normal cancellation.
+    # Recheck completion and the main lease before using GitHub's force endpoint.
+    pending = {int(run['id']) for run in superseded}
+    deadline = time.monotonic() + 60
+    while pending:
+        if request('/git/ref/heads/main')['object']['sha'] != current_sha:
+            print('Main advanced while awaiting cancellation; stopping.'); return
+        pending = {run_id for run_id in pending
+                   if request('/actions/runs/' + str(run_id))['status'] != 'completed'}
+        if not pending or time.monotonic() >= deadline:
+            break
+        time.sleep(5)
+    for run_id in sorted(pending):
+        if request('/git/ref/heads/main')['object']['sha'] != current_sha:
+            print('Main advanced before force cancellation; stopping.'); return
+        try:
+            request('/actions/runs/' + str(run_id) + '/force-cancel', 'POST')
+            print('Force cancellation requested after normal cancellation did not finish', run_id)
+        except urllib.error.HTTPError as error:
+            if error.code != 409:
+                raise
+            print('Run no longer accepts cancellation', run_id)
 
 
 if __name__ == '__main__':

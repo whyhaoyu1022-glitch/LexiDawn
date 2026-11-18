@@ -240,7 +240,7 @@ struct VocabularyAddition {
             for records in groups.values {
                 let sorted = records.filter { $0.canonicalEntryID == nil }.sorted {
                     let a = ($0.deletedAt == nil ? 0 : 1, $0.lemma == Self.persistedSpelling($0) ? 0 : 1, $0.addedAt, $0.entryID)
-                    let b = ($1.deletedAt == nil ? 0 : 1, $1.lemma == EnglishTokenizer.lemma($1.lemma) ? 0 : 1, $1.addedAt, $1.entryID)
+                    let b = ($1.deletedAt == nil ? 0 : 1, $1.lemma == Self.persistedSpelling($1) ? 0 : 1, $1.addedAt, $1.entryID)
                     return a < b
                 }
                 guard let root = sorted.first else { continue }

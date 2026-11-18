@@ -32,6 +32,32 @@ import SwiftData
         XCTAssertEqual(ClozeContext.mask(sentence, answer: projection.answer, targetRange: target), "First they took off; later we ____   ___ again.")
     }
 
+    func testDottedPinnedInflectionMigrationRetainsTheExactMDXIdentity() throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let context = ModelContext(app.modelContainer)
+        let original = VocabularyEntryRecord(lemma: "applied", surface: "applied", type: "word", at: now, from: "dictionary", token: "original")
+        original.dictionaryEntryID = "applied"
+        original.notes = "Original independent adjective"
+        let dotted = VocabularyEntryRecord(lemma: "ap·plied", surface: "ap·plied", type: "word", at: now.addingTimeInterval(-1), from: "dictionary", token: "dotted")
+        dotted.dictionaryEntryID = "applied"
+        dotted.notes = "Older dotted annotation"
+        context.insert(original); context.insert(dotted)
+        context.insert(ReviewStateRecord(entryID: original.entryID, at: now))
+        context.insert(ReviewStateRecord(entryID: dotted.entryID, at: now.addingTimeInterval(-1)))
+        try context.save()
+        try learning.vocabulary.normalizeIdentities()
+        try learning.vocabulary.normalizeIdentities()
+        let entries = try learning.vocabulary.entries()
+        XCTAssertEqual(entries.count, 1)
+        let entry = try XCTUnwrap(entries.first)
+        XCTAssertEqual(entry.id, original.entryID)
+        XCTAssertEqual(entry.lemma, "applied"); XCTAssertEqual(entry.mdxLookupKey, "applied")
+        XCTAssertEqual(entry.notes, original.notes)
+        XCTAssertEqual(entry.legacyAnnotations?.first?.notes, dotted.notes)
+        XCTAssertTrue(entry.surfaces.contains("ap·plied"))
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ReviewStateRecord>()), 2)
+    }
+
     func testCancellationDoesNotProduceReviewPreparationError() {
         let gate = ReviewEntryCoordinator()
         gate.adopt(CancellationError(), cycleID: nil, completion: {})
