@@ -2,6 +2,8 @@
 
 本表以负责人在 2026-11-18 提供的七张真机图及同批口述反馈为依据。原 Round 4 的 21 张整改图及 144 项账本沿用各自的历史证据。新改动的自动化和真机结果分别登记。
 
+2026-11-19 再次逐张打开原 21 张 HEIC 的完整解码图（IMG_8854–IMG_8883）和三张词典原始参考 JPEG。原 ZIP 与单图 SHA 在打包时重新核对；最新构建截图独立记录，不把旧截图当作本批结果。
+
 | 真机图或反馈 | 整改规格 | 证据入口 |
 |---|---|---|
 | IMG_8994 · applied 与 apply | 先查点中的词形和词干，识别独立 MDX 词头。默认先呈现独立词形及自己的音标和义项，下面放原形完整释义。语境明确指向动词时，优先词干的动词义，入库保留该变形。别名没有独立义且语境不足时回到原形。 | `testRealMDXIndependentInflectionsAliasesAndSyllableSpelling` |
@@ -27,9 +29,30 @@
 | `6df100d` | 修正共用义项的别名身份。仅选择失败用例，两次尝试在分配 macOS runner 前取消，没有执行此次复跑。全量回归和本批 IPA 待该用例通过。 | [单用例复跑](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44325053234) |
 | `a101b35` | 真实 MDX 短语语法槽及共用义项别名、带音节点的独立词形迁移，2/2 XCTest 通过。已编译全部 App 与测试目标。 | [两项回归](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44417334553) |
 | `0b7ec16` | 完成页“继续”明确请求下一批，去掉重复入口。额外复习重启、继续后空队列及不重复刚完成词的原生 UI 用例通过；截图导出成功。 | [单项 UI 回归](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44419033058) |
+| `a9f9d5a` | 全量 245/245 XCTest 通过，iPhoneOS Release IPA 189 已检查。SE 七项 UI 中六项通过；冷启动用例在笔记输入焦点仍保留时等待“已自动保存”而失败，缺少输入结束动作。其余分组继续收集结果。 | [全量运行](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44420940506) |
+
+冷启动用例补上点击笔记标题空白区域结束输入，并明确检查键盘消失；保存状态和返回后数据校验均保留。先在 SE 和主设备只重跑该方法，通过后再执行最终全量；不恢复输入期间强行落盘的旧交互。
 
 2026-11-19 补查：身份迁移排序的两端统一使用持久词形，防止音节点旧词覆盖已固定的独立 MDX 词形；测试验证重复迁移、笔记和两份学习状态保留。CI 固定 macOS 26 ARM 镜像。新建的隔离 Simulator 最多启动两次，每次有明确超时；失败保留诊断。旧任务普通取消未结束时，在复查 main 身份后强制取消旧运行，不删除运行记录或产物。所有专项回归通过后，执行最终全量验证与新 IPA 构建；该批结果待运行结束登记。
 
 宿主恢复与完整扫描通过，分包异常测试 8 项。字典为 MDX 2.0、UTF-8、38,774,534 bytes，共校验 203,181 条索引记录及别名链。SHA-256 为 `095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443`。
 
 自动化使用 Xcode 26.6 与 iOS 26.5 Simulator。长词条滚动性能、系统发音和覆盖安装仍需用本批 IPA 在 iOS 27 设备复测。
+
+## 实现与数据兼容
+
+| 模块 | 本批主要修改 |
+|---|---|
+| MDX 与语境身份 | `BundledMDXDictionary.swift`、`DictionaryAggregation.swift`、`BilingualDictionary.swift`、`EnglishPhraseRecognizer.swift`：独立词形、词干、语法槽、短语别名与选定义项共用真实 MDX。 |
+| 生词与阅读 | `VocabularyRepository.swift`、`ReaderFeature.swift`、`VocabularyFeature.swift`：固定查询键、去音节点、历史合并、原文位置和显式移除。 |
+| 词典排版 | `ReaderFeature.swift`、`InteractiveEnglishText.swift`：词形在前、词干在后，词性与编号义项层级、关联词布局、稳定高度与富文本缓存。 |
+| 复习 | `ReviewRepository.swift`、`ReviewFeature.swift`、`LearningRules.swift`：每日总量、连线分板、旧词与新词队列、取消处理、真实到期标签、完成后继续。 |
+| 自动检查与界面 | `LearningServices.swift`、`VocabularyRecommendations.swift`、`LexiDawnApp.swift`：两小时检查及推荐快照；探索、推荐、设置和搜索页面清理多余控件。 |
+| 原生验证 | MDX / Round 3 / Round 4 XCTest、XCUITest，以及 CI 启动、分组与取消脚本。 |
+
+[完整代码差异](https://github.com/whyhaoyu1022-glitch/LexiDawn/compare/4be478e2e778bea4da2095e65a637e5df117f7be...a9f9d5a66bb1aa8bbd39f623cfc0556b5cb243af)。本批相对该历史基线新增 9 个 XCTest、2 个主设备 XCUITest；已有方法保留并按新交互修订断言。
+
+- 没有新增持久模型或删除数据库。既有 `dictionaryEntryID` 保存固定的 MDX 查询键，旧记录为空时按旧词头读取。
+- 音节点合并保留重复词条为历史别名，迁移可重复执行；不清除笔记、上下文、学习状态或复习证据。
+- 连线板使用既有题目 `position` 编码。旧位置仍属于原单板，已保存题组保持原题量、义项和掩码。
+- MDX 派生数据与 `SHA + html-12` 绑定。缓存更新不能替换进行中复习题冻结的答案，也不能把外部历史词义改标为 MDX。

@@ -424,7 +424,9 @@ final class Round3UITests: XCTestCase {
         let notes = app.textFields["vocabulary-notes"]
         for _ in 0..<20 { if notes.exists && notes.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(notes.isHittable); notes.tap(); notes.typeText("真实文章学习笔记")
+        app.staticTexts["vocabulary-notes-heading"].tap()
         expectation(for: NSPredicate(format: "label == %@", "已自动保存"), evaluatedWith: app.staticTexts["annotation-save-state"]); waitForExpectations(timeout: 10)
+        XCTAssertFalse(app.keyboards.firstMatch.exists)
         capture("R3-C04", app: app, feature: "vocabulary", state: "actual-MDX-meaning-and-explicit-user-note-saved", origin: "production-article-network-real-bundled-MDX-user-note")
         app.navigationBars.buttons["生词本"].tap()
         XCTAssertTrue(entry.waitForExistence(timeout: 10)); entry.tap()

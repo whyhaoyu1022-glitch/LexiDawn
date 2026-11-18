@@ -9,7 +9,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 FOCUSED = {
-    'fix-extra-review': ['LexiDawnUITests/Round3UITests/testExtraReviewRestartsSameQuestionAndDoesNotRelockExplore'],
+    'fix-cold-start-main': ['LexiDawnUITests/Round3UITests/testLiveColdStartImportReadingLookupPersonalMeaningReviewAndRestart'],
+    'fix-cold-start-small': ['LexiDawnUITests/Round3UITests/testLiveColdStartImportReadingLookupPersonalMeaningReviewAndRestart'],
 }
 
 
@@ -51,7 +52,7 @@ if __name__ == '__main__':
     result = plan()
     if args.mode == 'matrix':
         if args.suite == 'focused':
-            print(json.dumps({'include': [{'suite': key, 'device': 'iPhone-17-Pro'} for key in FOCUSED]}))
+            print(json.dumps({'include': [{'suite': key, 'device': 'iPhone-SE-3rd-generation' if key.endswith('-small') else 'iPhone-17-Pro'} for key in FOCUSED]}))
         else:
             print(json.dumps({'include': [{'suite': key, 'device': 'iPhone-SE-3rd-generation' if key == 'small' else 'iPhone-17-Pro-Max' if key == 'large' else 'iPhone-17-Pro'} for key in result]}))
     elif args.mode == 'selectors':
