@@ -18,6 +18,7 @@ private struct RecommendationSnapshot: Codable {
     @Published private(set) var refreshingRecommendations = false
     private let refreshDefaults: UserDefaults
     private static let recommendationKey = "lexidawn.recommendations.foreground-v1"
+    private static let recommendationAttemptKey = "lexidawn.recommendations.attempt-v1"
     private static let articleCheckKey = "lexidawn.articles.foreground-v1"
     private var recommendationCheckedAt: Date?
     private var recommendationAttemptedAt: Date?
@@ -41,12 +42,15 @@ private struct RecommendationSnapshot: Codable {
         reader = ReaderProgressService(context: context, content: content, cycles: cycles)
         review = ReviewQueueService(context: context, cycles: cycles, dictionary: dictionary)
         discovery.didStart = { [weak self] time in self?.refreshDefaults.set(time, forKey: Self.articleCheckKey) }
+        recommendationAttemptedAt = refreshDefaults.object(forKey: Self.recommendationAttemptKey) as? Date
         if let data = refreshDefaults.data(forKey: Self.recommendationKey) {
             do {
                 let snapshot = try JSONDecoder().decode(RecommendationSnapshot.self, from: data)
                 if snapshot.dictionaryVersion == BundledMDXDictionaryProvider.sourceVersion {
                     recommendationCheckedAt = snapshot.checkedAt
                     recommendedVocabulary = snapshot.items.filter { $0.result.quickSenses.contains(where: BilingualMeaningPolicy.trusted) }
+                } else {
+                    recommendationAttemptedAt = nil
                 }
             } catch {
                 recommendationError = "无法恢复上次的词汇推荐，请重试。"
@@ -89,38 +93,42 @@ private struct RecommendationSnapshot: Codable {
     }
     #endif
     func changed() { revision += 1 }
-    func recommendationService(clock: @escaping @MainActor () -> Date = { Date() }) -> VocabularyRecommendationService {
-        VocabularyRecommendationService(content: content, dictionary: dictionary, vocabulary: vocabulary, allowed: { [unowned self] in try self.explorationAllowed(at: clock()) })
+    func recommendationService(clock: @escaping @MainActor () -> Date = { Date() }, prefetch: Bool = false) -> VocabularyRecommendationService {
+        VocabularyRecommendationService(content: content, dictionary: dictionary, vocabulary: vocabulary, allowed: { [unowned self] in
+            if prefetch && self.productionNetworking { return true }
+            return try self.explorationAllowed(at: clock())
+        })
     }
     func checkForegroundRefresh(at now: Date = Date()) async {
         guard productionNetworking, !foregroundRefreshInProgress, !Task.isCancelled else { return }
         foregroundRefreshInProgress = true
         defer { foregroundRefreshInProgress = false }
+        async let articles: Void = checkForegroundArticles(at: now)
+        await refreshRecommendations(at: now)
+        await articles
+    }
+    private func checkForegroundArticles(at now: Date) async {
         if ForegroundRefreshPolicy.shouldCheck(last: refreshDefaults.object(forKey: Self.articleCheckKey) as? Date, now: now) {
             do { _ = try await discovery.refresh(at: now, onImport: { self.changed() }); changed() }
             catch is CancellationError { return }
             catch { changed() } // The shared discovery progress retains per-source failures.
         }
-        await refreshRecommendations(at: now)
     }
     func refreshRecommendations(at now: Date = Date(), retry: Bool = false) async {
         guard !Task.isCancelled, !refreshingRecommendations,
-              retry || ForegroundRefreshPolicy.shouldCheck(last: recommendationAttemptedAt ?? recommendationCheckedAt, now: now) else { return }
+              retry || ForegroundRefreshPolicy.shouldCheck(last: productionNetworking ? recommendationAttemptedAt ?? recommendationCheckedAt : nil, now: now) else { return }
         refreshingRecommendations = true
         recommendationError = nil
         defer { refreshingRecommendations = false }
         do {
             var items: [RecommendedVocabulary] = []
-            let service = VocabularyRecommendationService(content: content, dictionary: dictionary, vocabulary: vocabulary,
-                allowed: { [unowned self] in
-                    if self.productionNetworking { return true } // Prefetch locally; UI retains the study gate.
-                    return try self.explorationAllowed(at: now)
-                })
+            let service = recommendationService(clock: { now }, prefetch: true)
             _ = try await service.discover { items.append($0) }
             try Task.checkCancellation()
             if productionNetworking {
                 let snapshot = RecommendationSnapshot(checkedAt: now, dictionaryVersion: BundledMDXDictionaryProvider.sourceVersion, items: items)
                 refreshDefaults.set(try JSONEncoder().encode(snapshot), forKey: Self.recommendationKey)
+                refreshDefaults.set(now, forKey: Self.recommendationAttemptKey)
             }
             recommendationAttemptedAt = now; recommendationCheckedAt = now
             recommendedVocabulary = items
@@ -128,6 +136,7 @@ private struct RecommendationSnapshot: Codable {
         catch {
             if !Task.isCancelled {
                 recommendationAttemptedAt = now
+                if productionNetworking { refreshDefaults.set(now, forKey: Self.recommendationAttemptKey) }
                 recommendationError = error.localizedDescription
             }
         }

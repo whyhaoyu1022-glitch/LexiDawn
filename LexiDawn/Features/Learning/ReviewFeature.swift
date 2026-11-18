@@ -260,8 +260,13 @@ struct ReviewEntryProblem: Identifiable {
     private var cycleID: UUID?
     private var generation = UUID()
     private var ready: (() -> Void)?
+    private var worker: Task<Void, Never>?
     private(set) var extra = false
-    func cancel() { generation = UUID(); busy = false; problem = nil; ready = nil }
+    func cancel() {
+        generation = UUID()
+        worker?.cancel(); worker = nil
+        busy = false; problem = nil; ready = nil
+    }
     func open(dependencies: AppDependencies, learning: LearningServices, onReady: @escaping () -> Void) async {
         guard !busy else { return }
         extra = false; ready = onReady; await retry(dependencies: dependencies, learning: learning)
@@ -272,9 +277,23 @@ struct ReviewEntryProblem: Identifiable {
         problem = ReviewEntryProblem(message: error.localizedDescription, issue: error as? ReviewMeaningIssue)
     }
     func retry(dependencies: AppDependencies, learning: LearningServices) async {
+        guard worker == nil else { return }
         let token = UUID(); generation = token; busy = true; problem = nil
-        defer { if token == generation { busy = false } }
+        let task = Task<Void, Never> { [weak self] in
+            guard let self else { return }
+            await self.preflight(dependencies: dependencies, learning: learning, token: token)
+        }
+        worker = task
+        await withTaskCancellationHandler {
+            await task.value
+        } onCancel: {
+            task.cancel()
+        }
+        if token == generation { busy = false; worker = nil }
+    }
+    private func preflight(dependencies: AppDependencies, learning: LearningServices, token: UUID) async {
         do {
+            try Task.checkCancellation()
             let all = try learning.cycles.fetchAll()
             guard let cycle = all.first(where: \.hasOutstandingWork) ?? all.last else { ready?(); return }
             cycleID = cycle.cycleID
@@ -282,6 +301,8 @@ struct ReviewEntryProblem: Identifiable {
             extra = false
             let prefs = try dependencies.preferencesRepository.load()
             let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: prefs.dailyReviewLimit, pairCount: prefs.matchingPairCount, clozeCount: prefs.clozeQuestionCount, at: Date())
+            try Task.checkCancellation()
+            guard token == generation else { return }
             let current = try learning.cycles.fetch(by: cycle.cycleID)
             if retryExtra, prepared?.completedAt != nil || current?.reviewEvidence != nil {
                 extra = true

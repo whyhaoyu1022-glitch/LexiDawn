@@ -21,6 +21,17 @@ import SwiftData
         XCTAssertEqual(ReviewQueuePolicy.select(due: [4], new: [100], limit: 12), [4, 100])
     }
 
+    func testVerifiedPhraseKeepsInflectedTextAndExactSourceRange() {
+        let sentence = "First they took off; later we took   off again."
+        let target = (sentence as NSString).range(of: "took   off")
+        let projection = ClozeContext.make(lemma: "take off", surfaces: ["took   off"], sentence: sentence,
+            preferredLocation: target.location, verifiedSurface: "took   off")
+        XCTAssertEqual(projection.answer, "took off")
+        XCTAssertEqual(projection.targetRange, target)
+        XCTAssertTrue(ClozeContext.validates(target, answer: projection.answer, sentence: sentence))
+        XCTAssertEqual(ClozeContext.mask(sentence, answer: projection.answer, targetRange: target), "First they took off; later we ____   ___ again.")
+    }
+
     func testCancellationDoesNotProduceReviewPreparationError() {
         let gate = ReviewEntryCoordinator()
         gate.adopt(CancellationError(), cycleID: nil, completion: {})
@@ -38,7 +49,7 @@ import SwiftData
         for (index, token) in EnglishTokenizer.tokens(in: text).enumerated() {
             let word = EnglishTokenizer.lemma(token.surface)
             _ = try learning.vocabulary.add(token: token, articleID: article, autoAdd: true, at: now.addingTimeInterval(Double(index)))
-            values[word] = [DictionarySense(id: "explicit-board-fixture|" + word, en: word, zh: "原创测试义" + String(index),
+            values[word] = [DictionarySense(id: "explicit-board-fixture|" + word, en: word, zh: "原创测试义" + String(index == 1 ? 0 : index),
                 line: "Explicit review board fixture", partOfSpeech: "noun")]
         }
         try learning.dictionary.configureDictionaryEvidence(providers: [("explicit-board-fixture", OriginalReviewDictionaryFixture(values: values))])
@@ -50,6 +61,8 @@ import SwiftData
         XCTAssertEqual(session.matching.count, 12)
         XCTAssertEqual(session.matching.filter { $0.matchingBoard == 0 }.count, 6)
         XCTAssertEqual(session.matching.filter { $0.matchingBoard == 1 }.count, 6)
+        let repeatedGloss = session.matching.filter { $0.answer == "原创测试义0" }
+        XCTAssertEqual(Set(repeatedGloss.map(\.matchingBoard)), [0, 1])
         let later = try XCTUnwrap(session.matching.first { $0.matchingBoard == 1 })
         XCTAssertThrowsError(try learning.review.submit(cycleID: cycle.cycleID, questionID: later.id, answer: later.senseID, matchingOptionID: later.id, at: now))
         for question in session.matching.filter({ $0.matchingBoard == 0 }) {
@@ -69,6 +82,22 @@ import SwiftData
         XCTAssertEqual(try resumed.pendingCount(at: now), 1)
         let latest = try XCTUnwrap(logs.map(\.nextDueAt).max())
         XCTAssertEqual(try resumed.pendingCount(at: latest), 13)
+
+        let dueReview = try await resumed.prepareExtra(dailyLimit: 1, pairCount: 1, clozeCount: 1, at: latest)
+        let second = try XCTUnwrap(dueReview)
+        let previousWord = try XCTUnwrap(second.matching.first)
+        XCTAssertTrue(logs.contains { $0.entryID == previousWord.entryID })
+        XCTAssertTrue(try resumed.submitExtra(sessionID: second.id, questionID: previousWord.id,
+            answer: previousWord.senseID, matchingOptionID: previousWord.id, at: latest))
+        for question in second.cloze {
+            XCTAssertTrue(try resumed.submitExtra(sessionID: second.id, questionID: question.id, answer: question.answer, at: latest))
+        }
+        let state = try XCTUnwrap(ModelContext(app.modelContainer).fetch(FetchDescriptor<ReviewStateRecord>())
+            .first { $0.entryID == previousWord.entryID })
+        XCTAssertEqual(state.repetitions, 2); XCTAssertGreaterThan(state.dueAt, latest)
+        XCTAssertEqual(try resumed.pendingCount(at: state.dueAt), 13)
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetch(FetchDescriptor<ReviewLogRecord>())
+            .filter { $0.entryID == previousWord.entryID }.count, 2)
     }
 
     func testEnglishOnlyDoesNotLockPersonalChineseDefinitions() {

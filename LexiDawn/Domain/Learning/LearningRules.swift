@@ -36,7 +36,7 @@ struct EnglishTokenizer {
         sentenceTokenizer.enumerateTokens(in: text.startIndex..<text.endIndex) { range, _ in sentences.append(NSRange(range, in: text)); return true }
         var sentenceIndex = 0
         let exclusions = (try? NSRegularExpression(pattern: #"(?s)```.*?```|`[^`\n]*`|https?://[^\s]+|www\.[^\s]+|[\w.+-]+@[\w.-]+\.[A-Za-z]+|\b\w*\d\w*\b"#))?.matches(in: text, range: whole).map(\.range) ?? []
-        guard let regex = try? NSRegularExpression(pattern: #"[A-Za-z]+(?:['’][A-Za-z]+)*(?:[-‐][A-Za-z]+(?:['’][A-Za-z]+)*)*['’]?"#) else { return [] }
+        guard let regex = try? NSRegularExpression(pattern: #"[A-Za-z]+(?:['’][A-Za-z]+)*(?:[-‐·‧∙][A-Za-z]+(?:['’][A-Za-z]+)*)*['’]?"#) else { return [] }
         return regex.matches(in: text, range: whole).compactMap { match in
             guard !exclusions.contains(where: { NSIntersectionRange($0, match.range).length > 0 }) else { return nil }
             while sentenceIndex + 1 < sentences.count && NSMaxRange(sentences[sentenceIndex]) <= match.range.location { sentenceIndex += 1 }
@@ -199,9 +199,11 @@ enum VocabularyRecommendationRules {
                 for form in forms {
                     let key = EnglishTokenizer.lemma(form)
                     guard !saved.contains(key), result[key] == nil else { continue }
-                    let surface = form == lemma ? token.surface : form
-                    let span = (article.body as NSString).range(of: surface, options: .caseInsensitive)
-                    result[key] = VocabularyRecommendationCandidate(lemma: key, surface: surface, sentence: token.sentence, articleID: article.id, topic: article.topics.first ?? "本地阅读", score: min(form.count, 20) + (form.contains(" ") ? 12 : 0), range: span.location == NSNotFound ? token.range : span)
+                    let selected = form == lemma ? token : EnglishPhraseRecognizer.token(for: form, around: token, sourceText: article.body)
+                    guard let selected else { continue }
+                    result[key] = VocabularyRecommendationCandidate(lemma: key, surface: selected.surface, sentence: token.sentence,
+                        articleID: article.id, topic: article.topics.first ?? "本地阅读",
+                        score: min(form.count, 20) + (form.contains(" ") ? 12 : 0), range: selected.range)
                 }
             }
         }

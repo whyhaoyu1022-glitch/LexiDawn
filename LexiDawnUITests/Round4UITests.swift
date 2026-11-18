@@ -300,6 +300,30 @@ final class Round4UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["已停止发现；已完整入库的文章保留。"].waitForExistence(timeout: 10))
         capture("R4-P05-cancelled", app: app, feature: "article-discovery", state: "cancelled-candidate-not-imported")
     }
+    func testRealInflectedDetailAndPhraseUseArticleLookupIdentity() {
+        let app = launch("round4-mdx-inflections")
+        reader(app)
+        tapWord("applied", app: app)
+        let applied = app.staticTexts["dictionary-headword"]
+        XCTAssertTrue(app.buttons["dictionary-details"].waitForExistence(timeout: 15))
+        expectation(for: NSPredicate(format: "label == %@", "applied"), evaluatedWith: applied); waitForExpectations(timeout: 15)
+        app.buttons["dictionary-details"].tap()
+        let headings = app.staticTexts.matching(identifier: "dictionary-full-headword")
+        XCTAssertTrue(headings.firstMatch.waitForExistence(timeout: 10))
+        XCTAssertEqual(headings.firstMatch.label, "applied")
+        capture("R4-device-independent-inflection", app: app, feature: "dictionary-detail", state: "real-MDX-applied-before-apply")
+        let base = headings.matching(NSPredicate(format: "label == %@", "apply")).firstMatch
+        reach(base, app: app)
+        XCTAssertTrue(base.exists)
+        capture("R4-device-following-base-entry", app: app, feature: "dictionary-detail", state: "full-base-apply-follows-inflection")
+        app.buttons["关闭详细释义"].tap()
+        tapWord("take", app: app)
+        expectation(for: NSPredicate(format: "label == %@", "take off"), evaluatedWith: app.staticTexts["dictionary-headword"])
+        waitForExpectations(timeout: 15)
+        XCTAssertTrue(app.buttons["undo-word"].waitForExistence(timeout: 8))
+        capture("R4-device-adjacent-phrase", app: app, feature: "reader-dictionary", state: "real-MDX-contiguous-phrase-added")
+    }
+
     func testRepeatedReaderLookupCanRemoveExistingWordFromDetail() {
         let app = launch("round4-mdx-contexts")
         reader(app)

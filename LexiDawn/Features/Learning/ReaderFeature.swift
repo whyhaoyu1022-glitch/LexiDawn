@@ -252,7 +252,7 @@ struct ReaderView: View {
     func refreshMembership() {
         guard let result else { return }
         do {
-            existingEntryID = try learning.vocabulary.find(canonicalHeadword: result.savedHeadword)?.id
+            existingEntryID = try learning.vocabulary.activeID(canonicalHeadword: result.savedHeadword)
             if existingEntryID == nil { addition = nil }
         } catch { vocabularyError = error.localizedDescription }
     }
@@ -316,7 +316,7 @@ struct ReaderView: View {
     func undo() {
         guard let addition else { return }
         do { try learning.vocabulary.undo(addition, at: Date()); self.addition = nil; existingEntryID = nil; learning.changed(); vocabularyError = nil }
-        catch { self.vocabularyError = error.localizedDescription }
+        catch { self.addition = nil; self.vocabularyError = error.localizedDescription }
     }
 }
 struct WordLookupSheet: View {
@@ -619,7 +619,7 @@ struct DictionaryRelatedRoute: Identifiable, Hashable {
 struct DictionaryDetailView: View {
     let result: DictionaryResult
     let context: String
-    @ObservedObject var learning: LearningServices
+    let learning: LearningServices
     let articleID: String?
     var depth: Int = 0
     var theme: String = "system"
@@ -633,7 +633,7 @@ struct DictionaryDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @StateObject private var speech = SystemPronunciation()
-    @State private var entry: VocabularyItem?
+    @State private var entryID: String?
     @State private var addition: VocabularyAddition?
     @State private var showingSynonyms = false
     @State private var comparison: String?
@@ -728,7 +728,7 @@ struct DictionaryDetailView: View {
                         .accessibilityLabel(lookupModel == nil ? "返回上一个词条" : "返回查词")
                 }
                 Spacer(minLength: 0)
-                if entry == nil {
+                if entryID == nil {
                     Button(action: add) {
                         VStack(spacing: 2) {
                             footerHeadword(icon: "book.closed")
@@ -787,7 +787,12 @@ struct DictionaryDetailView: View {
             selection = model
         } catch { self.error = error.localizedDescription }
     }
-    private func refresh() { do { entry = try learning.vocabulary.find(canonicalHeadword: result.savedHeadword) } catch { self.error = error.localizedDescription } }
+    private func refresh() {
+        do {
+            let found = try learning.vocabulary.activeID(canonicalHeadword: result.savedHeadword)
+            if entryID != found { entryID = found }
+        } catch { self.error = error.localizedDescription }
+    }
     private func add() {
         do {
             if let lookupModel {
@@ -802,10 +807,10 @@ struct DictionaryDetailView: View {
         } catch { self.error = error.localizedDescription }
     }
     private func remove() {
-        guard let entry else { return }
+        guard let entryID else { return }
         do {
-            try learning.vocabulary.remove(entryID: entry.id, at: Date())
-            self.entry = nil; addition = nil; error = nil; learning.changed()
+            try learning.vocabulary.remove(entryID: entryID, at: Date())
+            self.entryID = nil; addition = nil; error = nil; learning.changed()
         } catch { self.error = error.localizedDescription }
     }
     private func undo() {

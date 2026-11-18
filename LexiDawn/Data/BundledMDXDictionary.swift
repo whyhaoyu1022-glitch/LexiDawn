@@ -6,12 +6,14 @@ enum MDXDictionaryError: Error, LocalizedError, Equatable {
     case identityMismatch
     case invalidStructure(String)
     case invalidEntry(String)
+    case unmatchedSubentry
     var errorDescription: String? {
         switch self {
         case .missingResource: return "内置 MDX 资源缺失。请重试；若仍失败，请使用包含完整词典的构建覆盖安装，保留学习数据。"
         case .identityMismatch: return "内置 MDX 校验失败，词典不可用。个人内容与学习数据保留，请重试或恢复完整构建。"
         case .invalidStructure(let detail): return "MDX 解析失败：" + detail
         case .invalidEntry(let detail): return "MDX 词条解析失败：" + detail
+        case .unmatchedSubentry: return "该短语链接未能对应原词条，请重试完整词头。"
         }
     }
 }
@@ -106,10 +108,14 @@ actor BundledMDXDictionaryProvider: DictionaryProvider {
     }
     private func parseRecords(_ numbers: [Int], headword: String, subentryOnly: Bool) throws -> [DictionarySense] {
         var values: [DictionarySense] = [], seen = Set<String>()
+        var unmatched = false
         for number in numbers {
                 for (target, html) in try records(number, path: []) {
                     try Task.checkCancellation()
-                    for var sense in try MDXEntryParser.parse(html, requested: headword, recordID: target, subentryOnly: subentryOnly) where seen.insert(sense.id).inserted {
+                    let parsed: [DictionarySense]
+                    do { parsed = try MDXEntryParser.parse(html, requested: headword, recordID: target, subentryOnly: subentryOnly) }
+                    catch MDXDictionaryError.unmatchedSubentry { unmatched = true; continue }
+                    for var sense in parsed where seen.insert(sense.id).inserted {
                         let selfKeys = Set([Self.foldedKey(headword), Self.foldedKey(sense.lexicalHeadword ?? headword)])
                         var references = (sense.seeAlso ?? []).filter { !selfKeys.contains(Self.foldedKey($0)) }
                         var referenceIDs = Set(references.map(Self.foldedKey))
@@ -143,7 +149,9 @@ actor BundledMDXDictionaryProvider: DictionaryProvider {
                     }
                 }
         }
-        try Task.checkCancellation(); return values
+        try Task.checkCancellation()
+        if values.isEmpty && unmatched { throw MDXDictionaryError.unmatchedSubentry }
+        return values
     }
     private func remember(_ values: [DictionarySense], headword: String) {
         cache[headword] = values; touch(headword)
@@ -364,7 +372,7 @@ enum MDXEntryParser {
             // Some real MDX records are index/help pages. They are successful
             // records with no Chinese senses, distinct from parser/resource errors.
         }
-        if requiresSubentry && !matchedEntry { throw MDXDictionaryError.invalidEntry("该短语链接未能对应原词条，请重试完整词头") }
+        if requiresSubentry && !matchedEntry { throw MDXDictionaryError.unmatchedSubentry }
         return senses
     }
 }

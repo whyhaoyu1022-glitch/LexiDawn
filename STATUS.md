@@ -1,6 +1,8 @@
 # 当前状态
 
-Round 4 的全量原生兼容回归已通过。验证代码为 `4be478e2e778bea4da2095e65a637e5df117f7be`，运行使用 Xcode 26.6 与 iOS 26.5 Simulator。[最终 CI](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43420154858)
+2026-11-18 真机反馈已有新的修复代码和专项验证记录。查看[逐图记录](docs/reviews/round-4-device-feedback-2026-11-18.md)。
+
+修复前的 Round 4 全量原生兼容回归已通过。验证代码为 `4be478e2e778bea4da2095e65a637e5df117f7be`，运行使用 Xcode 26.6 与 iOS 26.5 Simulator。[最终 CI](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43420154858)
 
 | 交付 | 结果 |
 |---|---|

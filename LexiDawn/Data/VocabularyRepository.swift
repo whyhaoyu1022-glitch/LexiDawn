@@ -264,8 +264,17 @@ struct VocabularyAddition {
     private static func persistedSpelling(_ record: VocabularyEntryRecord) -> String {
         record.dictionaryEntryID == nil ? EnglishTokenizer.lemma(record.lemma) : EnglishTokenizer.dictionarySpelling(record.lemma)
     }
-    func find(canonicalHeadword: String) throws -> VocabularyItem? {
-        try entries(type: canonicalHeadword.contains(" ") ? "phrase" : "word").first { $0.lemma == canonicalHeadword }
+    func activeID(canonicalHeadword: String) throws -> String? {
+        let type = canonicalHeadword.contains(" ") ? "phrase" : "word"
+        let key = "en|\(type)|\(canonicalHeadword)"
+        try normalizeIdentities()
+        return try writer.read { context in
+            let query = FetchDescriptor<VocabularyEntryRecord>(predicate: #Predicate { $0.normalizedKey == key })
+            let rows = try context.fetch(query)
+            guard rows.count <= 1 else { throw PersistenceError.integrity("重复生词身份") }
+            guard let entry = rows.first, entry.deletedAt == nil, entry.canonicalEntryID == nil else { return nil }
+            return entry.entryID
+        }
     }
     func find(surface: String, type: String? = nil, context: String = "") throws -> VocabularyItem? {
         let lemma = EnglishTokenizer.lemma(surface, context: context)
@@ -625,7 +634,7 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
             return local.count + remote.count
         }
     }
-    func lookup(_ surface: String, context: String = "", at now: Date = Date()) async throws -> DictionaryResult {
+    func lookup(_ surface: String, context: String = "", tokenOffset: Int? = nil, at now: Date = Date()) async throws -> DictionaryResult {
         let base = EnglishTokenizer.lemma(surface, context: context)
         let exact = EnglishTokenizer.dictionarySpelling(surface)
         var result = try await lookupCanonical(base, at: now)
@@ -634,16 +643,16 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
             let independent = form.reliableChinese.contains {
                 $0.lexicalHeadword.map(EnglishTokenizer.dictionarySpelling) == exact
             }
+            if let grammar = DictionaryGrammar.clearPart(surface: surface, context: context, tokenOffset: tokenOffset),
+               (!independent || !form.reliableChinese.contains(where: { DictionaryGrammar.matches($0, part: grammar) })),
+               result.reliableChinese.contains(where: { DictionaryGrammar.matches($0, part: grammar) }) {
+                result.captureSpelling = exact
+                let ranked = try await ordering.senseIDs(result.quickSenses, surface: surface, context: context)
+                let matching = Set(result.quickSenses.filter { DictionaryGrammar.matches($0, part: grammar) }.map(\.id))
+                result.contextualOrder = ranked.filter(matching.contains) + ranked.filter { !matching.contains($0) }
+                return result
+            }
             if independent {
-                if let grammar = DictionaryGrammar.clearPart(surface: surface, context: context),
-                   !form.reliableChinese.contains(where: { DictionaryGrammar.matches($0, part: grammar) }),
-                   result.reliableChinese.contains(where: { DictionaryGrammar.matches($0, part: grammar) }) {
-                    result.captureSpelling = exact
-                    let ranked = try await ordering.senseIDs(result.quickSenses, surface: surface, context: context)
-                    let matching = Set(result.quickSenses.filter { DictionaryGrammar.matches($0, part: grammar) }.map(\.id))
-                    result.contextualOrder = ranked.filter(matching.contains) + ranked.filter { !matching.contains($0) }
-                    return result
-                }
                 form.baseEntry = DictionaryBaseEntry(headword: result.headword, senses: result.usableSenses.filter(BilingualMeaningPolicy.trusted))
                 result = form
             }
@@ -655,14 +664,15 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
     }
 
     func lookup(_ token: EnglishToken, sourceText: String, at now: Date = Date()) async throws -> (DictionaryResult, EnglishToken) {
-        let word = try await lookup(token.surface, context: token.sentence, at: now)
+        let offset = ClozeContext.relativeLocation(sentence: token.sentence, in: sourceText, absoluteLocation: token.range.location)
+        let word = try await lookup(token.surface, context: token.sentence, tokenOffset: offset, at: now)
         let candidates = EnglishPhraseRecognizer.adjacent(to: token, in: sourceText)
+        let parent = word.senses + (word.baseEntry?.senses ?? [])
         for candidate in candidates {
             let spelling = EnglishTokenizer.normalized(candidate.surface)
             let parts = spelling.split(separator: " ", maxSplits: 1)
-            let inflected = parts.count == 2 ? EnglishTokenizer.lemma(String(parts[0])) + " " + parts[1] : spelling
+            let inflected = parts.count == 2 ? EnglishTokenizer.lemma(String(parts[0])) + " " + String(parts[1]) : spelling
             let keys = spelling == inflected ? [spelling] : [spelling, inflected]
-            let parent = word.senses + (word.baseEntry?.senses ?? [])
             for key in keys {
                 if let nested = parent.first(where: {
                     $0.lexicalHeadword.map(EnglishTokenizer.normalized) == key && $0.sectionKind != nil && BilingualMeaningPolicy.trusted($0)
@@ -672,7 +682,9 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
                 }
                 // A normal MDX headword can be a phrase even when the tapped
                 // word is not its dictionary parent.
-                let result = try await previewCanonical(key)
+                let result: DictionaryResult
+                do { result = try await previewCanonical(key) }
+                catch MDXDictionaryError.unmatchedSubentry { continue }
                 if result.reliableChinese.contains(where: { $0.lexicalHeadword.map(EnglishTokenizer.normalized) == key }) {
                     return (try await lookupCanonical(key, at: now), candidate)
                 }
@@ -695,6 +707,7 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
     }
     func lookupSaved(_ item: VocabularyItem, at now: Date = Date()) async throws -> DictionaryResult {
         var result = try await lookupCanonical(item.mdxLookupKey ?? item.lemma, at: now)
+        if result.headword != item.lemma { result.captureSpelling = item.lemma }
         let baseKey = EnglishTokenizer.lemma(item.lemma)
         if result.headword == item.lemma, baseKey != item.lemma, !result.reliableChinese.isEmpty {
             let base = try await lookupCanonical(baseKey, at: now)

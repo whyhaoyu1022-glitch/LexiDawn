@@ -136,12 +136,14 @@ enum DictionaryGrammar {
         return value == part || value.hasSuffix(" " + part)
     }
 
-    static func clearPart(surface: String, context: String) -> String? {
-        guard !context.isBlank, let range = context.range(of: surface, options: [.caseInsensitive, .literal]) else { return nil }
+    static func clearPart(surface: String, context: String, tokenOffset: Int? = nil) -> String? {
+        guard !context.isBlank else { return nil }
         let word = EnglishTokenizer.normalized(surface)
         guard word.hasSuffix("ed") || word.hasSuffix("ing") else { return nil }
         let tokens = EnglishTokenizer.tokens(in: context)
-        guard let index = tokens.firstIndex(where: { $0.range == NSRange(range, in: context) }) else { return nil }
+        let matches = tokens.indices.filter { EnglishTokenizer.normalized(tokens[$0].surface) == word }
+        let selected = tokenOffset.flatMap { offset in matches.first { tokens[$0].range.location == offset } }
+        guard let index = selected ?? (matches.count == 1 ? matches.first : nil), let range = Range(tokens[index].range, in: context) else { return nil }
         let previous = index > 0 ? EnglishTokenizer.normalized(tokens[index - 1].surface) : ""
         let tagger = NLTagger(tagSchemes: [.lexicalClass])
         tagger.string = context

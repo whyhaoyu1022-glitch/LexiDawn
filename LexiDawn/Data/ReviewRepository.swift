@@ -79,6 +79,7 @@ enum ReviewQueuePolicy {
     }
     func pendingCount(at now: Date) throws -> Int { try writer.read { try eligible(in: $0, at: now).count } }
     func prepare(cycleID: UUID, dailyLimit: Int, pairCount: Int, clozeCount: Int, at now: Date) async throws -> ReviewSessionView? {
+        try Task.checkCancellation()
         try VocabularyRepository(context: writer.context).normalizeIdentities()
         try archiveRetiredDictionarySession(cycleID: cycleID, at: now)
         try snapshotLegacyContexts(cycleID: cycleID)
@@ -295,7 +296,9 @@ enum ReviewQueuePolicy {
                     guard saved.contextKind == "reader", let article = articles.first(where: { $0.articleID == saved.articleID }) else { return nil }
                     return ClozeContext.relativeLocation(sentence: saved.sentence, in: article.rawContent, absoluteLocation: saved.tokenLocation)
                 }
-                var projection = ClozeContext.make(lemma: entry.lemma, surfaces: source.map { [$0.surface] + entry.surfaceForms } ?? entry.surfaceForms, sentence: source?.sentence, preferredLocation: relativeLocation)
+                var projection = ClozeContext.make(lemma: entry.lemma, surfaces: source.map { [$0.surface] + entry.surfaceForms } ?? entry.surfaceForms,
+                    sentence: source?.sentence, preferredLocation: relativeLocation,
+                    verifiedSurface: entry.dictionaryEntryID == nil ? nil : source?.surface)
                 var contextOrigin = source?.contextKind == "reader" ? "article" : source?.contextKind == "dictionary" ? "dictionary" : "saved-context"
                 var exampleID: String?
                 if projection.sentence == nil, BilingualMeaningPolicy.trusted(sense) {
@@ -376,6 +379,7 @@ enum ReviewQueuePolicy {
         }
     }
     func prepareExtra(dailyLimit: Int, pairCount: Int, clozeCount: Int, at now: Date) async throws -> ReviewSessionView? {
+        try Task.checkCancellation()
         try writer.read { try requireExtraAllowed(context: $0, at: now) }
         try archiveRetiredDictionarySession(cycleID: nil, at: now)
         if let saved = try extraSession() { return saved }

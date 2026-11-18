@@ -31,9 +31,11 @@ enum ClozeContext {
         let sentence: String?
         var targetRange: NSRange? = nil
     }
-    static func make(lemma: String, surfaces: [String], sentence: String?, preferredLocation: Int? = nil) -> Projection {
+    static func make(lemma: String, surfaces: [String], sentence: String?, preferredLocation: Int? = nil, verifiedSurface: String? = nil) -> Projection {
         guard let sentence, !sentence.isBlank else { return Projection(answer: lemma, sentence: nil) }
-        for surface in surfaces where EnglishTokenizer.lemma(surface) == lemma && !surface.isBlank {
+        for surface in surfaces where !surface.isBlank && (
+            EnglishTokenizer.lemma(surface) == lemma || EnglishTokenizer.dictionarySpelling(surface) == lemma || surface == verifiedSurface
+        ) {
             let matches = ranges(in: sentence, answer: surface)
             let selected = preferredLocation.flatMap { location in matches.first { $0.location == location } } ?? (matches.count == 1 ? matches.first : nil)
             if let selected { return Projection(answer: ["May", "US"].contains(lemma) ? lemma : EnglishTokenizer.normalized(surface), sentence: sentence, targetRange: selected) }
@@ -62,6 +64,14 @@ enum ClozeContext {
     }
     private static func ranges(in sentence: String, answer: String) -> [NSRange] {
         guard !answer.isEmpty else { return [] }
+        let words = answer.split(whereSeparator: \.isWhitespace)
+        if words.count > 1 {
+            let phrase = words.map { NSRegularExpression.escapedPattern(for: String($0)) }.joined(separator: #"\s+"#)
+            let wordEdge = #"[\p{L}\p{N}_'’‐-]"#
+            guard let pattern = try? NSRegularExpression(pattern: "(?<!" + wordEdge + ")" + phrase + "(?!" + wordEdge + ")",
+                options: .caseInsensitive) else { return [] }
+            return pattern.matches(in: sentence, range: NSRange(sentence.startIndex..<sentence.endIndex, in: sentence)).map(\.range)
+        }
         func wordEdge(_ character: Character) -> Bool { character.isLetter || character.isNumber || "_'’‐-".contains(character) }
         let options: String.CompareOptions = ["May", "US"].contains(answer) ? [] : [.caseInsensitive]
         var result: [NSRange] = [], search = sentence.startIndex..<sentence.endIndex

@@ -21,7 +21,7 @@ struct VocabularyListView: View {
                 Picker("词条类型", selection: $filter) { Text("全部").tag("all"); Text("单词").tag("word"); Text("短语").tag("phrase") }.pickerStyle(.segmented)
                 NavigationLink { VocabularyRecommendationView(learning: learning, continueToday: continueToday) } label: { Label("高级词汇与短语推荐", systemImage: "sparkles") }.accessibilityIdentifier("vocabulary-recommendations")
                 Section {
-                    Text("共 \(allItems.count) 条 · 待复习 \(allItems.filter { $0.dueAt.map { $0 <= now } ?? false }.count) · 逾期 \(allItems.filter { $0.dueAt.map { $0 < Calendar.current.startOfDay(for: now) } ?? false }.count)").font(.caption).foregroundStyle(.secondary)
+                    Text("共 \(allItems.count) 条 · 待复习 \(allItems.filter { $0.repetitions == 0 || ($0.dueAt.map { $0 <= now } ?? false) }.count) · 逾期 \(allItems.filter { $0.dueAt.map { $0 < Calendar.current.startOfDay(for: now) } ?? false }.count)").font(.caption).foregroundStyle(.secondary)
                     Picker("复习状态", selection: $status) { ForEach(VocabularyStatusFilter.allCases, id: \.self) { Text($0.rawValue).tag($0) } }.accessibilityIdentifier("vocabulary-status-filter")
                     Picker("排序", selection: $sort) { ForEach(VocabularySort.allCases, id: \.self) { Text($0.rawValue).tag($0) } }.accessibilityIdentifier("vocabulary-sort")
                 }
@@ -316,7 +316,7 @@ private struct VocabularyDraft: Codable {
 }
 struct VocabularyDetailView: View {
     let item: VocabularyItem
-    @ObservedObject var learning: LearningServices
+    let learning: LearningServices
     @StateObject private var annotation: VocabularyAnnotationModel
     @EnvironmentObject private var dependencies: AppDependencies
     @State private var theme = "system"

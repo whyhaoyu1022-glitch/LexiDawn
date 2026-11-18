@@ -25,19 +25,19 @@ SwiftUI 及 UIKit 控件提供呈现和交互。ViewModel/Service 管理请求�
 
 ## 发现与阅读
 
-`ArticleDiscoveryService` 统一协调今日、书库和探索。来源注册区分 RSS/API/列表和准入依据。HTML 提取器产生结构化块，`ContentRepository` 验证并提交正文和证据。失败留可诊断结果，部分成功已提交的数据保留。完整文章范围见[文章规范](spec-addendum-content-and-dictionary.md)。
+`ArticleDiscoveryService` 统一协调今日、书库和探索。来源注册区分 RSS/API/列表和准入依据。HTML 提取器产生结构化块，`ContentRepository` 验证并提交正文和证据。失败留可诊断结果，部分成功已提交的数据保留。自动检查由根视图的前台状态触发，文章与词汇推荐各自使用持久时间戳；推荐快照绑定词典解析版本。完整文章范围见[文章规范](spec-addendum-content-and-dictionary.md)。
 
 `ArticleLearningAccess` 统一处理周期、读者路径、书库标记和历史的阅读门禁。原生 TextKit 渲染文章，`ReaderTextProjection` 维护展示到原文 UTF-16 偏移。词元辅助功能由原生桥接提供。短的词典英文例句使用 SwiftUI 富文本点击，复用同一分词和查词模型。
 
 ## 词典与生词
 
-`DictionaryLookupService` 调用 `BundledMDXDictionaryProvider` actor。C 读引擎和 zlib 按需读取记录块，系统 libxml2 解析 HTML 字段。Swift 首次查询校验 SHA 并建立索引，内存缓存最多 128 个查询词。缓存绑定 MDX SHA 和 HTML 解析版本（当前 `html-9`）。同 SHA 的旧派生记录号可帮助定位，显示数据须经当前解析版本读取。支持范围见[实际文件格式](<../Dictionary Data/README.md>)。
+`DictionaryLookupService` 调用 `BundledMDXDictionaryProvider` actor。C 读引擎和 zlib 按需读取记录块，系统 libxml2 解析 HTML 字段。Swift 首次查询校验 SHA 并建立索引，内存缓存最多 128 个查询词。缓存绑定 MDX SHA 和 HTML 解析版本（当前 `html-10`）。同 SHA 的旧派生记录号可帮助定位，显示数据须经当前解析版本读取。支持范围见[实际文件格式](<../Dictionary Data/README.md>)。
 
-详情、简明浮层、生词、推荐和复习共享词义身份。领域策略、服务和 Repository 同时审核个人中文写入资格。变更义项会保存修订历史，笔记独立保存。旧第三方缓存与旧个人文本留历史。原有解析或故障夹具属于测试路径，Release 的词典查询指向内置 MDX。
+详情、简明浮层、生词、推荐和复习共享词义身份。查词时区分 MDX 独立词形和别名，并用绝对原文偏移限定短语。生词记录保存规范词形、MDX 查询键和选中的义项；旧缓存继续按版本隔离。领域策略、服务和 Repository 同时审核个人中文写入资格。变更义项会保存修订历史，笔记独立保存。旧第三方缓存与旧个人文本留历史。原有解析或故障夹具属于测试路径，Release 的词典查询指向内置 MDX。
 
 ## 复习
 
-`ReviewEntryCoordinator` 统一预检，`ReviewRepository` 保存题组与冻结答案，`MatchingBoard` 负责真实连线布局，`FSRSScheduler` 保存算法版本 `fsrs-4.5-lexidawn-1` 和可重放的评分证据。一次提交包含答题、日志、排程和关联周期变化。事件重复提交幂等，已完成会话不能被较旧的结果覆盖。额外复习使用自己的会话 ID 和事件域。
+`ReviewEntryCoordinator` 统一预检，`ReviewRepository` 保存题组与冻结答案，`MatchingBoard` 负责真实连线布局，`FSRSScheduler` 保存算法版本 `fsrs-4.5-lexidawn-1` 和可重放的评分证据。一次提交包含答题、日志、排程和关联周期变化。事件重复提交幂等，已完成会话不能被较旧的结果覆盖。匹配题按已存位置划分连线板，整批共同遵循每日总量与当前周期。额外复习由用户开启，使用自己的会话 ID 和事件域。
 
 ## 验证入口
 
