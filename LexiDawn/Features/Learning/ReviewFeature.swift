@@ -53,7 +53,8 @@ struct ReviewPracticeContent: View {
                         ContentUnavailableView("本次复习已保存", systemImage: "checkmark.seal.fill", description: Text("完成 \(session.matching.filter(\.completed).count) 个词 · 延期 \(session.deferredCount) 个词")).accessibilityIdentifier("review-completed")
                         HStack {
                             Button("返回") { if let returnToday { returnToday() } else { dismiss() } }.buttonStyle(.bordered)
-                            Button("继续") { Task { await load() } }.buttonStyle(.borderedProminent)
+                            Button("继续") { Task { await load(requestExtra: true) } }.buttonStyle(.borderedProminent)
+                                .accessibilityIdentifier("continue-review")
                         }.frame(maxWidth: .infinity)
                     } else if !session.matchingComplete {
                         if let board = session.matching.first(where: { !$0.completed })?.matchingBoard {
@@ -77,7 +78,7 @@ struct ReviewPracticeContent: View {
                     DisclosureGroup("查看本次复习记录") { ForEach(schedules, id: \.self) { Text($0).font(.footnote).accessibilityIdentifier("review-next-due") } }
                 }
                 if extraEmpty { Text(deferredResolved ? "本次延期的词会在后续复习中再次出现。" : "额外复习暂无到期词条，刚完成的题组不会立即重复。").font(.footnote) }
-                if !loading, message == nil, session?.completedAt != nil || emptyResolved {
+                if !loading, message == nil, emptyResolved {
                     Button("额外复习", systemImage: "plus.circle") { Task { await load(requestExtra: true) } }
                         .buttonStyle(.bordered).accessibilityIdentifier("start-extra-review")
                 }

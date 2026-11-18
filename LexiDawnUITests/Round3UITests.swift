@@ -236,6 +236,12 @@ final class Round3UITests: XCTestCase {
         }
         XCTAssertTrue(app.descendants(matching: .any)["review-completed"].firstMatch.waitForExistence(timeout: 10))
         capture("R3-E03", app: app, feature: "extra-review", state: "extra-results-and-next-due-saved", origin: "explicit-extra-review-fixture-real-domain-evidence")
+        XCTAssertFalse(app.buttons["start-extra-review"].exists)
+        let continueReview = app.buttons["continue-review"]
+        XCTAssertTrue(continueReview.exists); continueReview.tap()
+        XCTAssertTrue(app.staticTexts["额外复习暂无到期词条，刚完成的题组不会立即重复。"].waitForExistence(timeout: 15))
+        XCTAssertFalse(app.staticTexts["extra-review-label"].exists)
+        capture("R3-E05", app: app, feature: "extra-review", state: "explicit-continue-checks-remaining-queue-without-repeating-completed-words", origin: "explicit-extra-review-fixture-real-domain-evidence")
         app.tabBars.buttons["探索"].tap(); XCTAssertFalse(app.staticTexts["先完成必做，再自由探索"].exists)
         capture("R3-E04", app: app, feature: "extra-review", state: "daily-unlock-unchanged-after-extra-session", origin: "explicit-extra-review-fixture-real-domain-evidence")
     }
