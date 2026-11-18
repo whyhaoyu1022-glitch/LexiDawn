@@ -17,8 +17,15 @@
 | 输入结束与自动保存 | 去掉自定义完成输入按钮。失焦、隐藏键盘和离页继续提交，与输入法合成和失败草稿兼容。 | 设置、个人义项及笔记失败恢复 UI |
 | 每日上限、大量新词和旧词复习 | 单组连线与每日总量独立。有 12 个合格词且释义可区分时，两组各 6。同释义分开到不同组。已保存的旧会话恢复原先的题组。到期旧词按到期先后，新词按加入先后；混合积压时给新词预留约四分之一，其余词留到后续周期。已经到期的准确标记为已到期，答题后按实际时间保存下一次到期。 | `testFiftyNewWordsAndDueRepetitionsDoNotCollapseDailyBudget`、`testDailyCapTwelveResumesTwoBoardsAndSchedulesEachWordOnce` |
 
-## 当前验证
+## 验证记录
 
-- 代码 `da94ab4651518c2300bf8bf690aeb306b3e75104`。宿主恢复及完整扫描通过。分包异常测试 8 项；MDX 2.0、UTF-8、38,774,534 bytes；校验 203,181 条索引记录及别名链。SHA-256 为 `095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443`。
-- [受影响 macOS Actions](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44319154099)首批 App 与全部测试目标完成编译。该专项包含 Round 4 核心与受影响原生 UI，编译通过后仍需完成用例。
-- 本批的长词条滚动、音频与实际 iOS 27 安装待目标设备验证。
+| 提交 | 实际结果 | 证据 |
+|---|---|---|
+| `da94ab4` | 56 项核心 XCTest 和 9 项受影响 XCUITest 通过。 | [专项运行](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44319154099) |
+| `946d418` | 57 项核心 XCTest 和 10 项受影响 XCUITest 通过。原生截图包含 applied 与 apply 的上下顺序、整段短语和移除既有词条。 | [专项运行](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44321906439) · [专项截图](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44321906439/artifacts/14436208453) |
+| `5c1cd14` | 59 项核心 XCTest 中有一项失败。真实 MDX 的 `take account of` 和 `take sth into account` 共用义项，此版本只识别第一个标签。 | [专项运行](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44323377594) |
+| `6df100d` | 修正共用义项的别名身份，先重跑失败的真实 MDX 用例。 | [单用例复跑](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44325053234) |
+
+宿主恢复与完整扫描通过，分包异常测试 8 项。字典为 MDX 2.0、UTF-8、38,774,534 bytes，共校验 203,181 条索引记录及别名链。SHA-256 为 `095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443`。
+
+自动化使用 Xcode 26.6 与 iOS 26.5 Simulator。长词条滚动性能、系统发音和覆盖安装仍需用本批 IPA 在 iOS 27 设备复测。
