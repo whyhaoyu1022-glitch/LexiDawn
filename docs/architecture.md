@@ -31,7 +31,7 @@ SwiftUI 及 UIKit 控件提供呈现和交互。ViewModel/Service 管理请求�
 
 ## 词典与生词
 
-`DictionaryLookupService` 调用 `BundledMDXDictionaryProvider` actor。C 读引擎和 zlib 按需读取记录块，系统 libxml2 解析 HTML 字段。Swift 首次查询校验 SHA 并建立索引，内存缓存最多 128 个查询词。缓存绑定 MDX SHA 和 HTML 解析版本（当前 `html-11`）。同 SHA 的旧派生记录号可帮助定位，显示数据须经当前解析版本读取。支持范围见[实际文件格式](<../Dictionary Data/README.md>)。
+`DictionaryLookupService` 调用 `BundledMDXDictionaryProvider` actor。C 读引擎和 zlib 按需读取记录块，系统 libxml2 解析 HTML 字段。Swift 首次查询校验 SHA 并建立索引，内存缓存最多 128 个查询词。缓存绑定 MDX SHA 和 HTML 解析版本（当前 `html-12`）。同 SHA 的旧派生记录号可帮助定位，显示数据须经当前解析版本读取。支持范围见[实际文件格式](<../Dictionary Data/README.md>)。
 
 详情、简明浮层、生词、推荐和复习共享词义身份。查词时区分 MDX 独立词形和别名，并用绝对原文偏移限定短语。生词记录保存规范词形、MDX 查询键和选中的义项；旧缓存继续按版本隔离。领域策略、服务和 Repository 同时审核个人中文写入资格。变更义项会保存修订历史，笔记独立保存。旧第三方缓存与旧个人文本留历史。原有解析或故障夹具属于测试路径，Release 的词典查询指向内置 MDX。
 

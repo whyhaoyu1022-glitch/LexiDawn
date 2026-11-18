@@ -37,7 +37,7 @@ enum MDXEntryIdentity {
 actor BundledMDXDictionaryProvider: DictionaryProvider {
     static let sourceName = "内置 MDX"
     static let sourceSHA = "095e9a98a95ec2a8ce7f4489fa3f338891aa29abce20e88e38ca2c5b117ba443"
-    static let sourceVersion = sourceSHA + "-html-11"
+    static let sourceVersion = sourceSHA + "-html-12"
     private let resource: URL?
     private var reader: OpaquePointer?
     private var index: [String: [Int]] = [:]
@@ -334,14 +334,18 @@ enum MDXEntryParser {
                      node.ancestor(["t-x-g-blk"])?.descendants("t-cf").map(\.text).joined(separator: " · ") ?? "")
                 }.filter { !$0.0.isEmpty }
                 let phrase = definition.ancestor(["t-pv-g", "t-idm-g", "t-id-g"])
-                let phraseHead = phrase.flatMap { ($0.descendants("t-pv") + $0.descendants("t-idm") + $0.descendants("t-id")).first?.text }
+                let phraseHeads = phrase.map { ($0.descendants("t-pv") + $0.descendants("t-idm") + $0.descendants("t-id")).map(\.text) } ?? []
+                let phraseIdentities = phraseHeads.map(MDXPhraseSpelling.identity)
+                let requestedKey = EnglishTokenizer.normalized(MDXPhraseSpelling.identity(requested))
+                let phraseIdentity = phraseIdentities.first { EnglishTokenizer.normalized($0) == requestedKey } ?? phraseIdentities.first
                 let localLabels = ["t-label", "t-gram", "t-reg", "t-geo", "t-use"].flatMap { scope.descendants($0).map(\.text) }
                 let groupLabels = phrase?.children.first(where: { $0.has("t-top-g") }).map { top in
                     ["t-label", "t-gram", "t-reg", "t-geo", "t-use"].flatMap { top.descendants($0).map(\.text) }
                 } ?? []
-                let phraseTemplate = phraseHead.map(MDXPhraseSpelling.display)
-                let phraseIdentity = phraseHead.map(MDXPhraseSpelling.identity)
-                let grammarLabel = phraseTemplate != phraseIdentity ? phraseTemplate.map { [$0] } ?? [] : []
+                let grammarLabel = zip(phraseHeads, phraseIdentities).compactMap { raw, identity -> String? in
+                    let label = MDXPhraseSpelling.display(raw)
+                    return label == identity ? nil : label
+                }
                 let labels = Array(NSOrderedSet(array: grammarLabel + localLabels + groupLabels)) as? [String] ?? []
                 let pairedCollocations = Set(examples.flatMap { $0.2.components(separatedBy: " · ") }.filter { !$0.isEmpty })
                 let collocations = scope.descendants("t-cf").map(\.text).filter { !pairedCollocations.contains($0) }
@@ -354,6 +358,8 @@ enum MDXEntryParser {
                     usageLabels: labels.isEmpty ? nil : labels, relatedPhrases: collocations.isEmpty ? nil : collocations,
                     sourceRevision: BundledMDXDictionaryProvider.sourceVersion, originKind: "mdx")
                 sense.lexicalHeadword = phraseIdentity ?? head
+                let aliases = phraseIdentities.filter { $0 != phraseIdentity }
+                sense.lexicalAliases = aliases.isEmpty ? nil : aliases
                 sense.sectionKind = phrase?.has("t-pv-g") == true ? "phrasalVerb" : phrase != nil ? "idiom" : nil
                 sense.policyVersion = BilingualMeaningPolicy.version
                 sense.entryGroupID = recordID + "|" + sourceID

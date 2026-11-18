@@ -21,8 +21,7 @@ enum BilingualMeaningPolicy {
         // A main record can legitimately be an alias of another spelling. A
         // nested idiom or phrasal verb has its own separate lexical identity.
         guard sense.sectionKind != nil else { return true }
-        guard let lexical = sense.lexicalHeadword else { return false }
-        return EnglishTokenizer.normalized(lexical) == EnglishTokenizer.normalized(headword)
+        return sense.matchesHeadword(headword)
     }
     static func trustedSenses(_ senses: [DictionarySense], headword: String) -> [DictionarySense] {
         senses.filter { trusted($0) && belongsToEntry($0, headword: headword) }

@@ -540,6 +540,12 @@ struct DictionarySense: Codable, Equatable, Identifiable, Sendable {
     var sourceRevision: String? = nil
     var originKind: String? = nil
     var lexicalHeadword: String? = nil
+    var lexicalAliases: [String]? = nil
+    func matchesHeadword(_ word: String) -> Bool {
+        let key = EnglishTokenizer.normalized(word)
+        if lexicalHeadword.map(EnglishTokenizer.normalized) == key { return true }
+        return lexicalAliases?.contains { EnglishTokenizer.normalized($0) == key } == true
+    }
     var sectionKind: String? = nil
     var policyVersion: String? = nil
     var entryGroupID: String? = nil
@@ -687,7 +693,7 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
                 let indexed: DictionaryResult?
                 do { indexed = try await previewCanonical(key) }
                 catch MDXDictionaryError.unmatchedSubentry { indexed = nil }
-                if let indexed, indexed.reliableChinese.contains(where: { $0.lexicalHeadword.map(EnglishTokenizer.normalized) == key }) {
+                if let indexed, indexed.reliableChinese.contains(where: { $0.matchesHeadword(key) }) {
                     return (try await lookupCanonical(key, at: now), candidate)
                 }
                 // The MDX uses parent entries for some phrasal verbs and idioms.
@@ -698,10 +704,10 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
                     }
                     guard let parent = parents[parentKey] else { continue }
                     let senses = parent.senses + (parent.baseEntry?.senses ?? [])
-                    if let nested = senses.first(where: {
-                        $0.lexicalHeadword.map(EnglishTokenizer.normalized) == key && $0.sectionKind != nil && BilingualMeaningPolicy.trusted($0)
-                    })?.lexicalHeadword {
-                        let entry = try await subentry(nested, from: parent, at: now)
+                    if senses.contains(where: {
+                        $0.matchesHeadword(key) && $0.sectionKind != nil && BilingualMeaningPolicy.trusted($0)
+                    }) {
+                        let entry = try await subentry(key, from: parent, at: now)
                         if !entry.reliableChinese.isEmpty { return (entry, candidate) }
                     }
                 }
@@ -753,7 +759,7 @@ enum CEDICTDictionaryProvider { static let sourceVersion = "2026-10-30-reverse-v
         return senses
     }
     func subentry(_ headword: String, from parent: DictionaryResult, at now: Date = Date()) async throws -> DictionaryResult {
-        let candidates = (parent.senses + (parent.baseEntry?.senses ?? [])).filter { $0.lexicalHeadword?.caseInsensitiveCompare(headword) == .orderedSame }
+        let candidates = (parent.senses + (parent.baseEntry?.senses ?? [])).filter { $0.matchesHeadword(headword) }
         if candidates.isEmpty, parent.senses.contains(where: { sense in
             ((sense.seeAlso ?? []) + (sense.synonyms ?? []) + (sense.antonyms ?? [])).contains { $0.caseInsensitiveCompare(headword) == .orderedSame }
         }) { return try await lookup(headword, at: now) }
