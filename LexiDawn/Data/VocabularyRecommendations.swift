@@ -18,7 +18,8 @@ struct RecommendedVocabulary: Identifiable, Codable {
         guard try allowed() else { throw LearningError.invalid("请先完成当前必做任务，再查看词汇推荐。") }
         let saved = Set(try vocabulary.entries().map(\.lemma))
         let originals = try content.library().filter(\.readable).prefix(5).map { try content.read(articleID: $0.id, at: Date()) }
-        let candidates = VocabularyRecommendationRules.candidates(in: originals, excluding: saved)
+        let sources = originals.map { VocabularyRecommendationSource(id: $0.id, body: $0.body, topics: $0.topics) }
+        let candidates = try await VocabularyRecommendationRules.prepare(from: sources, excluding: saved)
         var count = 0, failures = 0
         for candidate in candidates {
             try Task.checkCancellation()

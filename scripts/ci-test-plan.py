@@ -14,16 +14,11 @@ FOCUSED = {
         'LexiDawnUITests/LexiDawnUITests/testRound2UserImportsArticleThroughProductionForm',
         'LexiDawnUITests/Round3UITests/testPersonalOriginalUpdateFormAndChangedVersionRestoreNativeReader',
     ],
-    'fix-personal': [
-        'LexiDawnUITests/Round4UITests/testActualOfflineSearchCreatesStructuredPersonalEntryAndRestoresAfterRestart',
-        'LexiDawnUITests/Round4UITests/testEnglishOnlyAllowsStructuredPersonalAutosaveAndNotesRestore',
-    ],
+    'fix-first-launch': ['LexiDawnUITests/LexiDawnUITests/testGalleryProductionFirstLaunchAndRFCReading'],
     'fix-live': [
-        'LexiDawnUITests/LexiDawnUITests/testGalleryProductionFirstLaunchAndRFCReading',
         'LexiDawnUITests/Round3UITests/testLiveColdStartImportReadingLookupPersonalMeaningReviewAndRestart',
         'LexiDawnUITests/Round3UITests/testLiveMultipleSourcesLibraryFiltersAndCompleteLocalReaderEvidence',
     ],
-    'fix-live-small': ['LexiDawnUITests/Round3UITests/testLiveColdStartImportReadingLookupPersonalMeaningReviewAndRestart'],
 }
 
 
@@ -43,10 +38,12 @@ def plan():
         if 'LiveColdStart' in name: return 100
         return 50
     groups, loads = [[] for _ in range(4)], [0] * 4
-    for name in sorted(methods, key=lambda x: (-weight(x), x)):
+    first_launch = 'LexiDawnUITests/LexiDawnUITests/testGalleryProductionFirstLaunchAndRFCReading'
+    for name in sorted((m for m in methods if m != first_launch), key=lambda x: (-weight(x), x)):
         index = min(range(4), key=lambda i: (loads[i], i))
         groups[index].append(name); loads[index] += weight(name)
     result = {f'full-{i + 1}': sorted(values) for i, values in enumerate(groups)}
+    result['full-first-launch'] = [first_launch]
     base = ['testReaderBodySurvivesTenRotationsAndWordRemainsTappable', 'testMatchingDrawsVisibleLinesDisablesBothEndsAndRotates', 'testLargeDynamicTypeThreeThemesRemainReadableInLandscape']
     prefix = 'LexiDawnUITests/Round3UITests/'
     result['large'] = [prefix + name for name in base]

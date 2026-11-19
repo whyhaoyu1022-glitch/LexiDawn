@@ -261,8 +261,15 @@ jobs:
           print('Release built; explicit screenshot/fault fixture markers excluded.')
           PYRELEASE
       - name: Boot unit simulator
-        if: ${{ !contains(github.event.head_commit.message, '[round4-fix-ui]') || contains(github.event.head_commit.message, '[round4-final]') }}
+        if: ${{ !contains(github.event.head_commit.message, '[round4-fix-ui]') || contains(github.event.head_commit.message, '[round4-final]') || contains(github.event.head_commit.message, '[recommendation-worker]') }}
         run: bash scripts/ci-simulator.sh iPhone-17-Pro
+      - name: Check recommendation preparation and cancellation only
+        if: ${{ contains(github.event.head_commit.message, '[recommendation-worker]') && contains(github.event.head_commit.message, '[round4-fix-ui]') && !contains(github.event.head_commit.message, '[round4-final]') }}
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          TEST_RUN_FILE="$(python3 -c 'import os,pathlib; print(next((pathlib.Path(os.environ["RUNNER_TEMP"])/"LexiDawn-derived/Build/Products").glob("*.xctestrun")))')"
+          xcodebuild test-without-building -xctestrun "$TEST_RUN_FILE" -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/LexiDawn-unit.xcresult" -only-testing:LexiDawnTests/Round4Tests/testRecommendationPreparationMatchesRulesAndCancellation 2>&1 | tee "${RUNNER_TEMP}/LexiDawn-unit.log"
       - name: Run every unit, migration and real network test
         if: ${{ !contains(github.event.head_commit.message, '[round4-fix-ui]') || contains(github.event.head_commit.message, '[round4-final]') }}
         timeout-minutes: 12
@@ -324,7 +331,7 @@ jobs:
           bash scripts/ci-prepare.sh
           bash scripts/ci-simulator.sh '${{ matrix.device }}'
       - name: Execute complete assigned UI shard without rebuilding
-        timeout-minutes: 35
+        timeout-minutes: ${{ contains(matrix.suite, 'first-launch') && 8 || 35 }}
         run: |
           set -euo pipefail
           python3 scripts/ci-test-plan.py selectors '${{ matrix.suite }}' > "${RUNNER_TEMP}/ci-tests.txt"

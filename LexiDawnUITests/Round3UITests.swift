@@ -83,7 +83,7 @@ final class Round3UITests: XCTestCase {
         let keyboard = app.keyboards.firstMatch
         XCTAssertTrue(keyboard.exists)
         XCTAssertFalse(app.buttons["finish-article-input"].exists)
-        app.collectionViews["article-import-form"].swipeUp()
+        dismissArticleEditingKeyboard(app)
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: keyboard); waitForExpectations(timeout: 5)
         let form = app.collectionViews["article-import-form"]
         XCTAssertTrue(form.exists)

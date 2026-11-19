@@ -9,7 +9,7 @@
 | 文档与仓库完整性 | 检查文档链接，核对数据清单、编译与脚本依赖路径，用 Git diff 证明修改范围。文档维护提交可用 `[skip ci]`。 |
 | 宿主 MDX | `python3 scripts/test-bundled-dictionary.py`。复原真实分包及哈希，验证缺包、缺块及不一致边界，并扫描真实索引与记录。 |
 | XCTest | 学习周期、SwiftData 磁盘升级和事务失败、真实 MDX、文章网络、词义资格、组题与 FSRS。真实资源测试、确定性故障注入和原站请求分别报告。 |
-| XCUITest | iPhone 17 Pro 四组全量，iPhone SE 第三代与 Pro Max 专项。覆盖正常、错误、持久化、旋转/动态字体、导出及复习闭环，保留原始 PNG 与 xcresult。 |
+| XCUITest | iPhone 17 Pro 四组全量及独立生产首启，iPhone SE 第三代与 Pro Max 专项。覆盖正常、错误、持久化、旋转/动态字体、导出及复习闭环，保留原始 PNG 与 xcresult。 |
 | Release / IPA | Release 兼容构建检查旧词典网络端点与调试场景排除。实际 IPA 检查 MDX、架构、Info.plist、图标、无签名以及包完整性。 |
 
 ## CI 范围
@@ -23,7 +23,7 @@
 
 [2026-11-18 问题对照和验证结果](reviews/round-4-device-feedback-2026-11-18.md)。受影响核心与 UI 选择器使用 `[round4-core] [device-fix]`。新用例覆盖独立词形、短语与音节点、每 2 小时时间边界、12 词两组持久缓存、取消过滤与重复查词后的明确移除。
 
-当前源码包含 245 个 XCTest、67 个主设备 XCUITest，另有 SE 7 次和 Pro Max 3 次设备复跑。数量只描述范围，实际通过结果以具体运行日志为准。`[device-phrase]` 仅重跑短语语法槽和音节点独立词形迁移；当前 `[round4-fix-ui]` 只重跑全量发现失败的 8 个主设备方法及 SE 冷启动，按导入、个人词条和真实网络分组。Simulator 启动有两次上限和诊断，启动失败不计作测试通过。
+当前源码包含 246 个 XCTest、67 个主设备 XCUITest，另有 SE 7 次和 Pro Max 3 次设备复跑。数量只描述范围，实际通过结果以具体运行日志为准。`[device-phrase]` 仅重跑短语语法槽和音节点独立词形迁移；当前 `[round4-fix-ui]` 只重跑尚未通过的 6 个主设备方法，按导入、独立生产首启和真实网络分组。`[recommendation-worker]` 同时只执行新增的候选准备与取消 XCTest。Simulator 启动有两次上限和诊断，启动失败不计作测试通过。
 
 ## 真机验收
 

@@ -4,6 +4,28 @@ import SwiftData
 
 @MainActor final class Round4Tests: XCTestCase {
     let now = Date(timeIntervalSince1970: 1_798_300_000)
+    func testRecommendationPreparationMatchesRulesAndCancellation() async throws {
+        let dependencies = try AppDependencies.makeLearningInMemory()
+        let learning = try XCTUnwrap(dependencies.learning)
+        let body = String(repeating: "Cooperation supports thoughtful architecture and responsible administration. The investigation improves communication. ", count: 200)
+        let id = try learning.content.importArticle(.init(title: "Original candidate preparation regression", body: body,
+            source: "Original XCTest author", rightsConfirmed: true), at: now)
+        let article = try learning.content.read(articleID: id, at: now)
+        let source = VocabularyRecommendationSource(id: article.id, body: article.body, topics: article.topics)
+        let expected = VocabularyRecommendationRules.candidates(in: [article], excluding: ["administration"], limit: 8)
+        let prepared = try await VocabularyRecommendationRules.prepare(from: [source], excluding: ["administration"], limit: 8)
+        XCTAssertFalse(prepared.isEmpty)
+        XCTAssertEqual(prepared.map(\.id), expected.map(\.id))
+        XCTAssertEqual(prepared.map(\.surface), expected.map(\.surface))
+        XCTAssertEqual(prepared.map(\.range), expected.map(\.range))
+        XCTAssertEqual(prepared.map(\.sentence), expected.map(\.sentence))
+        XCTAssertFalse(prepared.contains { $0.lemma == "administration" })
+        let cancelled = Task { try await VocabularyRecommendationRules.prepare(from: [source], excluding: []) }
+        cancelled.cancel()
+        do { _ = try await cancelled.value; XCTFail("Cancelled preparation must not publish candidates") }
+        catch is CancellationError { }
+        catch { XCTFail("Unexpected preparation error: \(error)") }
+    }
     func testForegroundRefreshTwoHourBoundaryAndClockRollback() {
         let beginning = Date(timeIntervalSince1970: 1_000)
         XCTAssertTrue(ForegroundRefreshPolicy.shouldCheck(last: nil, now: beginning))

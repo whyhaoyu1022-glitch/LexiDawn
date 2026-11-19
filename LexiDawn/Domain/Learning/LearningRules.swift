@@ -180,24 +180,55 @@ struct ArticleLearningAccess {
 }
 
 
-struct VocabularyRecommendationCandidate: Identifiable, Codable {
+struct VocabularyRecommendationCandidate: Identifiable, Codable, Sendable {
     var id: String { lemma }
     let lemma: String, surface: String, sentence: String, articleID: String, topic: String
     let score: Int
     let range: NSRange
 }
+struct VocabularyRecommendationSource: Sendable {
+    let id: String
+    let body: String
+    let topics: [String]
+}
 enum VocabularyRecommendationRules {
     static func candidates(in articles: [ReadableArticle], excluding saved: Set<String>, limit: Int = 16) -> [VocabularyRecommendationCandidate] {
+        candidates(from: articles.map { .init(id: $0.id, body: $0.body, topics: $0.topics) }, excluding: saved, limit: limit, cancelled: { false })
+    }
+    static func prepare(from articles: [VocabularyRecommendationSource], excluding saved: Set<String>, limit: Int = 16) async throws -> [VocabularyRecommendationCandidate] {
+        try Task.checkCancellation()
+        let worker = Task.detached(priority: .utility) {
+            try Task.checkCancellation()
+            let result = candidates(from: articles, excluding: saved, limit: limit, cancelled: { Task.isCancelled })
+            try Task.checkCancellation()
+            return result
+        }
+        return try await withTaskCancellationHandler {
+            let result = try await worker.value
+            try Task.checkCancellation()
+            return result
+        } onCancel: { worker.cancel() }
+    }
+    private static func candidates(from articles: [VocabularyRecommendationSource], excluding saved: Set<String>, limit: Int, cancelled: () -> Bool) -> [VocabularyRecommendationCandidate] {
         var result: [String: VocabularyRecommendationCandidate] = [:]
+        var lemmas: [String: String] = [:]
+        func cachedLemma(_ surface: String) -> String {
+            if let value = lemmas[surface] { return value }
+            let value = EnglishTokenizer.lemma(surface)
+            lemmas[surface] = value
+            return value
+        }
         let phraseStarts: Set<String> = ["take", "carry", "look", "play", "term", "result", "learning"]
         for article in articles {
+            if cancelled() { return [] }
             let tokens = EnglishTokenizer.tokens(in: article.body)
             for token in tokens.prefix(2500) {
-                let lemma = EnglishTokenizer.lemma(token.surface)
+                if cancelled() { return [] }
+                let lemma = cachedLemma(token.surface)
                 var forms = lemma.count >= 7 && lemma.count <= 28 ? [lemma] : []
                 if phraseStarts.contains(lemma) { forms += EnglishPhraseRecognizer.phrases(around: token.surface, sentence: token.sentence) }
                 for form in forms {
-                    let key = EnglishTokenizer.lemma(form)
+                    let key = cachedLemma(form)
                     guard !saved.contains(key), result[key] == nil else { continue }
                     let selected = form == lemma ? token : EnglishPhraseRecognizer.token(for: form, around: token, sourceText: article.body)
                     guard let selected else { continue }

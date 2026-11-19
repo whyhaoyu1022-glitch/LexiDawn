@@ -328,7 +328,7 @@ extension LexiDawnUITests {
         let keyboard = app.keyboards.firstMatch
         XCTAssertTrue(keyboard.exists)
         XCTAssertFalse(app.buttons["finish-article-input"].exists)
-        app.collectionViews["article-import-form"].swipeUp()
+        dismissArticleEditingKeyboard(app)
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: keyboard); waitForExpectations(timeout: 5)
         let rights = app.switches["import-rights"]; try revealLearning(rights, in: app); tapNativeSwitch(rights)
         XCTAssertEqual(rights.value as? String, "1")
@@ -496,7 +496,7 @@ extension LexiDawnUITests {
         let keyboard = app.keyboards.firstMatch
         XCTAssertTrue(keyboard.exists)
         XCTAssertFalse(app.buttons["finish-article-input"].exists)
-        app.collectionViews["article-import-form"].swipeUp()
+        dismissArticleEditingKeyboard(app)
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: keyboard); waitForExpectations(timeout: 5)
         capture("F06-import-owned-text-preview", in: app)
         try revealLearning(save, in: app); save.tap()
@@ -688,3 +688,23 @@ extension LexiDawnUITests {
     }
 }
 
+
+// Drag only inside the visible form, above the software keyboard. A collection
+// view's default swipe may start on the keyboard and never reach its scroll view.
+func dismissArticleEditingKeyboard(_ app: XCUIApplication) {
+    let form = app.collectionViews["article-import-form"]
+    let keyboard = app.keyboards.firstMatch
+    let count = app.staticTexts["import-word-count"]
+    for _ in 0..<3 {
+        guard keyboard.exists else { return }
+        if count.exists && count.isHittable { count.tap(); continue }
+        let top = max(form.frame.minY, app.navigationBars.firstMatch.frame.maxY) + 8
+        let bottom = min(form.frame.maxY, keyboard.frame.minY) - 8
+        XCTAssertGreaterThan(bottom, top)
+        guard bottom > top else { return }
+        let origin = app.coordinate(withNormalizedOffset: .zero)
+        let x = form.frame.minX + form.frame.width * 0.8
+        origin.withOffset(CGVector(dx: x, dy: bottom - 6)).press(forDuration: 0.05,
+            thenDragTo: origin.withOffset(CGVector(dx: x, dy: top + 6)))
+    }
+}
