@@ -86,3 +86,25 @@
 `916f8cf` 诊断产物 artifact `14537771132`，SHA-256 `cb184ca6431b1c58fda9750ce5f3c3e3634c20c298b4bffc5d64b70600693670`。实际录屏在查词完成后正确显示“暂无英中释义”和撤销、详情按钮。旧测试仍按已移除的 medium sheet 调用整页拖动，随后关闭了锚定浮窗，导致误报控件不可达。
 
 测试改为等待真实查词结束，并核对空结果文字具有可见面积且在屏幕内、加载结束、没有词典资源错误、详情与撤销按钮可命中。原导入校验、键盘消失、持久保存和阅读断言均保留。下一轮仅复跑此方法，未再次执行已经通过的两项导入或其他专项。
+
+`949fb16` 的[单方法专项 44540123512](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44540123512) 仅运行 `testGalleryImportEmptyValidationAndOwnedArticle`，完整通过（244.914 秒）；该轮编译、单方法 UI 与执行完整性门禁均通过。
+
+### 本批失败项的专项回归汇总
+
+以下为跨提交的专项结果，不替代最终同一 SHA 的全量验证。
+
+| 范围 | 提交及运行 | 结果 |
+|---|---|---|
+| 两项个人词条与自动保存 | `0022a2b` · [44428395223](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44428395223) | 2/2 通过 |
+| SE 冷启动、复习与重启 | `0022a2b` · 同上 | 1/1 通过 |
+| 生产首启与真实 RFC 阅读 | `a9e934e` · [44532629842](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44532629842) | 1/1 通过 |
+| 主设备真实网络冷启动与多来源本地阅读 | `a9e934e` · 同上 | 2/2 通过 |
+| 普通文章导入与原文版本更新 | `916f8cf` · [44536257014](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44536257014) | 2/2 通过 |
+| 图库导入与空结果原生浮窗 | `949fb16` · [44540123512](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44540123512) | 1/1 通过 |
+| 推荐后台准备与取消 XCTest | `a9e934e` · 44532629842 | 1/1 通过 |
+
+### 最终全量请求与本轮暂停点
+
+原全量失败的 9 次 UI 执行均已有后续通过的专项记录；新增推荐准备与取消 XCTest 也通过。此次直接在 main 提交 `[round4-final]`，请求一次同一 SHA 的完整验证：246 个 XCTest、67 个主设备 XCUITest、SE 7 次、Pro Max 3 次，以及 Debug/Release 构建、原生截图证据汇总和完整 MDX 的未签名 iPhoneOS IPA 构建。全部主设备测试保留且各执行一次，生产首启独立分组。
+
+此处仅登记全量请求，不登记尚未产生的通过结果。按负责人最新指令，确认任务启动后暂停，等待负责人反馈；暂不下载整理新一批最终截图包或交付新 IPA。历史成功包与失败诊断包均不得冒充本次最终产物。运行入口为本次提交的 GitHub Checks 和 [iOS CI](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/workflows/ios-ci.yml)。
