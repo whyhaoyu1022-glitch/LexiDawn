@@ -9,8 +9,21 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 FOCUSED = {
-    'fix-cold-start-main': ['LexiDawnUITests/Round3UITests/testLiveColdStartImportReadingLookupPersonalMeaningReviewAndRestart'],
-    'fix-cold-start-small': ['LexiDawnUITests/Round3UITests/testLiveColdStartImportReadingLookupPersonalMeaningReviewAndRestart'],
+    'fix-import': [
+        'LexiDawnUITests/LexiDawnUITests/testGalleryImportEmptyValidationAndOwnedArticle',
+        'LexiDawnUITests/LexiDawnUITests/testRound2UserImportsArticleThroughProductionForm',
+        'LexiDawnUITests/Round3UITests/testPersonalOriginalUpdateFormAndChangedVersionRestoreNativeReader',
+    ],
+    'fix-personal': [
+        'LexiDawnUITests/Round4UITests/testActualOfflineSearchCreatesStructuredPersonalEntryAndRestoresAfterRestart',
+        'LexiDawnUITests/Round4UITests/testEnglishOnlyAllowsStructuredPersonalAutosaveAndNotesRestore',
+    ],
+    'fix-live': [
+        'LexiDawnUITests/LexiDawnUITests/testGalleryProductionFirstLaunchAndRFCReading',
+        'LexiDawnUITests/Round3UITests/testLiveColdStartImportReadingLookupPersonalMeaningReviewAndRestart',
+        'LexiDawnUITests/Round3UITests/testLiveMultipleSourcesLibraryFiltersAndCompleteLocalReaderEvidence',
+    ],
+    'fix-live-small': ['LexiDawnUITests/Round3UITests/testLiveColdStartImportReadingLookupPersonalMeaningReviewAndRestart'],
 }
 
 

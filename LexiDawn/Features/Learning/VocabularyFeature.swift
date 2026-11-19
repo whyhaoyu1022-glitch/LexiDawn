@@ -426,7 +426,7 @@ struct VocabularyDetailView: View {
                 .background { Color.clear.contentShape(Rectangle()).onTapGesture { focusedField = nil; annotation.flush() } }
         }.background(theme == "paper" ? LexiDawnColor.paperWarm : Color(uiColor: .systemBackground))
             .preferredColorScheme(theme == "dark" ? .dark : ["paper", "light"].contains(theme) ? .light : nil)
-            .scrollDismissesKeyboard(.interactively).navigationTitle("词条").navigationBarTitleDisplayMode(.inline)
+            .accessibilityIdentifier("vocabulary-detail-scroll").scrollDismissesKeyboard(.immediately).navigationTitle("词条").navigationBarTitleDisplayMode(.inline)
             .onChange(of: annotation.senses) { _, _ in annotation.changed(); if focusedField == nil { annotation.flush() } }
             .onChange(of: annotation.notes) { _, _ in annotation.changed() }
             .onChange(of: focusedField) { previous, current in if previous != nil, previous != current { annotation.flush() } }

@@ -56,6 +56,8 @@ struct ArticleLibraryView: View {
         .toolbarBackground(.visible, for: .navigationBar)
         .refreshable { await beginRefresh().value }
         .task { load() }.onReceive(learning.$revision) { _ in load() }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in load() }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in load() }
         .sheet(item: $editing) { route in ArticleImportView(learning: learning, editingArticleID: route.articleID) }
         .alert("重新标记为未开始？", isPresented: Binding(get: { resetting != nil }, set: { if !$0 { resetting = nil } }), presenting: resetting) { item in
             Button("确认重新标记") {

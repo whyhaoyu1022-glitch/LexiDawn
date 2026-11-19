@@ -34,9 +34,18 @@ final class Round4UITests: XCTestCase {
             let below = element.exists && !element.frame.isEmpty && element.frame.minY > bounds.maxY - 120
             let scrollUp = above ? false : below ? true : upward
             let detail = app.scrollViews["dictionary-detail-scroll"].firstMatch
-            let area = detail.exists ? detail : app
-            let start = area.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: scrollUp ? 0.72 : 0.29))
-            start.press(forDuration: 0.05, thenDragTo: area.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: scrollUp ? 0.28 : 0.71)))
+            let vocabulary = app.scrollViews["vocabulary-detail-scroll"].firstMatch
+            let area = detail.exists ? detail : vocabulary.exists ? vocabulary : app
+            let frame = area.frame
+            let keyboard = app.keyboards.firstMatch
+            let bottom = keyboard.exists ? min(frame.maxY, keyboard.frame.minY) : frame.maxY
+            let top = max(frame.minY, app.navigationBars.firstMatch.frame.maxY)
+            let height = max(40, bottom - top)
+            let origin = app.coordinate(withNormalizedOffset: .zero)
+            let x = frame.minX + frame.width * 0.7
+            let start = origin.withOffset(CGVector(dx: x, dy: top + height * (scrollUp ? 0.75 : 0.25)))
+            let end = origin.withOffset(CGVector(dx: x, dy: top + height * (scrollUp ? 0.25 : 0.75)))
+            start.press(forDuration: 0.05, thenDragTo: end)
         }
         XCTAssertTrue(element.exists); XCTAssertTrue(element.isHittable)
     }
@@ -500,7 +509,9 @@ final class Round4UITests: XCTestCase {
         let meaning = app.textFields["personal-meaning"].firstMatch; reach(meaning, app: app); replace(meaning, with: "个人离线测试词义")
         let confirm = app.switches["确认作为学习义项"].firstMatch; reach(confirm, app: app); confirm.tap()
         let notes = app.textFields["vocabulary-notes"]; reach(notes, app: app); replace(notes, with: "Actual MDX absence, personal content")
+        app.staticTexts["vocabulary-notes-heading"].tap()
         expectation(for: NSPredicate(format: "label == %@", "已自动保存"), evaluatedWith: app.staticTexts["annotation-save-state"]); waitForExpectations(timeout: 10)
+        XCTAssertFalse(app.keyboards.firstMatch.exists)
         capture("R4-F23-real-personal-saved", app: app, feature: "personal-dictionary", state: "actual-MDX-notFound-structured-personal-POS-confirmed-notes-persisted", provenance: "real-bundled-MDX-and-user-created-content-real-Repository")
         app.terminate(); app.launch(); app.tabBars.buttons["词汇"].tap()
         let entry = app.buttons["vocabulary-entry-lexidawnuitestpersonal"]; reach(entry, app: app); entry.tap()

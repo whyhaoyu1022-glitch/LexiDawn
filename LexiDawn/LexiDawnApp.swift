@@ -209,9 +209,13 @@ final class AppStartup: ObservableObject {
             }
             if scenario == "round3-network", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {
                 let url = FileManager.default.temporaryDirectory.appendingPathComponent("round3-network-\(storeID.uuidString).store")
-                let dependencies = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true)
+                guard let refreshDefaults = UserDefaults(suiteName: "lexidawn.ui.network." + storeID.uuidString) else {
+                    throw PersistenceError.integrity("无法建立隔离的 UI 检查偏好")
+                }
+                let dependencies = AppDependencies(modelContainer: try AppDependencies.openPersistentStore(configuration: ModelConfiguration(url: url)), learningEnabled: true, refreshDefaults: refreshDefaults)
                 dependencies.learning?.productionNetworking = true
-                if let learning = dependencies.learning { learning.setDiscoveryForUITesting(ArticleDiscoveryService(content: learning.content, sourceIDs: ["wikipedia"])) }
+                // Use the normal production source registry. The empty test database
+                // has its own refresh timestamps, retained across this test's restart.
                 return dependencies
             }
             if scenario == "round2-disk", let rawID = ProcessInfo.processInfo.environment["LEXIDAWN_UI_STORE_ID"], let storeID = UUID(uuidString: rawID) {

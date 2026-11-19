@@ -455,6 +455,19 @@ final class Round3UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["cycle-completed"].waitForExistence(timeout: 20))
         capture("R3-C08", app: app, feature: "cycle", state: "real-process-restart-restores-completion", origin: origin)
     }
+    private func completeRequiredReadingAndEmptyReview(_ app: XCUIApplication) {
+        app.tabBars.buttons["今日"].tap()
+        let task = app.buttons["open-reader"]
+        for _ in 0..<15 { if task.exists && task.isHittable { break }; app.swipeDown() }
+        XCTAssertTrue(task.waitForExistence(timeout: 10)); XCTAssertTrue(task.isHittable); task.tap()
+        XCTAssertTrue(app.buttons["finish-reading"].waitForExistence(timeout: 10)); app.buttons["finish-reading"].tap()
+        if app.alerts.buttons["确认我已读完"].waitForExistence(timeout: 2) { app.alerts.buttons["确认我已读完"].tap() }
+        XCTAssertTrue(app.staticTexts["reading-completed"].waitForExistence(timeout: 10)); app.buttons["返回今日"].tap()
+        app.tabBars.buttons["复习"].tap()
+        XCTAssertTrue(app.staticTexts["今天没有到期词汇。"].waitForExistence(timeout: 10))
+        app.tabBars.buttons["今日"].tap()
+        XCTAssertTrue(app.staticTexts["cycle-completed"].waitForExistence(timeout: 10))
+    }
     private func openLibrary(_ app: XCUIApplication) {
         let button = app.buttons["article-library"]
         XCTAssertTrue(button.waitForExistence(timeout: 10))
@@ -694,19 +707,22 @@ final class Round3UITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(count, 2)
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'today-source-'")).count, 0)
         capture("R3-S01", app: app, feature: "today", state: "live-article-inventory-summary-without-duplicate-list", origin: "production-network-empty-isolated-store")
-        let task = app.buttons["open-reader"]
-        for _ in 0..<15 { if task.exists && task.isHittable { break }; app.swipeDown() }
-        XCTAssertTrue(task.waitForExistence(timeout: 10)); XCTAssertTrue(task.isHittable); task.tap()
-        XCTAssertTrue(app.buttons["finish-reading"].waitForExistence(timeout: 10)); app.buttons["finish-reading"].tap()
-        if app.alerts.buttons["确认我已读完"].waitForExistence(timeout: 2) { app.alerts.buttons["确认我已读完"].tap() }
-        XCTAssertTrue(app.staticTexts["reading-completed"].waitForExistence(timeout: 10)); app.buttons["返回今日"].tap()
-        app.tabBars.buttons["复习"].tap()
-        XCTAssertTrue(app.staticTexts["今天没有到期词汇。"].waitForExistence(timeout: 10))
-        app.tabBars.buttons["今日"].tap(); XCTAssertTrue(app.staticTexts["cycle-completed"].waitForExistence(timeout: 10)); openLibrary(app)
+        completeRequiredReadingAndEmptyReview(app)
+        var completedDay = Calendar.current.startOfDay(for: Date())
+        openLibrary(app)
         let sources = [("wikipedia", "Wikipedia"), ("wikinews", "Wikinews"), ("bbc", "BBC News"), ("reuters", "Reuters"), ("ap", "AP News"), ("guardian", "The Guardian"), ("npr", "NPR"), ("dw", "Deutsche Welle"), ("voa", "VOA Learning English"), ("nasa", "NASA"), ("sciencedaily", "ScienceDaily"), ("phys", "Phys.org"), ("smithsonian", "Smithsonian Magazine")]
         XCTAssertTrue(list.waitForExistence(timeout: 10))
         var inspected = 0
         for (id, title) in sources {
+            if !Calendar.current.isDate(Date(), inSameDayAs: completedDay) {
+                // Real network traversal can span local midnight. Complete the
+                // new mandatory cycle through UI actions; never seed its status.
+                capture("R3-S-midnight-lock", app: app, feature: "cycle", state: "new-learning-date-requires-its-own-completion", origin: "production-network-real-calendar-rollover")
+                app.navigationBars.buttons.firstMatch.tap()
+                completeRequiredReadingAndEmptyReview(app)
+                completedDay = Calendar.current.startOfDay(for: Date())
+                openLibrary(app)
+            }
             let filter = app.buttons["library-source-filter"]
             for _ in 0..<12 { if filter.isHittable { break }; list.swipeDown() }
             XCTAssertTrue(filter.isHittable); filter.tap()

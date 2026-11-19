@@ -19,14 +19,15 @@ final class AppDependencies: ObservableObject {
         calendar: Calendar = .autoupdatingCurrent,
         timeZone: TimeZone = .autoupdatingCurrent,
         cycleService: DailyCycleService? = nil,
-        learningEnabled: Bool = false
+        learningEnabled: Bool = false,
+        refreshDefaults: UserDefaults = .standard
     ) {
         self.modelContainer = modelContainer
         let context = modelContainer.mainContext
         self.cycleRepository = StudyCycleRepository(context: context)
         self.articleRepository = ArticleRepository(context: context)
         self.preferencesRepository = PreferencesRepository(context: context)
-        let learning = learningEnabled ? LearningServices(container: modelContainer, cycles: cycleRepository) : nil
+        let learning = learningEnabled ? LearningServices(container: modelContainer, cycles: cycleRepository, refreshDefaults: refreshDefaults) : nil
         self.learning = learning
         let selectedProvider: any ArticleCandidateProvider
         if let candidateProvider { selectedProvider = candidateProvider }

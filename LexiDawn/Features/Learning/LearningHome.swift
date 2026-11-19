@@ -166,7 +166,7 @@ struct ArticleImportView: View {
                     TextField("来源 / 用户原创", text: $source)
                     TextField("原始 URL（可选）", text: $originalURL).textInputAutocapitalization(.never).keyboardType(.URL)
                     TextField("主题", text: $topic)
-                    TextEditor(text: $bodyText).frame(minHeight: 160).focused($editingBody).accessibilityIdentifier("import-body")
+                    TextEditor(text: $bodyText).frame(minHeight: 160).focused($editingBody).scrollDismissesKeyboard(.immediately).accessibilityIdentifier("import-body")
                     Text("\(EnglishTokenizer.tokens(in: bodyText).count) 词")
                         .font(.caption).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
                         .onTapGesture { editingBody = false; InputComposition.dismissKeyboard() }
@@ -178,7 +178,7 @@ struct ArticleImportView: View {
                     Text("原文仅存于本机。链接用于记录来源。")
                         .font(.caption).foregroundStyle(.secondary)
                 }
-            }.accessibilityIdentifier("article-import-form").scrollDismissesKeyboard(.interactively)
+            }.accessibilityIdentifier("article-import-form").scrollDismissesKeyboard(.immediately)
                 .safeAreaInset(edge: .top, spacing: 0) {
                     if let error {
                         Text(error).font(.footnote).foregroundStyle(.red)
