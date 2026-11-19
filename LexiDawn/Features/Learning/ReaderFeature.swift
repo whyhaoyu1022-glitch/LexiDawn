@@ -80,6 +80,7 @@ struct ReaderView: View {
                 .frame(maxWidth: .infinity, minHeight: 80, maxHeight: .infinity).layoutPriority(1)
                 .popover(item: $selection, attachmentAnchor: .point(wordAnchor), arrowEdge: wordAnchor.y > 0.5 ? .bottom : .top) { selected in
                     WordLookupSheet(model: selected, openDetails: { openDictionaryDetail(selected) })
+                        .id(selected.id)
                         .presentationCompactAdaptation(.popover)
                         .onDisappear { presentPendingDetail() }
                 }
@@ -306,7 +307,9 @@ struct ReaderView: View {
     }
 }
 struct WordLookupSheet: View {
-    @StateObject private var model: WordLookupModel
+    // The presenting selection owns this model. Replacing a lookup must replace
+    // the observed instance rather than retain an earlier StateObject input.
+    @ObservedObject private var model: WordLookupModel
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var dependencies: AppDependencies
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -316,18 +319,17 @@ struct WordLookupSheet: View {
     @State private var theme = "system"
     @State private var preferencesError: String?
     private var openDetails: (() -> Void)?
-    init(token: EnglishToken, articleID: String, autoAdd: Bool, learning: LearningServices) {
-        _model = StateObject(wrappedValue: WordLookupModel(token: token, articleID: articleID, autoAdd: autoAdd, learning: learning))
-    }
     init(model: WordLookupModel, openDetails: (() -> Void)? = nil) {
-        _model = StateObject(wrappedValue: model)
+        self.model = model
         self.openDetails = openDetails
     }
     var body: some View {
+        let headword = model.result?.headword ?? EnglishTokenizer.lemma(model.token.surface)
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text(model.result?.headword ?? EnglishTokenizer.lemma(model.token.surface)).font(.system(.title3, design: .serif).bold())
+                Text(headword).font(.system(.title3, design: .serif).bold())
                     .lineLimit(1).minimumScaleFactor(0.7).accessibilityIdentifier("dictionary-headword")
+                    .accessibilityValue(model.token.surface == headword ? "" : "原文：" + model.token.surface)
                 if let result = model.result, let ipa = result.quickSenses.first?.ipa ?? DictionaryPresentation.sharedIPA(result.senses) {
                     Text(ipa).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 }
@@ -669,7 +671,9 @@ struct DictionaryDetailView: View {
                     .toolbar(.visible, for: .navigationBar)
             }
             .task { refresh() }.onReceive(learning.$revision) { _ in refresh() }
-            .popover(item: $selection) { WordLookupSheet(model: $0).presentationCompactAdaptation(.popover) }
+            .popover(item: $selection) { selected in
+                WordLookupSheet(model: selected).id(selected.id).presentationCompactAdaptation(.popover)
+            }
             .navigationDestination(item: $relatedRoute) { route in
                 let sentence = route.result.senses.compactMap(\.examples).flatMap { $0 }.first ?? route.result.headword
                 DictionaryDetailView(result: route.result, context: sentence, learning: learning, articleID: nil, depth: depth + 1, theme: theme, automaticAdditionAllowed: false,

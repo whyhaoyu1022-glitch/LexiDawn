@@ -42,9 +42,10 @@ import NaturalLanguage
             source: "Original XCTest author", rightsConfirmed: true), at: Date())
         let tokens = EnglishTokenizer.tokens(in: text)
         var timings: [[String: String]] = []
+        var savedHeadwords = Set<String>()
         for (surface, headword) in [("took", "take"), ("taken", "take"), ("look", "look into"), ("carry", "carry out"), ("account", "take into account"), ("role", "role")] {
             let token = try XCTUnwrap(tokens.first { $0.surface == surface })
-            let model = WordLookupModel(token: token, articleID: article, autoAdd: false, learning: learning, sourceText: text)
+            let model = WordLookupModel(token: token, articleID: article, autoAdd: true, learning: learning, sourceText: text)
             let started = ProcessInfo.processInfo.systemUptime
             await model.begin()
             timings.append(["surface": surface, "seconds": String(ProcessInfo.processInfo.systemUptime - started)])
@@ -55,8 +56,10 @@ import NaturalLanguage
             XCTAssertTrue(result.quickSenses.allSatisfy(BilingualMeaningPolicy.trusted))
             XCTAssertEqual(model.token.sentence, token.sentence)
             XCTAssertEqual((text as NSString).substring(with: model.token.range), surface)
+            XCTAssertNil(model.vocabularyError); XCTAssertNotNil(model.existingEntryID)
+            savedHeadwords.insert(result.savedHeadword)
         }
-        XCTAssertTrue(try learning.vocabulary.entries().isEmpty)
+        XCTAssertEqual(Set(try learning.vocabulary.entries().map(\.lemma)), savedHeadwords)
         let timing = XCTAttachment(data: try JSONSerialization.data(withJSONObject: timings, options: [.prettyPrinted, .sortedKeys]), uniformTypeIdentifier: "public.json")
         timing.name = "real-mdx-sequential-query-timing"; timing.lifetime = .keepAlways; add(timing)
     }

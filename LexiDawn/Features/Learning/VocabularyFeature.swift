@@ -447,7 +447,9 @@ struct VocabularyDetailView: View {
                     !annotation.persistedSenses.contains { BilingualMeaningPolicy.hasChinese($0.chinese) }
                 chosenMeaningText = item.reviewMeaningText; annotation.refreshPolicy(); await lookup()
             }
-            .popover(item: $selection) { WordLookupSheet(model: $0).presentationCompactAdaptation(.popover) }
+            .popover(item: $selection) { selected in
+                WordLookupSheet(model: selected).id(selected.id).presentationCompactAdaptation(.popover)
+            }
             .fullScreenCover(item: $relatedRoute) { route in
                 NavigationStack { DictionaryDetailView(result: route.result, context: "", learning: learning, articleID: nil, theme: theme, automaticAdditionAllowed: false,
                     contextOrigin: .dictionary(headword: item.lemma, evidence: BundledMDXDictionaryProvider.sourceName, text: nil)) }
