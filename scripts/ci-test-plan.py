@@ -14,11 +14,6 @@ FOCUSED = {
         'LexiDawnUITests/LexiDawnUITests/testRound2UserImportsArticleThroughProductionForm',
         'LexiDawnUITests/Round3UITests/testPersonalOriginalUpdateFormAndChangedVersionRestoreNativeReader',
     ],
-    'fix-first-launch': ['LexiDawnUITests/LexiDawnUITests/testGalleryProductionFirstLaunchAndRFCReading'],
-    'fix-live': [
-        'LexiDawnUITests/Round3UITests/testLiveColdStartImportReadingLookupPersonalMeaningReviewAndRestart',
-        'LexiDawnUITests/Round3UITests/testLiveMultipleSourcesLibraryFiltersAndCompleteLocalReaderEvidence',
-    ],
 }
 
 

@@ -23,7 +23,7 @@
 
 [2026-11-18 问题对照和验证结果](reviews/round-4-device-feedback-2026-11-18.md)。受影响核心与 UI 选择器使用 `[round4-core] [device-fix]`。新用例覆盖独立词形、短语与音节点、每 2 小时时间边界、12 词两组持久缓存、取消过滤与重复查词后的明确移除。
 
-当前源码包含 246 个 XCTest、67 个主设备 XCUITest，另有 SE 7 次和 Pro Max 3 次设备复跑。数量只描述范围，实际通过结果以具体运行日志为准。`[device-phrase]` 仅重跑短语语法槽和音节点独立词形迁移；当前 `[round4-fix-ui]` 只重跑尚未通过的 6 个主设备方法，按导入、独立生产首启和真实网络分组。`[recommendation-worker]` 同时只执行新增的候选准备与取消 XCTest。Simulator 启动有两次上限和诊断，启动失败不计作测试通过。
+当前源码包含 246 个 XCTest、67 个主设备 XCUITest，另有 SE 7 次和 Pro Max 3 次设备复跑。数量只描述范围，实际通过结果以具体运行日志为准。`[device-phrase]` 仅重跑短语语法槽和音节点独立词形迁移；当前 `[round4-fix-ui]` 只重跑仍失败的 3 个导入表单方法；上一轮独立生产首启已通过，真实网络组保留原运行。`[recommendation-worker]` 同时只执行新增的候选准备与取消 XCTest。Simulator 启动有两次上限和诊断，启动失败不计作测试通过。
 
 ## 真机验收
 

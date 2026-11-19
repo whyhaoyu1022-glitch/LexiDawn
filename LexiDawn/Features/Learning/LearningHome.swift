@@ -157,19 +157,20 @@ struct ArticleImportView: View {
     @State private var rights = false
     @State private var eligible = true
     @State private var error: String?
-    @FocusState private var editingBody: Bool
+    private enum Field: Hashable { case title, source, url, topic, body }
+    @FocusState private var focusedField: Field?
     var body: some View {
         NavigationStack {
             Form {
                 Section("本地文章") {
-                    TextField("标题", text: $title).accessibilityIdentifier("import-title")
-                    TextField("来源 / 用户原创", text: $source)
-                    TextField("原始 URL（可选）", text: $originalURL).textInputAutocapitalization(.never).keyboardType(.URL)
-                    TextField("主题", text: $topic)
-                    TextEditor(text: $bodyText).frame(minHeight: 160).focused($editingBody).scrollDismissesKeyboard(.immediately).accessibilityIdentifier("import-body")
+                    TextField("标题", text: $title).focused($focusedField, equals: .title).accessibilityIdentifier("import-title")
+                    TextField("来源 / 用户原创", text: $source).focused($focusedField, equals: .source)
+                    TextField("原始 URL（可选）", text: $originalURL).focused($focusedField, equals: .url).textInputAutocapitalization(.never).keyboardType(.URL)
+                    TextField("主题", text: $topic).focused($focusedField, equals: .topic)
+                    TextEditor(text: $bodyText).frame(minHeight: 160).focused($focusedField, equals: .body).scrollDismissesKeyboard(.immediately).accessibilityIdentifier("import-body")
                     Text("\(EnglishTokenizer.tokens(in: bodyText).count) 词")
                         .font(.caption).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
-                        .onTapGesture { editingBody = false; InputComposition.dismissKeyboard() }
+                        .onTapGesture(perform: endInput)
                         .accessibilityIdentifier("import-word-count")
                 }
                 Section("授权与分配") {
@@ -179,6 +180,10 @@ struct ArticleImportView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }.accessibilityIdentifier("article-import-form").scrollDismissesKeyboard(.immediately)
+                .simultaneousGesture(DragGesture(minimumDistance: 12).onChanged { _ in
+                    if focusedField != nil { endInput() }
+                })
+                .onSubmit { endInput() }
                 .safeAreaInset(edge: .top, spacing: 0) {
                     if let error {
                         Text(error).font(.footnote).foregroundStyle(.red)
@@ -202,9 +207,12 @@ struct ArticleImportView: View {
                 .interactiveDismissDisabled()
         }
     }
-    private func save() {
-        editingBody = false
+    private func endInput() {
+        focusedField = nil
         InputComposition.dismissKeyboard()
+    }
+    private func save() {
+        endInput()
         do {
             let draft = ArticleImportDraft(title: title, body: bodyText, source: source, originalURL: originalURL, topic: topic, rightsConfirmed: rights, eligibleForDaily: eligible)
             if let editingArticleID { try learning.content.updateOriginal(articleID: editingArticleID, draft: draft, at: Date()) }
