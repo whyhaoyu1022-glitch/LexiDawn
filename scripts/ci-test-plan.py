@@ -11,8 +11,6 @@ ROOT = Path(__file__).resolve().parents[1]
 FOCUSED = {
     'fix-import': [
         'LexiDawnUITests/LexiDawnUITests/testGalleryImportEmptyValidationAndOwnedArticle',
-        'LexiDawnUITests/LexiDawnUITests/testRound2UserImportsArticleThroughProductionForm',
-        'LexiDawnUITests/Round3UITests/testPersonalOriginalUpdateFormAndChangedVersionRestoreNativeReader',
     ],
 }
 

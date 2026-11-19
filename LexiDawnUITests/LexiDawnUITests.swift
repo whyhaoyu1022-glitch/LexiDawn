@@ -510,10 +510,18 @@ extension LexiDawnUITests {
         XCTAssertTrue(unknown.waitForExistence(timeout: 10)); unknown.tap()
         let noResult = app.staticTexts["暂无英中释义"]
         XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 5))
-        // A long headword fills the medium sheet; List creates the no-result row
-        // only after the user expands/scrolls it. Reveal before asserting existence.
-        try revealLearning(noResult, in: app)
+        // Wait for the compact popover's actual lookup. A whole-page drag used
+        // to expand the removed medium sheet now dismisses this anchored popover.
+        let details = app.buttons["dictionary-details"]
+        expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: details); waitForExpectations(timeout: 20)
         XCTAssertTrue(noResult.waitForExistence(timeout: 5))
+        XCTAssertGreaterThan(noResult.frame.width, 0)
+        XCTAssertGreaterThan(noResult.frame.height, 0)
+        XCTAssertTrue(app.windows.firstMatch.frame.contains(noResult.frame))
+        XCTAssertFalse(app.staticTexts["dictionary-resource-error"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["dictionary-loading"].firstMatch.exists)
+        XCTAssertTrue(details.isHittable)
+        XCTAssertTrue(app.buttons["undo-word"].isHittable)
         capture("F09-dictionary-honest-no-result", in: app)
     }
 
