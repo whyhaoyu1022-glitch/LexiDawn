@@ -2,6 +2,54 @@ import Foundation
 import SwiftData
 import NaturalLanguage
 
+/// Derived vectors only, scoped to one ordering actor. NLEmbedding is never
+/// shared across concurrent callers, and reading context is never persisted.
+final class DictionarySemanticVectorCache {
+    private enum Value { case vector([Double]), unavailable }
+    private var values: [String: Value] = [:]
+    private var recent: [String] = []
+    private let capacity: Int
+    private var embedding: NLEmbedding?
+    private var loadedEmbedding = false
+    private let vectorForText: ((String) -> [Double]?)?
+    private(set) var vectorComputations = 0
+    var count: Int { values.count }
+    init(capacity: Int = 256, vectorForText: ((String) -> [Double]?)? = nil) {
+        self.capacity = max(1, capacity); self.vectorForText = vectorForText
+    }
+    func distance(_ first: String, _ second: String) -> Double? {
+        guard !Task.isCancelled, let a = vector(first), let b = vector(second), a.count == b.count else { return nil }
+        let dot = zip(a, b).reduce(0.0) { $0 + $1.0 * $1.1 }
+        return dot.isFinite ? min(2, max(0, 1 - dot)) : nil
+    }
+    private func vector(_ text: String) -> [Double]? {
+        let key = String(text.prefix(1200))
+        if let cached = values[key] {
+            touch(key)
+            if case .vector(let vector) = cached { return vector }
+            return nil
+        }
+        guard !Task.isCancelled else { return nil }
+        let raw: [Double]?
+        vectorComputations += 1
+        if let vectorForText { raw = vectorForText(key) }
+        else {
+            if !loadedEmbedding { embedding = NLEmbedding.sentenceEmbedding(for: .english); loadedEmbedding = true }
+            raw = embedding?.vector(for: key)
+        }
+        let normalized: [Double]?
+        if let raw, !raw.isEmpty, raw.allSatisfy(\.isFinite) {
+            let norm = sqrt(raw.reduce(0.0) { $0 + $1 * $1 })
+            normalized = norm.isFinite && norm > 0 ? raw.map { $0 / norm } : nil
+        } else { normalized = nil }
+        values[key] = normalized.map(Value.vector) ?? .unavailable
+        touch(key)
+        while recent.count > capacity { values.removeValue(forKey: recent.removeFirst()) }
+        return normalized
+    }
+    private func touch(_ key: String) { recent.removeAll { $0 == key }; recent.append(key) }
+}
+
 struct DictionaryProviderOutcome: Sendable {
     let senses: [DictionarySense]
     let failed: [String]
@@ -201,7 +249,8 @@ actor DictionaryAggregator {
         }
         return merged.values.sorted { $0.id < $1.id }
     }
-    nonisolated static func rank(_ senses: [DictionarySense], context: String, surface: String? = nil) -> [DictionarySense] {
+    nonisolated static func rank(_ senses: [DictionarySense], context: String, surface: String? = nil,
+                                 semanticDistance: ((String, String) -> Double?)? = nil) -> [DictionarySense] {
         let stop: Set<String> = ["the", "and", "with", "this", "that", "from", "into", "have", "been", "when", "while", "your", "their", "them", "then", "they", "what", "where"]
         func words(_ string: String) -> Set<String> { Set(string.lowercased().split { !$0.isLetter }.map(String.init).filter { $0.count > 3 && !stop.contains($0) }) }
         let queryWords = words(surface ?? "")
@@ -230,7 +279,7 @@ actor DictionaryAggregator {
                 }
             }
         }
-        let embedding = context.isBlank ? nil : NLEmbedding.sentenceEmbedding(for: .english)
+        let distance = semanticDistance ?? DictionarySemanticVectorCache().distance
         func matchesGrammar(_ sense: DictionarySense) -> Bool {
             guard let grammaticalPart, let part = sense.partOfSpeech?.lowercased() else { return false }
             return part == grammaticalPart || (grammaticalPart == "verb" && part.hasSuffix(" verb")) || (grammaticalPart == "noun" && part.hasSuffix(" noun"))
@@ -243,9 +292,8 @@ actor DictionaryAggregator {
                 word.count >= 5 && ["ment", "ing", "ed"].contains { definitionWords.contains(word + $0) }
             }
             let lexical = Double(exact.count * 10 + derived.count * 7 + (sense.partOfSpeech != nil ? 2 : 0))
-            guard let embedding else { return lexical }
-            let distance = embedding.distance(between: String(context.prefix(1200)), and: String(definition.prefix(1200)))
-            return lexical + (distance.isFinite ? max(0, 2 - distance) * 4 : 0)
+            guard !context.isBlank, let semantic = distance(context, definition) else { return lexical }
+            return lexical + max(0, 2 - semantic) * 4
         }
         let scored = merge(senses).map { ($0, score($0), matchesGrammar($0)) }
         return scored.sorted {

@@ -1,9 +1,65 @@
 import XCTest
 import SwiftData
 import AVFoundation
+import NaturalLanguage
 @testable import LexiDawn
 
 @MainActor final class MDXDictionaryTests: XCTestCase {
+    func testSemanticVectorCacheMatchesNativeCosineAndBoundsInference() throws {
+        if let embedding = NLEmbedding.sentenceEmbedding(for: .english) {
+            let cache = DictionarySemanticVectorCache(vectorForText: { embedding.vector(for: $0) })
+            let context = "I have taken the time to look into this question."
+            for definition in ["to carry something from one place to another", "to use a particular amount of time", "to examine a question carefully"] {
+                let expected = embedding.distance(between: context, and: definition, distanceType: .cosine)
+                let actual = cache.distance(context, definition)
+                if expected.isFinite { XCTAssertEqual(try XCTUnwrap(actual), expected, accuracy: 0.000001) }
+                else { XCTAssertNil(actual) }
+            }
+            XCTAssertEqual(cache.vectorComputations, 4, "One context vector, rather than one per sense")
+            let computations = cache.vectorComputations
+            _ = cache.distance(context, "to use a particular amount of time")
+            XCTAssertEqual(cache.vectorComputations, computations)
+        } else {
+            XCTAssertNil(DictionarySemanticVectorCache().distance("a question", "a book"))
+            let note = XCTAttachment(string: "English sentence embedding unavailable: verified lexical fallback, no native cosine comparison possible on this runtime.")
+            note.lifetime = .keepAlways; add(note)
+        }
+        let bounded = DictionarySemanticVectorCache(capacity: 2, vectorForText: { text in
+            switch text { case "x": return [1, 0]; case "y": return [0, 1]; case "zero": return [0, 0]; default: return nil }
+        })
+        XCTAssertEqual(try XCTUnwrap(bounded.distance("x", "y")), 1, accuracy: 0.000001)
+        XCTAssertNil(bounded.distance("zero", "x"))
+        XCTAssertNil(bounded.distance("missing", "x"))
+        XCTAssertLessThanOrEqual(bounded.count, 2)
+        let reads = bounded.vectorComputations
+        XCTAssertNil(bounded.distance("missing", "x"))
+        XCTAssertEqual(bounded.vectorComputations, reads, "Unavailable vectors are bounded cached results too")
+    }
+    func testRealMDXSequentialInflectionsAndPhrasesKeepTheirContext() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let text = "Yesterday I took a book home. I have taken the time to look into this question.\n\nThe team will carry out a careful study. We take into account every result. Clear examples play a role in learning."
+        let article = try learning.content.importArticle(.init(title: "Original sequential lookup regression", body: text,
+            source: "Original XCTest author", rightsConfirmed: true), at: Date())
+        let tokens = EnglishTokenizer.tokens(in: text)
+        var timings: [[String: String]] = []
+        for (surface, headword) in [("took", "take"), ("taken", "take"), ("look", "look into"), ("carry", "carry out"), ("account", "take into account"), ("role", "role")] {
+            let token = try XCTUnwrap(tokens.first { $0.surface == surface })
+            let model = WordLookupModel(token: token, articleID: article, autoAdd: false, learning: learning, sourceText: text)
+            let started = ProcessInfo.processInfo.systemUptime
+            await model.begin()
+            timings.append(["surface": surface, "seconds": String(ProcessInfo.processInfo.systemUptime - started)])
+            XCTAssertFalse(model.loading); XCTAssertNil(model.error)
+            let result = try XCTUnwrap(model.result)
+            XCTAssertEqual(result.headword, headword)
+            XCTAssertFalse(result.quickSenses.isEmpty)
+            XCTAssertTrue(result.quickSenses.allSatisfy(BilingualMeaningPolicy.trusted))
+            XCTAssertEqual(model.token.sentence, token.sentence)
+            XCTAssertEqual((text as NSString).substring(with: model.token.range), surface)
+        }
+        XCTAssertTrue(try learning.vocabulary.entries().isEmpty)
+        let timing = XCTAttachment(data: try JSONSerialization.data(withJSONObject: timings, options: [.prettyPrinted, .sortedKeys]), uniformTypeIdentifier: "public.json")
+        timing.name = "real-mdx-sequential-query-timing"; timing.lifetime = .keepAlways; add(timing)
+    }
     func testActualCompiledAppContainsApprovedMDX() throws {
         let resource = try XCTUnwrap(Bundle.main.url(forResource: "BundledDictionary", withExtension: "mdx"))
         XCTAssertEqual(try resource.resourceValues(forKeys: [.fileSizeKey]).fileSize, 38_774_534)

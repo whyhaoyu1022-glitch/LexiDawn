@@ -6,6 +6,8 @@ struct VocabularyListView: View {
     var continueToday: () -> Void = { }
     @State private var allItems: [VocabularyItem] = []
     @State private var search = ""
+    @State private var searchPresented = false
+    @FocusState private var searchFocused: Bool
     @State private var filter = "all"
     @State private var error: String?
     @State private var removing: VocabularyItem?
@@ -38,7 +40,12 @@ struct VocabularyListView: View {
                     Text(exportNotice).font(.subheadline).frame(maxWidth: .infinity, alignment: .leading).padding()
                         .background(.regularMaterial).accessibilityIdentifier("vocabulary-export-completed")
                 }
-            }.searchable(text: $search, prompt: "搜索单词、短语或中文释义")
+            }.searchable(text: $search, isPresented: $searchPresented,
+                         placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索单词、短语或中文释义")
+                .searchFocused($searchFocused)
+                .onChange(of: searchPresented) { _, presented in searchFocused = presented }
+                .onSubmit { searchFocused = false }
+                .onDisappear { searchFocused = false; searchPresented = false }
                 .navigationTitle("生词本").task { load() }.onReceive(learning.$revision) { _ in load() }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in load() }
                 .toolbar {

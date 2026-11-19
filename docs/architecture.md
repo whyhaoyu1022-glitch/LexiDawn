@@ -31,7 +31,7 @@ SwiftUI 及 UIKit 控件提供呈现和交互。ViewModel/Service 管理请求�
 
 ## 词典与生词
 
-`DictionaryLookupService` 调用 `BundledMDXDictionaryProvider` actor。C 读引擎和 zlib 按需读取记录块，系统 libxml2 解析 HTML 字段。Swift 首次查询校验 SHA 并建立索引，内存缓存最多 128 个查询词。缓存绑定 MDX SHA 和 HTML 解析版本（当前 `html-12`）。同 SHA 的旧派生记录号可帮助定位，显示数据须经当前解析版本读取。支持范围见[实际文件格式](<../Dictionary Data/README.md>)。
+`DictionaryLookupService` 调用 `BundledMDXDictionaryProvider` actor。C 读引擎和 zlib 按需读取记录块，系统 libxml2 解析 HTML 字段。Swift 首次查询校验 SHA 并建立索引，内存缓存最多 128 个查询词。缓存绑定 MDX SHA 和 HTML 解析版本（当前 `html-12`）。同 SHA 的旧派生记录号可帮助定位，显示数据须经当前解析版本读取。语境排序 actor 独占系统句向量模型，以最多 256 条的内存 LRU 缓存原句和释义向量。相同原句在一次排序中只编码一次，连续词形查询可复用原释义向量；余弦距离、语法优先、词义身份和词汇重合权重保留。此缓存只含本地派生向量，不落盘，不提供词典内容。支持范围见[实际文件格式](<../Dictionary Data/README.md>)。
 
 推荐服务在 MainActor 读取持久文章快照后，将纯候选分词交给可取消的后台任务；重复词形仅在本次扫描内复用计算。真实 MDX 查询与写入仍沿既有服务和 Repository 执行。
 

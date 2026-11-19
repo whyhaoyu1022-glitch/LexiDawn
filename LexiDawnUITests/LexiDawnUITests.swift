@@ -314,6 +314,10 @@ extension LexiDawnUITests {
         app.tabBars.buttons["今日"].tap(); app.buttons["open-reader"].tap()
         let book = app.buttons["word-Book"].firstMatch; XCTAssertTrue(book.waitForExistence(timeout: 10)); book.tap()
         let add = app.buttons["add-word"]; XCTAssertTrue(add.waitForExistence(timeout: 10)); XCTAssertFalse(app.buttons["undo-word"].exists)
+        expectation(for: NSPredicate(format: "enabled == true AND hittable == true"), evaluatedWith: add); waitForExpectations(timeout: 15)
+        XCTAssertFalse(app.descendants(matching: .any)["dictionary-loading"].firstMatch.exists)
+        XCTAssertFalse(app.staticTexts["dictionary-resource-error"].exists)
+        XCTAssertFalse(app.buttons["undo-word"].exists)
         capture("F32-word-with-auto-add-off", in: app)
         add.tap(); XCTAssertTrue(app.buttons["undo-word"].waitForExistence(timeout: 5))
         capture("F33-word-manual-add-saved", in: app)
@@ -534,7 +538,14 @@ extension LexiDawnUITests {
         XCTAssertTrue(app.staticTexts["还没有匹配的生词"].waitForExistence(timeout: 5))
         capture("S02-vocabulary-phrase-filter-empty", in: app)
         app.buttons["全部"].tap()
-        let search = app.searchFields.firstMatch; search.tap(); search.typeText("internet")
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap()
+        // Activating native search can move the field into the navigation bar.
+        // Enter text only after the actual keyboard owns the settled field.
+        if !app.keyboards.firstMatch.waitForExistence(timeout: 3) { search.tap() }
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        search.typeText("internet")
+        XCTAssertEqual(search.value as? String, "internet")
         XCTAssertTrue(app.staticTexts["internet"].waitForExistence(timeout: 5))
         capture("S03-vocabulary-search-hit", in: app)
         closeGallerySearch(app)

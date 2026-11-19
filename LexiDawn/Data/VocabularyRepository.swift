@@ -593,9 +593,11 @@ struct DictionaryResult: Equatable, Codable {
 protocol DictionaryProvider: Sendable { func lookup(_ headword: String) async throws -> [DictionarySense] }
 
 private actor DictionaryContextOrdering {
+    private let semanticVectors = DictionarySemanticVectorCache()
     func senseIDs(_ senses: [DictionarySense], surface: String, context: String) throws -> [String] {
         try Task.checkCancellation()
-        let ids = DictionaryAggregator.rank(senses, context: context, surface: surface).map(\.id)
+        let ids = DictionaryAggregator.rank(senses, context: context, surface: surface,
+                                           semanticDistance: semanticVectors.distance).map(\.id)
         try Task.checkCancellation()
         return ids
     }

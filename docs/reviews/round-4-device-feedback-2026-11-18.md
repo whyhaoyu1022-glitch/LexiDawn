@@ -108,3 +108,5 @@
 原全量失败的 9 次 UI 执行均已有后续通过的专项记录；新增推荐准备与取消 XCTest 也通过。此次直接在 main 提交 `[round4-final]`，请求一次同一 SHA 的完整验证：246 个 XCTest、67 个主设备 XCUITest、SE 7 次、Pro Max 3 次，以及 Debug/Release 构建、原生截图证据汇总和完整 MDX 的未签名 iPhoneOS IPA 构建。全部主设备测试保留且各执行一次，生产首启独立分组。
 
 此处仅登记全量请求，不登记尚未产生的通过结果。按负责人最新指令，确认任务启动后暂停，等待负责人反馈；暂不下载整理新一批最终截图包或交付新 IPA。历史成功包与失败诊断包均不得冒充本次最终产物。运行入口为本次提交的 GitHub Checks 和 [iOS CI](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/workflows/ios-ci.yml)。
+
+2026-11-20 续报：上述最终全量已结束，246 项 XCTest 通过，3 个其他 UI 方法失败。后续修复和专项范围统一见[最新 CI 回归记录](round-4-ci-regression-2026-11-20.md)。本报告中的专项通过记录保留，不等于全量已通过。

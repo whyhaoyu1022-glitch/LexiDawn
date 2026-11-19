@@ -9,9 +9,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 FOCUSED = {
-    'fix-import': [
-        'LexiDawnUITests/LexiDawnUITests/testGalleryImportEmptyValidationAndOwnedArticle',
-    ],
+    'fix-manual-add': ['LexiDawnUITests/LexiDawnUITests/testRound2SettingsPersistAndDisabledAutoAddRequiresManualAdd'],
+    'fix-search': ['LexiDawnUITests/LexiDawnUITests/testGalleryRealRFCVocabularySearchNotesAndRemove'],
+    'fix-phrases': ['LexiDawnUITests/Round3UITests/testComplexFormsAndFourContextPhrasesUseNestedLookupAndReturn'],
 }
 
 
