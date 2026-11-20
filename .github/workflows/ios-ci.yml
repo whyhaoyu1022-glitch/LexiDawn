@@ -371,6 +371,19 @@ jobs:
           while IFS= read -r selection; do TEST_SELECTORS+=("$selection"); done < "${RUNNER_TEMP}/ci-tests.txt"
           test "${#TEST_SELECTORS[@]}" -gt 0
           TEST_RUN_FILE="$(python3 -c 'import os,pathlib; print(next((pathlib.Path(os.environ["RUNNER_TEMP"])/"LexiDawn-derived/Build/Products").glob("*.xctestrun")))')"
+          if [[ "${{ contains(github.event.head_commit.message, '[lookup-diagnostics]') }}" == "true" ]]; then
+            python3 scripts/ci-lookup-samples.py monitor "${RUNNER_TEMP}" > "${RUNNER_TEMP}/lookup-sampler.log" 2>&1 &
+            LOOKUP_SAMPLE_PID=$!
+            finish_lookup_samples() {
+              local test_status=$?
+              touch "${RUNNER_TEMP}/lookup-sample-stop"
+              if ! wait "$LOOKUP_SAMPLE_PID"; then
+                echo "Lookup stack sampler failed; the native test result is retained."
+              fi
+              return "$test_status"
+            }
+            trap finish_lookup_samples EXIT
+          fi
           xcodebuild test-without-building -xctestrun "$TEST_RUN_FILE" -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/ui.xcresult" "${TEST_SELECTORS[@]}" 2>&1 | tee "${RUNNER_TEMP}/ui.log"
           python3 scripts/verify-ui-execution.py "${RUNNER_TEMP}/ci-tests.txt" "${RUNNER_TEMP}/ui.log"
       - name: Retain lookup lifecycle diagnostics without article or query text
@@ -378,6 +391,16 @@ jobs:
         run: |
           set -euo pipefail
           xcrun simctl spawn "$LEXIDAWN_SIMULATOR_ID" log show --last 30m --style compact --info --predicate 'subsystem == "com.lexidawn.app.lookup"' > "${RUNNER_TEMP}/lookup-lifecycle.log"
+      - name: Print bounded native lookup stacks and persistent lifecycle
+        if: ${{ always() && contains(github.event.head_commit.message, '[lookup-diagnostics]') }}
+        run: |
+          python3 scripts/ci-lookup-samples.py summarize "${RUNNER_TEMP}"
+          if [[ -f "${RUNNER_TEMP}/lookup-lifecycle.log" ]]; then
+            cat "${RUNNER_TEMP}/lookup-lifecycle.log"
+          fi
+          if [[ -f "${RUNNER_TEMP}/lookup-sampler.log" ]]; then
+            cat "${RUNNER_TEMP}/lookup-sampler.log"
+          fi
       - name: Export untouched native screenshots and metadata on success or failure
         if: always()
         run: |
@@ -401,6 +424,8 @@ jobs:
             ${{ runner.temp }}/ui.xcresult
             ${{ runner.temp }}/ui.log
             ${{ runner.temp }}/lookup-lifecycle.log
+            ${{ runner.temp }}/lookup-samples
+            ${{ runner.temp }}/lookup-sampler.log
             ${{ runner.temp }}/ci-tests.txt
           if-no-files-found: error
       - name: Retry native evidence upload after a transient artifact service failure
@@ -416,6 +441,8 @@ jobs:
             ${{ runner.temp }}/ui.xcresult
             ${{ runner.temp }}/ui.log
             ${{ runner.temp }}/lookup-lifecycle.log
+            ${{ runner.temp }}/lookup-samples
+            ${{ runner.temp }}/lookup-sampler.log
             ${{ runner.temp }}/ci-tests.txt
           if-no-files-found: error
 

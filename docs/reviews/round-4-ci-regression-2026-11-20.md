@@ -108,3 +108,14 @@ da3d81e / [44720208229](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/
 新增 XCTest testCoveredReaderRejectsRetainedNativeWordActionsAndRestoresPosition：使用真实 UIKit/TextKit 容器和生成的词语元素，验证正常激活、覆盖时旧元素拒绝激活且不滚动、恢复同一元素身份与位置。它是原生无障碍回归，不能冒充 MDX 解析验证。源码总计 251 个 XCTest。下一轮 [reader-accessibility] 只执行此新 XCTest 与原剩余连续查词 UI；已经通过的三个查询/取消 XCTest不重复运行。
 
 UI 继续执行两轮全部查词和详情返回；遮挡验证针对刚点击的真实文章词语，不把不可聚焦的空容器是否保留为实现验收。已存在的原生滚动区、词形、中文、错误、关闭、返回及就绪断言均保留。结果待实际执行。
+
+原生正文覆盖修复提交 `97c1f83cf5614ed7e6dc7e9391a15cbbc59e5bd2`，[专项 44723268404](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44723268404)。通过仓库连接直接提交 main，随后按不可变提交逐文件回读核对 11 个文件完全一致；全目标编译通过，原生 XCTest 和 UI 结果待执行。本地环境不可用未阻止远端代码、编译及专项继续。
+
+97c1f83 / 44723268404：全部目标编译通过，原生 UIKit 用例 testCoveredReaderRejectsRetainedNativeWordActionsAndRestoresPosition 已实际执行并通过（1.179 秒、零失败）。真实 Simulator 启动成功。连续查词 UI 在独立 runner 准备中，仍待实际结果。
+
+
+### 实际线程堆栈诊断
+
+97c1f83 的 UI 失败 195.643 秒，首次 took 仍显示加载。完整 AX 已没有文章 word-*，原生屏蔽确认生效；但 App idle 通知未及时返回，不能宣称该修复解决了剩余查词阻塞。UI 产物 14623782534，GitHub 记录 SHA-256 5b10cb0cb485cda543b78336053c06639d55f15903380d148a11331a1c193a41；本地环境仍不可用，该轮 PNG 未独立重新下载查看。
+
+下一轮限定同一 UI，启用只读 macOS sample 对实际 Simulator App 进程取样，保留主线程与词典/NaturalLanguage/AttributeGraph 相关栈。采样仅诊断标记时运行，最多五个时点、每次三秒；没有改变原断言或等待上限。请求 UUID/阶段日志提高为持久 notice，不含文章或查词文本。全量提交不带诊断标记，不运行取样。已经通过的原生 UIKit 用例和三项 MDX/取消专项不重复执行。此步骤用于确定阻塞位置，不能预先算修复通过。

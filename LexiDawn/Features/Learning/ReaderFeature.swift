@@ -265,7 +265,7 @@ struct ReaderView: View {
     }
     func cancelLookup() { logLifecycle("cancel-requested"); lookupTask?.cancel(); lookupTask = nil; lookupJob = UUID(); lookupGeneration = UUID(); loading = false }
     func logLifecycle(_ event: String) {
-        Self.logger.info("request=\(self.id.uuidString, privacy: .public) event=\(event, privacy: .public) loading=\(self.loading) result=\(self.result != nil)")
+        Self.logger.notice("request=\(self.id.uuidString, privacy: .public) event=\(event, privacy: .public) loading=\(self.loading) result=\(self.result != nil)")
     }
     func begin() async { await lookup() }
     func refreshMembership() {
