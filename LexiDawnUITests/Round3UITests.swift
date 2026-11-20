@@ -816,7 +816,7 @@ final class Round3UITests: XCTestCase {
                 let word = app.buttons["word-" + surface].firstMatch
                 for _ in 0..<8 { if word.exists && word.isHittable { break }; app.otherElements["reader-body"].firstMatch.swipeUp() }
                 XCTAssertTrue(word.isHittable); word.tap()
-                let card = app.otherElements["compact-word-card"].firstMatch
+                let card = app.descendants(matching: .any)["compact-word-card"].firstMatch
                 let heading = card.staticTexts["dictionary-headword"]
                 let details = card.buttons["dictionary-details"]
                 let expectedHeadword = expected[index]
@@ -833,7 +833,7 @@ final class Round3UITests: XCTestCase {
                 capture("R3-D" + String(index + 10) + repeatSuffix, app: app, feature: "dictionary", state: "surface-" + surface, origin: "explicit-original-context-fixture-real-bundled-MDX")
                 if (2...4).contains(index) {
                     details.tap()
-                    let controls = app.otherElements["dictionary-detail-controls"].firstMatch
+                    let controls = app.descendants(matching: .any)["dictionary-detail-controls"].firstMatch
                     let closeDetails = controls.buttons["dictionary-close-details"].firstMatch
                     XCTAssertTrue(closeDetails.waitForExistence(timeout: 10))
                     XCTAssertTrue(app.scrollViews["dictionary-detail-scroll"].firstMatch.exists, "The native scroll region keeps its existing identity")
