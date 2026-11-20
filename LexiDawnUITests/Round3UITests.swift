@@ -836,6 +836,7 @@ final class Round3UITests: XCTestCase {
                     let controls = app.otherElements["dictionary-detail-controls"].firstMatch
                     let closeDetails = controls.buttons["dictionary-close-details"].firstMatch
                     XCTAssertTrue(closeDetails.waitForExistence(timeout: 10))
+                    XCTAssertTrue(app.scrollViews["dictionary-detail-scroll"].firstMatch.exists, "The native scroll region keeps its existing identity")
                     XCTAssertFalse(app.otherElements["reader-body"].firstMatch.exists, "The covered reader must leave the accessibility tree")
                     XCTAssertEqual(app.staticTexts["dictionary-full-headword"].firstMatch.label, expected[index])
                     capture("R3-D" + String(index + 20) + repeatSuffix, app: app, feature: "dictionary", state: "verified-phrase-" + expected[index], origin: "explicit-original-context-fixture-real-bundled-MDX")

@@ -653,6 +653,7 @@ struct DictionaryDetailView: View {
     @State private var relatedTask: Task<Void, Never>?
     @State private var error: String?
     var body: some View {
+        ZStack {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 DictionaryEntryHeader(headword: result.headword, ipa: DictionaryPresentation.sharedIPA(result.senses + result.personalSenses), speech: speech)
@@ -688,6 +689,7 @@ struct DictionaryDetailView: View {
         }.accessibilityIdentifier("dictionary-detail-scroll").clipped().background(background.ignoresSafeArea())
             .preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
             .safeAreaInset(edge: .bottom) { detailControls }
+        }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("dictionary-detail-presentation")
             .accessibilityAddTraits(.isModal)

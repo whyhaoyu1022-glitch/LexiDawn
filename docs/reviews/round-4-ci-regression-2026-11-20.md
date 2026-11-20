@@ -91,3 +91,5 @@
 进一步限定模态无障碍语义：浮窗及完整详情使用 SwiftUI isModal trait，完整详情含底部控制条的 contain 容器；详情显示时遮挡的阅读正文退出 AX 树。返回、关闭和控制条添加稳定 accessibilityIdentifier。专项依旧两轮完整查询，新增验证详情期间 reader-body 不在 AX 树，按当前详情控制条定位真实按钮，保留 hittable、点击和返回后原词形断言。没有坐标点击或跳过返回流程。原生 API 依据：[Apple isModal](https://developer.apple.com/documentation/swiftui/accessibilitytraits/ismodal)。
 
 下一轮仅运行此剩余 UI，已通过的 3 项 XCTest 不重复运行；不改变词义来源、业务规则或数据结构。结果待实际运行。
+
+检查共享滚动测试时，发现模态容器标识必须与原 dictionary-detail-scroll 分离，避免同一 ScrollView 被覆盖标识。完整详情使用外层 ZStack 承载模态分组，原生 ScrollView 保留原标识；连续查词专项新增原滚动区仍存在的断言。本修正随 UI 专项提交，不增加测试范围。
