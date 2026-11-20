@@ -3,9 +3,42 @@ import SwiftData
 import AVFoundation
 import NaturalLanguage
 import SwiftUI
+import UIKit
 @testable import LexiDawn
 
 @MainActor final class MDXDictionaryTests: XCTestCase {
+    func testCoveredReaderRejectsRetainedNativeWordActionsAndRestoresPosition() throws {
+        var selected: [String] = []
+        var reader = InteractiveEnglishText(text: "A clear role helps learning.", fontSize: 19, lineSpacing: 1.5,
+            theme: "light", restore: ReaderPosition(), onPosition: { _ in }, onWord: { selected.append($0.surface) })
+        let coordinator = reader.makeCoordinator()
+        let container = EnglishTextContainer(frame: CGRect(x: 0, y: 0, width: 390, height: 600))
+        let textView = container.textView
+        textView.frame = container.bounds
+        textView.attributedText = NSAttributedString(string: reader.text, attributes: [.font: UIFont.systemFont(ofSize: 19)])
+        textView.layoutManager.ensureLayout(for: textView.textContainer)
+        coordinator.view = textView; coordinator.accessibilityContainer = container
+        coordinator.tokens = EnglishTokenizer.tokens(in: coordinator.projection.tokenizationText)
+        coordinator.restored = true
+        coordinator.updateAccessibility()
+        let elements = try XCTUnwrap(container.accessibilityElements as? [UIAccessibilityElement])
+        let retained = try XCTUnwrap(elements.first { $0.accessibilityLabel == "role" })
+        XCTAssertTrue(retained.accessibilityActivate()); XCTAssertEqual(selected, ["role"])
+        let position = textView.contentOffset
+        reader.accessibilitySuppressed = true; coordinator.parent = reader
+        container.setAccessibilitySuppressed(true); coordinator.updateAccessibility()
+        XCTAssertTrue(container.accessibilityElementsHidden)
+        XCTAssertTrue(container.accessibilityElements?.isEmpty == true)
+        XCTAssertFalse(retained.accessibilityActivate(), "An old VoiceOver element cannot open a covered article word")
+        XCTAssertFalse(container.accessibilityScroll(.down))
+        XCTAssertEqual(selected, ["role"]); XCTAssertEqual(textView.contentOffset, position)
+        reader.accessibilitySuppressed = false; coordinator.parent = reader
+        container.setAccessibilitySuppressed(false); coordinator.updateAccessibility()
+        let restored = try XCTUnwrap((container.accessibilityElements as? [UIAccessibilityElement])?.first { $0.accessibilityLabel == "role" })
+        XCTAssertTrue(restored === retained, "Restoring the reader preserves stable word accessibility identities")
+        XCTAssertTrue(restored.accessibilityActivate()); XCTAssertEqual(selected, ["role", "role"])
+        XCTAssertEqual(textView.contentOffset, position)
+    }
     func testCancelledQueuedLookupCannotOverwriteRestartedRequest() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
         let text = "Clear examples play a role in learning."

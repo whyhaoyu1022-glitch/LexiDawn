@@ -827,6 +827,7 @@ final class Round3UITests: XCTestCase {
                 }, evaluatedWith: card)
                 waitForExpectations(timeout: 15)
                 XCTAssertEqual(heading.value as? String ?? "", surface == expected[index] ? "" : "原文：" + surface)
+                XCTAssertFalse(app.buttons["word-" + surface].firstMatch.exists, "Covered article words must leave native accessibility navigation")
                 XCTAssertFalse(app.staticTexts["dictionary-resource-error"].exists)
                 XCTAssertFalse(app.descendants(matching: .any)["dictionary-loading"].firstMatch.exists)
                 let repeatSuffix = pass == 0 ? "" : "-repeat"
@@ -837,7 +838,7 @@ final class Round3UITests: XCTestCase {
                     let closeDetails = controls.buttons["dictionary-close-details"].firstMatch
                     XCTAssertTrue(closeDetails.waitForExistence(timeout: 10))
                     XCTAssertTrue(app.scrollViews["dictionary-detail-scroll"].firstMatch.exists, "The native scroll region keeps its existing identity")
-                    XCTAssertFalse(app.otherElements["reader-body"].firstMatch.exists, "The covered reader must leave the accessibility tree")
+                    XCTAssertFalse(app.buttons["word-" + surface].firstMatch.exists, "The covered article word must remain inaccessible in full details")
                     XCTAssertEqual(app.staticTexts["dictionary-full-headword"].firstMatch.label, expected[index])
                     capture("R3-D" + String(index + 20) + repeatSuffix, app: app, feature: "dictionary", state: "verified-phrase-" + expected[index], origin: "explicit-original-context-fixture-real-bundled-MDX")
                     let back = controls.buttons["dictionary-return-to-lookup"].firstMatch

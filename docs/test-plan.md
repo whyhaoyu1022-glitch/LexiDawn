@@ -23,7 +23,7 @@
 
 [2026-11-18 问题对照和验证结果](reviews/round-4-device-feedback-2026-11-18.md)。受影响核心与 UI 选择器使用 `[round4-core] [device-fix]`。新用例覆盖独立词形、短语与音节点、每 2 小时时间边界、12 词两组持久缓存、取消过滤与重复查词后的明确移除。
 
-当前源码包含 250 个 XCTest、67 个主设备 XCUITest，另有 SE 7 次和 Pro Max 3 次设备复跑。数量只描述范围，实际通过结果以具体运行日志为准。`[device-phrase]` 仅重跑短语语法槽和音节点独立词形迁移。当前 `[round4-fix-ui]` 仅运行剩余失败的连续词形/短语 UI 方法；手动加入与词汇搜索保留各自已通过的独立运行结果。短语方法连续执行两轮且均须通过，核对原文词形及原浮窗完全关闭，详情遮挡的 reader-body 不在 AX 树，按详情控制条实际返回；不增加整项重试。`[dictionary-ranking]` 加跑 3 项排序与真实 MDX 连续查询 XCTest；`[lookup-lifecycle]` 仅跑排队取消/重启、selection 所有权和真实 MDX 连续查询共 3 项。旧的 `[recommendation-worker]` 仍只选择推荐准备与取消方法。`[lookup-unit-only]` 与 `[round4-fix-ui]` 联用只补跑因启动失败未执行的 XCTest，保留同代码已在其他 runner 运行的 UI；不得将此运行当全量。最终 `[round4-final]` 执行全部测试，并覆盖专项的跳过条件。本批回归见[2026-11-20 CI 记录](reviews/round-4-ci-regression-2026-11-20.md)。Simulator 启动有两次上限和诊断，启动失败不计作测试通过。
+当前源码包含 251 个 XCTest、67 个主设备 XCUITest，另有 SE 7 次和 Pro Max 3 次设备复跑。数量只描述范围，实际通过结果以具体运行日志为准。`[device-phrase]` 仅重跑短语语法槽和音节点独立词形迁移。当前 `[round4-fix-ui]` 仅运行剩余失败的连续词形/短语 UI 方法；手动加入与词汇搜索保留各自已通过的独立运行结果。短语方法连续执行两轮且均须通过，核对原文词形及原浮窗完全关闭，模态覆盖的文章词语不参与原生 AX 导航，按详情控制条实际返回；不增加整项重试。`[dictionary-ranking]` 加跑 3 项排序与真实 MDX 连续查询 XCTest；`[lookup-lifecycle]` 仅跑排队取消/重启、selection 所有权和真实 MDX 连续查询共 3 项。旧的 `[recommendation-worker]` 仍只选择推荐准备与取消方法。`[lookup-unit-only]` 与 `[round4-fix-ui]` 联用只补跑因启动失败未执行的 XCTest，保留同代码已在其他 runner 运行的 UI；不得将此运行当全量。`[reader-accessibility]` 只跑原生正文覆盖/恢复的一项 XCTest 与剩余 UI。最终 `[round4-final]` 执行全部测试，并覆盖专项的跳过条件。本批回归见[2026-11-20 CI 记录](reviews/round-4-ci-regression-2026-11-20.md)。Simulator 启动有两次上限和诊断，启动失败不计作测试通过。
 
 ## 真机验收
 

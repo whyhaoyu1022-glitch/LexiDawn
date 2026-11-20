@@ -97,3 +97,14 @@
 模态/返回专项代码最终为 `0217670ce76110c82af2a8430d08382596b95670`，[44718192194](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44718192194)。它取代尚未执行 UI 的 e3a66b8 范围，仍只运行连续查词方法；结果待运行。
 
 `0217670` / 44718192194 全目标编译成功，UI 失败 64.442 秒。失败层级显示当前 compact-word-card 是带模态语义的 Alert，take、MDX 中文、撤销及详情按钮均已就绪；测试限定 otherElements，实际未找到这个 Alert。因此修正定位为 descendants(.any) + 稳定 ID，保留原十五秒内词头、详情可用、原词形断言。其他已有浮窗测试本来就使用这种与角色无关的 ID 定位；本轮仅此新专项仍限定了错误类型。控制条也按 ID 定位容器。此为实际元素类型变化的测试适配，不跳过任何业务验收。原生产代码不再修改。诊断产物 `14620838564` SHA-256 `3b338c385ed521c99e432c04ff6702b796584d0a76c20c138159adf598596f13`。
+
+
+## UIKit 正文容器与模态无障碍范围
+
+da3d81e / [44720208229](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44720208229) 编译通过，UI 仍在第二次 taken 浮窗就绪查询失败（134.977 秒）。失败时 AX 明确有 take、原文 taken 和已启用的详情按钮；背景仍暴露整篇原生词语元素。GitHub 产物 14622975061 为 97,580,719 字节，服务记录 SHA-256 95afff2f22323e3a7a3a9f00b32018c996237beb56011e83560cf37fdc01584c。本地执行环境断开，未在本地重新下载并视觉检查该轮 PNG；诊断使用实际作业日志的完整 AX，不伪称重新查看截图。
+
+原生 EnglishTextContainer 自己维护 accessibilityElements，原 SwiftUI 隐藏未阻止它在 layout 回调继续暴露和刷新词语。进一步修复由 UIView 原生 accessibilityElementsHidden 控制遮挡状态，覆盖期间清空暴露数组、停止重建，保留内部词语身份供关闭后恢复。旧词语的 accessibilityActivate 和无障碍滚动也拒绝在覆盖期间执行。仅控制无障碍内容，不改变文章可视布局、查词数据或阅读位置。阅读器把 selection、完整详情和来源页覆盖状态传到原生容器，去掉附在 popover 宿主上的冗余 SwiftUI 隐藏。
+
+新增 XCTest testCoveredReaderRejectsRetainedNativeWordActionsAndRestoresPosition：使用真实 UIKit/TextKit 容器和生成的词语元素，验证正常激活、覆盖时旧元素拒绝激活且不滚动、恢复同一元素身份与位置。它是原生无障碍回归，不能冒充 MDX 解析验证。源码总计 251 个 XCTest。下一轮 [reader-accessibility] 只执行此新 XCTest 与原剩余连续查词 UI；已经通过的三个查询/取消 XCTest不重复运行。
+
+UI 继续执行两轮全部查词和详情返回；遮挡验证针对刚点击的真实文章词语，不把不可聚焦的空容器是否保留为实现验收。已存在的原生滚动区、词形、中文、错误、关闭、返回及就绪断言均保留。结果待实际执行。

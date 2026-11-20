@@ -1,6 +1,6 @@
 # Round 4 交付报告
 
-最新真机问题修复、专项结果及未完成验证见[2026-11-18 反馈记录](round-4-device-feedback-2026-11-18.md)。以下为修复前 `4be478e` 的历史全量交付，不代表后续修复已完成全量验收。
+最新真机问题修复见[2026-11-18 反馈记录](round-4-device-feedback-2026-11-18.md)，最新失败、专项结果和最终全量请求见[2026-11-20 CI 回归记录](round-4-ci-regression-2026-11-20.md)。以下为修复前 `4be478e` 的历史全量交付，不代表后续修复已完成全量验收。
 
 验证代码为 `4be478e2e778bea4da2095e65a637e5df117f7be`。[全量运行 43420154858](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43420154858) 成功。原生测试使用 Xcode 26.6、iOS 26.5 Simulator。对应的未签名 IPA 目标最低 iOS 27.0，尚未在真机签名安装和验收。
 

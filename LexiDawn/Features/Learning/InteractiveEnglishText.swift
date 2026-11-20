@@ -16,6 +16,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
     var title: String? = nil
     var subtitle: String? = nil
     var sourceID: String? = nil
+    var accessibilitySuppressed = false
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeUIView(context: Context) -> EnglishTextContainer {
         let container = EnglishTextContainer()
@@ -24,6 +25,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
         view.alwaysBounceVertical = true; view.adjustsFontForContentSizeCategory = true
         view.isScrollEnabled = scrollable
         container.accessibilityIdentifier = "reader-body"
+        container.setAccessibilitySuppressed(accessibilitySuppressed)
         container.isAccessibilityElement = false; container.accessibilityContainerType = .semanticGroup
         view.accessibilityElementsHidden = true
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.tap(_:)))
@@ -40,6 +42,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
         let view = container.textView
         container.backgroundColor = view.backgroundColor
         let coordinator = context.coordinator; coordinator.parent = self
+        container.setAccessibilitySuppressed(accessibilitySuppressed)
         let key = "\(fontSize)|\(lineSpacing)|\(theme)|\(view.traitCollection.preferredContentSizeCategory.rawValue)|\(view.traitCollection.userInterfaceStyle.rawValue)"
         let width = max(20, (view.bounds.width - 720) / 2)
         container.configureHeading(title: title, subtitle: subtitle, theme: theme)
@@ -120,7 +123,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
             rotationOffset = nil; restored = true
         }
         @objc func tap(_ recognizer: UITapGestureRecognizer) {
-            guard let view, let token = token(at: recognizer.location(in: view)) else { return }
+            guard !parent.accessibilitySuppressed, let view, let token = token(at: recognizer.location(in: view)) else { return }
             if let container = accessibilityContainer {
                 parent.onWordAnchor?(view.convert(recognizer.location(in: view), to: container), container.bounds.size)
             }
@@ -148,7 +151,7 @@ struct InteractiveEnglishText: UIViewRepresentable {
             if Date().timeIntervalSince(lastAccessibilityUpdate) > 0.3 { updateAccessibility() }
         }
         func updateAccessibility() {
-            guard restored, let view, let accessibilityContainer else { return }
+            guard restored, !parent.accessibilitySuppressed, let view, let accessibilityContainer, !accessibilityContainer.accessibilityElementsHidden else { return }
             lastAccessibilityUpdate = Date()
             let visible = CGRect(origin: CGPoint(x: 0, y: max(0, view.contentOffset.y - view.textContainerInset.top)), size: view.bounds.size)
             let glyphs = view.layoutManager.glyphRange(forBoundingRect: visible, in: view.textContainer)
@@ -174,10 +177,12 @@ struct InteractiveEnglishText: UIViewRepresentable {
                 rect.origin.x += view.textContainerInset.left; rect.origin.y += view.textContainerInset.top
                 element.accessibilityFrameInContainerSpace = view.convert(rect, to: accessibilityContainer)
                 element.action = { [weak self, weak element, weak accessibilityContainer] in
-                    guard let self, let element, let accessibilityContainer else { return }
+                    guard let self, let element, let accessibilityContainer, !self.parent.accessibilitySuppressed,
+                          !accessibilityContainer.accessibilityElementsHidden else { return false }
                     let rect = element.accessibilityFrameInContainerSpace
                     self.parent.onWordAnchor?(CGPoint(x: rect.midX, y: rect.midY), accessibilityContainer.bounds.size)
                     self.parent.onWord(EnglishToken(surface: token.surface, range: self.projection.rawRange(token.range), sentence: token.sentence))
+                    return true
                 }
                 elements.append(element)
             }
@@ -189,8 +194,8 @@ struct InteractiveEnglishText: UIViewRepresentable {
     }
 }
 private final class WordAccessibilityElement: UIAccessibilityElement {
-    var action: (() -> Void)?
-    override func accessibilityActivate() -> Bool { action?(); return action != nil }
+    var action: (() -> Bool)?
+    override func accessibilityActivate() -> Bool { action?() ?? false }
 }
 
 /// UIView owns the word-level AX container. UITextView's built-in paragraph AX implementation
@@ -201,6 +206,11 @@ final class EnglishTextContainer: UIView {
     let headingLabel = UILabel()
     let subtitleLabel = UILabel()
     private(set) var headingHeight: CGFloat = 12
+    func setAccessibilitySuppressed(_ suppressed: Bool) {
+        guard accessibilityElementsHidden != suppressed else { return }
+        accessibilityElementsHidden = suppressed
+        if suppressed { accessibilityElements = [] }
+    }
     func configureHeading(title: String?, subtitle: String?, theme: String) {
         guard let title else { headingLabel.isHidden = true; subtitleLabel.isHidden = true; headingHeight = 12; return }
         if headingLabel.superview == nil { textView.addSubview(headingLabel); textView.addSubview(subtitleLabel) }
@@ -222,7 +232,7 @@ final class EnglishTextContainer: UIView {
     required init?(coder: NSCoder) { super.init(coder: coder); addSubview(textView) }
     override func layoutSubviews() { super.layoutSubviews(); textView.frame = bounds; onLayout?() }
     override func accessibilityScroll(_ direction: UIAccessibilityScrollDirection) -> Bool {
-        guard textView.isScrollEnabled, textView.bounds.height > 0 else { return false }
+        guard !accessibilityElementsHidden, textView.isScrollEnabled, textView.bounds.height > 0 else { return false }
         let sign: CGFloat
         switch direction {
         case .up, .left, .next: sign = 1

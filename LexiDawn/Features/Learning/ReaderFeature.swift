@@ -78,9 +78,9 @@ struct ReaderView: View {
                         catch { model.error = error.localizedDescription }
                     }, document: article.document, onWordAnchor: { point, size in
                         wordAnchor = UnitPoint(x: min(0.96, max(0.04, point.x / max(1, size.width))), y: min(0.96, max(0.04, point.y / max(1, size.height))))
-                    }, title: ArticleTitlePresentation.display(article.title, sourceID: article.sourceID), subtitle: readerSubtitle(article), sourceID: article.sourceID)
+                    }, title: ArticleTitlePresentation.display(article.title, sourceID: article.sourceID), subtitle: readerSubtitle(article), sourceID: article.sourceID,
+                    accessibilitySuppressed: selection != nil || detail != nil || sourceDetails)
                 .frame(maxWidth: .infinity, minHeight: 80, maxHeight: .infinity).layoutPriority(1)
-                .accessibilityHidden(selection != nil || sourceDetails)
                 .popover(item: WordLookupPresentation.binding($selection), attachmentAnchor: .point(wordAnchor), arrowEdge: wordAnchor.y > 0.5 ? .bottom : .top) { selected in
                     WordLookupSheet(model: selected, openDetails: { openDictionaryDetail(selected) })
                         .id(selected.id)
@@ -654,41 +654,41 @@ struct DictionaryDetailView: View {
     @State private var error: String?
     var body: some View {
         ZStack {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                DictionaryEntryHeader(headword: result.headword, ipa: DictionaryPresentation.sharedIPA(result.senses + result.personalSenses), speech: speech)
-                if speech.state == .unavailable { Text("系统英语语音不可用").font(.caption).foregroundStyle(.secondary) }
-                contextSections
-                DictionaryResultContent(result: result, onExampleWord: lookup, onRelatedEntry: depth < 3 ? openRelated : nil)
-                if let base = result.baseEntry, !base.senses.isEmpty {
-                    Divider().padding(.vertical, 4)
-                    DictionaryEntryHeader(headword: base.headword, ipa: DictionaryPresentation.sharedIPA(base.senses), speech: speech)
-                    DictionaryResultContent(result: DictionaryResult(headword: base.headword, senses: base.senses,
-                        updatedAt: result.updatedAt, sourceURL: result.sourceURL, licenseURL: result.licenseURL),
-                        onExampleWord: lookup, onRelatedEntry: depth < 3 ? openRelated : nil)
-                }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    DictionaryEntryHeader(headword: result.headword, ipa: DictionaryPresentation.sharedIPA(result.senses + result.personalSenses), speech: speech)
+                    if speech.state == .unavailable { Text("系统英语语音不可用").font(.caption).foregroundStyle(.secondary) }
+                    contextSections
+                    DictionaryResultContent(result: result, onExampleWord: lookup, onRelatedEntry: depth < 3 ? openRelated : nil)
+                    if let base = result.baseEntry, !base.senses.isEmpty {
+                        Divider().padding(.vertical, 4)
+                        DictionaryEntryHeader(headword: base.headword, ipa: DictionaryPresentation.sharedIPA(base.senses), speech: speech)
+                        DictionaryResultContent(result: DictionaryResult(headword: base.headword, senses: base.senses,
+                            updatedAt: result.updatedAt, sourceURL: result.sourceURL, licenseURL: result.licenseURL),
+                            onExampleWord: lookup, onRelatedEntry: depth < 3 ? openRelated : nil)
+                    }
 
-                let synonyms = Array(Set(result.usableSenses.flatMap { $0.synonyms ?? [] })).filter { $0.lowercased() != result.headword.lowercased() }.sorted()
-                if !synonyms.isEmpty {
-                    Button { showingSynonyms.toggle() } label: {
-                        Label("对照同义词", systemImage: showingSynonyms ? "chevron.up" : "chevron.down")
-                    }.accessibilityIdentifier("dictionary-synonym-comparison")
-                    if showingSynonyms {
-                        ForEach(synonyms, id: \.self) { synonym in
-                            Button(result.headword + " / " + synonym) { comparison = synonym }
-                                .accessibilityIdentifier("dictionary-compare-" + synonym)
+                    let synonyms = Array(Set(result.usableSenses.flatMap { $0.synonyms ?? [] })).filter { $0.lowercased() != result.headword.lowercased() }.sorted()
+                    if !synonyms.isEmpty {
+                        Button { showingSynonyms.toggle() } label: {
+                            Label("对照同义词", systemImage: showingSynonyms ? "chevron.up" : "chevron.down")
+                        }.accessibilityIdentifier("dictionary-synonym-comparison")
+                        if showingSynonyms {
+                            ForEach(synonyms, id: \.self) { synonym in
+                                Button(result.headword + " / " + synonym) { comparison = synonym }
+                                    .accessibilityIdentifier("dictionary-compare-" + synonym)
+                            }
                         }
                     }
-                }
-                DisclosureGroup("来源详情") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("词典随 App 安装，可离线查询。发音由 iOS 提供。").font(.caption).foregroundStyle(.secondary)
-                    }.padding(.top, 8)
-                }.font(.subheadline)
-            }.padding(.horizontal, 22).padding(.top, 16).padding(.bottom, 24)
-        }.accessibilityIdentifier("dictionary-detail-scroll").clipped().background(background.ignoresSafeArea())
-            .preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
-            .safeAreaInset(edge: .bottom) { detailControls }
+                    DisclosureGroup("来源详情") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("词典随 App 安装，可离线查询。发音由 iOS 提供。").font(.caption).foregroundStyle(.secondary)
+                        }.padding(.top, 8)
+                    }.font(.subheadline)
+                }.padding(.horizontal, 22).padding(.top, 16).padding(.bottom, 24)
+            }.accessibilityIdentifier("dictionary-detail-scroll").clipped().background(background.ignoresSafeArea())
+                .preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
+                .safeAreaInset(edge: .bottom) { detailControls }
         }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("dictionary-detail-presentation")
