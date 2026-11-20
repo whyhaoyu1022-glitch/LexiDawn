@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import AVFoundation
+import OSLog
 
 @MainActor final class ReaderViewModel: ObservableObject {
     @Published var article: ReadableArticle?
@@ -78,6 +79,7 @@ struct ReaderView: View {
                         wordAnchor = UnitPoint(x: min(0.96, max(0.04, point.x / max(1, size.width))), y: min(0.96, max(0.04, point.y / max(1, size.height))))
                     }, title: ArticleTitlePresentation.display(article.title, sourceID: article.sourceID), subtitle: readerSubtitle(article), sourceID: article.sourceID)
                 .frame(maxWidth: .infinity, minHeight: 80, maxHeight: .infinity).layoutPriority(1)
+                .accessibilityHidden(selection != nil || sourceDetails)
                 .popover(item: $selection, attachmentAnchor: .point(wordAnchor), arrowEdge: wordAnchor.y > 0.5 ? .bottom : .top) { selected in
                     WordLookupSheet(model: selected, openDetails: { openDictionaryDetail(selected) })
                         .id(selected.id)
@@ -98,7 +100,6 @@ struct ReaderView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(readerBackground)
-        .accessibilityHidden(selection != nil || sourceDetails)
         .toolbarBackground(readerBackground, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .preferredColorScheme(theme == "dark" ? .dark : ["paper", "light"].contains(theme) ? .light : nil)
@@ -212,6 +213,7 @@ struct ReaderView: View {
 }
 
 @MainActor final class WordLookupModel: ObservableObject, Identifiable {
+    private static let logger = Logger(subsystem: "com.lexidawn.app.lookup", category: "lifecycle")
     let id = UUID()
     let depth: Int
     @Published var result: DictionaryResult?
@@ -238,6 +240,7 @@ struct ReaderView: View {
         self.depth = depth; self.origin = origin; self.sourceText = sourceText ?? origin.sourceText
     }
     func startLookup(force: Bool = false) {
+        logLifecycle("start-requested")
         guard force || result == nil, lookupTask == nil else { return }
         let job = UUID()
         lookupJob = job
@@ -247,7 +250,10 @@ struct ReaderView: View {
             await self.begin()
         }
     }
-    func cancelLookup() { lookupTask?.cancel(); lookupTask = nil; lookupJob = UUID(); lookupGeneration = UUID(); loading = false }
+    func cancelLookup() { logLifecycle("cancel-requested"); lookupTask?.cancel(); lookupTask = nil; lookupJob = UUID(); lookupGeneration = UUID(); loading = false }
+    func logLifecycle(_ event: String) {
+        Self.logger.info("request=\(self.id.uuidString, privacy: .public) event=\(event, privacy: .public) loading=\(self.loading) result=\(self.result != nil)")
+    }
     func begin() async { await lookup() }
     func refreshMembership() {
         guard let result else { return }
@@ -258,7 +264,8 @@ struct ReaderView: View {
     }
     func lookup() async {
         let generation = UUID(); lookupGeneration = generation; loading = true; error = nil
-        defer { if lookupGeneration == generation { loading = false } }
+        logLifecycle("query-began")
+        defer { if lookupGeneration == generation { loading = false }; logLifecycle("query-ended") }
         do {
             let resolved: (DictionaryResult, EnglishToken)
             if let sourceText {
@@ -268,13 +275,14 @@ struct ReaderView: View {
             }
             guard generation == lookupGeneration, !Task.isCancelled else { return }
             result = resolved.0; resolvedToken = resolved.1; error = nil
+            logLifecycle("result-published")
             refreshMembership()
             if !automaticActionHandled {
                 automaticActionHandled = true
                 if autoAdd, articleID != nil { add(explicit: false) }
             }
-        } catch is CancellationError { }
-        catch { if generation == lookupGeneration { result = nil; self.error = error.localizedDescription } }
+        } catch is CancellationError { logLifecycle("query-cancelled") }
+        catch { logLifecycle("query-failed"); if generation == lookupGeneration { result = nil; self.error = error.localizedDescription } }
     }
     func add(explicit: Bool) {
         guard let result, let resolvedToken else { return }
@@ -362,8 +370,8 @@ struct WordLookupSheet: View {
             .accessibilityHidden(showDetails)
             .fixedSize(horizontal: false, vertical: true)
             .task { do { theme = try dependencies.preferencesRepository.load().readerTheme } catch { preferencesError = "阅读设置读取失败：" + error.localizedDescription } }
-            .onAppear { model.startLookup() }
-            .onDisappear { if !showDetails { model.cancelLookup() } }
+            .onAppear { model.logLifecycle("popover-appeared"); model.startLookup() }
+            .onDisappear { model.logLifecycle("popover-disappeared"); if !showDetails { model.cancelLookup() } }
             .onReceive(model.learning.$revision) { _ in model.refreshMembership() }
             .fullScreenCover(isPresented: $showDetails, onDismiss: {
                 if closeLookupAfterDetails { closeLookupAfterDetails = false; dismiss() }

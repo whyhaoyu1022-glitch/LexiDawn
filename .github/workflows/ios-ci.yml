@@ -352,6 +352,11 @@ jobs:
           TEST_RUN_FILE="$(python3 -c 'import os,pathlib; print(next((pathlib.Path(os.environ["RUNNER_TEMP"])/"LexiDawn-derived/Build/Products").glob("*.xctestrun")))')"
           xcodebuild test-without-building -xctestrun "$TEST_RUN_FILE" -destination "platform=iOS Simulator,id=${LEXIDAWN_SIMULATOR_ID}" -parallel-testing-enabled NO -resultBundlePath "${RUNNER_TEMP}/ui.xcresult" "${TEST_SELECTORS[@]}" 2>&1 | tee "${RUNNER_TEMP}/ui.log"
           python3 scripts/verify-ui-execution.py "${RUNNER_TEMP}/ci-tests.txt" "${RUNNER_TEMP}/ui.log"
+      - name: Retain lookup lifecycle diagnostics without article or query text
+        if: always()
+        run: |
+          set -euo pipefail
+          xcrun simctl spawn "$LEXIDAWN_SIMULATOR_ID" log show --last 30m --style compact --info --predicate 'subsystem == "com.lexidawn.app.lookup"' > "${RUNNER_TEMP}/lookup-lifecycle.log"
       - name: Export untouched native screenshots and metadata on success or failure
         if: always()
         run: |
@@ -374,6 +379,7 @@ jobs:
             ${{ runner.temp }}/native-attachments
             ${{ runner.temp }}/ui.xcresult
             ${{ runner.temp }}/ui.log
+            ${{ runner.temp }}/lookup-lifecycle.log
             ${{ runner.temp }}/ci-tests.txt
           if-no-files-found: error
       - name: Retry native evidence upload after a transient artifact service failure
@@ -388,6 +394,7 @@ jobs:
             ${{ runner.temp }}/native-attachments
             ${{ runner.temp }}/ui.xcresult
             ${{ runner.temp }}/ui.log
+            ${{ runner.temp }}/lookup-lifecycle.log
             ${{ runner.temp }}/ci-tests.txt
           if-no-files-found: error
 

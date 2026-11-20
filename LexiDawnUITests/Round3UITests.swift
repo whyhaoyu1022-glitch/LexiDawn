@@ -5,6 +5,14 @@ import ImageIO
 final class Round3UITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false; XCUIDevice.shared.orientation = .portrait }
     override func tearDownWithError() throws {
+        if name.contains("testComplexFormsAndFourContextPhrasesUseNestedLookupAndReturn"), (testRun?.failureCount ?? 0) > 0 {
+            let app = XCUIApplication()
+            let hierarchy = app.debugDescription
+            print("ROUND3_PHRASE_FAILURE_HIERARCHY_BEGIN\n" + hierarchy + "\nROUND3_PHRASE_FAILURE_HIERARCHY_END")
+            let attachment = XCTAttachment(string: hierarchy)
+            attachment.name = "round3-phrase-failure-hierarchy"; attachment.lifetime = .keepAlways; add(attachment)
+            capture("R3-phrase-failure-diagnostic", app: app, feature: "dictionary", state: "failed-continuous-lookup", origin: "explicit-original-context-fixture-real-bundled-MDX")
+        }
         // This isolated fixture contains no live discovery candidates or user data.
         // Retain its failure hierarchy in the log even if artifact upload is unavailable.
         if name.contains("testVocabularyStatusSortConfirmedMeaningAndNativeExportDialogs"), (testRun?.failureCount ?? 0) > 0 {

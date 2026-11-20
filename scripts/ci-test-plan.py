@@ -9,7 +9,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 FOCUSED = {
-    'fix-manual-add': ['LexiDawnUITests/LexiDawnUITests/testRound2SettingsPersistAndDisabledAutoAddRequiresManualAdd'],
     'fix-phrases': ['LexiDawnUITests/Round3UITests/testComplexFormsAndFourContextPhrasesUseNestedLookupAndReturn'],
 }
 
