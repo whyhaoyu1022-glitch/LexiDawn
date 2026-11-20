@@ -816,11 +816,15 @@ final class Round3UITests: XCTestCase {
                 let word = app.buttons["word-" + surface].firstMatch
                 for _ in 0..<8 { if word.exists && word.isHittable { break }; app.otherElements["reader-body"].firstMatch.swipeUp() }
                 XCTAssertTrue(word.isHittable); word.tap()
-                let heading = app.staticTexts["dictionary-headword"]
-                expectation(for: NSPredicate(format: "label == %@", expected[index]), evaluatedWith: heading)
-                waitForExpectations(timeout: 15)
-                let details = app.buttons["dictionary-details"]
-                expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: details)
+                let card = app.otherElements["compact-word-card"].firstMatch
+                let heading = card.staticTexts["dictionary-headword"]
+                let details = card.buttons["dictionary-details"]
+                let expectedHeadword = expected[index]
+                // Never read label on an unresolved element during native
+                // popover rehosting. Keep the same deadline for actual readiness.
+                expectation(for: NSPredicate { _, _ in
+                    card.exists && heading.exists && heading.label == expectedHeadword && details.exists && details.isEnabled
+                }, evaluatedWith: card)
                 waitForExpectations(timeout: 15)
                 XCTAssertEqual(heading.value as? String ?? "", surface == expected[index] ? "" : "原文：" + surface)
                 XCTAssertFalse(app.staticTexts["dictionary-resource-error"].exists)

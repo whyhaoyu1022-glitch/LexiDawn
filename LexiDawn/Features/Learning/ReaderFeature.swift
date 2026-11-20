@@ -72,7 +72,8 @@ struct ReaderView: View {
                             let auto = try dependencies.preferencesRepository.load().autoAddOnWordTap; model.flush()
                             guard model.article != nil else { return }
                             let lookup = WordLookupModel(token: token, articleID: model.articleID, autoAdd: auto, learning: model.learning, sourceText: article.body)
-                            selection?.cancelLookup(); lookup.startLookup(); selection = lookup
+                            WordLookupPresentation.binding($selection).wrappedValue = lookup
+                            lookup.startLookup()
                         }
                         catch { model.error = error.localizedDescription }
                     }, document: article.document, onWordAnchor: { point, size in
@@ -80,7 +81,7 @@ struct ReaderView: View {
                     }, title: ArticleTitlePresentation.display(article.title, sourceID: article.sourceID), subtitle: readerSubtitle(article), sourceID: article.sourceID)
                 .frame(maxWidth: .infinity, minHeight: 80, maxHeight: .infinity).layoutPriority(1)
                 .accessibilityHidden(selection != nil || sourceDetails)
-                .popover(item: $selection, attachmentAnchor: .point(wordAnchor), arrowEdge: wordAnchor.y > 0.5 ? .bottom : .top) { selected in
+                .popover(item: WordLookupPresentation.binding($selection), attachmentAnchor: .point(wordAnchor), arrowEdge: wordAnchor.y > 0.5 ? .bottom : .top) { selected in
                     WordLookupSheet(model: selected, openDetails: { openDictionaryDetail(selected) })
                         .id(selected.id)
                         .presentationCompactAdaptation(.popover)
@@ -126,7 +127,7 @@ struct ReaderView: View {
             catch { model.error = error.localizedDescription }
             model.open()
         }
-        .onDisappear { model.flush(); model.learning.changed() }
+        .onDisappear { selection?.cancelLookup(); model.flush(); model.learning.changed() }
         .onChange(of: scenePhase) { _, phase in if phase != .active { model.flush() } else { model.open() } }
         .task(id: model.article?.accessExpiresAt) {
             guard let expiry = model.article?.accessExpiresAt else { return }
@@ -171,7 +172,7 @@ struct ReaderView: View {
     private func openDictionaryDetail(_ selected: WordLookupModel) {
         guard selected.result != nil else { return }
         pendingDetail = selected
-        selection = nil
+        WordLookupPresentation.binding($selection).wrappedValue = nil
     }
     private func presentPendingDetail() {
         guard let selected = pendingDetail else { return }
@@ -212,6 +213,16 @@ struct ReaderView: View {
     }
 }
 
+/// The presenting selection, rather than transient popover layout callbacks,
+/// owns cancellation. SwiftUI can rehost a visible popover without dismissing it.
+@MainActor enum WordLookupPresentation {
+    static func binding(_ selection: Binding<WordLookupModel?>) -> Binding<WordLookupModel?> {
+        Binding(get: { selection.wrappedValue }, set: { next in
+            if selection.wrappedValue?.id != next?.id { selection.wrappedValue?.cancelLookup() }
+            selection.wrappedValue = next
+        })
+    }
+}
 @MainActor final class WordLookupModel: ObservableObject, Identifiable {
     private static let logger = Logger(subsystem: "com.lexidawn.app.lookup", category: "lifecycle")
     let id = UUID()
@@ -239,16 +250,17 @@ struct ReaderView: View {
         self.token = token; self.articleID = articleID; self.autoAdd = autoAdd; self.learning = learning
         self.depth = depth; self.origin = origin; self.sourceText = sourceText ?? origin.sourceText
     }
-    func startLookup(force: Bool = false) {
+    @discardableResult func startLookup(force: Bool = false) -> Task<Void, Never>? {
         logLifecycle("start-requested")
-        guard force || result == nil, lookupTask == nil else { return }
+        guard force || result == nil, lookupTask == nil else { return lookupTask }
         let job = UUID()
         lookupJob = job
         lookupTask = Task { [weak self] in
-            guard let self else { return }
+            guard let self, !Task.isCancelled, self.lookupJob == job else { return }
             defer { if self.lookupJob == job { self.lookupTask = nil } }
             await self.begin()
         }
+        return lookupTask
     }
     func cancelLookup() { logLifecycle("cancel-requested"); lookupTask?.cancel(); lookupTask = nil; lookupJob = UUID(); lookupGeneration = UUID(); loading = false }
     func logLifecycle(_ event: String) {
@@ -263,6 +275,7 @@ struct ReaderView: View {
         } catch { vocabularyError = error.localizedDescription }
     }
     func lookup() async {
+        guard !Task.isCancelled else { return }
         let generation = UUID(); lookupGeneration = generation; loading = true; error = nil
         logLifecycle("query-began")
         defer { if lookupGeneration == generation { loading = false }; logLifecycle("query-ended") }
@@ -371,7 +384,7 @@ struct WordLookupSheet: View {
             .fixedSize(horizontal: false, vertical: true)
             .task { do { theme = try dependencies.preferencesRepository.load().readerTheme } catch { preferencesError = "阅读设置读取失败：" + error.localizedDescription } }
             .onAppear { model.logLifecycle("popover-appeared"); model.startLookup() }
-            .onDisappear { model.logLifecycle("popover-disappeared"); if !showDetails { model.cancelLookup() } }
+            .onDisappear { model.logLifecycle("popover-disappeared") }
             .onReceive(model.learning.$revision) { _ in model.refreshMembership() }
             .fullScreenCover(isPresented: $showDetails, onDismiss: {
                 if closeLookupAfterDetails { closeLookupAfterDetails = false; dismiss() }
@@ -679,7 +692,7 @@ struct DictionaryDetailView: View {
                     .toolbar(.visible, for: .navigationBar)
             }
             .task { refresh() }.onReceive(learning.$revision) { _ in refresh() }
-            .popover(item: $selection) { selected in
+            .popover(item: WordLookupPresentation.binding($selection)) { selected in
                 WordLookupSheet(model: selected).id(selected.id).presentationCompactAdaptation(.popover)
             }
             .navigationDestination(item: $relatedRoute) { route in
@@ -688,7 +701,7 @@ struct DictionaryDetailView: View {
                     contextOrigin: .dictionary(headword: result.headword, evidence: BundledMDXDictionaryProvider.sourceName, text: sentence),
                     closeStack: closeDetails, returnToParent: { relatedRoute = nil })
             }
-            .onDisappear { speech.stop(); relatedTask?.cancel() }
+            .onDisappear { selection?.cancelLookup(); speech.stop(); relatedTask?.cancel() }
     }
     @ViewBuilder private var contextSections: some View {
         if !context.isBlank {
@@ -765,7 +778,7 @@ struct DictionaryDetailView: View {
         do {
             let auto = try dependencies.preferencesRepository.load().autoAddOnWordTap
             let model = WordLookupModel(token: token, articleID: articleID, autoAdd: articleID != nil && automaticAdditionAllowed && auto, learning: learning, depth: depth + 1, origin: origin)
-            selection = model
+            WordLookupPresentation.binding($selection).wrappedValue = model
         } catch { self.error = error.localizedDescription }
     }
     private func refresh() {

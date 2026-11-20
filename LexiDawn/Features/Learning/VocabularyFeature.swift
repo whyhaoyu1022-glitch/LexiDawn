@@ -440,14 +440,14 @@ struct VocabularyDetailView: View {
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidHideNotification)) { _ in annotation.flush() }
             .onReceive(learning.$revision) { _ in annotation.refreshPolicy() }
             .onChange(of: scenePhase) { _, phase in if phase != .active { annotation.flush() } }
-            .onDisappear { annotation.flush(); speech.stop(); relatedTask?.cancel() }
+            .onDisappear { selection?.cancelLookup(); annotation.flush(); speech.stop(); relatedTask?.cancel() }
             .task {
                 do { theme = try dependencies.preferencesRepository.load().readerTheme } catch { annotation.error = error.localizedDescription }
                 showingPersonalEditor = annotation.state == "已恢复未保存草稿" ||
                     !annotation.persistedSenses.contains { BilingualMeaningPolicy.hasChinese($0.chinese) }
                 chosenMeaningText = item.reviewMeaningText; annotation.refreshPolicy(); await lookup()
             }
-            .popover(item: $selection) { selected in
+            .popover(item: WordLookupPresentation.binding($selection)) { selected in
                 WordLookupSheet(model: selected).id(selected.id).presentationCompactAdaptation(.popover)
             }
             .fullScreenCover(item: $relatedRoute) { route in
@@ -528,7 +528,7 @@ struct VocabularyDetailView: View {
         } catch { annotation.error = error.localizedDescription }
     }
     private func lookupWord(_ token: EnglishToken, origin: VocabularyContextOrigin) {
-        selection = WordLookupModel(token: token, articleID: item.sourceArticleID, autoAdd: false, learning: learning, depth: 1, origin: origin)
+        WordLookupPresentation.binding($selection).wrappedValue = WordLookupModel(token: token, articleID: item.sourceArticleID, autoAdd: false, learning: learning, depth: 1, origin: origin)
     }
 }
 

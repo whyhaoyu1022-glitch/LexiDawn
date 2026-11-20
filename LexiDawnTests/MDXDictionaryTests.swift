@@ -2,9 +2,49 @@ import XCTest
 import SwiftData
 import AVFoundation
 import NaturalLanguage
+import SwiftUI
 @testable import LexiDawn
 
 @MainActor final class MDXDictionaryTests: XCTestCase {
+    func testCancelledQueuedLookupCannotOverwriteRestartedRequest() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let text = "Clear examples play a role in learning."
+        let article = try learning.content.importArticle(.init(title: "Original lookup task regression", body: text,
+            source: "Original XCTest author", rightsConfirmed: true), at: Date())
+        let token = try XCTUnwrap(EnglishTokenizer.tokens(in: text).first { $0.surface == "role" })
+        let model = WordLookupModel(token: token, articleID: article, autoAdd: true, learning: learning, sourceText: text)
+        let cancelled = try XCTUnwrap(model.startLookup())
+        model.cancelLookup()
+        let restarted = try XCTUnwrap(model.startLookup())
+        await cancelled.value
+        await restarted.value
+        XCTAssertTrue(cancelled.isCancelled); XCTAssertFalse(restarted.isCancelled)
+        XCTAssertFalse(model.loading); XCTAssertNil(model.error); XCTAssertNil(model.vocabularyError)
+        XCTAssertEqual(model.result?.headword, "role"); XCTAssertNotNil(model.existingEntryID)
+        XCTAssertEqual(try learning.vocabulary.entries().map(\.lemma), ["role"])
+    }
+    func testLookupSelectionCancelsOnlyDismissedOrReplacedRequest() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let text = "Clear examples play a role in learning."
+        let token = try XCTUnwrap(EnglishTokenizer.tokens(in: text).first { $0.surface == "role" })
+        let first = WordLookupModel(token: token, articleID: nil, autoAdd: false, learning: learning, sourceText: text)
+        let second = WordLookupModel(token: token, articleID: nil, autoAdd: false, learning: learning, sourceText: text)
+        var selected: WordLookupModel? = first
+        let selection = WordLookupPresentation.binding(Binding(get: { selected }, set: { selected = $0 }))
+        let firstTask = try XCTUnwrap(first.startLookup())
+        selection.wrappedValue = second
+        let secondTask = try XCTUnwrap(second.startLookup())
+        selection.wrappedValue = second
+        XCTAssertTrue(firstTask.isCancelled); XCTAssertFalse(secondTask.isCancelled)
+        await firstTask.value; await secondTask.value
+        XCTAssertNil(first.result); XCTAssertFalse(first.loading)
+        XCTAssertEqual(second.result?.headword, "role"); XCTAssertNil(second.error)
+        XCTAssertFalse(second.loading); XCTAssertTrue(second.result?.quickSenses.allSatisfy(BilingualMeaningPolicy.trusted) == true)
+        selection.wrappedValue = nil
+        XCTAssertNil(selected); XCTAssertFalse(second.loading)
+        XCTAssertEqual(second.result?.headword, "role", "Dismissing retains an already resolved dictionary result")
+        XCTAssertTrue(try learning.vocabulary.entries().isEmpty, "Lookup without explicit add does not create vocabulary")
+    }
     func testSemanticVectorCacheMatchesNativeCosineAndBoundsInference() throws {
         if let embedding = NLEmbedding.sentenceEmbedding(for: .english) {
             let cache = DictionarySemanticVectorCache(vectorForText: { embedding.vector(for: $0) })
