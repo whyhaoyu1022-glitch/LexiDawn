@@ -215,6 +215,7 @@ jobs:
         id: plan
         run: |
           python3 scripts/ci-test-plan.py verify
+          python3 scripts/test-ci-simulator-boot.py
           if [[ "$FOCUSED" == true ]]; then
             echo "matrix=$(python3 scripts/ci-test-plan.py matrix focused)" >> "$GITHUB_OUTPUT"
           else
@@ -331,7 +332,7 @@ jobs:
   ui-tests:
     name: Native UI · ${{ matrix.suite }} · ${{ matrix.device }}
     needs: build-and-test
-    if: ${{ always() && !cancelled() && needs.build-and-test.outputs.compiled_artifact_id != '' }}
+    if: ${{ always() && !cancelled() && needs.build-and-test.outputs.compiled_artifact_id != '' && (!contains(github.event.head_commit.message, '[lookup-unit-only]') || !contains(github.event.head_commit.message, '[round4-fix-ui]') || contains(github.event.head_commit.message, '[round4-final]')) }}
     runs-on: macos-26
     strategy:
       fail-fast: false
@@ -412,7 +413,7 @@ jobs:
   ui-completion-gate:
     name: Require all native UI shards to finish
     needs: [build-and-test, ui-tests]
-    if: ${{ always() && !cancelled() && needs.build-and-test.result == 'success' }}
+    if: ${{ always() && !cancelled() && needs.build-and-test.result == 'success' && (!contains(github.event.head_commit.message, '[lookup-unit-only]') || !contains(github.event.head_commit.message, '[round4-fix-ui]') || contains(github.event.head_commit.message, '[round4-final]')) }}
     runs-on: ubuntu-latest
     steps:
       - name: Reject skipped or failed native verification

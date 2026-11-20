@@ -8,6 +8,7 @@
 | 每条验收的实现在何处、如何测试、是否独立通过 | [验收账本](reviews/round-4-acceptance-status.json) |
 | 哪些候选测试实际通过、哪些 PNG 直接对应编号 | [4be478e 原生证据](reviews/round-4-native-evidence-4be478e.json) |
 | 2026-11-18 真机反馈与新增测试 | [逐图与业务对照](reviews/round-4-device-feedback-2026-11-18.md) |
+| 2026-11-20 全量失败及专项修复、浮窗取消与搜索焦点 | [CI 回归记录](reviews/round-4-ci-regression-2026-11-20.md) |
 | 当前整体构建与下载 | [STATUS](../STATUS.md)、[交付报告](reviews/round-4-final-delivery.md) |
 
 代码 **4be478e** 的兼容测试证据覆盖全部 24 个测试族。144 条均有候选方法通过，其中 79 条有直接编号截图。独立逐条验收仍开放。截图关联描述已有画面，手动检查结论将逐条写入验收账本。

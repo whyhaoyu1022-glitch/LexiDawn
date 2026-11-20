@@ -67,3 +67,13 @@
 修复：三处浮窗均由 presenting selection 的 Binding 处理真正关闭或替换时的取消；页面离开也取消所属请求，浮窗临时重建只记日志。排队任务开始前核验取消标记及 job UUID，旧任务不得进入 lookup 改写新 generation。两轮 UI 将元素查询限定在 compact-word-card，先核验元素存在，再取 label，并在同一十五秒内同时要求正确词头和详情可用，未增加等待上限。
 
 追加 2 项真实 MDX XCTest：排队后立即取消/重启不得覆盖新结果或重复加入；选择替换取消旧任务，相同选择不取消，关闭后已解析结果保留且仅浏览不加词。与原真实 MDX 连续查询共 3 项专项，再跑唯一剩余 UI 方法。源码总计 250 个 XCTest，原有 67 个 UI 方法完整保留。下一轮结果待实际执行。
+
+请求所有权修复提交 `f1241c7391b1488d98b47247f7a8659d6a7c5e3b`，[专项 44713380139](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44713380139)，仅选择上述 3 项 XCTest 与连续查词 UI；结果待执行。
+
+### 隔离的 Simulator 启动故障
+
+`f1241c7` 的全部目标编译通过，但 136210468089 作业在启动 Simulator 失败，3 项 XCTest 未执行。日志为首次 bootstatus 等待 360 秒超时，随后 simctl list 诊断也超时；原脚本把 list 与 shutdown 放在同一 try，导致未执行 shutdown，第二次 boot 返回 149。不能把本轮未执行的 XCTest 记为通过，也不能把 runner 启动失败归因于业务断言。
+
+启动控制拆为可测试的脚本：诊断失败也必须独立尝试关闭本作业创建的临时设备；boot 命令返回非零仍以 bootstatus 成功作为唯一就绪证据，最多两次，最终失败保留退出错误。本地 4/4 Python 故障控制测试通过，覆盖正常、已启动、诊断超时仍关闭、两次就绪失败；这不是实际 Simulator 启动验收。
+
+下轮 `[lookup-unit-only] [round4-fix-ui] [lookup-lifecycle]` 只运行未执行的 3 项 XCTest，并保留独立执行中的 f1241c7 UI 作业，避免重跑同一份 Swift 代码的界面测试。该限定仅适用于专项；`[round4-final]` 始终恢复全部 UI 与严格完成门禁。没有清空用户数据库，也没有取消这项仍有用的 UI 验证。
