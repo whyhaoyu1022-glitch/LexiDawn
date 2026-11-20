@@ -77,3 +77,17 @@
 启动控制拆为可测试的脚本：诊断失败也必须独立尝试关闭本作业创建的临时设备；boot 命令返回非零仍以 bootstatus 成功作为唯一就绪证据，最多两次，最终失败保留退出错误。本地 4/4 Python 故障控制测试通过，覆盖正常、已启动、诊断超时仍关闭、两次就绪失败；这不是实际 Simulator 启动验收。
 
 下轮 `[lookup-unit-only] [round4-fix-ui] [lookup-lifecycle]` 只运行未执行的 3 项 XCTest，并保留独立执行中的 f1241c7 UI 作业，避免重跑同一份 Swift 代码的界面测试。该限定仅适用于专项；`[round4-final]` 始终恢复全部 UI 与严格完成门禁。没有清空用户数据库，也没有取消这项仍有用的 UI 验证。
+
+启动恢复与 XCTest 限定运行提交 `dfe65abb1488fa6bde991a449da2e4b6194d8d87`，[44715663269](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44715663269)。与 f1241c7 的 App、XCTest、UI 测试及 Xcode 工程目录完全相同（git diff 核对），仅 CI、启动脚本与记录有变动。f1241c7 的 UI 因此保留，不重复启动；两个原生专项结果均待实际执行。
+
+`dfe65ab` / 44715663269 已成功：全部目标编译，实际 Simulator 启动、3/3 XCTest 专项通过。原 f1241c7 连续查词 UI 仍在独立运行；尚不能宣称该方法或最终全量通过。
+
+专项 XCTest 实际耗时：排队取消后重启 3.082 秒；selection 取消边界 2.926 秒；真实 MDX 六词/短语自动加入 4.769 秒；3 项总计 10.778 秒，零失败。启动脚本第一轮实际就绪。四项本地 Python 控制流用例与原生 XCTest 分开记账。
+
+### 完整详情的返回按钮与模态无障碍范围
+
+保留中的 f1241c7 UI 已结束失败（244.228 秒），本次查词和首个短语详情成功，失败在进入 look into 详情后全页按 label 查找“返回查词”按钮（原行 838）。原生完整 AX 与失败 PNG 均有正确完整详情和可见返回按钮，同时仍暴露底层今日/阅读页面。诊断产物 `14620066756` SHA-256 `327d42c97d6fe83fd4367074ce9dd109fa28c5f034e77c4564ce70cda4756980` 已实际下载、校验、查看；本轮的 info 生命周期文件仅有表头，不能伪称从中读到了查询时间。
+
+进一步限定模态无障碍语义：浮窗及完整详情使用 SwiftUI isModal trait，完整详情含底部控制条的 contain 容器；详情显示时遮挡的阅读正文退出 AX 树。返回、关闭和控制条添加稳定 accessibilityIdentifier。专项依旧两轮完整查询，新增验证详情期间 reader-body 不在 AX 树，按当前详情控制条定位真实按钮，保留 hittable、点击和返回后原词形断言。没有坐标点击或跳过返回流程。原生 API 依据：[Apple isModal](https://developer.apple.com/documentation/swiftui/accessibilitytraits/ismodal)。
+
+下一轮仅运行此剩余 UI，已通过的 3 项 XCTest 不重复运行；不改变词义来源、业务规则或数据结构。结果待实际运行。

@@ -101,6 +101,7 @@ struct ReaderView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(readerBackground)
+        .accessibilityHidden(detail != nil || sourceDetails)
         .toolbarBackground(readerBackground, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .preferredColorScheme(theme == "dark" ? .dark : ["paper", "light"].contains(theme) ? .light : nil)
@@ -380,6 +381,7 @@ struct WordLookupSheet: View {
                     .accessibilityLabel("查看详细释义").accessibilityIdentifier("dictionary-details").disabled(model.loading || model.error != nil || model.result == nil)
             }.font(.subheadline).accessibilityElement(children: .contain)
         }.padding(verticalSizeClass == .compact ? 10 : 16).frame(width: dynamicTypeSize.isAccessibilitySize ? 310 : 285).accessibilityElement(children: .contain).accessibilityIdentifier("compact-word-card")
+            .accessibilityAddTraits(.isModal)
             .accessibilityHidden(showDetails)
             .fixedSize(horizontal: false, vertical: true)
             .task { do { theme = try dependencies.preferencesRepository.load().readerTheme } catch { preferencesError = "阅读设置读取失败：" + error.localizedDescription } }
@@ -686,6 +688,9 @@ struct DictionaryDetailView: View {
         }.accessibilityIdentifier("dictionary-detail-scroll").clipped().background(background.ignoresSafeArea())
             .preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
             .safeAreaInset(edge: .bottom) { detailControls }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("dictionary-detail-presentation")
+            .accessibilityAddTraits(.isModal)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(item: $comparison) { synonym in
                 DictionaryComparisonView(original: result, synonym: synonym, context: context, learning: learning, theme: theme)
@@ -720,6 +725,7 @@ struct DictionaryDetailView: View {
                 if closeStack != nil {
                     Button { if let returnToParent { returnToParent() } else { dismiss() } } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
                         .accessibilityLabel(lookupModel == nil ? "返回上一个词条" : "返回查词")
+                        .accessibilityIdentifier("dictionary-return-to-lookup")
                 }
                 Spacer(minLength: 0)
                 if entryID == nil {
@@ -746,10 +752,12 @@ struct DictionaryDetailView: View {
                 Spacer(minLength: 0)
                 Button(action: closeDetails) { Image(systemName: "xmark.circle.fill").frame(width: 44, height: 44) }
                     .accessibilityLabel("关闭详细释义")
+                    .accessibilityIdentifier("dictionary-close-details")
             }.padding(.horizontal, 8).padding(.vertical, 4)
                 .background(reduceTransparency ? AnyShapeStyle(background) : AnyShapeStyle(.regularMaterial), in: Capsule())
                 .overlay { Capsule().strokeBorder(.primary.opacity(0.08)) }
         }.padding(.horizontal, 20).padding(.bottom, 8)
+            .accessibilityElement(children: .contain).accessibilityIdentifier("dictionary-detail-controls")
     }
     private func footerHeadword(icon: String) -> some View {
         Label(result.savedHeadword, systemImage: icon).font(.headline).lineLimit(1)

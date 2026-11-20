@@ -832,10 +832,15 @@ final class Round3UITests: XCTestCase {
                 let repeatSuffix = pass == 0 ? "" : "-repeat"
                 capture("R3-D" + String(index + 10) + repeatSuffix, app: app, feature: "dictionary", state: "surface-" + surface, origin: "explicit-original-context-fixture-real-bundled-MDX")
                 if (2...4).contains(index) {
-                    details.tap(); XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
+                    details.tap()
+                    let controls = app.otherElements["dictionary-detail-controls"].firstMatch
+                    let closeDetails = controls.buttons["dictionary-close-details"].firstMatch
+                    XCTAssertTrue(closeDetails.waitForExistence(timeout: 10))
+                    XCTAssertFalse(app.otherElements["reader-body"].firstMatch.exists, "The covered reader must leave the accessibility tree")
                     XCTAssertEqual(app.staticTexts["dictionary-full-headword"].firstMatch.label, expected[index])
                     capture("R3-D" + String(index + 20) + repeatSuffix, app: app, feature: "dictionary", state: "verified-phrase-" + expected[index], origin: "explicit-original-context-fixture-real-bundled-MDX")
-                    app.buttons["返回查词"].tap()
+                    let back = controls.buttons["dictionary-return-to-lookup"].firstMatch
+                    XCTAssertTrue(back.waitForExistence(timeout: 10)); XCTAssertTrue(back.isHittable); back.tap()
                     XCTAssertTrue(heading.waitForExistence(timeout: 10)); XCTAssertEqual(heading.label, expected[index])
                     XCTAssertEqual(heading.value as? String ?? "", surface == expected[index] ? "" : "原文：" + surface)
                     capture("R3-D" + String(index + 60) + repeatSuffix, app: app, feature: "dictionary", state: "returned-from-phrase-" + expected[index], origin: "explicit-original-context-fixture-real-bundled-MDX")
