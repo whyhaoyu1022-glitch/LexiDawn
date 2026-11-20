@@ -583,6 +583,22 @@ final class Round3UITests: XCTestCase {
             let word = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'word-'")).firstMatch
             XCTAssertTrue(word.waitForExistence(timeout: 10)); XCTAssertTrue(word.isHittable)
             capture(id, app: app, feature: "reader", state: "maximum-type-landscape-" + theme, theme: theme)
+            word.tap()
+            let card = app.descendants(matching: .any)["compact-word-card"].firstMatch
+            let close = card.buttons["close-word"].firstMatch
+            XCTAssertTrue(close.waitForExistence(timeout: 10)); XCTAssertTrue(close.isHittable)
+            let details = card.buttons["dictionary-details"].firstMatch
+            expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: details)
+            waitForExpectations(timeout: 15)
+            XCTAssertFalse(app.staticTexts["dictionary-resource-error"].exists)
+            let window = app.windows.firstMatch.frame
+            XCTAssertGreaterThan(card.frame.width, 200)
+            XCTAssertTrue(window.insetBy(dx: -2, dy: -2).contains(card.frame), "Large-type lookup stays inside the native window")
+            XCTAssertTrue(details.isHittable)
+            capture("R4-popup-max-type-" + theme, app: app, feature: "reader-dictionary",
+                state: "maximum-type-landscape-popup-controls-and-bounds", theme: theme, origin: "real-bundled-RFC-real-bundled-MDX")
+            close.tap()
+            XCTAssertTrue(word.waitForExistence(timeout: 10)); XCTAssertTrue(word.isHittable)
         }
     }
     func testRealLongArticleScrollMemoryAndClockMetrics() throws {

@@ -328,6 +328,10 @@ struct ReaderView: View {
         catch { self.addition = nil; self.vocabularyError = error.localizedDescription }
     }
 }
+private struct CompactDictionaryContentHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
 struct WordLookupSheet: View {
     // The presenting selection owns this model. Replacing a lookup must replace
     // the observed instance rather than retain an earlier StateObject input.
@@ -338,6 +342,7 @@ struct WordLookupSheet: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var showDetails = false
     @State private var closeLookupAfterDetails = false
+    @State private var contentHeight: CGFloat = 48
     @State private var theme = "system"
     @State private var preferencesError: String?
     private var openDetails: (() -> Void)?
@@ -358,10 +363,7 @@ struct WordLookupSheet: View {
                 Spacer(minLength: 2)
                 Button { dismiss() } label: { Image(systemName: "xmark").font(.caption).frame(width: 44, height: 44) }.accessibilityLabel("关闭查词").accessibilityIdentifier("close-word")
             }
-            ViewThatFits(in: .vertical) {
-                lookupContent.fixedSize(horizontal: false, vertical: true)
-                ScrollView { lookupContent }
-            }.frame(maxHeight: verticalSizeClass == .compact ? 88 : dynamicTypeSize.isAccessibilitySize ? 148 : 116)
+            compactContent
             HStack {
                 if model.addition?.created == true {
                     Button { model.undo() } label: { Label("撤销", systemImage: "checkmark.circle.fill") }.accessibilityIdentifier("undo-word")
@@ -379,7 +381,7 @@ struct WordLookupSheet: View {
                     if let openDetails { openDetails() } else { showDetails = true }
                 } label: { Image(systemName: "chevron.right.circle.fill").font(.title2).frame(width: 44, height: 44) }
                     .accessibilityLabel("查看详细释义").accessibilityIdentifier("dictionary-details").disabled(model.loading || model.error != nil || model.result == nil)
-            }.font(.subheadline).accessibilityElement(children: .contain)
+            }.font(.subheadline).dynamicTypeSize(...DynamicTypeSize.xxxLarge).accessibilityElement(children: .contain)
         }.padding(verticalSizeClass == .compact ? 10 : 16).frame(width: dynamicTypeSize.isAccessibilitySize ? 310 : 285).accessibilityElement(children: .contain).accessibilityIdentifier("compact-word-card")
             .accessibilityAddTraits(.isModal)
             .accessibilityHidden(showDetails)
@@ -399,6 +401,25 @@ struct WordLookupSheet: View {
                     }
                 }.preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
             }
+    }
+    private var compactContent: some View {
+        let limit: CGFloat = verticalSizeClass == .compact ? 88 : dynamicTypeSize.isAccessibilitySize ? 148 : 116
+        return ScrollView(.vertical) {
+            lookupContent.fixedSize(horizontal: false, vertical: true)
+                .background {
+                    GeometryReader { proxy in
+                        Color.clear.preference(key: CompactDictionaryContentHeightKey.self, value: proxy.size.height)
+                    }
+                }
+        }
+        .scrollIndicators(.hidden)
+        .scrollBounceBehavior(.basedOnSize)
+        .frame(height: min(contentHeight, limit))
+        .onPreferenceChange(CompactDictionaryContentHeightKey.self) { height in
+            guard height.isFinite, height > 0 else { return }
+            let measured = height.rounded(.up)
+            if abs(contentHeight - measured) > 0.5 { contentHeight = measured }
+        }
     }
     private var lookupContent: some View {
         VStack(alignment: .leading, spacing: 6) {

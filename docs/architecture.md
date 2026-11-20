@@ -50,3 +50,5 @@ SwiftUI 及 UIKit 控件提供呈现和交互。ViewModel/Service 管理请求�
 查词浮窗观察 presenting selection 持有的模型。selection 的受控 Binding 在关闭或替换请求时取消，页面离开也取消所属任务；SwiftUI 对可见浮窗的临时 rehosting 不属于用户关闭。已取消的排队 Task 在执行前核验 job UUID，不得改变后续请求的 generation。请求日志只记录 UUID、阶段与加载/结果布尔值，不含原文或查词文本。
 
 词典模态分组包括原生 ScrollView 与固定控制条，保留 dictionary-detail-scroll 身份。原生正文 TextKit 容器自己维护词语的 accessibilityElements，因此由其 accessibilityElementsHidden 显式控制模态遮挡期间的暴露与更新；旧元素拒绝激活和滚动，关闭后复用原词语身份并保留阅读位置。此控制不影响可视文章布局。
+
+简明浮窗仅渲染一份查询内容，以单一原生 ScrollView 承载加载、释义和错误。实际内容高度向上取整后按竖屏/横屏与辅助字号上限收敛，超出部分滚动；不通过两个 ViewThatFits 候选复制相同无障碍内容。操作按钮保持原生工具栏的字号上限和点击区域，正文释义保留用户字号。
