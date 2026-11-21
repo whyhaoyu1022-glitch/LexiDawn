@@ -34,13 +34,21 @@ private actor CacheRequestProbe: DictionaryProvider {
         let old = "Original first paragraph.\n\nA unique original second paragraph remains preserved."
         let id = try learning.content.importArticle(.init(title: "Personal original", body: old, source: "Fixture author", rightsConfirmed: true, eligibleForDaily: false), at: now)
         let paragraph = "A unique original second paragraph remains preserved."
-        try learning.reader.save(articleID: id, cycleID: nil, position: .init(percent: 0.5, anchor: fingerprint(paragraph), offset: 27), at: now)
+        let oldPosition = ReaderPosition(percent: 0.95, anchor: fingerprint(paragraph), offset: 27)
+        try learning.reader.save(articleID: id, cycleID: nil, position: oldPosition, expectedBodyHash: fingerprint(old), at: now)
         let updated = "A new original introduction.\n\n" + old
         let draft = ArticleImportDraft(title: "Updated original", body: updated, source: "Fixture author", rightsConfirmed: true, eligibleForDaily: false)
         try learning.content.updateOriginal(articleID: id, draft: draft, at: now)
+        XCTAssertThrowsError(try learning.reader.save(articleID: id, cycleID: nil, position: oldPosition, expectedBodyHash: fingerprint(old), at: now)) { XCTAssertTrue($0 is ReaderContentChanged) }
+        XCTAssertThrowsError(try learning.reader.complete(articleID: id, cycleID: nil, manualConfirmation: true, expectedBodyHash: fingerprint(old), at: now)) { XCTAssertTrue($0 is ReaderContentChanged) }
+        XCTAssertThrowsError(try learning.reader.complete(articleID: id, cycleID: nil, manualConfirmation: false, at: now)) { XCTAssertTrue($0 is ReaderContentChanged) }
         let article = try learning.openExplore(articleID: id, at: now), position = try learning.reader.position(article: article, cycleID: nil)
         XCTAssertTrue(position.contentChanged); XCTAssertEqual(position.percent, 0)
         XCTAssertEqual(position.offset, (updated as NSString).range(of: paragraph).location)
+        try learning.reader.save(articleID: id, cycleID: nil, position: position, expectedBodyHash: article.bodyHash, at: now)
+        XCTAssertThrowsError(try learning.reader.complete(articleID: id, cycleID: nil, manualConfirmation: false, expectedBodyHash: article.bodyHash, at: now))
+        try learning.reader.complete(articleID: id, cycleID: nil, manualConfirmation: true, expectedBodyHash: article.bodyHash, at: now)
+        XCTAssertNotNil(try learning.reader.position(article: article, cycleID: nil).completedAt)
         let versions = try ModelContext(app.modelContainer).fetch(FetchDescriptor<ArticleContentVersionRecord>())
         XCTAssertEqual(versions.count, 1); XCTAssertEqual(versions.first?.rawContent, old)
         XCTAssertThrowsError(try learning.content.updateOriginal(articleID: dailyID, draft: draft, at: now))

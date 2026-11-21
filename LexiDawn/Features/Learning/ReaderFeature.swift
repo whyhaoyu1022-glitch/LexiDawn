@@ -18,7 +18,7 @@ import OSLog
         do {
             let article = try learning.openArticle(articleID: articleID, cycleID: cycleID, at: Date())
             position = try learning.reader.position(article: article, cycleID: cycleID)
-            try learning.reader.save(articleID: articleID, cycleID: cycleID, position: position, at: Date())
+            try learning.reader.save(articleID: articleID, cycleID: cycleID, position: position, expectedBodyHash: article.bodyHash, at: Date())
             if position.contentChanged { notice = "正文版本已变化。已尝试匹配原段落；不能匹配时从开头恢复，完成记录不会伪造。" }
             self.article = article; sourceURL = article.originalURL; error = nil
         } catch { self.article = nil; sourceURL = (error as? ArticleAccessError)?.originalURL; self.error = error.localizedDescription }
@@ -28,17 +28,22 @@ import OSLog
         if Date().timeIntervalSince(lastSave) >= 2 { flush() }
     }
     func flush() {
-        guard article != nil else { return }
-        do { try learning.reader.save(articleID: articleID, cycleID: cycleID, position: position, at: Date()); lastSave = Date(); error = nil }
-        catch { if let denied = error as? ArticleAccessError { article = nil; sourceURL = denied.originalURL }; self.error = error.localizedDescription }
+        guard let article else { return }
+        do { try learning.reader.save(articleID: articleID, cycleID: cycleID, position: position, expectedBodyHash: article.bodyHash, at: Date()); lastSave = Date(); error = nil }
+        catch { handleWriteError(error) }
     }
     func complete(manual: Bool) {
-        flush(); guard error == nil else { return }
+        flush(); guard error == nil, let article else { return }
         do {
-            try learning.reader.complete(articleID: articleID, cycleID: cycleID, manualConfirmation: manual, at: Date())
-            if let article { position = try learning.reader.position(article: article, cycleID: cycleID) }
+            try learning.reader.complete(articleID: articleID, cycleID: cycleID, manualConfirmation: manual, expectedBodyHash: article.bodyHash, at: Date())
+            position = try learning.reader.position(article: article, cycleID: cycleID)
             learning.changed(); error = nil
-        } catch { self.error = error.localizedDescription }
+        } catch { handleWriteError(error) }
+    }
+    private func handleWriteError(_ error: Error) {
+        if let denied = error as? ArticleAccessError { article = nil; sourceURL = denied.originalURL }
+        else if error is ReaderContentChanged { article = nil; sourceURL = nil }
+        self.error = error.localizedDescription
     }
 }
 struct ReaderRoute: Identifiable { var id: String { "\(cycleID?.uuidString ?? "explore")|\(articleID)" }; let articleID: String; let cycleID: UUID? }

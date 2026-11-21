@@ -23,7 +23,11 @@
 
 [2026-11-18 问题对照和验证结果](reviews/round-4-device-feedback-2026-11-18.md)。受影响核心与 UI 选择器使用 `[round4-core] [device-fix]`。新用例覆盖独立词形、短语与音节点、每 2 小时时间边界、12 词两组持久缓存、取消过滤与重复查词后的明确移除。
 
-当前源码包含 251 个 XCTest、67 个主设备 XCUITest，另有 SE 7 次和 Pro Max 3 次设备复跑。数量只描述范围，实际通过结果以具体运行日志为准。`[device-phrase]` 仅重跑短语语法槽和音节点独立词形迁移。当前 `[round4-fix-ui]` 仅运行首次全量剩余失败的 `testRound2DictionaryDetailsAndNestedEnglishLookupReturnToReader`；它等待浮窗详情按钮真实启用，核对加载/错误/词头后再走原详情、上下文嵌套 science 查词和返回流程。首次全量 251 项 XCTest 与其余 76 次 UI 已通过，第二次全量仍须完整执行。短语方法连续执行两轮且均须通过，核对原文词形及原浮窗完全关闭，模态覆盖的文章词语不参与原生 AX 导航，按详情控制条实际返回；不增加整项重试。`[dictionary-ranking]` 加跑 3 项排序与真实 MDX 连续查询 XCTest；`[lookup-lifecycle]` 仅跑排队取消/重启、selection 所有权和真实 MDX 连续查询共 3 项。旧的 `[recommendation-worker]` 仍只选择推荐准备与取消方法。`[lookup-unit-only]` 与 `[round4-fix-ui]` 联用只补跑因启动失败未执行的 XCTest，保留同代码已在其他 runner 运行的 UI；不得将此运行当全量。`[reader-accessibility]` 只跑原生正文覆盖/恢复的一项 XCTest 与剩余 UI。最终 `[round4-final]` 执行全部测试，并覆盖专项的跳过条件。连续词形与大字两项 UI 在 `1052f8a` 专项及后续首次全量均通过，六张新浮窗原图已逐张复查；唯一失败项已在 `2bec198` 的 44871417647 专项完整通过（121.454 秒）；本提交请求第二次全量并在确认启动后暂停，结果待执行。本批回归见[2026-11-21 续修记录](reviews/round-4-ci-regression-2026-11-21.md)，前序证据见[2026-11-20 记录](reviews/round-4-ci-regression-2026-11-20.md)。Simulator 启动有两次上限和诊断，启动失败不计作测试通过。
+当前源码包含 254 个 XCTest、67 个主设备 XCUITest，另有 SE 7 次和 Pro Max 3 次复跑。数量以源码为准，结果以对应 SHA 的实际运行日志为准。[第二次全量](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44872453369)验证了 251 项 XCTest 和 77 次 UI 执行，其中自有文章导入失败。嵌套查词已通过此前的单项校验及这轮全量。
+
+本批按负责人要求合并整改，工作中运行宿主检查，最后只发起一次 `[round4-final]`。原文导入用例验证授权与按钮就绪、空标题提示、输入收键盘、保存和短文读回。新增 XCTest 验证查词期间的延期变更、拼写优先级与缺例句补位，以及损坏的重复题组不会写入作答或排程。扩展旧原文更新用例，验证旧正文的进度和完成确认无法应用到新版本。真机结果和逐项独立验收仍另行记录。[本批范围和证据](reviews/round-4-ci-regression-2026-11-21.md#接手后的问题核对和整改)
+
+历史专项入口和实际运行见 [2026-11-21 续修记录](reviews/round-4-ci-regression-2026-11-21.md) 和 [2026-11-20 记录](reviews/round-4-ci-regression-2026-11-20.md)。`[round4-final]` 执行全部方法，覆盖专项的跳过条件。Simulator 启动有两次上限和诊断，启动失败不计入通过。
 
 ## 真机验收
 

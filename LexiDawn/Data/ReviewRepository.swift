@@ -59,7 +59,7 @@ enum ReviewQueuePolicy {
         var due: [VocabularyEntryRecord] = [], new: [VocabularyEntryRecord] = []
         for entry in entries {
             guard let state = indexedStates[entry.entryID], state.dueAt.timeIntervalSince1970.isFinite,
-                  state.repetitions >= 0, state.intervalDays >= 0, [BasicReviewScheduler.version, FSRSScheduler.version].contains(state.algorithmVersion) else {
+                  state.repetitions >= 0, state.lapses >= 0, state.intervalDays >= 0, [BasicReviewScheduler.version, FSRSScheduler.version].contains(state.algorithmVersion) else {
                 throw PersistenceError.integrity("词条 \(entry.lemma) 的复习状态缺失或不受支持，不能证明队列为空")
             }
             if state.repetitions == 0 { new.append(entry) }
@@ -92,7 +92,7 @@ enum ReviewQueuePolicy {
             let pending = try context.fetch(FetchDescriptor<ReviewPreparationRecord>()).first { $0.cycleID == cycleID.uuidString }
             let ids = try eligible(in: context, at: now, limit: dailyLimit).map(\.entryID)
             if let pending {
-                let active = Set(try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.deletedAt == nil }.map(\.entryID))
+                let active = Set(try context.fetch(FetchDescriptor<VocabularyEntryRecord>()).filter { $0.deletedAt == nil && $0.canonicalEntryID == nil }.map(\.entryID))
                 let retained = pending.selectedEntryIDs.filter(active.contains)
                 if retained != pending.selectedEntryIDs || retained.isEmpty {
                     pending.selectedEntryIDs = retained + ids.filter { !retained.contains($0) }.prefix(max(0, dailyLimit - retained.count))
@@ -101,11 +101,11 @@ enum ReviewQueuePolicy {
             }
             context.insert(ReviewPreparationRecord(cycleID: cycleID, entries: ids, at: now)); return ids
         }
-        let skipped = try deferredIDs(cycleID: cycleID)
+        let skipped = try deferredIDs(cycleID: cycleID).intersection(originalIDs)
         let selected: [(String, String)] = try writer.read { context in
             let entries = try context.fetch(FetchDescriptor<VocabularyEntryRecord>())
             return try originalIDs.filter { !skipped.contains($0) }.map { id in
-                guard let entry = entries.first(where: { $0.entryID == id && $0.deletedAt == nil }) else { throw LearningError.invalid("本次词条已移除，请返回生词本核对。") }
+                guard let entry = entries.first(where: { $0.entryID == id && $0.deletedAt == nil && $0.canonicalEntryID == nil }) else { throw LearningError.invalid("本次词条已变化，请返回生词本核对。") }
                 return (id, entry.dictionaryEntryID ?? entry.lemma)
             }
         }
@@ -116,6 +116,11 @@ enum ReviewQueuePolicy {
             var cycle = try cycleInContext(cycleID, context: context)
             if try context.fetch(FetchDescriptor<ReviewSessionRecord>()).contains(where: { $0.cycleID == cycleID.uuidString }) { return }
             if cycle.reviewEvidence != nil { return }
+            let preparation = try context.fetch(FetchDescriptor<ReviewPreparationRecord>()).first { $0.cycleID == cycleID.uuidString }
+            guard preparation?.selectedEntryIDs == originalIDs,
+                  try deferredIDs(cycleID: cycleID).intersection(originalIDs) == skipped else {
+                throw LearningError.invalid("查词期间复习队列或延期发生变化，请重新准备题目。")
+            }
             if selected.isEmpty {
                 if originalIDs.isEmpty {
                     guard try eligible(in: context, at: now).isEmpty else { throw LearningError.invalid("队列已有新词，请重新检查。") }
@@ -132,7 +137,7 @@ enum ReviewQueuePolicy {
             }
             let entries = try context.fetch(FetchDescriptor<VocabularyEntryRecord>())
             let chosen = try selected.map { id, _ -> VocabularyEntryRecord in
-                guard let value = entries.first(where: { $0.entryID == id && $0.deletedAt == nil }) else { throw LearningError.invalid("复习词条发生变化，请重试。") }
+                guard let value = entries.first(where: { $0.entryID == id && $0.deletedAt == nil && $0.canonicalEntryID == nil }) else { throw LearningError.invalid("复习词条发生变化，请重试。") }
                 return value
             }
             let session = ReviewSessionRecord(cycleID: cycleID, entries: chosen.map(\.entryID), at: max(now, cycle.createdAtUTC), limit: dailyLimit)
@@ -268,13 +273,9 @@ enum ReviewQueuePolicy {
         let sources = try context.fetch(FetchDescriptor<VocabularySourceContextRecord>()).sorted { ($0.createdAt, $0.contextID) < ($1.createdAt, $1.contextID) }
         let states = try context.fetch(FetchDescriptor<ReviewStateRecord>())
         let articles = try context.fetch(FetchDescriptor<ArticleRecord>())
-        let ranked = chosen.filter { $0.lemma.filter(\.isLetter).count >= 3 }.sorted { a, b in
-            let aLapses = states.first { $0.entryID == a.entryID }?.lapses ?? 0
-            let bLapses = states.first { $0.entryID == b.entryID }?.lapses ?? 0
-            return aLapses == bLapses ? a.entryID < b.entryID : aLapses > bLapses
-        }
-        let spellingIDs = Set(ranked.prefix(clozeCount).map(\.entryID))
-        var spellingCount = 0
+        var spellingCandidates: [(position: Int, entry: VocabularyEntryRecord, lookup: DictionaryResult,
+                                  sense: DictionarySense, source: VocabularySourceContextRecord?,
+                                  snapshot: Data, lapses: Int, letters: Int)] = []
         var boards: [Set<String>] = []
         for (position, entry) in chosen.enumerated() {
             guard let lookup = lookups[entry.entryID] else { throw PersistenceError.integrity("缺少本次 MDX 复习查询结果") }
@@ -291,48 +292,60 @@ enum ReviewQueuePolicy {
             let matching = ReviewExerciseRecord(sessionID: session.sessionID, entryID: entry.entryID, stage: "matching", position: matchingPosition, prompt: entry.lemma, answer: meaning, senseID: sense.id)
             matching.meaningSnapshot = snapshot; context.insert(matching)
             matching.sourceArticleID = source?.articleID; matching.sourceContextID = source?.contextID; matching.sourceSurface = source?.surface
-            if spellingIDs.contains(entry.entryID) {
-                let relativeLocation = source.flatMap { saved -> Int? in
-                    guard saved.contextKind == "reader", let article = articles.first(where: { $0.articleID == saved.articleID }) else { return nil }
-                    return ClozeContext.relativeLocation(sentence: saved.sentence, in: article.rawContent, absoluteLocation: saved.tokenLocation)
-                }
-                var projection = ClozeContext.make(lemma: entry.lemma, surfaces: source.map { [$0.surface] + entry.surfaceForms } ?? entry.surfaceForms,
-                    sentence: source?.sentence, preferredLocation: relativeLocation,
-                    verifiedSurface: entry.dictionaryEntryID == nil ? nil : source?.surface)
-                var contextOrigin = source?.contextKind == "reader" ? "article" : source?.contextKind == "dictionary" ? "dictionary" : "saved-context"
-                var exampleID: String?
-                if projection.sentence == nil, BilingualMeaningPolicy.trusted(sense) {
-                    for (index, example) in (sense.examples ?? []).enumerated() {
-                        let value = ClozeContext.make(lemma: entry.lemma, surfaces: entry.surfaceForms, sentence: example)
-                        if value.sentence != nil { projection = value; contextOrigin = "dictionary"; exampleID = sense.id + "|example|" + String(index); break }
-                    }
-                }
-                if projection.sentence == nil, sense.originKind == "personal", let data = entry.personalSensesData {
-                    let personal = try JSONDecoder().decode([PersonalDictionarySense].self, from: data)
-                    let examples = personal.filter { $0.reviewReady && $0.dictionarySense(entryID: entry.entryID).id == sense.id }.flatMap(\.examples)
-                    for example in examples {
-                        let value = ClozeContext.make(lemma: entry.lemma, surfaces: entry.surfaceForms, sentence: example.english)
-                        if value.sentence != nil { projection = value; contextOrigin = "personal-example"; exampleID = example.id; break }
-                    }
-                }
-                if projection.sentence == nil {
-                    if BilingualMeaningPolicy.trusted(sense) { continue }
-                    throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "缺少包含目标词的有效例句，请补充例句或本次延期。", canEditPersonal: true)
-                }
-                let seed = session.sessionID + "|" + entry.entryID
-                let mask = SpellingMaskPolicy.mask(projection.answer, seed: seed)
-                let question = ReviewExerciseRecord(sessionID: session.sessionID, entryID: entry.entryID, stage: "cloze", position: position, prompt: mask.text, answer: projection.answer, senseID: sense.id)
-                question.contextOriginKind = contextOrigin
-                question.sourceContext = projection.sentence; question.meaningSnapshot = snapshot; question.maskIndices = mask.indices; question.maskVersion = SpellingMaskPolicy.version
-                question.maskSeed = seed; question.sourceArticleID = source?.articleID; question.sourceContextID = source?.contextID; question.sourceSurface = projection.answer
-                question.sourceRangeLocation = projection.targetRange?.location; question.sourceRangeLength = projection.targetRange?.length
-                question.sourceExampleID = exampleID
-                question.acceptedAnswers = SpellingAnswerPolicy.variants(answer: projection.answer, lemma: entry.lemma, senses: lookup.senses)
-                context.insert(question); spellingCount += 1
+            let letters = entry.lemma.filter(\.isLetter).count
+            if letters >= 3 {
+                let lapses = states.first { $0.entryID == entry.entryID }?.lapses ?? 0
+                spellingCandidates.append((position, entry, lookup, sense, source, snapshot, lapses, letters))
             }
         }
+        spellingCandidates.sort {
+            if $0.lapses != $1.lapses { return $0.lapses > $1.lapses }
+            if $0.letters != $1.letters { return $0.letters > $1.letters }
+            return $0.entry.entryID < $1.entry.entryID
+        }
+        var spellingCount = 0
+        for (position, entry, lookup, sense, source, snapshot, _, _) in spellingCandidates {
+            guard spellingCount < clozeCount else { break }
+            let relativeLocation = source.flatMap { saved -> Int? in
+                guard saved.contextKind == "reader", let article = articles.first(where: { $0.articleID == saved.articleID }) else { return nil }
+                return ClozeContext.relativeLocation(sentence: saved.sentence, in: article.rawContent, absoluteLocation: saved.tokenLocation)
+            }
+            var projection = ClozeContext.make(lemma: entry.lemma, surfaces: source.map { [$0.surface] + entry.surfaceForms } ?? entry.surfaceForms,
+                sentence: source?.sentence, preferredLocation: relativeLocation,
+                verifiedSurface: entry.dictionaryEntryID == nil ? nil : source?.surface)
+            var contextOrigin = source?.contextKind == "reader" ? "article" : source?.contextKind == "dictionary" ? "dictionary" : "saved-context"
+            var exampleID: String?
+            if projection.sentence == nil, BilingualMeaningPolicy.trusted(sense) {
+                for (index, example) in (sense.examples ?? []).enumerated() {
+                    let value = ClozeContext.make(lemma: entry.lemma, surfaces: entry.surfaceForms, sentence: example)
+                    if value.sentence != nil { projection = value; contextOrigin = "dictionary"; exampleID = sense.id + "|example|" + String(index); break }
+                }
+            }
+            if projection.sentence == nil, sense.originKind == "personal", let data = entry.personalSensesData {
+                let personal = try JSONDecoder().decode([PersonalDictionarySense].self, from: data)
+                let examples = personal.filter { $0.reviewReady && $0.dictionarySense(entryID: entry.entryID).id == sense.id }.flatMap(\.examples)
+                for example in examples {
+                    let value = ClozeContext.make(lemma: entry.lemma, surfaces: entry.surfaceForms, sentence: example.english)
+                    if value.sentence != nil { projection = value; contextOrigin = "personal-example"; exampleID = example.id; break }
+                }
+            }
+            if projection.sentence == nil {
+                if BilingualMeaningPolicy.trusted(sense) { continue }
+                throw ReviewMeaningIssue(entryID: entry.entryID, lemma: entry.lemma, reason: "缺少包含目标词的有效例句，请补充例句或本次延期。", canEditPersonal: true)
+            }
+            let seed = session.sessionID + "|" + entry.entryID
+            let mask = SpellingMaskPolicy.mask(projection.answer, seed: seed)
+            let question = ReviewExerciseRecord(sessionID: session.sessionID, entryID: entry.entryID, stage: "cloze", position: position, prompt: mask.text, answer: projection.answer, senseID: sense.id)
+            question.contextOriginKind = contextOrigin
+            question.sourceContext = projection.sentence; question.meaningSnapshot = snapshot; question.maskIndices = mask.indices; question.maskVersion = SpellingMaskPolicy.version
+            question.maskSeed = seed; question.sourceArticleID = source?.articleID; question.sourceContextID = source?.contextID; question.sourceSurface = projection.answer
+            question.sourceRangeLocation = projection.targetRange?.location; question.sourceRangeLength = projection.targetRange?.length
+            question.sourceExampleID = exampleID
+            question.acceptedAnswers = SpellingAnswerPolicy.variants(answer: projection.answer, lemma: entry.lemma, senses: lookup.senses)
+            context.insert(question); spellingCount += 1
+        }
         if spellingCount == 0 {
-            session.clozeExclusionReason = spellingIDs.isEmpty ? "targets-under-three-letters" : "no-verifiable-mdx-context"
+            session.clozeExclusionReason = spellingCandidates.isEmpty ? "targets-under-three-letters" : "no-verifiable-mdx-context"
         }
     }
     private func requireExtraAllowed(context: ModelContext, at now: Date) throws {
@@ -529,10 +542,13 @@ enum ReviewQueuePolicy {
         }
         let documentedExclusion = session.clozeExclusionReason == "no-verifiable-mdx-context" ||
             session.clozeExclusionReason == "targets-under-three-letters" && matching.allSatisfy { $0.prompt.filter(\.isLetter).count < 3 }
-        guard !matching.isEmpty, (!cloze.isEmpty || documentedExclusion), Set(matching.map(\.entryID)) == Set(session.selectedEntryIDs),
-              matching.count == session.selectedEntryIDs.count, Set(cloze.map(\.entryID)).isSubset(of: Set(session.selectedEntryIDs)),
+        let selected = Set(session.selectedEntryIDs), clozeEntries = Set(cloze.map(\.entryID))
+        guard !matching.isEmpty, (!cloze.isEmpty || documentedExclusion), selected.count == session.selectedEntryIDs.count,
+              Set(matching.map(\.entryID)) == selected, matching.count == selected.count,
+              clozeEntries.count == cloze.count, clozeEntries.isSubset(of: selected),
+              Set(matching.map(\.position)).count == matching.count, Set(cloze.map(\.position)).count == cloze.count,
               Set(exercises.map(\.exerciseID)).count == exercises.count,
-              exercises.allSatisfy({ ["matching", "cloze"].contains($0.stage) && !$0.answer.isBlank && $0.attempts >= 0 }),
+              exercises.allSatisfy({ ["matching", "cloze"].contains($0.stage) && !$0.answer.isBlank && $0.position >= 0 && $0.attempts >= 0 }),
               cloze.allSatisfy({ $0.completedAt == nil }) || matching.allSatisfy({ $0.completedAt != nil }) else { throw PersistenceError.integrity("已保存题组不完整，不能伪造完成") }
         return exercises
     }

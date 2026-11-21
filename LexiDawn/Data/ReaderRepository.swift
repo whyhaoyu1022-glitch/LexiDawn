@@ -8,6 +8,11 @@ struct ReaderPosition: Equatable {
     var completedAt: Date?
     var contentChanged = false
 }
+
+struct ReaderContentChanged: LocalizedError {
+    var errorDescription: String? { "正文版本已变化，请重新读取后继续。" }
+}
+
 @MainActor final class ReaderProgressService {
     private let writer: RepositoryWriter
     private let content: ContentRepository
@@ -29,9 +34,10 @@ struct ReaderPosition: Equatable {
             return ReaderPosition(percent: record.readingPercent, anchor: record.anchor, offset: record.characterOffset, completedAt: record.completedAt)
         }
     }
-    func save(articleID: String, cycleID: UUID?, position: ReaderPosition, at now: Date) throws {
+    func save(articleID: String, cycleID: UUID?, position: ReaderPosition, expectedBodyHash: String? = nil, at now: Date) throws {
         try validateMode(articleID: articleID, cycleID: cycleID, at: now)
         let article = try content.read(articleID: articleID, at: now)
+        if let expectedBodyHash, article.bodyHash != expectedBodyHash { throw ReaderContentChanged() }
         try writer.write {
             let context = writer.context
             let record = try progress(article: article, cycleID: cycleID, context: context, at: now)
@@ -45,13 +51,15 @@ struct ReaderPosition: Equatable {
             }
         }
     }
-    func complete(articleID: String, cycleID: UUID?, manualConfirmation: Bool, at now: Date) throws {
+    func complete(articleID: String, cycleID: UUID?, manualConfirmation: Bool, expectedBodyHash: String? = nil, at now: Date) throws {
         try validateMode(articleID: articleID, cycleID: cycleID, at: now)
         let article = try content.read(articleID: articleID, at: now)
+        if let expectedBodyHash, article.bodyHash != expectedBodyHash { throw ReaderContentChanged() }
         try writer.write {
             let context = writer.context
             let record = try progress(article: article, cycleID: cycleID, context: context, at: now)
             try validate(record)
+            guard record.bodyHash == article.bodyHash else { throw ReaderContentChanged() }
             if record.completedAt != nil { return }
             // Evidence uses saved observed progress, never the value supplied by a completion button.
             let timestamp = max(now, record.lastReadAt)

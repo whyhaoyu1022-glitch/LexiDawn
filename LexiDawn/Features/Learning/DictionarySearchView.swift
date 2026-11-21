@@ -2,28 +2,36 @@ import SwiftUI
 import Combine
 
 @MainActor private final class DictionarySearchModel: ObservableObject {
+    struct Match {
+        let input: String
+        let result: DictionaryResult
+        let canCreatePersonal: Bool
+    }
     @Published var query = ""
-    @Published private(set) var result: DictionaryResult?
+    @Published private(set) var match: Match?
     @Published private(set) var error: String?
     @Published private(set) var loading = false
-    @Published private(set) var canCreatePersonal = false
     private var request: Task<Void, Never>?
     private var generation = UUID()
+    private var input: String { query.trimmingCharacters(in: .whitespacesAndNewlines) }
+    func isCurrent(_ match: Match) -> Bool { match.input == input }
+
     func search(learning: LearningServices) {
         request?.cancel(); let token = UUID(); generation = token
-        let word = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        result = nil; error = nil; canCreatePersonal = false; loading = !word.isEmpty
+        let word = input
+        match = nil; error = nil; loading = !word.isEmpty
         guard !word.isEmpty else { return }
         request = Task { [weak self] in
             do {
                 try await Task.sleep(for: .milliseconds(250))
                 let value = try await learning.dictionary.lookup(word)
-                guard let self, self.generation == token, !Task.isCancelled else { return }
-                self.canCreatePersonal = try learning.vocabulary.personalEditingAllowed(headword: value.headword)
-                self.result = value; self.loading = false
+                guard let self, self.generation == token, self.input == word, !Task.isCancelled else { return }
+                let eligible = try learning.vocabulary.personalEditingAllowed(headword: value.headword)
+                self.match = Match(input: word, result: value, canCreatePersonal: eligible)
+                self.loading = false
             } catch is CancellationError { }
             catch {
-                guard let self, self.generation == token else { return }
+                guard let self, self.generation == token, self.input == word else { return }
                 self.error = error.localizedDescription; self.loading = false
             }
         }
@@ -61,11 +69,12 @@ struct DictionarySearchView: View {
                         Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red)
                         Button("重试查询") { model.search(learning: learning) }
                     }
-                    if let result = model.result {
-                        if result.hasMDXEntry || !result.quickSenses.isEmpty { resultCard(result) }
-                        if model.canCreatePersonal {
+                    if let match = model.match, model.isCurrent(match) {
+                        let result = match.result
+                        if result.hasMDXEntry || !result.quickSenses.isEmpty { resultCard(match) }
+                        if match.canCreatePersonal {
                             if result.senses.isEmpty && result.quickSenses.isEmpty { Text("内置词典未收录此词。").font(.subheadline).foregroundStyle(.secondary) }
-                            Button("创建或编辑个人词条", systemImage: "square.and.pencil") { createPersonal(result) }
+                            Button("创建或编辑个人词条", systemImage: "square.and.pencil") { createPersonal(match) }
                                 .buttonStyle(.borderedProminent).accessibilityIdentifier("dictionary-create-personal")
                         } else if !result.hasMDXEntry {
                             Text("暂无可显示的释义。请重试查词。").font(.subheadline).foregroundStyle(.secondary)
@@ -94,9 +103,11 @@ struct DictionarySearchView: View {
                 .sheet(item: $editing) { item in NavigationStack { VocabularyDetailView(item: item, learning: learning) } }
         }
     }
-    private func resultCard(_ result: DictionaryResult) -> some View {
-        Button {
-            details = SearchSelection(result: result, surface: model.query.trimmingCharacters(in: .whitespacesAndNewlines))
+    private func resultCard(_ match: DictionarySearchModel.Match) -> some View {
+        let result = match.result
+        return Button {
+            guard model.isCurrent(match) else { return }
+            details = SearchSelection(result: result, surface: match.input)
         } label: {
             VStack(alignment: .leading, spacing: 12) {
                 HStack { Text(result.headword).font(.system(.title, design: .serif)); Spacer(); Image(systemName: "chevron.right") }
@@ -106,9 +117,10 @@ struct DictionarySearchView: View {
                 .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 20))
         }.buttonStyle(.plain).accessibilityIdentifier("dictionary-search-result")
     }
-    private func createPersonal(_ result: DictionaryResult) {
+    private func createPersonal(_ match: DictionarySearchModel.Match) {
+        guard model.isCurrent(match) else { return }
         do {
-            let addition = try learning.vocabulary.addDictionaryEntry(headword: result.headword, surface: model.query, requiresPersonalEligibility: true, at: Date())
+            let addition = try learning.vocabulary.addDictionaryEntry(headword: match.result.headword, surface: match.input, requiresPersonalEligibility: true, at: Date())
             guard let item = try learning.vocabulary.entries().first(where: { $0.id == addition.entryID }) else { throw LearningError.invalid("保存的词条尚未读取成功，请重试。") }
             editing = item; saveError = nil; learning.changed()
         } catch { saveError = error.localizedDescription }

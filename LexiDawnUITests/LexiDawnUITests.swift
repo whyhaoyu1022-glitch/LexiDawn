@@ -514,8 +514,15 @@ extension LexiDawnUITests {
         let save = app.buttons["save-import"]
         XCTAssertTrue(save.exists); XCTAssertFalse(save.isEnabled)
         capture("F05-import-without-rights-save-disabled", in: app)
-        try revealLearning(rights, in: app); tapNativeSwitch(rights)
-        try revealLearning(save, in: app); save.tap()
+        try revealLearning(rights, in: app)
+        tapNativeSwitch(rights)
+        let authorized = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@ OR value == %@", "1", NSNumber(value: 1)), object: rights)
+        let canSave = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == true AND enabled == true AND hittable == true"), object: save)
+        guard XCTWaiter.wait(for: [authorized, canSave], timeout: 5) == .completed else {
+            capture("X01-import-authorization-did-not-enable-save", in: app)
+            return XCTFail("Authorization must turn on and enable the native save button before validation.")
+        }
+        save.tap()
         XCTAssertTrue(app.staticTexts["请填写有效标题、来源和主题。"].waitForExistence(timeout: 5))
         capture("X01-import-empty-title-validation", in: app)
         app.swipeDown(); app.swipeDown()
@@ -527,7 +534,9 @@ extension LexiDawnUITests {
         dismissArticleEditingKeyboard(app)
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: keyboard); waitForExpectations(timeout: 5)
         capture("F06-import-owned-text-preview", in: app)
-        try revealLearning(save, in: app); save.tap()
+        try revealLearning(save, in: app)
+        XCTAssertTrue(save.isEnabled)
+        save.tap()
         XCTAssertTrue(app.buttons["open-reader"].waitForExistence(timeout: 10))
         capture("F07-owned-import-assigned-today", in: app)
         app.buttons["open-reader"].tap()

@@ -182,7 +182,7 @@ struct ArticleImportView: View {
             }.accessibilityIdentifier("article-import-form").scrollDismissesKeyboard(.immediately)
                 .simultaneousGesture(DragGesture(minimumDistance: 12).onChanged { _ in
                     if focusedField != nil { endInput() }
-                })
+                }, including: focusedField == nil ? .subviews : .all)
                 .onSubmit { endInput() }
                 .safeAreaInset(edge: .top, spacing: 0) {
                     if let error {

@@ -308,6 +308,78 @@ import SwiftData
         XCTAssertEqual(try learning.vocabulary.entries().first?.repetitions, 0)
         XCTAssertFalse(try learning.cycles.fetch(by: cycle.cycleID)?.isComplete == true)
     }
+    func testDeferralDuringDictionaryLookupCannotCreateAStaleSession() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let added = try entry(learning)
+        let lemma = try XCTUnwrap(learning.vocabulary.entries().first?.lemma)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        let issue = ReviewMeaningIssue(entryID: added.entryID, lemma: lemma, reason: "Explicit overlapping deferral fixture", canEditPersonal: false)
+        let sense = DictionarySense(id: "original-concurrent-meaning", en: "An explicit original fixture", zh: "原创测试义", line: "Original XCTest fixture", partOfSpeech: "noun")
+        let timestamp = now
+        let provider = OriginalReviewDictionaryFixture(values: [lemma: [sense]], beforeLookup: {
+            try learning.review.deferEntry(cycleID: cycle.cycleID, issue: issue, at: timestamp)
+        })
+        try learning.dictionary.configureDictionaryEvidence(providers: [("explicit-overlapping-deferral", provider)])
+        do {
+            _ = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+            XCTFail("A deferral during lookup must invalidate the selected questions")
+        } catch let error as LearningError {
+            XCTAssertEqual(error, .invalid("查词期间复习队列或延期发生变化，请重新准备题目。"))
+        }
+        XCTAssertNil(try learning.review.session(cycleID: cycle.cycleID))
+        XCTAssertEqual(try ModelContext(app.modelContainer).fetchCount(FetchDescriptor<ReviewExerciseRecord>()), 0)
+        let retry = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 1, pairCount: 1, clozeCount: 1, at: now)
+        XCTAssertNil(retry)
+        XCTAssertTrue(try learning.cycles.fetch(by: cycle.cycleID)?.reviewEvidence?.isUserDeferral == true)
+    }
+    func testSpellingPrefersLongerTiesAndReplacesUnavailableMDXContexts() async throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        _ = try learning.content.importArticle(.init(title: "Original spelling priority fixture", body: "Readers start with a complete original daily article.", source: "Original XCTest author", rightsConfirmed: true), at: now)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        for word in ["unverifiable", "architecture", "lamp"] {
+            try learning.dictionary.recordEmptyEligibilityFixture(word, at: now)
+        }
+        let unavailable = try learning.vocabulary.addDictionaryEntry(headword: "unverifiable", at: now)
+        let longer = try learning.vocabulary.addDictionaryEntry(headword: "architecture", at: now)
+        let shorter = try learning.vocabulary.addDictionaryEntry(headword: "lamp", at: now)
+        let context = ModelContext(app.modelContainer)
+        let highest = try XCTUnwrap(context.fetch(FetchDescriptor<ReviewStateRecord>()).first { $0.entryID == unavailable.entryID })
+        highest.repetitions = 2; highest.lapses = 1; highest.intervalDays = 1
+        try context.save()
+        let fixtures = [
+            "unverifiable": [DictionarySense(id: "original-unverified", en: "An explicit original fixture", zh: "未核实", line: "Original XCTest fixture", partOfSpeech: "adjective")],
+            "architecture": [DictionarySense(id: "original-architecture", en: "An explicit original fixture", zh: "建筑学", line: "Original XCTest fixture", partOfSpeech: "noun", examples: ["I study architecture."])],
+            "lamp": [DictionarySense(id: "original-lamp", en: "An explicit original fixture", zh: "灯具", line: "Original XCTest fixture", partOfSpeech: "noun", examples: ["The lamp is bright."])]
+        ]
+        try learning.dictionary.configureDictionaryEvidence(providers: [("explicit-spelling-priority", OriginalReviewDictionaryFixture(values: fixtures))])
+        let prepared = try await learning.review.prepare(cycleID: cycle.cycleID, dailyLimit: 3, pairCount: 3, clozeCount: 1, at: now)
+        let session = try XCTUnwrap(prepared)
+        XCTAssertEqual(Set(session.matching.map(\.entryID)), Set([unavailable.entryID, longer.entryID, shorter.entryID]))
+        XCTAssertEqual(session.cloze.map(\.entryID), [longer.entryID])
+        XCTAssertEqual(session.cloze.first?.context, "I study architecture.")
+        XCTAssertEqual(try learning.review.session(cycleID: cycle.cycleID)?.cloze, session.cloze)
+    }
+    func testDuplicateStoredReviewEntriesCannotAdvanceOrSchedule() throws {
+        let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
+        let added = try entry(learning)
+        guard case let .cycle(cycle, _) = try app.cycleService.ensureCurrentCycle(now: now, timeZone: .current, calendar: .current) else { return XCTFail("Expected cycle") }
+        let context = ModelContext(app.modelContainer)
+        let saved = ReviewSessionRecord(cycleID: cycle.cycleID, entries: [added.entryID, added.entryID], at: now, limit: 2)
+        saved.clozeExclusionReason = "no-verifiable-mdx-context"
+        context.insert(saved)
+        let first = ReviewExerciseRecord(sessionID: saved.sessionID, entryID: added.entryID, stage: "matching", position: 0, prompt: "fixture", answer: "原创测试义", senseID: "original-duplicate")
+        let duplicate = ReviewExerciseRecord(sessionID: saved.sessionID, entryID: added.entryID, stage: "matching", position: 1, prompt: "fixture", answer: "原创测试义", senseID: "original-duplicate")
+        duplicate.exerciseID += "|legacy-duplicate"
+        context.insert(first); context.insert(duplicate)
+        try context.save()
+
+        XCTAssertThrowsError(try learning.review.session(cycleID: cycle.cycleID))
+        XCTAssertThrowsError(try learning.review.submit(cycleID: cycle.cycleID, questionID: first.exerciseID, answer: first.senseID, at: now))
+        let verification = ModelContext(app.modelContainer)
+        XCTAssertEqual(try verification.fetch(FetchDescriptor<ReviewExerciseRecord>()).map(\.attempts).sorted(), [0, 0])
+        XCTAssertEqual(try verification.fetchCount(FetchDescriptor<ReviewLogRecord>()), 0)
+        XCTAssertEqual(try verification.fetch(FetchDescriptor<ReviewStateRecord>()).first?.repetitions, 0)
+    }
     func testPersonalRevisionDoesNotRewriteFrozenReviewMeaningAndMask() async throws {
         let app = try AppDependencies.makeLearningInMemory(), learning = try XCTUnwrap(app.learning)
         let added = try entry(learning)
@@ -524,7 +596,11 @@ import SwiftData
 /// Isolated original business-rule fixtures; never real-MDX parsing evidence.
 private struct OriginalReviewDictionaryFixture: DictionaryProvider {
     let values: [String: [DictionarySense]]
-    func lookup(_ headword: String) async throws -> [DictionarySense] { values[headword] ?? [] }
+    var beforeLookup: (@MainActor @Sendable () throws -> Void)? = nil
+    func lookup(_ headword: String) async throws -> [DictionarySense] {
+        try await beforeLookup?()
+        return values[headword] ?? []
+    }
 }
 @MainActor func annotateOriginalFixture(_ learning: LearningServices, entryID: String, meaning: String, notes: String, at now: Date) throws {
     let item = try XCTUnwrap(learning.vocabulary.entries().first { $0.id == entryID })

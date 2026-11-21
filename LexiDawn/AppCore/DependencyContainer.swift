@@ -78,14 +78,19 @@ final class AppDependencies: ObservableObject {
         guard !files.fileExists(atPath: backup.path) else { return }
         let staging = storeURL.appendingPathExtension("backup-\(UUID().uuidString)")
         try files.createDirectory(at: staging, withIntermediateDirectories: true)
-        // This executes before any container is opened. Cross-process writers are unsupported.
-        for suffix in ["", "-wal", "-shm"] {
-            let source = URL(fileURLWithPath: storeURL.path + suffix)
-            if files.fileExists(atPath: source.path) {
-                try files.copyItem(at: source, to: staging.appendingPathComponent(storeURL.lastPathComponent + suffix))
+        do {
+            // This executes before any container is opened. Cross-process writers are unsupported.
+            for suffix in ["", "-wal", "-shm"] {
+                let source = URL(fileURLWithPath: storeURL.path + suffix)
+                if files.fileExists(atPath: source.path) {
+                    try files.copyItem(at: source, to: staging.appendingPathComponent(storeURL.lastPathComponent + suffix))
+                }
             }
+            try files.moveItem(at: staging, to: backup)
+        } catch {
+            try? files.removeItem(at: staging)
+            throw error
         }
-        try files.moveItem(at: staging, to: backup)
     }
 
     static func makeInMemory(candidateProvider: ArticleCandidateProvider? = nil) throws -> AppDependencies {

@@ -114,3 +114,23 @@
 代码 `2bec19879217ef282fea9acc6822166ed5bb0f6c`，[专项运行 44871417647](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44871417647) 已成功：全目标编译、唯一选定 UI 方法和完成门禁均通过。`testRound2DictionaryDetailsAndNestedEnglishLookupReturnToReader` 用时 121.454 秒，执行核验为 expected=1、executed=1、missing=[]、unexpected=[]、failed=[]。此次实际完成了阅读器进入、真实词典加载就绪、Book 完整详情、原句 science 嵌套查词、关闭并返回原阅读器的全套断言；不是重复执行整项直到偶然通过。
 
 负责人确认专项成功后要求继续全量。本提交仅同步实际结果，保留已验证的 App 和测试代码，以 `[round4-final]` 请求第二次完整 CI：251 项 XCTest、67 个主设备 UI 方法及 SE 7 次/Pro Max 3 次复跑（共 77 次）、Release、IPA 和原生截图汇总。确认任务启动后暂停，等待负责人反馈。第二次全量结果尚未知，不将首次全量的部分通过或本次单项通过称为完整验收通过。环境仍为 Xcode 26.6 / iOS 26.5 Simulator 兼容验证，不是 iOS 27 真机验收。
+
+## 接手后的问题核对和整改
+
+基线 `d3d17b759ddb3d0fb1005bb93e4d1790cc4edfd6` 的[第二次全量 44872453369](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44872453369) 已结束。251/251 XCTest、76/77 次 UI、Release 和未签名 IPA 成功。嵌套查词 63.754 秒通过。唯一失败为 `testGalleryImportEmptyValidationAndOwnedArticle`，截图门禁缺 `reader-11`。
+
+[失败分片原件 14695793080](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44872453369/artifacts/14695793080) 共 349,163,887 字节，SHA-256 `279c7f4627243c793cdd05b11efb93763c4181cea52ca24bc76188d496529929`。合成触点落在授权开关与保存按钮范围。失败层级仍显示 `import-rights` 值为 `0`，`save-import` 为禁用，录像末段也显示同一状态。开关未切换的系统或交互原因仍待原生复验。
+
+| 优先级和范围 | 已确认问题 | 本批修改及复验入口 |
+|---|---|---|
+| P0 · 原文导入（规格 §2） | 授权仍关闭时执行了保存点击。表单收键盘拖动手势在无输入焦点时仍注册。 | 只在编辑时附加收键盘手势。`testGalleryImportEmptyValidationAndOwnedArticle` 检查真实授权和保存启用，完整保留空标题、键盘、保存和短文截图。 |
+| P0 · 阅读进度（规格 §§1–2） | 读者保存未传正文版本，旧页面的偏移或完成百分比可写到更新后的原文。 | 读写边界核对显示版本。完成必须使用同正文版本的已存进度。`testPersonalOriginalUpdateKeepsVersionRestoresAnchorAndRollsBackSaveFailure` 检查两种过期写入、续读和完成。 |
+| P0 · 复习事务（F08、F24） | 查词挂起期间确认的延期可与旧准备快照形成一个已落库题组。被规范化合并的旧词条也可能留在准备集合。 | 同一事务复核准备集合与延期，排除别名。`testDeferralDuringDictionaryLookupCannotCreateAStaleSession` 确认无作答或题组泄漏，重试恢复明确延期。 |
+| P0 · 复习完整性（F08、F24） | 旧题组在候选和题目同时含重复词条时可通过集合比较，按词排程循环随后可能重复处理同一条排程。 | 核对候选、连线、拼写、题位和题身份的唯一性。`testDuplicateStoredReviewEntriesCannotAdvanceOrSchedule` 检查原失败题组、零作答和零排程更新。 |
+| P1 · 拼写（F11、F24） | 相同失误次数只按 ID 排序。优先词缺可靠例句会提前耗尽候选，已有可验证词也被跳过。 | 失误次数相同优先较长词。可信 MDX 义项缺例句时继续用队列内候选，保护已有冻结题组。`testSpellingPrefersLongerTiesAndReplacesUnavailableMDXContexts` 覆盖题量和恢复。 |
+| P1 · 离线搜索（F23） | 搜索点击动作可把已呈现的上一个结果与刚改变的输入拼在一起。 | 把输入、词义与编辑资格绑定成同一结果，展示和点击均核对归属。走已有的真实离线搜索、个人词创建及重启用例。 |
+| P1 · 数据升级（规格 §5） | 备份失败后留存部分副本，冷启动反复重试可能继续占用磁盘。 | 清理这次失败的暂存目录，保留原数据库和既有备份。沿用磁盘升级和事务回滚测试。 |
+
+本地已扫描全部 57 份 Swift 文件的语法，检查 Python、Shell、工作流和资源清单格式，运行分组校验、4 项模拟器启动脚本测试、8 项分包测试及 203,181 条真实 MDX 索引记录的宿主读取检查。本地环境为 Linux，原生编译和设备验证由后续运行完成。
+
+本批涉及多个关键路径。按本轮要求，工作期间仅做宿主检查，结束时用一次 `[round4-final]` 验证 254 个 XCTest、77 次原生 UI、Release、IPA 和截图门禁。独立验收账本与 iOS 27 真机状态仍待对应证据。词义相同原句下的文章主题、常见程度排序另需明确可验证的依据及验收样例。

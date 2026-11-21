@@ -1,6 +1,8 @@
 # 当前状态
 
-2026-11-21：`2bec198` 的唯一失败项嵌套查词专项已完整通过（121.454 秒），全目标编译与完成门禁通过，[运行 44871417647](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44871417647)。本提交按负责人要求启动第二次全量 CI：251 项 XCTest、77 次 UI 执行、Release、IPA 与截图汇总，确认启动后暂停。第二次全量结果待执行；首次全量为 251 项单元及 76/77 次 UI 通过，不能替代新结果。[最新记录](docs/reviews/round-4-ci-regression-2026-11-21.md)。
+2026-11-21：`d3d17b7` 的[第二次全量 44872453369](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44872453369) 已结束。251/251 项 XCTest、76/77 次原生 UI、Release 及未签名 IPA `0.1.0 (214)` 通过。唯一失败为自有文章导入用例，原始附件显示授权未切换，保存仍禁用，截图覆盖缺 `reader-11`。上一轮失败的嵌套查词在本次全量通过（63.754 秒）。
+
+本批处理导入的原生交互与诊断、跨版本阅读保存、复习准备和旧题组校验、拼写选题、离线搜索结果归属和迁移备份清理。按负责人要求，完成这批变更和宿主检查后仅发起一轮最终全量。预计 254 项 XCTest、77 次原生 UI、Release、IPA 及截图门禁。当前提交的原生结果待本轮验证。[问题与验证记录](docs/reviews/round-4-ci-regression-2026-11-21.md#接手后的问题核对和整改)
 
 修复前的 Round 4 全量原生兼容回归已通过。验证代码为 `4be478e2e778bea4da2095e65a637e5df117f7be`，运行使用 Xcode 26.6 与 iOS 26.5 Simulator。[最终 CI](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43420154858)
 
