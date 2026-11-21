@@ -385,7 +385,12 @@ extension LexiDawnUITests {
 
 extension LexiDawnUITests {
     func testRound2DictionaryDetailsAndNestedEnglishLookupReturnToReader() throws {
-        let app = launchLearningDisk(); app.buttons["open-reader"].tap()
+        let app = launchLearningDisk()
+        let open = app.buttons["open-reader"].firstMatch
+        XCTAssertTrue(open.wait(for: \.isHittable, toEqual: true, timeout: 10))
+        XCTAssertTrue(open.isEnabled)
+        open.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(app.navigationBars["英文阅读"].waitForExistence(timeout: 10))
         let book = app.buttons["word-Book"].firstMatch; XCTAssertTrue(book.waitForExistence(timeout: 10)); book.tap()
         XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10))
         let card = app.descendants(matching: .any)["compact-word-card"].firstMatch

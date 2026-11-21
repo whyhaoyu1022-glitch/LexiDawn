@@ -1,6 +1,6 @@
 # 当前状态
 
-2026-11-21：首次全量 [44865381273](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44865381273) 的 251 项 XCTest、Release、IPA、截图汇总及 76/77 次 UI 执行通过，唯一失败是旧嵌套查词测试在真实加载完成前点击了禁用详情按钮。现补充原生启用状态与词头/加载/错误检查，原导航和返回断言保留；只重跑该方法。专项通过后再请求第二次全量并暂停，当前没有全量通过结论。[最新记录](docs/reviews/round-4-ci-regression-2026-11-21.md)。
+2026-11-21：首次全量 [44865381273](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44865381273) 的 251 项 XCTest、Release、IPA、截图汇总及 76/77 次 UI 执行通过，唯一失败是旧嵌套查词测试在真实加载完成前点击了禁用详情按钮。已补充词典真实启用状态检查；f01393b 专项又在更早的今日入口阶段失败，原图确认仍停留今日、词典等待尚未执行。继续补齐文章打开前可点击与阅读器实际出现的检查，原导航和返回断言保留，只重跑该方法。专项通过后再请求第二次全量并暂停，当前没有全量通过结论。[最新记录](docs/reviews/round-4-ci-regression-2026-11-21.md)。
 
 修复前的 Round 4 全量原生兼容回归已通过。验证代码为 `4be478e2e778bea4da2095e65a637e5df117f7be`，运行使用 Xcode 26.6 与 iOS 26.5 Simulator。[最终 CI](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43420154858)
 
