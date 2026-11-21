@@ -595,8 +595,21 @@ final class Round3UITests: XCTestCase {
             XCTAssertGreaterThan(card.frame.width, 200)
             XCTAssertTrue(window.insetBy(dx: -2, dy: -2).contains(card.frame), "Large-type lookup stays inside the native window")
             XCTAssertTrue(details.isHittable)
+            let headword = card.staticTexts["dictionary-headword"].firstMatch
+            let ipa = card.staticTexts["dictionary-compact-ipa"].firstMatch
+            XCTAssertTrue(headword.exists); XCTAssertTrue(headword.isHittable)
+            XCTAssertTrue(ipa.exists); XCTAssertTrue(ipa.isHittable)
+            XCTAssertTrue(card.frame.contains(headword.frame)); XCTAssertTrue(card.frame.contains(ipa.frame))
+            XCTAssertLessThanOrEqual(headword.frame.maxX, close.frame.minX + 1)
+            XCTAssertLessThanOrEqual(ipa.frame.maxX, close.frame.minX + 1)
+            let meanings = card.scrollViews["dictionary-quick-scroll"].firstMatch
+            XCTAssertTrue(meanings.exists); XCTAssertTrue(meanings.isHittable)
             capture("R4-popup-max-type-" + theme, app: app, feature: "reader-dictionary",
                 state: "maximum-type-landscape-popup-controls-and-bounds", theme: theme, origin: "real-bundled-RFC-real-bundled-MDX")
+            meanings.swipeUp()
+            XCTAssertTrue(close.isHittable); XCTAssertTrue(details.isHittable)
+            capture("R4-popup-max-type-scrolled-" + theme, app: app, feature: "reader-dictionary",
+                state: "maximum-type-landscape-scrollable-meaning-fixed-controls", theme: theme, origin: "real-bundled-RFC-real-bundled-MDX")
             close.tap()
             XCTAssertTrue(word.waitForExistence(timeout: 10)); XCTAssertTrue(word.isHittable)
         }

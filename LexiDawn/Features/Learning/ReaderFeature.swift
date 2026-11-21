@@ -353,14 +353,17 @@ struct WordLookupSheet: View {
     var body: some View {
         let headword = model.result?.headword ?? EnglishTokenizer.lemma(model.token.surface)
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(headword).font(.system(.title3, design: .serif).bold())
-                    .lineLimit(1).minimumScaleFactor(0.7).accessibilityIdentifier("dictionary-headword")
-                    .accessibilityValue(model.token.surface == headword ? "" : "原文：" + model.token.surface)
-                if let result = model.result, let ipa = result.quickSenses.first?.ipa ?? DictionaryPresentation.sharedIPA(result.senses) {
-                    Text(ipa).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(headword).font(.system(.title3, design: .serif).bold())
+                        .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("dictionary-headword")
+                        .accessibilityValue(model.token.surface == headword ? "" : "原文：" + model.token.surface)
+                    if let result = model.result, let ipa = result.quickSenses.first?.ipa ?? DictionaryPresentation.sharedIPA(result.senses) {
+                        Text(ipa).font(.caption).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("dictionary-compact-ipa")
+                    }
                 }
-                Spacer(minLength: 2)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 Button { dismiss() } label: { Image(systemName: "xmark").font(.caption).frame(width: 44, height: 44) }.accessibilityLabel("关闭查词").accessibilityIdentifier("close-word")
             }
             compactContent
@@ -381,8 +384,11 @@ struct WordLookupSheet: View {
                     if let openDetails { openDetails() } else { showDetails = true }
                 } label: { Image(systemName: "chevron.right.circle.fill").font(.title2).frame(width: 44, height: 44) }
                     .accessibilityLabel("查看详细释义").accessibilityIdentifier("dictionary-details").disabled(model.loading || model.error != nil || model.result == nil)
-            }.font(.subheadline).dynamicTypeSize(...DynamicTypeSize.xxxLarge).accessibilityElement(children: .contain)
+            }.font(.subheadline).accessibilityElement(children: .contain)
         }.padding(verticalSizeClass == .compact ? 10 : 16).frame(width: dynamicTypeSize.isAccessibilitySize ? 310 : 285).accessibilityElement(children: .contain).accessibilityIdentifier("compact-word-card")
+            // Keep the anchored aid usable in a short landscape viewport. The
+            // full detail page below restores the user's unrestricted text size.
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .accessibilityAddTraits(.isModal)
             .accessibilityHidden(showDetails)
             .fixedSize(horizontal: false, vertical: true)
@@ -399,7 +405,8 @@ struct WordLookupSheet: View {
                             theme: theme, automaticAdditionAllowed: model.autoAdd, contextOrigin: model.origin, lookupModel: model,
                             closeStack: { closeLookupAfterDetails = true; showDetails = false })
                     }
-                }.preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
+                }.dynamicTypeSize(dynamicTypeSize)
+                    .preferredColorScheme(theme == "dark" ? .dark : ["light", "paper"].contains(theme) ? .light : nil)
             }
     }
     private var compactContent: some View {
@@ -412,7 +419,8 @@ struct WordLookupSheet: View {
                     }
                 }
         }
-        .scrollIndicators(.hidden)
+        .accessibilityIdentifier("dictionary-quick-scroll")
+        .scrollIndicators(.visible)
         .scrollBounceBehavior(.basedOnSize)
         .frame(height: min(contentHeight, limit))
         .onPreferenceChange(CompactDictionaryContentHeightKey.self) { height in
@@ -443,8 +451,8 @@ struct DictionaryQuickMeaning: View {
             if result.quickSenses.first?.originKind == "personal" { Text("个人释义").font(.caption).foregroundStyle(.secondary) }
             ForEach(Array(result.quickSenses.prefix(2))) { sense in
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    if let part = sense.partOfSpeech { Text(BilingualMeaningPolicy.partName(part)).font(.caption).foregroundStyle(.secondary) }
-                    Text(sense.zh).font(.subheadline).lineLimit(2)
+                    if let part = sense.partOfSpeech { Text(BilingualMeaningPolicy.partName(part)).font(.caption).foregroundStyle(.secondary).fixedSize() }
+                    Text(sense.zh).font(.subheadline).fixedSize(horizontal: false, vertical: true)
                 }.accessibilityElement(children: .combine).accessibilityIdentifier("dictionary-quick-sense-" + sense.id)
             }
         }
