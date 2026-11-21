@@ -351,22 +351,11 @@ struct WordLookupSheet: View {
         self.openDetails = openDetails
     }
     var body: some View {
-        let headword = model.result?.headword ?? EnglishTokenizer.lemma(model.token.surface)
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(headword).font(.system(.title3, design: .serif).bold())
-                        .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("dictionary-headword")
-                        .accessibilityValue(model.token.surface == headword ? "" : "原文：" + model.token.surface)
-                    if let result = model.result, let ipa = result.quickSenses.first?.ipa ?? DictionaryPresentation.sharedIPA(result.senses) {
-                        Text(ipa).font(.caption).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("dictionary-compact-ipa")
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                compactContent
                 Button { dismiss() } label: { Image(systemName: "xmark").font(.caption).frame(width: 44, height: 44) }.accessibilityLabel("关闭查词").accessibilityIdentifier("close-word")
             }
-            compactContent
             HStack {
                 if model.addition?.created == true {
                     Button { model.undo() } label: { Label("撤销", systemImage: "checkmark.circle.fill") }.accessibilityIdentifier("undo-word")
@@ -385,7 +374,7 @@ struct WordLookupSheet: View {
                 } label: { Image(systemName: "chevron.right.circle.fill").font(.title2).frame(width: 44, height: 44) }
                     .accessibilityLabel("查看详细释义").accessibilityIdentifier("dictionary-details").disabled(model.loading || model.error != nil || model.result == nil)
             }.font(.subheadline).accessibilityElement(children: .contain)
-        }.padding(verticalSizeClass == .compact ? 10 : 16).frame(width: dynamicTypeSize.isAccessibilitySize ? 310 : 285).accessibilityElement(children: .contain).accessibilityIdentifier("compact-word-card")
+        }.padding(10).frame(width: dynamicTypeSize.isAccessibilitySize ? 310 : 285).accessibilityElement(children: .contain).accessibilityIdentifier("compact-word-card")
             // Keep the anchored aid usable in a short landscape viewport. The
             // full detail page below restores the user's unrestricted text size.
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
@@ -410,9 +399,22 @@ struct WordLookupSheet: View {
             }
     }
     private var compactContent: some View {
-        let limit: CGFloat = verticalSizeClass == .compact ? 88 : dynamicTypeSize.isAccessibilitySize ? 148 : 116
+        // A popover may report a regular size class even in landscape. Bound
+        // the entire lexical region, not only the definitions, so long IPA and
+        // headwords cannot push the fixed controls outside its native bounds.
+        let limit: CGFloat = verticalSizeClass == .compact ? 100 : 116
         return ScrollView(.vertical) {
-            lookupContent.fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 6) {
+                let headword = model.result?.headword ?? EnglishTokenizer.lemma(model.token.surface)
+                Text(headword).font(.system(.title3, design: .serif).bold())
+                    .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("dictionary-headword")
+                    .accessibilityValue(model.token.surface == headword ? "" : "原文：" + model.token.surface)
+                if let result = model.result, let ipa = result.quickSenses.first?.ipa ?? DictionaryPresentation.sharedIPA(result.senses) {
+                    Text(ipa).font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("dictionary-compact-ipa")
+                }
+                lookupContent
+            }.frame(maxWidth: .infinity, alignment: .leading).fixedSize(horizontal: false, vertical: true)
                 .background {
                     GeometryReader { proxy in
                         Color.clear.preference(key: CompactDictionaryContentHeightKey.self, value: proxy.size.height)

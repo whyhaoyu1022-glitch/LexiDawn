@@ -599,13 +599,16 @@ final class Round3UITests: XCTestCase {
             let ipa = card.staticTexts["dictionary-compact-ipa"].firstMatch
             XCTAssertTrue(headword.exists); XCTAssertTrue(headword.isHittable)
             XCTAssertTrue(ipa.exists); XCTAssertTrue(ipa.isHittable)
-            XCTAssertTrue(card.frame.contains(headword.frame)); XCTAssertTrue(card.frame.contains(ipa.frame))
-            XCTAssertLessThanOrEqual(headword.frame.maxX, close.frame.minX + 1)
-            XCTAssertLessThanOrEqual(ipa.frame.maxX, close.frame.minX + 1)
             let meanings = card.scrollViews["dictionary-quick-scroll"].firstMatch
             XCTAssertTrue(meanings.exists); XCTAssertTrue(meanings.isHittable)
             capture("R4-popup-max-type-" + theme, app: app, feature: "reader-dictionary",
                 state: "maximum-type-landscape-popup-controls-and-bounds", theme: theme, origin: "real-bundled-RFC-real-bundled-MDX")
+            let cardFrame = card.frame, headwordFrame = headword.frame, ipaFrame = ipa.frame, closeFrame = close.frame
+            print("Native lookup geometry: theme=\(theme), card=\(cardFrame), word=\(headwordFrame), ipa=\(ipaFrame), close=\(closeFrame)")
+            XCTAssertTrue(cardFrame.contains(headwordFrame), "Full headword stays inside card: \(headwordFrame) / \(cardFrame)")
+            XCTAssertTrue(cardFrame.contains(ipaFrame), "Full IPA stays inside card: \(ipaFrame) / \(cardFrame)")
+            XCTAssertLessThanOrEqual(headwordFrame.maxX, closeFrame.minX + 1)
+            XCTAssertLessThanOrEqual(ipaFrame.maxX, closeFrame.minX + 1)
             meanings.swipeUp()
             XCTAssertTrue(close.isHittable); XCTAssertTrue(details.isHittable)
             capture("R4-popup-max-type-scrolled-" + theme, app: app, feature: "reader-dictionary",
