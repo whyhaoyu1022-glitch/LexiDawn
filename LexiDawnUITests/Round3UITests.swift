@@ -836,12 +836,17 @@ final class Round3UITests: XCTestCase {
                 let heading = card.staticTexts["dictionary-headword"]
                 let details = card.buttons["dictionary-details"]
                 let expectedHeadword = expected[index]
-                // Never read label on an unresolved element during native
-                // popover rehosting. Keep the same deadline for actual readiness.
-                expectation(for: NSPredicate { _, _ in
-                    card.exists && heading.exists && heading.label == expectedHeadword && details.exists && details.isEnabled
-                }, evaluatedWith: card)
-                waitForExpectations(timeout: 15)
+                // Use native waits instead of issuing several remote UI queries
+                // from inside a predicate callback. All readiness checks share
+                // the original fifteen-second monotonic deadline.
+                let deadline = ProcessInfo.processInfo.systemUptime + 15
+                let remaining = { max(0, deadline - ProcessInfo.processInfo.systemUptime) }
+                XCTAssertTrue(card.waitForExistence(timeout: remaining()))
+                XCTAssertTrue(details.waitForExistence(timeout: remaining()))
+                XCTAssertTrue(details.wait(for: \.isEnabled, toEqual: true, timeout: remaining()))
+                XCTAssertTrue(heading.waitForExistence(timeout: remaining()))
+                XCTAssertTrue(heading.wait(for: \.label, toEqual: expectedHeadword, timeout: remaining()))
+                XCTAssertEqual(heading.label, expectedHeadword)
                 XCTAssertEqual(heading.value as? String ?? "", surface == expected[index] ? "" : "原文：" + surface)
                 XCTAssertFalse(app.buttons["word-" + surface].firstMatch.exists, "Covered article words must leave native accessibility navigation")
                 XCTAssertFalse(app.staticTexts["dictionary-resource-error"].exists)
