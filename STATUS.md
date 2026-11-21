@@ -1,6 +1,6 @@
 # 当前状态
 
-2026-11-21：连续词形/短语在 e0f6bbf 和 38cb240 均专项通过（290.556 / 265.623 秒）。新增大字检查发现深色 Nottingham 的长音标撑高浮窗，录屏确认上下裁切，现改为词头/音标/释义整体有界滚动、固定操作按钮；继续两项受影响 UI 专项验证。全部专项通过后才提交最终全量并暂停；当前没有新全量或新包通过结论。[最新记录](docs/reviews/round-4-ci-regression-2026-11-21.md)。
+2026-11-21：`1052f8a` 的全目标编译、连续词形/短语专项（224.543 秒）、最大字号/横屏/三主题浮窗专项（102.932 秒）及门禁均通过，[运行 44864233759](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44864233759)。已逐张复查六张新浮窗原图并核验九张 PNG 的哈希，长音标导致的上下裁切已修复。本提交请求最终全量：251 项 XCTest、77 次 UI 执行、Release、IPA 和截图汇总，确认启动后按负责人要求暂停；结果待执行，不宣称通过或新包交付。[最新记录](docs/reviews/round-4-ci-regression-2026-11-21.md)。
 
 修复前的 Round 4 全量原生兼容回归已通过。验证代码为 `4be478e2e778bea4da2095e65a637e5df117f7be`，运行使用 Xcode 26.6 与 iOS 26.5 Simulator。[最终 CI](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43420154858)
 

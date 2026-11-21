@@ -47,8 +47,33 @@
 
 布局失败产物 artifact 14690846129（96,945,553 字节）SHA-256 `b508b0d2a3ceef13192e87b8abf0f61f5e83e456a27a74ee20214e3f32f52e8a` 已完整核验。已打开其浅色原始 PNG 和实际录屏第 147、148 秒帧。浅色词头/音标已可完整读，深色录屏明确显示 Nottingham 结果发布后词头顶部、底部操作被原生浮窗裁切，不将问题解释成纯测试误报。该请求 0.287 秒完成，词典内容正确。
 
+另外已校验并逐张查看 38cb240 通过的短语详情 PNG R3-D22/D23/D24（look into、carry out、take into account）：词头、短语动词/习语分组、编号义项、实际中文与双语例句均存在，详情底部操作可见；没有为缺少 IPA 的短语编造音标。对应连续查询产物 artifact 14690283155（49,613,088 字节），SHA-256 `6afd1a271a393902d89bb9d972122f940a30700ba9a88efff2e22da671f32105`。
+
 进一步修复把词头、IPA、中文与错误统一纳入同一有界原生滚动区，关闭按钮和底部生词操作留在外侧。即使 popover 的尺寸类被提升为 regular，词法内容区域也最多 116pt，避免长音标增加浮窗总高度。原边界断言保留，分别保存一次坐标并打印；在断言前采集真实截图，便于失败复查。两项方法继续作为受影响专项，不重跑全量。
 
-## 验证状态
+## 最终专项通过与截图复查
 
-本地 `git diff --check` 与 `python3 scripts/ci-test-plan.py verify` 通过；全量 67 个主设备方法与 SE 7 次、Pro Max 3 次均保留。上述两个提交均全目标编译通过。进一步的整体滚动布局待原生专项验证；当前没有新全量通过或新包交付结论。专项全部通过后才请求 `[round4-final]` 的 251 个 XCTest、77 次 UI 执行、Release、IPA 与截图汇总，并按负责人指令暂停。
+验证代码为 `1052f8af4ef3f94189f8d13d3895442bd21909f8`，[专项运行 44864233759](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44864233759)。全目标编译、两个 UI 方法和完成门禁均成功。
+
+| 实际专项 | 结果 |
+|---|---|
+| 连续词形/短语 | 通过，224.543 秒；两轮十二次查询、六次详情往返及词形/遮挡/返回断言保留 |
+| 最大辅助字号/横屏/三主题浮窗 | 通过，102.932 秒；词头/音标边界、关闭与详情按钮、滚动后操作及正文恢复均通过 |
+| 本地检查 | `git diff --check`、测试分组完整性检查通过；全量 67 个主设备 UI 方法、SE 7 次与 Pro Max 3 次均保留 |
+
+当前布局产物 artifact 14690973623，15,876,780 字节，SHA-256 `178c3e32623b87befc29a7ccc300e7df934a7e3ad29e36064fc3fa2b11e48292`。9/9 PNG 签名与单图 SHA 和清单相符。已逐张打开以下六张实际浮窗原图；三张正文图与已查看的 e0dea57 正文图哈希相同。
+
+| 实际图片 | SHA-256 |
+|---|---|
+| R4-popup-max-type-light-iPhone18-1.png | `6cd0081d7abdbb36ae97d91bf69060dba44b0af545a22dcbc865a64eb6808fbf` |
+| R4-popup-max-type-dark-iPhone18-1.png | `4616fe4105fdf03ef8aebe2b0a68d9418b8984d64becc84a1f41ee96f331027d` |
+| R4-popup-max-type-paper-iPhone18-1.png | `3cabf1a158572f07dbc2fd46b78cba2671fa7068d5ca4f76d71ae0baf9dfb299` |
+| R4-popup-max-type-scrolled-light-iPhone18-1.png | `8469f33888a2481cfa60ae5f4c2a82371487ff5fbaab82b4c36004c69532a22c` |
+| R4-popup-max-type-scrolled-dark-iPhone18-1.png | `cf04baf32b43d1269b8770ee3198821c0994bb23a46565d7b3f3d877cd598e54` |
+| R4-popup-max-type-scrolled-paper-iPhone18-1.png | `3cabf1a158572f07dbc2fd46b78cba2671fa7068d5ca4f76d71ae0baf9dfb299` |
+
+观察：三主题词头、IPA 和固定操作不再越出卡片。最大辅助字号下，长音标/中文需要在浮窗内部滚动；浅色滚动后完整显示 internet 中文，深色滚动后可读 Nottingham 长中文至末尾，操作仍留在原位。暖纸色 august 内容较短，手势前后图片相同，未伪称发生内容滚动。完整详情和正文仍使用用户原始辅助字号。上述为 iOS 26.5 Simulator 兼容验证，不是 iOS 27 真机验收。
+
+## 最终全量请求与暂停边界
+
+本提交仅同步实际结果与证据入口，不再改动已专项验证的 App 或测试代码，并以 `[round4-final]` 请求一次完整 CI：251 个 XCTest、77 次 UI 执行、Release、未签名 IPA、原生截图及覆盖汇总。此前的 246 项单元通过与历史包不替代本次全量结果。按负责人指令，在确认这次全量启动后暂停，不等待其结束；当前不宣称新全量通过、新 IPA 已交付或 144 条独立验收全部关闭。
