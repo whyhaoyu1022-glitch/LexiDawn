@@ -2,7 +2,11 @@
 
 源码登记 13 个公开正文尝试来源。导入时保存来源级依据，区分经审核的文章来源资格、负责人个人使用路径和用户自有原文。原站访问、抓取结果与准入记录分别判断。[来源登记](../LexiDawn/Domain/Learning/PublisherSources.swift) · [完整原文规则](spec-addendum-content-and-dictionary.md)
 
-## Round 4 已观察结果
+## 当前构建 215 的观察结果
+
+[全量运行 44887232103](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/44887232103/job/136807793162) 的原生证据包含九家完整阅读序列，分别为 BBC News、The Guardian、NPR、DW、VOA Learning English、ScienceDaily、Phys.org、Wikipedia、Wikinews。NASA 的完整序列在之前的构建已有证据。本次结果反映运行时的公开来源响应。[当前交付](reviews/round-4-final-delivery.md)
+
+## 历史构建 180 的观察结果
 
 [最终运行 43420154858](https://github.com/whyhaoyu1022-glitch/LexiDawn/actions/runs/43420154858) 针对以下十家都有实际来源筛选、首屏正文、滚动和阅读末段截图。
 

@@ -11,7 +11,7 @@
 | 2026-11-20 全量失败及专项修复、浮窗取消与搜索焦点 | [CI 回归记录](reviews/round-4-ci-regression-2026-11-20.md) |
 | 2026-11-21 连续查词原生等待、大字浮窗整体滚动与边界 | [CI 续修记录](reviews/round-4-ci-regression-2026-11-21.md)，关联 F09/F15/F21/F22/F24；实际专项与全量状态分开记录 |
 | 2026-11-21 接手后的原文导入、版本进度、预检与拼写、搜索和备份回归 | [问题与验证对照](reviews/round-4-ci-regression-2026-11-21.md#接手后的问题核对和整改)，对应 `SPEC.md` §§2–5 及 F08、F11、F23、F24。 |
-| 当前整体构建与下载 | [STATUS](../STATUS.md)、[交付报告](reviews/round-4-final-delivery.md) |
+| 当前整体构建与下载 | `309bbfd` 的 [全量验证与交付](reviews/round-4-final-delivery.md)、[下载与状态](../STATUS.md)、[真机测试](device-testing.md) |
 
 代码 **4be478e** 的兼容测试证据覆盖全部 24 个测试族。144 条均有候选方法通过，其中 79 条有直接编号截图。独立逐条验收仍开放。截图关联描述已有画面，手动检查结论将逐条写入验收账本。
 

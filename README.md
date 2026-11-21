@@ -6,7 +6,7 @@
 - **查词**使用内置 MDX，阅读器浮层、生词和复习共用词义身份。MDX 成功确认无中文时可补个人释义。发音由 iOS 系统语音提供。
 - **复习**包含可保存和恢复的连线与拼写。学习进度、个人词条和笔记保存在设备上，词汇可导出 JSON 或 CSV。
 
-[当前进度和下载](STATUS.md) · [iPhone 安装](docs/signing.md) · [文档索引](docs/README.md)
+[下载真机测试包及当前状态](STATUS.md) · [iPhone 签名安装](docs/signing.md) · [真机测试清单](docs/device-testing.md) · [文档索引](docs/README.md)
 
 ## 开发
 
