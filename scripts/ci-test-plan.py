@@ -9,8 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 FOCUSED = {
-    'fix-phrases': ['LexiDawnUITests/Round3UITests/testComplexFormsAndFourContextPhrasesUseNestedLookupAndReturn'],
-    'fix-popup-layout': ['LexiDawnUITests/Round3UITests/testLargeDynamicTypeThreeThemesRemainReadableInLandscape'],
+    'fix-nested-lookup': ['LexiDawnUITests/LexiDawnUITests/testRound2DictionaryDetailsAndNestedEnglishLookupReturnToReader'],
 }
 
 

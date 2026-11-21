@@ -8,6 +8,16 @@ final class LexiDawnUITests: XCTestCase {
         evidenceTheme = "system"
         XCUIDevice.shared.orientation = .portrait
     }
+    override func tearDownWithError() throws {
+        if name.contains("testRound2DictionaryDetailsAndNestedEnglishLookupReturnToReader"), (testRun?.failureCount ?? 0) > 0 {
+            let app = XCUIApplication()
+            let hierarchy = app.debugDescription
+            print("ROUND2_NESTED_DICTIONARY_FAILURE_BEGIN\n" + hierarchy + "\nROUND2_NESTED_DICTIONARY_FAILURE_END")
+            let attachment = XCTAttachment(string: hierarchy)
+            attachment.name = "round2-nested-dictionary-failure-hierarchy"; attachment.lifetime = .keepAlways; add(attachment)
+            capture("round2-nested-dictionary-failure", in: app)
+        }
+    }
 
     func testAppUsesFullSizeWindowOnModernCISimulator() {
         let app = launch("empty")
@@ -378,7 +388,16 @@ extension LexiDawnUITests {
         let app = launchLearningDisk(); app.buttons["open-reader"].tap()
         let book = app.buttons["word-Book"].firstMatch; XCTAssertTrue(book.waitForExistence(timeout: 10)); book.tap()
         XCTAssertTrue(app.buttons["close-word"].waitForExistence(timeout: 10))
-        let details = app.buttons["dictionary-details"]
+        let card = app.descendants(matching: .any)["compact-word-card"].firstMatch
+        let details = card.buttons["dictionary-details"].firstMatch
+        XCTAssertTrue(details.waitForExistence(timeout: 10))
+        // A visible button is also hittable while disabled. Wait for the real
+        // dictionary result before attempting to navigate, as a user must do.
+        XCTAssertTrue(details.wait(for: \.isEnabled, toEqual: true, timeout: 15))
+        XCTAssertEqual(card.staticTexts["dictionary-headword"].firstMatch.label, "book")
+        XCTAssertFalse(card.descendants(matching: .any)["dictionary-loading"].firstMatch.exists)
+        XCTAssertFalse(card.staticTexts["dictionary-resource-error"].exists)
+        capture("round2-dictionary-lookup-ready", in: app)
         try revealLearning(details, in: app); details.tap()
         XCTAssertTrue(app.buttons["关闭详细释义"].waitForExistence(timeout: 10))
         capture("F35-dictionary-detail-before-nested-lookup", in: app)
